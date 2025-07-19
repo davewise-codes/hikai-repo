@@ -1,0 +1,5 @@
+# Ignorar archivos generados
+node_modules
+dist
+build
+coverage
