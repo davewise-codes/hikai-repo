@@ -53,7 +53,7 @@ importers:
 
   apps/admin:
     dependencies:
-      '@repo/ui':
+      '@hikai/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       react:

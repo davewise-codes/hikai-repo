@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@repo/ui";
+import { Button } from "@hikai/ui";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
