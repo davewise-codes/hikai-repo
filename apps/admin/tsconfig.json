@@ -1,13 +1,7 @@
 {
-	"files": [],
-	"references": [
-		{ "path": "./tsconfig.app.json" },
-		{ "path": "./tsconfig.node.json" }
-	],
+	"extends": "@hikai/typescript-config/base",
 	"compilerOptions": {
-		"baseUrl": ".",
-		"paths": {
-			"@hikai/ui": ["../../packages/ui/src"]
-		}
-	}
+		"outDir": "./dist"
+	},
+	"include": ["src/**/*.tsx", "src/**/*.ts"]
 }
