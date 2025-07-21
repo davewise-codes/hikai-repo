@@ -2,6 +2,10 @@
 	"name": "@hikai/ui",
 	"version": "0.0.0",
 	"private": true,
+	"dependencies": {
+		"@hikai/typescript-config": "workspace:*",
+		"@hikai/i18n": "workspace:*"
+	},
 	"devDependencies": {
 		"@types/react": "^18.2.46",
 		"@types/react-dom": "^18.2.18",

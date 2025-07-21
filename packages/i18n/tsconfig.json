@@ -1,0 +1,9 @@
+{
+	"extends": "@hikai/typescript-config/base",
+	"compilerOptions": {
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"outDir": "dist"
+	},
+	"include": ["src"]
+}

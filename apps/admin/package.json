@@ -13,7 +13,8 @@
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0",
 		"@hikai/ui": "workspace:*",
-		"@hikai/typescript-config": "workspace:*"
+		"@hikai/typescript-config": "workspace:*",
+		"@hikai/i18n": "workspace:*"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.30.1",

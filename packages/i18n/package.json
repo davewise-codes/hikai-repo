@@ -1,0 +1,14 @@
+{
+	"name": "@hikai/i18n",
+	"version": "0.0.0",
+	"main": "src/index.ts",
+	"private": true,
+	"dependencies": {
+		"i18next": "^23.16.8",
+		"react-i18next": "^13.5.0",
+		"@hikai/typescript-config": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/i18next": "^13.0.0"
+	}
+}
