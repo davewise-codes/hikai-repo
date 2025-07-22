@@ -11,6 +11,7 @@ Este repositorio contiene una configuración base para proyectos web modernos ba
 - [Tailwind CSS](https://tailwindcss.com/) + [ShadCN UI](https://ui.shadcn.dev/) para UI
 - [i18next](https://www.i18next.com/) para internacionalización
 - ESLint (Flat config) + Prettier
+- [Vitest](https://vitest.dev) para tests unitarios
 
 ## 📁 Estructura
 
@@ -41,9 +42,23 @@ pnpm turbo run build --filter=@hikai/i18n   # Compila sólo un paquete
 ```bash
 cd packages/i18n
 pnpm build                   # Compila ese package con tsc -b
+
+cd packages/ui
+pnpm test                    # Ejecuta los tests unitarios con Vitest
 ```
 
 > Los paquetes están configurados para compilar usando `tsc --build`, lo que permite builds incrementales.
+
+## 🧪 Tests con Vitest
+
+Los paquetes pueden incluir tests unitarios usando [Vitest](https://vitest.dev).
+
+```bash
+cd packages/ui
+pnpm test                    # Ejecuta los tests en modo watch
+```
+
+Cada paquete puede definir su propio `vitest.config.ts`. El archivo de setup global (`setup.ts`) puede importar matchers como `@testing-library/jest-dom`.
 
 ## 🧱 Crear una nueva app
 
@@ -116,15 +131,16 @@ mkdir -p packages/mi-paquete/src
 - ✅ Paquetes: `ui`, `i18n`, `typescript-config`, `tailwind-config`
 - ✅ Build por paquete con `tsc -b`
 - ✅ Lint y formato unificados
+- ✅ Tests unitarios funcionando con Vitest en `@hikai/ui`
 
 ## 🧪 Próximos pasos
 
-- Configurar tests:
-  - `Vitest` para tests unitarios
-  - `Cypress` para E2E (en apps)
+- Añadir tests en `@hikai/i18n` u otros packages
+- Configurar `Cypress` para E2E (en apps)
 - Eliminar app `admin` si ya no es necesaria
 - Añadir scripts de CI/CD si el repo se despliega
 
 ---
 
-_Este monorepo está pensado como plantilla base reutilizable para cualquier proyecto web moderno._
+*Este monorepo está pensado como plantilla base reutilizable para cualquier proyecto web moderno.*
+

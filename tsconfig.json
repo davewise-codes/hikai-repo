@@ -1,0 +1,6 @@
+{
+	"compilerOptions": {
+		"types": ["vitest"]
+	},
+	"include": ["vitest.config.ts"]
+}

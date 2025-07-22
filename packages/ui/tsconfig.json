@@ -6,7 +6,8 @@
 		"declarationMap": true,
 		"emitDeclarationOnly": true,
 		"outDir": "dist",
-		"noEmit": false
+		"noEmit": false,
+		"types": ["vitest"]
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"]
 }

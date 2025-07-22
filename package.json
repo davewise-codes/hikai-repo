@@ -16,19 +16,29 @@
 		"format:check": "prettier --check ."
 	},
 	"devDependencies": {
-		"turbo": "^2.5.5",
-		"prettier": "3.6.2",
+		"@eslint/css": "^0.10.0",
+		"@eslint/js": "^9.31.0",
+		"@eslint/json": "^0.13.0",
+		"@testing-library/jest-dom": "^6.6.3",
+		"@testing-library/react": "^16.3.0",
+		"@types/react": "^19.1.8",
+		"@types/react-dom": "^19.1.6",
+		"@typescript-eslint/eslint-plugin": "^8.37.0",
+		"@typescript-eslint/parser": "^8.37.0",
 		"eslint": "^9.31.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-import": "^2.32.0",
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^5.2.0",
-		"@eslint/js": "^9.31.0",
-		"@eslint/css": "^0.10.0",
-		"@eslint/json": "^0.13.0",
-		"@typescript-eslint/eslint-plugin": "^8.37.0",
-		"@typescript-eslint/parser": "^8.37.0",
 		"globals": "^16.3.0",
-		"typescript-eslint": "^8.37.0"
+		"jsdom": "^26.1.0",
+		"prettier": "3.6.2",
+		"turbo": "^2.5.5",
+		"typescript-eslint": "^8.37.0",
+		"vitest": "^3.2.4"
+	},
+	"dependencies": {
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1"
 	}
 }
