@@ -3,7 +3,9 @@
 	"compilerOptions": {
 		"resolveJsonModule": true,
 		"esModuleInterop": true,
-		"outDir": "dist"
+		"outDir": "dist",
+		"composite": true,
+		"noEmit": false
 	},
-	"include": ["src"]
+	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"]
 }

@@ -4,6 +4,7 @@
 		"module": "ESNext",
 		"strict": true,
 		"jsx": "react-jsx",
+		"resolveJsonModule": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
