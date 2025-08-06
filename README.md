@@ -18,6 +18,7 @@ Este repositorio contiene una configuración base para proyectos web modernos ba
 ```
 apps/
   admin/                # App de ejemplo (vite+react)
+  web/                  # App mínima (vite+react) desplegada en producción
 packages/
   ui/                   # Componentes compartidos (tailwind + shadcn)
   i18n/                 # Configuración y recursos i18n
@@ -71,23 +72,23 @@ Luego actualiza su `tsconfig.json`:
 
 ```json
 {
-  "extends": "@hikai/typescript-config/base",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
-  "include": ["src"]
+	"extends": "@hikai/typescript-config/base",
+	"compilerOptions": {
+		"outDir": "dist"
+	},
+	"include": ["src"]
 }
 ```
 
 Y añade su `tailwind.config.ts`:
 
 ```ts
-import base from "@hikai/tailwind-config/tailwind.config"
+import base from "@hikai/tailwind-config/tailwind.config";
 
 export default {
-  ...base,
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"]
-}
+	...base,
+	content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+};
 ```
 
 ## 🧱 Crear un nuevo package
@@ -100,13 +101,13 @@ mkdir -p packages/mi-paquete/src
 
 ```json
 {
-  "name": "@hikai/mi-paquete",
-  "version": "0.0.0",
-  "private": true,
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc -b"
-  }
+	"name": "@hikai/mi-paquete",
+	"version": "0.0.0",
+	"private": true,
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc -b"
+	}
 }
 ```
 
@@ -114,15 +115,26 @@ mkdir -p packages/mi-paquete/src
 
 ```json
 {
-  "extends": "@hikai/typescript-config/base",
-  "compilerOptions": {
-    "composite": true,
-    "noEmit": false,
-    "outDir": "dist"
-  },
-  "include": ["src"]
+	"extends": "@hikai/typescript-config/base",
+	"compilerOptions": {
+		"composite": true,
+		"noEmit": false,
+		"outDir": "dist"
+	},
+	"include": ["src"]
 }
 ```
+
+## 🌐 Deploy
+
+La app `apps/web` está desplegada en producción con Vercel:
+
+🔗 https://hikai-xxxxxx.vercel.app _(actualizar si cambia)_
+
+Puedes desplegar manualmente con:
+
+```bash
+pnpm dlx vercel --prod
 
 ## ✅ Estado actual del repo
 
@@ -142,5 +154,5 @@ mkdir -p packages/mi-paquete/src
 
 ---
 
-*Este monorepo está pensado como plantilla base reutilizable para cualquier proyecto web moderno.*
-
+_Este monorepo está pensado como plantilla base reutilizable para cualquier proyecto web moderno._
+```

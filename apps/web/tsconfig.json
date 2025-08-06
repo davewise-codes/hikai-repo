@@ -1,7 +1,9 @@
 {
 	"extends": "@hikai/typescript-config/base",
 	"compilerOptions": {
-		"outDir": "dist"
+		"outDir": "dist",
+		"jsx": "react-jsx",
+		"lib": ["ESNext", "DOM"]
 	},
-	"include": ["src"]
+	"include": ["src/**/*.tsx", "src/**/*.ts"]
 }

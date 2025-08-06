@@ -130,6 +130,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@hikai/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
       react:
         specifier: ^19.1.0
         version: 19.1.0
