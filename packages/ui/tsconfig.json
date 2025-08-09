@@ -7,7 +7,11 @@
 		"emitDeclarationOnly": true,
 		"outDir": "dist",
 		"noEmit": false,
-		"types": ["vitest"]
+		"types": ["vitest"],
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		}
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"]
 }
