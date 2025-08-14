@@ -1,7 +1,0 @@
-{
-	"extends": "@hikai/typescript-config/base",
-	"compilerOptions": {
-		"outDir": "./dist"
-	},
-	"include": ["src/**/*.tsx", "src/**/*.ts"]
-}
