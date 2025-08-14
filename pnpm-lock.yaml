@@ -133,6 +133,9 @@ importers:
       '@hikai/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@hikai/tailwind-config':
+        specifier: workspace:*
+        version: link:../../packages/tailwind-config
       '@hikai/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
@@ -205,13 +208,20 @@ importers:
         specifier: ^13.0.0
         version: 13.0.0
 
+  packages/tailwind-config:
+    dependencies:
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@3.4.17)
+    devDependencies:
+      tailwindcss:
+        specifier: ^3.4.10
+        version: 3.4.17
+
   packages/typescript-config: {}
 
   packages/ui:
     dependencies:
-      '@hikai/i18n':
-        specifier: workspace:*
-        version: link:../i18n
       '@hikai/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -240,6 +250,9 @@ importers:
         specifier: ^1.0.7
         version: 1.0.7(tailwindcss@3.4.17)
     devDependencies:
+      '@hikai/tailwind-config':
+        specifier: workspace:*
+        version: link:../tailwind-config
       '@types/node':
         specifier: ^24.2.0
         version: 24.2.0

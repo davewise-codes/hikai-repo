@@ -3,7 +3,6 @@
 	"version": "0.0.0",
 	"private": true,
 	"dependencies": {
-		"@hikai/i18n": "workspace:*",
 		"@hikai/typescript-config": "workspace:*",
 		"@radix-ui/react-slot": "^1.2.3",
 		"@tailwindcss/vite": "^4.1.11",
@@ -14,6 +13,7 @@
 		"tailwindcss-animate": "^1.0.7"
 	},
 	"devDependencies": {
+		"@hikai/tailwind-config": "workspace:*",
 		"@types/node": "^24.2.0",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
@@ -28,7 +28,8 @@
 		"react-dom": "^18.3.1"
 	},
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./tailwind.config": "./tailwind.config.ts"
 	},
 	"main": "src/index.ts",
 	"scripts": {

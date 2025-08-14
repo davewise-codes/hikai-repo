@@ -1,0 +1,21 @@
+{
+	"name": "@hikai/tailwind-config",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./index.js"
+	},
+	"files": [
+		"index.js"
+	],
+	"peerDependencies": {
+		"tailwindcss": ">=3.4 <5"
+	},
+	"devDependencies": {
+		"tailwindcss": "^3.4.10"
+	},
+	"dependencies": {
+		"tailwindcss-animate": "^1.0.7"
+	}
+}
