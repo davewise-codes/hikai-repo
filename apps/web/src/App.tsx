@@ -1,3 +1,6 @@
+import { useTranslation } from "@hikai/i18n";
+
 export default function App() {
-  return <div>Marketing placeholder</div>;
+  const { t } = useTranslation();
+  return <div>{t("placeholder")}</div>;
 }
