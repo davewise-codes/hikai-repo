@@ -1,4 +1,4 @@
-/* apps/web/src/index.css o globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import "@hikai/ui/styles/globals.css";
