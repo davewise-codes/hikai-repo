@@ -1,4 +1,23 @@
 {
-	"greeting": "Hello from admin",
-	"placeholder": "Marketing placeholder"
+        "greeting": "Hello from admin",
+        "placeholder": "Marketing placeholder",
+        "nav": {
+                "features": "Features",
+                "waitlist": "Waitlist"
+        },
+        "hero": {
+                "title": "Placeholder title",
+                "subtitle": "Placeholder subtitle",
+                "cta": "Join waitlist"
+        },
+        "features": {
+                "title": "Features",
+                "item1": "Feature 1 placeholder",
+                "item2": "Feature 2 placeholder",
+                "item3": "Feature 3 placeholder"
+        },
+        "waitlist": {
+                "title": "Join our waitlist",
+                "cta": "Join now"
+        }
 }

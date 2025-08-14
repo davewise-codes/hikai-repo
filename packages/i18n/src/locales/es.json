@@ -1,4 +1,23 @@
 {
-	"greeting": "Hola desde admin",
-	"placeholder": "Marcador de posición de marketing"
+        "greeting": "Hola desde admin",
+        "placeholder": "Marcador de posición de marketing",
+        "nav": {
+                "features": "Características",
+                "waitlist": "Lista de espera"
+        },
+        "hero": {
+                "title": "Título de marcador de posición",
+                "subtitle": "Subtítulo de marcador de posición",
+                "cta": "Unirse a la lista de espera"
+        },
+        "features": {
+                "title": "Características",
+                "item1": "Característica 1 de marcador de posición",
+                "item2": "Característica 2 de marcador de posición",
+                "item3": "Característica 3 de marcador de posición"
+        },
+        "waitlist": {
+                "title": "Únete a nuestra lista de espera",
+                "cta": "Únete ahora"
+        }
 }
