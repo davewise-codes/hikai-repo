@@ -4,7 +4,7 @@ import {
 	DropdownMenuTrigger,
 	DropdownMenuContent,
 	DropdownMenuItem,
-} from "@repo/ui";
+} from "@hikai/ui";
 
 export function Header() {
 	return (
