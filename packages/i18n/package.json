@@ -8,8 +8,15 @@
 		"react-i18next": "^13.5.0",
 		"@hikai/typescript-config": "workspace:*"
 	},
-	"devDependencies": {
-		"@types/i18next": "^13.0.0"
+	"devDependencies": {},
+	"peerDependencies": {
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1"
+	},
+	"exports": {
+		".": "./src/server.ts",
+		"./server": "./src/server.ts",
+		"./client": "./src/client.ts"
 	},
 	"scripts": {
 		"build": "tsc -b"

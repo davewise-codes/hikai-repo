@@ -1,3 +1,5 @@
+"use client";
+
 import {
 	NavigationMenu,
 	NavigationMenuList,
@@ -5,7 +7,7 @@ import {
 	NavigationMenuLink,
 	navigationMenuTriggerStyle,
 } from "@hikai/ui";
-import { useTranslation } from "@hikai/i18n";
+import { useTranslation } from "@hikai/i18n/client";
 
 export function Navbar() {
 	const { t } = useTranslation();
