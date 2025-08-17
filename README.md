@@ -34,6 +34,7 @@ packages/
 pnpm install                 # Instala todas las dependencias del monorepo
 pnpm dev                     # Inicia todas las apps en modo desarrollo
 pnpm lint                    # Ejecuta el linter en todo el monorepo
+pnpm i18n:check              # Verifica llaves faltantes/extra en las traducciones
 pnpm turbo run build         # Compila todos los paquetes/apps
 pnpm turbo run build --filter=@hikai/i18n   # Compila sólo un paquete
 ```
@@ -49,6 +50,12 @@ pnpm test                    # Ejecuta los tests unitarios con Vitest
 ```
 
 > Los paquetes están configurados para compilar usando `tsc --build`, lo que permite builds incrementales.
+
+## 🌍 Añadir o actualizar traducciones
+
+1. Las traducciones viven en `packages/i18n/locales/` como archivos `*.json`.
+2. Duplica `en.json` para crear un nuevo idioma y mantiene la misma estructura de llaves.
+3. Ejecuta `pnpm i18n:check` para verificar que no falten o sobren llaves antes de commitear.
 
 ## 🧪 Tests con Vitest
 
