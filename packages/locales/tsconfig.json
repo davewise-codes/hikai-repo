@@ -1,0 +1,12 @@
+{
+  "extends": "@hikai/typescript-config/base",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
+    "noEmit": false
+  },
+  "include": ["**/*.ts", "**/*.json"]
+}
