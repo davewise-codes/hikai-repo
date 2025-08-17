@@ -5,6 +5,7 @@
   "private": true,
   "dependencies": {
     "i18next": "^23.16.8",
+    "react-i18next": "^15.6.1",
     "@hikai/typescript-config": "workspace:*"
   },
   "peerDependencies": {

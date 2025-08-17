@@ -8,7 +8,14 @@ export interface I18nConfig {
 
 export type Translations = Resource;
 
-export function initI18n(config: I18nConfig, translations: Translations) {
+/**
+ * Load dictionaries and initialise the i18next instance. This function is
+ * environment agnostic and can be used from Node/CLI applications.
+ */
+export function loadDictionaries(
+  config: I18nConfig,
+  translations: Translations,
+) {
   if (!i18n.isInitialized) {
     void i18n.init({
       fallbackLng: config.fallbackLng,
@@ -20,6 +27,9 @@ export function initI18n(config: I18nConfig, translations: Translations) {
     });
   }
 }
+
+// Backwards compatibility
+export const initI18n = loadDictionaries;
 
 export function setLanguage(lang: string) {
   const supported = i18n.options?.supportedLngs || [];
@@ -35,8 +45,11 @@ export function setLanguage(lang: string) {
   }
 }
 
-export function getTranslation(key: string, options?: Record<string, unknown>) {
+export function t(key: string, options?: Record<string, unknown>) {
   return i18n.t(key, options);
 }
+
+// Backwards compatibility
+export const getTranslation = t;
 
 export { i18n };
