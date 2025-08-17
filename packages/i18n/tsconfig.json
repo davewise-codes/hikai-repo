@@ -7,5 +7,5 @@
                 "composite": true,
                 "noEmit": false
         },
-        "include": ["core/**/*.ts"]
+        "include": ["core/**/*.ts", "react/**/*.tsx"]
 }
