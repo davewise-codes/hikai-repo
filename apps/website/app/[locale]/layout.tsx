@@ -20,14 +20,8 @@ export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
 
-export default async function LocaleLayout({
-  children,
-  params,
-}: {
-  children: ReactNode;
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
+export default async function LocaleLayout({ children, params }: { children: ReactNode; params: { locale: string } }) {
+  const { locale } = params;
 
   let messages;
   try {
