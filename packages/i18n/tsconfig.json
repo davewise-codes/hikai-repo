@@ -1,11 +1,11 @@
 {
-	"extends": "@hikai/typescript-config/base",
-	"compilerOptions": {
-		"resolveJsonModule": true,
-		"esModuleInterop": true,
-		"outDir": "dist",
-		"composite": true,
-		"noEmit": false
-	},
-	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.json"]
+        "extends": "@hikai/typescript-config/base",
+        "compilerOptions": {
+                "resolveJsonModule": true,
+                "esModuleInterop": true,
+                "outDir": "dist",
+                "composite": true,
+                "noEmit": false
+        },
+        "include": ["core/**/*.ts"]
 }
