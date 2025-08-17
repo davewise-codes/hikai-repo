@@ -1,10 +1,8 @@
-import { loadDictionaries } from "@hikai/i18n";
-import en from "@hikai/locales/website/en.json";
-import es from "@hikai/locales/website/es.json";
+import { getRequestConfig } from "next-intl/server";
 
-loadDictionaries(
-  { fallbackLng: "en", supportedLngs: ["en", "es"], defaultNS: "website" },
-  { en: { website: en }, es: { website: es } }
-);
+export default getRequestConfig(async ({ locale }) => ({
+  messages: (await import(`./messages/${locale}.json`)).default,
+}));
 
-export {};
+export const locales = ["en", "es"];
+export const defaultLocale = "en";

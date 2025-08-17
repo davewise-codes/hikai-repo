@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@hikai/ui";
-import { useTranslation } from "@hikai/i18n/client";
+import { useTranslations } from "next-intl";
 
 export function Hero() {
-	const { t } = useTranslation();
+        const t = useTranslations();
 
 	return (
 		<section className="py-20 text-center">
