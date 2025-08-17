@@ -1,0 +1,21 @@
+{
+  "nav": {
+    "features": "Características",
+    "waitlist": "Lista de espera"
+  },
+  "hero": {
+    "title": "Destácate con IA",
+    "subtitle": "Administrador de contenido SEO impulsado por agentes de IA.",
+    "cta": "Unirse a la lista"
+  },
+  "features": {
+    "title": "Características",
+    "item1": "Planificación de contenido",
+    "item2": "Optimización SEO",
+    "item3": "Analítica"
+  },
+  "waitlist": {
+    "title": "Únete a la lista de espera",
+    "cta": "Regístrate"
+  }
+}

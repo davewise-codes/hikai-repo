@@ -9,12 +9,12 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
-		"@hikai/ui": "workspace:*",
-		"@hikai/i18n": "workspace:*",
-		"react": "19.1.0",
-		"react-dom": "19.1.0",
-		"next": "15.4.6"
-	},
+                "@hikai/ui": "workspace:*",
+                "react": "19.1.0",
+                "react-dom": "19.1.0",
+                "next": "15.4.6",
+                "next-intl": "^3.23.0"
+        },
 	"devDependencies": {
 		"@hikai/tailwind-config": "workspace:*",
 		"typescript": "^5",

@@ -1,0 +1,21 @@
+{
+  "nav": {
+    "features": "Features",
+    "waitlist": "Waitlist"
+  },
+  "hero": {
+    "title": "Stand out with AI",
+    "subtitle": "SEO content manager powered by AI agents.",
+    "cta": "Join waitlist"
+  },
+  "features": {
+    "title": "Features",
+    "item1": "Content planning",
+    "item2": "SEO optimization",
+    "item3": "Analytics"
+  },
+  "waitlist": {
+    "title": "Join the waitlist",
+    "cta": "Sign up"
+  }
+}

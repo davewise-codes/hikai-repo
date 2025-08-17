@@ -1,16 +1,16 @@
 "use client";
 
 import {
-	NavigationMenu,
-	NavigationMenuList,
-	NavigationMenuItem,
-	NavigationMenuLink,
-	navigationMenuTriggerStyle,
+        NavigationMenu,
+        NavigationMenuList,
+        NavigationMenuItem,
+        NavigationMenuLink,
+        navigationMenuTriggerStyle,
 } from "@hikai/ui";
-import { useTranslation } from "@hikai/i18n/client";
+import { useTranslations } from "next-intl";
 
 export function Navbar() {
-	const { t } = useTranslation();
+        const t = useTranslations();
 
 	return (
 		<nav className="p-4 flex justify-center">

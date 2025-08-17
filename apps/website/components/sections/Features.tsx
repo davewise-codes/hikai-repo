@@ -1,9 +1,9 @@
 "use client";
 
-import { useTranslation } from "@hikai/i18n/client";
+import { useTranslations } from "next-intl";
 
 export function Features() {
-	const { t } = useTranslation();
+        const t = useTranslations();
 
 	return (
 		<section id="features" className="py-20">
