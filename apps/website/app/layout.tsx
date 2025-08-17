@@ -15,19 +15,20 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-	children,
+        children,
+        params,
 }: {
-	children: React.ReactNode;
+        children: React.ReactNode;
+        params: { lang?: string };
 }) {
-	return (
-		<html lang="en">
-			{" "}
-			{/* fallback; ver i18n en [lang]/layout.tsx */}
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-			>
-				{children}
-			</body>
-		</html>
-	);
+        return (
+                <html lang={params.lang ?? "en"}>
+                        {/* fallback; ver i18n en [lang]/layout.tsx */}
+                        <body
+                                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                        >
+                                {children}
+                        </body>
+                </html>
+        );
 }
