@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import I18nProvider from "@/components/I18nProvider";
+import { I18nProvider } from "@hikai/i18n/react";
 import { setLanguage as syncLanguage } from "@hikai/i18n";
 
 const SUPPORTED_LANGS = ["en", "es"] as const;
