@@ -1,7 +1,7 @@
 {
   "name": "@hikai/i18n",
   "version": "0.0.0",
-  "main": "core/index.ts",
+  "main": "index.ts",
   "private": true,
   "dependencies": {
     "i18next": "^23.16.8",
@@ -9,15 +9,13 @@
     "@hikai/typescript-config": "workspace:*"
   },
   "peerDependencies": {
-    "react": "^18 || ^19"
+    "react": "^19.1.1"
   },
-  "devDependencies": {
-    "typescript": "^5.8.3"
-  },
+  "devDependencies": {},
   "exports": {
-    ".": "./core/index.ts",
+    ".": "./index.ts",
     "./core": "./core/index.ts",
-    "./react": "./react/index.tsx"
+    "./react": "./react/index.ts"
   },
   "scripts": {
     "build": "tsc -b"
