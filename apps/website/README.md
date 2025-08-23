@@ -33,7 +33,7 @@ Configuración base de Tailwind CSS que incluye:
 src/
 ├── app/
 │   ├── [locale]/           # Rutas dinámicas por idioma
-│   │   ├── layout.tsx      # Layout principal + i18n
+│   │   ├── layout.tsx      # Layout principal + i18n + importación de estilos
 │   │   └── page.tsx        # Página principal
 │   ├── favicon.ico
 │   └── globals.css         # Estilos globales + Tailwind + variables del tema
@@ -41,14 +41,14 @@ src/
 │   ├── hero-section.tsx    # Sección hero usando Button de @hikai/ui
 │   ├── how-section.tsx     # Sección "cómo" usando Alert de @hikai/ui
 │   └── navigation-bar.tsx  # Navegación usando NavigationMenu de @hikai/ui
-└── i18n/                   # Configuración de internacionalización
-    ├── navigation.ts
-    ├── request.ts
-    └── routing.ts
+├── i18n/                   # Configuración de internacionalización
+│   ├── navigation.ts
+│   ├── request.ts          # Configuración de traducciones
+│   └── routing.ts
+└── middleware.ts           # Middleware de next-intl para routing
 messages/                   # Traducciones
 ├── en.json
 └── es.json
-middleware.ts              # Middleware de next-intl
 ```
 
 ## Configuración
@@ -99,10 +99,30 @@ pnpm dev
 pnpm build
 ```
 
-### Linting
+### Linting y Formateo
+El proyecto usa ESLint y Prettier para mantener la calidad del código:
+
 ```bash
+# Ejecutar linting
 pnpm lint
+
+# Arreglar errores de linting automáticamente
+pnpm lint:fix
+
+# Formatear código con Prettier
+pnpm format
+
+# Verificar formato
+pnpm format:check
+
+# Verificar traducciones i18n
+pnpm i18n:check
 ```
+
+**Configuración de ESLint:**
+- Extends: `next/core-web-vitals`, `next/typescript`
+- Integrado con Prettier (`eslint-config-prettier`)
+- Ignora: `node_modules`, `.next`, `out`, `build`
 
 ## Uso de Componentes UI
 
@@ -131,9 +151,10 @@ export function MyComponent() {
 ## Internacionalización
 
 El sitio soporta múltiples idiomas usando next-intl:
-- Rutas: `/en/...` y `/es/...`
-- Traducciones en `messages/en.json` y `messages/es.json`
-- Configuración en `src/i18n/`
+- **Rutas**: `/en/...` y `/es/...` (configuradas en `src/middleware.ts`)
+- **Traducciones**: `messages/en.json` y `messages/es.json`
+- **Configuración**: `src/i18n/routing.ts` y `src/i18n/request.ts`
+- **Middleware**: `src/middleware.ts` maneja el routing automático por locale
 
 ### Usar traducciones
 ```tsx

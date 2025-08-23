@@ -1,7 +1,0 @@
-{
-  "name": "@hikai/locales",
-  "version": "0.0.0",
-  "private": true,
-  "type": "module",
-  "main": "index.ts"
-}
