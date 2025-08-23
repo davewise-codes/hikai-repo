@@ -1,21 +1,19 @@
 {
-  "nav": {
-    "features": "Características",
-    "waitlist": "Lista de espera"
-  },
-  "hero": {
-    "title": "Destácate con IA",
-    "subtitle": "Administrador de contenido SEO impulsado por agentes de IA.",
-    "cta": "Unirse a la lista"
-  },
-  "features": {
-    "title": "Características",
-    "item1": "Planificación de contenido",
-    "item2": "Optimización SEO",
-    "item3": "Analítica"
-  },
-  "waitlist": {
-    "title": "Únete a la lista de espera",
-    "cta": "Regístrate"
-  }
+	"Nav": {
+		"home": "Inicio",
+		"how": "Cómo"
+	},
+	"HomePage": {
+		"hero": {
+			"title": "Título del Hero",
+			"subtitle": "Subtítulo atractivo para captar la atención",
+			"cta": "Llamada a la acción"
+		},
+		"how": {
+			"title": "Cómo funciona",
+			"step1": "Paso 1: Haz algo",
+			"step2": "Paso 2: Haz otra cosa",
+			"step3": "Paso 3: Disfruta el resultado"
+		}
+	}
 }

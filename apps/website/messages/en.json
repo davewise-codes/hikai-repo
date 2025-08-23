@@ -1,21 +1,19 @@
 {
-  "nav": {
-    "features": "Features",
-    "waitlist": "Waitlist"
-  },
-  "hero": {
-    "title": "Stand out with AI",
-    "subtitle": "SEO content manager powered by AI agents.",
-    "cta": "Join waitlist"
-  },
-  "features": {
-    "title": "Features",
-    "item1": "Content planning",
-    "item2": "SEO optimization",
-    "item3": "Analytics"
-  },
-  "waitlist": {
-    "title": "Join the waitlist",
-    "cta": "Sign up"
-  }
+	"Nav": {
+		"home": "Home",
+		"how": "How"
+	},
+	"HomePage": {
+		"hero": {
+			"title": "Hero Title",
+			"subtitle": "This is the hero subtitle. Attractive, yet proffesional",
+			"cta": "This is the cta"
+		},
+		"how": {
+			"title": "How works",
+			"step1": "Step 1: Do something",
+			"step2": "Step 2: And something else",
+			"step3": "Step 3: enjoy the result"
+		}
+	}
 }

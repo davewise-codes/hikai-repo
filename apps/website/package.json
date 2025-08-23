@@ -6,25 +6,26 @@
 		"dev": "next dev",
 		"build": "next build",
 		"start": "next start",
-		"lint": "next lint"
+		"lint": "eslint"
 	},
 	"dependencies": {
+		"@hikai/tailwind-config": "workspace:*",
 		"@hikai/ui": "workspace:*",
-		"next": "15.4.6",
-		"next-intl": "^3.26.5",
+		"next": "15.5.0",
+		"next-intl": "^4.3.5",
 		"react": "19.1.0",
 		"react-dom": "19.1.0"
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",
-		"@hikai/tailwind-config": "workspace:*",
-		"@tailwindcss/postcss": "^4",
 		"@types/node": "^20",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
+		"autoprefixer": "^10.4.20",
 		"eslint": "^9",
-		"eslint-config-next": "15.4.6",
-		"tailwindcss": "^4",
+		"eslint-config-next": "15.5.0",
+		"postcss": "^8.4.49",
+		"tailwindcss": "^3.4.17",
 		"typescript": "^5"
 	}
 }

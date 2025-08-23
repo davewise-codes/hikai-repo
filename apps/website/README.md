@@ -1,36 +1,157 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Website - Hikai Marketing Site
 
-## Getting Started
+Sitio web de marketing construido con Next.js 15, usando los paquetes centrales del monorepo para componentes UI y configuración de estilos.
 
-First, run the development server:
+## Arquitectura
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+Este proyecto utiliza:
+- **Next.js 15** con App Router
+- **Internacionalización** con next-intl (español/inglés)
+- **Componentes UI** desde `@hikai/ui`
+- **Configuración de Tailwind** desde `@hikai/tailwind-config`
+- **TypeScript** para type safety
+
+## Paquetes Centrales
+
+### `@hikai/ui`
+Proporciona todos los componentes de UI reutilizables:
+- `Button` - Botón con múltiples variantes
+- `Alert` / `AlertDescription` - Componentes de alerta
+- `NavigationMenu` / `NavigationMenuItem` / `NavigationMenuLink` - Navegación
+- Estilos globales con variables CSS del sistema de diseño
+
+### `@hikai/tailwind-config`
+Configuración base de Tailwind CSS que incluye:
+- Sistema de colores personalizado usando variables CSS
+- Configuración de border radius, spacing, etc.
+- Soporte para modo oscuro
+- Plugin tailwindcss-animate
+
+## Estructura del Proyecto
+
+```
+src/
+├── app/
+│   ├── [locale]/           # Rutas dinámicas por idioma
+│   │   ├── layout.tsx      # Layout principal + i18n
+│   │   └── page.tsx        # Página principal
+│   ├── favicon.ico
+│   └── globals.css         # Estilos globales + Tailwind + variables del tema
+├── components/
+│   ├── hero-section.tsx    # Sección hero usando Button de @hikai/ui
+│   ├── how-section.tsx     # Sección "cómo" usando Alert de @hikai/ui
+│   └── navigation-bar.tsx  # Navegación usando NavigationMenu de @hikai/ui
+└── i18n/                   # Configuración de internacionalización
+    ├── navigation.ts
+    ├── request.ts
+    └── routing.ts
+messages/                   # Traducciones
+├── en.json
+└── es.json
+middleware.ts              # Middleware de next-intl
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuración
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Next.js (`next.config.ts`)
+```typescript
+const nextConfig: NextConfig = {
+  transpilePackages: ['@hikai/ui', '@hikai/tailwind-config'],
+};
+```
+- `transpilePackages`: Permite a Next.js transpilar los paquetes del workspace
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Tailwind (`tailwind.config.js`)
+```javascript
+export default {
+  content: [
+    "./src/**/*.{ts,tsx}",
+    "../../packages/ui/src/**/*.{ts,tsx}",
+  ],
+  presets: [preset], // Usa el preset de @hikai/tailwind-config
+};
+```
 
-## Learn More
+### PostCSS (`postcss.config.js`)
+```javascript
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Desarrollo
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Instalar dependencias
+```bash
+pnpm install
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Servidor de desarrollo
+```bash
+pnpm dev
+```
 
-## Deploy on Vercel
+### Build de producción
+```bash
+pnpm build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Linting
+```bash
+pnpm lint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Uso de Componentes UI
+
+Los componentes de `@hikai/ui` están disponibles para importar directamente:
+
+```tsx
+import { Button, Alert, AlertDescription, NavigationMenu } from "@hikai/ui";
+
+export function MyComponent() {
+  return (
+    <>
+      <Button variant="default" size="lg">
+        Mi Botón
+      </Button>
+      
+      <Alert>
+        <AlertDescription>
+          Mensaje de alerta
+        </AlertDescription>
+      </Alert>
+    </>
+  );
+}
+```
+
+## Internacionalización
+
+El sitio soporta múltiples idiomas usando next-intl:
+- Rutas: `/en/...` y `/es/...`
+- Traducciones en `messages/en.json` y `messages/es.json`
+- Configuración en `src/i18n/`
+
+### Usar traducciones
+```tsx
+import { useTranslations } from "next-intl";
+
+export function MyComponent() {
+  const t = useTranslations("HomePage");
+  
+  return <h1>{t("hero.title")}</h1>;
+}
+```
+
+## Variables de Tema
+
+Los estilos usan variables CSS definidas en `globals.css`:
+- `--primary`, `--secondary`, `--accent`
+- `--background`, `--foreground`
+- `--border`, `--input`, `--ring`
+- Soporte completo para modo oscuro
+
+Estas variables son consumidas por los componentes de `@hikai/ui` automáticamente.

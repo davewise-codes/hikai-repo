@@ -3,12 +3,8 @@ import preset from "@hikai/tailwind-config";
 
 export default {
 	content: [
-		"./index.html",
-		"./src/**/*.{ts,tsx}", // los componentes de ui
-		"../../packages/ui/src/**/*.{ts,tsx}",
+		"./src/**/*.{ts,tsx}", // la app website
+		"../../packages/ui/src/**/*.{ts,tsx}", // los componentes del UI
 	],
 	presets: [preset],
-	theme: {
-		extend: {},
-	},
 };
