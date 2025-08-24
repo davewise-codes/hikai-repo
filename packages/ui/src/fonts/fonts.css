@@ -1,0 +1,10 @@
+/* Theme fonts loaded from Google Fonts CDN */
+
+/* Inter - Sans serif font for UI and body text */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* Playfair Display - Serif font for headings and elegant text */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap');
+
+/* JetBrains Mono - Monospace font for code and technical content */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap');

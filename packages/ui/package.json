@@ -37,6 +37,11 @@
 	"sideEffects": [
 		"**/*.css"
 	],
+	"files": [
+		"src/**/*",
+		"tailwind.config.js",
+		"*.md"
+	],
 	"main": "src/index.ts",
 	"scripts": {
 		"build": "tsc -b",

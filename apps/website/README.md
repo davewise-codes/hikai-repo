@@ -5,6 +5,7 @@ Sitio web de marketing construido con Next.js 15, usando los paquetes centrales 
 ## Arquitectura
 
 Este proyecto utiliza:
+
 - **Next.js 15** con App Router
 - **Internacionalización** con next-intl (español/inglés)
 - **Componentes UI** desde `@hikai/ui`
@@ -14,14 +15,19 @@ Este proyecto utiliza:
 ## Paquetes Centrales
 
 ### `@hikai/ui`
-Proporciona todos los componentes de UI reutilizables:
+
+Proporciona todos los componentes de UI reutilizables de shadcn, como por ejemplo:
+
 - `Button` - Botón con múltiples variantes
 - `Alert` / `AlertDescription` - Componentes de alerta
 - `NavigationMenu` / `NavigationMenuItem` / `NavigationMenuLink` - Navegación
+- Componentes adicionales de ui deben instalarse primero en packages/ui
 - Estilos globales con variables CSS del sistema de diseño
 
 ### `@hikai/tailwind-config`
+
 Configuración base de Tailwind CSS que incluye:
+
 - Sistema de colores personalizado usando variables CSS
 - Configuración de border radius, spacing, etc.
 - Soporte para modo oscuro
@@ -54,52 +60,57 @@ messages/                   # Traducciones
 ## Configuración
 
 ### Next.js (`next.config.ts`)
+
 ```typescript
 const nextConfig: NextConfig = {
-  transpilePackages: ['@hikai/ui', '@hikai/tailwind-config'],
+	transpilePackages: ["@hikai/ui", "@hikai/tailwind-config"],
 };
 ```
+
 - `transpilePackages`: Permite a Next.js transpilar los paquetes del workspace
 
 ### Tailwind (`tailwind.config.js`)
+
 ```javascript
 export default {
-  content: [
-    "./src/**/*.{ts,tsx}",
-    "../../packages/ui/src/**/*.{ts,tsx}",
-  ],
-  presets: [preset], // Usa el preset de @hikai/tailwind-config
+	content: ["./src/**/*.{ts,tsx}", "../../packages/ui/src/**/*.{ts,tsx}"],
+	presets: [preset], // Usa el preset de @hikai/tailwind-config
 };
 ```
 
 ### PostCSS (`postcss.config.js`)
+
 ```javascript
 module.exports = {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
+	plugins: {
+		tailwindcss: {},
+		autoprefixer: {},
+	},
 };
 ```
 
 ## Desarrollo
 
 ### Instalar dependencias
+
 ```bash
 pnpm install
 ```
 
 ### Servidor de desarrollo
+
 ```bash
 pnpm dev
 ```
 
 ### Build de producción
+
 ```bash
 pnpm build
 ```
 
 ### Linting y Formateo
+
 El proyecto usa ESLint y Prettier para mantener la calidad del código:
 
 ```bash
@@ -120,6 +131,7 @@ pnpm i18n:check
 ```
 
 **Configuración de ESLint:**
+
 - Extends: `next/core-web-vitals`, `next/typescript`
 - Integrado con Prettier (`eslint-config-prettier`)
 - Ignora: `node_modules`, `.next`, `out`, `build`
@@ -132,44 +144,45 @@ Los componentes de `@hikai/ui` están disponibles para importar directamente:
 import { Button, Alert, AlertDescription, NavigationMenu } from "@hikai/ui";
 
 export function MyComponent() {
-  return (
-    <>
-      <Button variant="default" size="lg">
-        Mi Botón
-      </Button>
-      
-      <Alert>
-        <AlertDescription>
-          Mensaje de alerta
-        </AlertDescription>
-      </Alert>
-    </>
-  );
+	return (
+		<>
+			<Button variant="default" size="lg">
+				Mi Botón
+			</Button>
+
+			<Alert>
+				<AlertDescription>Mensaje de alerta</AlertDescription>
+			</Alert>
+		</>
+	);
 }
 ```
 
 ## Internacionalización
 
 El sitio soporta múltiples idiomas usando next-intl:
+
 - **Rutas**: `/en/...` y `/es/...` (configuradas en `src/middleware.ts`)
 - **Traducciones**: `messages/en.json` y `messages/es.json`
 - **Configuración**: `src/i18n/routing.ts` y `src/i18n/request.ts`
 - **Middleware**: `src/middleware.ts` maneja el routing automático por locale
 
 ### Usar traducciones
+
 ```tsx
 import { useTranslations } from "next-intl";
 
 export function MyComponent() {
-  const t = useTranslations("HomePage");
-  
-  return <h1>{t("hero.title")}</h1>;
+	const t = useTranslations("HomePage");
+
+	return <h1>{t("hero.title")}</h1>;
 }
 ```
 
 ## Variables de Tema
 
 Los estilos usan variables CSS definidas en `globals.css`:
+
 - `--primary`, `--secondary`, `--accent`
 - `--background`, `--foreground`
 - `--border`, `--input`, `--ring`

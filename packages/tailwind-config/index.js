@@ -50,6 +50,11 @@ const preset = {
 					5: "hsl(var(--chart-5))",
 				},
 			},
+			fontFamily: {
+				sans: ["Inter", "system-ui", "sans-serif"],
+				serif: ["Playfair Display", "Georgia", "serif"],
+				mono: ["JetBrains Mono", "Consolas", "monospace"],
+			},
 		},
 	},
 	plugins: [require("tailwindcss-animate")],

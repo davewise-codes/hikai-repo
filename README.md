@@ -1,30 +1,38 @@
-# Hikai Monorepo Starter
+# Hikai Monorepo
 
-Este repositorio contiene una configuración base para proyectos web modernos basada en monorepo, ideal para escalar múltiples apps y packages compartidos.
+Monorepo con arquitectura **packages → apps** donde las aplicaciones consumen packages compartidos para UI, configuración y utilidades.
 
-## ✨ Stack principal
-
-- [pnpm](https://pnpm.io/) como gestor de paquetes
-- [Turborepo](https://turbo.build/) para tareas orquestadas por paquete
-- [TypeScript](https://www.typescriptlang.org/) con configuración centralizada
-- [Vite](https://vitejs.dev/) como bundler para apps
-- [Tailwind CSS](https://tailwindcss.com/) + [ShadCN UI](https://ui.shadcn.dev/) para UI
-- [i18next](https://www.i18next.com/) para internacionalización
-- ESLint (Flat config) + Prettier
-- [Vitest](https://vitest.dev) para tests unitarios
-
-## 📁 Estructura
+## 🏗️ Arquitectura
 
 ```
-apps/
-  admin/                # App de ejemplo (vite+react)
-  web/                  # App mínima (vite+react) desplegada en producción
-packages/
-  ui/                   # Componentes compartidos (tailwind + shadcn)
-  i18n/                 # Configuración y recursos i18n
-  tailwind-config/      # Configuración central de Tailwind
-  typescript-config/    # Configuración base de TypeScript
+packages/ (código compartido)
+├── ui/                 - Sistema de diseño y componentes React
+├── tailwind-config/    - Configuración centralizada de Tailwind
+├── typescript-config/  - Configuraciones de TypeScript
+└── i18n/              - Utilidades de internacionalización
+
+apps/ (aplicaciones)
+├── website/           - Sitio web marketing (Next.js + i18n)
+└── web/              - Aplicación web (Vite + React)
 ```
+
+### 🎯 Principios clave
+- **UI centralizada**: Todo el styling y componentes definidos en `packages/ui`
+- **Tema consistente**: Colores, fuentes y tokens de diseño compartidos
+- **Sin duplicación**: Las apps nunca implementan UI independientemente
+
+> 📖 Ver [CLAUDE.md](./CLAUDE.md) para directivas detalladas de desarrollo
+
+## ✨ Stack tecnológico
+
+- [pnpm](https://pnpm.io/) - Gestor de paquetes
+- [Turborepo](https://turbo.build/) - Orquestación de tareas
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.dev/) - Sistema de diseño
+- [Next.js](https://nextjs.org/) + [next-intl](https://next-intl-docs.vercel.app/) - Website con i18n
+- [Vite](https://vitejs.dev/) - Build tool para apps
+- ESLint + Prettier - Linting y formateo
+- [Vitest](https://vitest.dev) - Testing
 
 ## 🚀 Comandos útiles
 

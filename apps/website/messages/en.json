@@ -5,9 +5,10 @@
 	},
 	"HomePage": {
 		"hero": {
-			"title": "Hero Title",
-			"subtitle": "This is the hero subtitle. Attractive, yet proffesional",
-			"cta": "This is the cta"
+			"title": "Make your product",
+			"highlighted": "stand-out",
+			"subtitle": "Building is only half the journey — Hikai delivers your product to the market without the grind",
+			"cta": "Join the Waitlist"
 		},
 		"how": {
 			"title": "How works",

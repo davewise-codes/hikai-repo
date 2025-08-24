@@ -24,7 +24,7 @@ export function NavigationBar() {
 						</NavigationMenuItem>
 						<NavigationMenuItem>
 							<NavigationMenuLink asChild>
-								<Link href="#howto">{t("how")}</Link>
+								<Link href="#how">{t("how")}</Link>
 							</NavigationMenuLink>
 						</NavigationMenuItem>
 					</NavigationMenuList>
