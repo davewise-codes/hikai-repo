@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd ../.. && pnpm install && pnpm --filter website build",
+  "outputDirectory": ".next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/((?!_next|favicon.ico).*)",
+      "destination": "/$1"
+    }
+  ]
+}
