@@ -1,0 +1,44 @@
+{
+  "title": "Hikai WebApp",
+  "hero": {
+    "welcome": "Bienvenido a nuestra",
+    "viteApp": "App Vite",
+    "description": "Esta aplicación demuestra la integración de nuestro sistema de UI centralizado con Vite y TanStack Router. Todos los temas, fuentes y componentes son heredados de @hikai/ui."
+  },
+  "buttons": {
+    "getStarted": "Comenzar",
+    "learnMore": "Conocer Más"
+  },
+  "features": {
+    "centralizedUI": {
+      "title": "🎨 UI Centralizada",
+      "description": "Todos los componentes, temas y estilos provienen del paquete @hikai/ui"
+    },
+    "vitePowered": {
+      "title": "⚡ Impulsado por Vite",
+      "description": "Desarrollo ultrarrápido con Vite y reemplazo de módulos en caliente"
+    },
+    "routing": {
+      "title": "🧭 Routing Seguro",
+      "description": "TanStack Router proporciona navegación y routing completamente tipado"
+    }
+  },
+  "fontDemo": {
+    "title": "Demo del Sistema de Fuentes",
+    "sans": {
+      "title": "Sans Serif (Inter)",
+      "description": "Este texto usa la fuente Inter para elementos de UI modernos y limpios, y texto del cuerpo."
+    },
+    "serif": {
+      "title": "Serif (Playfair Display)",
+      "description": "Este texto usa Playfair Display para títulos elegantes y texto de exhibición."
+    },
+    "mono": {
+      "title": "Monospace (JetBrains Mono)",
+      "description": "Este texto usa JetBrains Mono para bloques de código y contenido técnico."
+    }
+  },
+  "alert": {
+    "message": "🎉 ¡Felicitaciones! El sistema de UI está funcionando correctamente. Prueba cambiar entre temas claro y oscuro para ver los cambios."
+  }
+}

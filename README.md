@@ -9,7 +9,6 @@ packages/ (código compartido)
 ├── ui/                 - Sistema de diseño y componentes React
 ├── tailwind-config/    - Configuración centralizada de Tailwind
 ├── typescript-config/  - Configuraciones de TypeScript
-└── i18n/              - Utilidades de internacionalización
 
 apps/ (aplicaciones)
 ├── website/           - Sitio web marketing (Next.js + i18n)
@@ -42,28 +41,18 @@ apps/ (aplicaciones)
 pnpm install                 # Instala todas las dependencias del monorepo
 pnpm dev                     # Inicia todas las apps en modo desarrollo
 pnpm lint                    # Ejecuta el linter en todo el monorepo
-pnpm i18n:check              # Verifica llaves faltantes/extra en las traducciones
 pnpm turbo run build         # Compila todos los paquetes/apps
-pnpm turbo run build --filter=@hikai/i18n   # Compila sólo un paquete
+pnpm turbo run build --filter=@hikai/ui     # Compila sólo un paquete
 ```
 
 ### Por package o app
 
 ```bash
-cd packages/i18n
-pnpm build                   # Compila ese package con tsc -b
-
 cd packages/ui
 pnpm test                    # Ejecuta los tests unitarios con Vitest
 ```
 
 > Los paquetes están configurados para compilar usando `tsc --build`, lo que permite builds incrementales.
-
-## 🌍 Añadir o actualizar traducciones
-
-1. Las traducciones viven en `packages/i18n/locales/` como archivos `*.json`.
-2. Duplica `en.json` para crear un nuevo idioma y mantiene la misma estructura de llaves.
-3. Ejecuta `pnpm i18n:check` para verificar que no falten o sobren llaves antes de commitear.
 
 ## 🧪 Tests con Vitest
 
@@ -188,7 +177,7 @@ cd apps/webapp && pnpm dlx vercel --prod
 
 - ✅ Estructura de monorepo con pnpm + turbo
 - ✅ Apps: `website` (Next.js) y `webapp` (Vite + TanStack Router)
-- ✅ Paquetes: `ui`, `i18n`, `typescript-config`, `tailwind-config`
+- ✅ Paquetes: `ui`, `typescript-config`, `tailwind-config`
 - ✅ Sistema de themes centralizado con providers per-app
 - ✅ Sistema de fuentes centralizado (Google Fonts CDN)
 - ✅ Build por paquete con `tsc -b`
@@ -197,7 +186,7 @@ cd apps/webapp && pnpm dlx vercel --prod
 
 ## 🧪 Próximos pasos
 
-- Añadir tests en `@hikai/i18n` u otros packages
+- Añadir tests en otros packages si es necesario
 - Configurar `Cypress` para E2E (en apps)
 - Eliminar app `admin` si ya no es necesaria
 - Añadir scripts de CI/CD si el repo se despliega

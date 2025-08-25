@@ -13,8 +13,7 @@
                 "lint": "pnpm turbo run lint",
                 "lint:fix": "pnpm turbo run lint -- --fix",
                 "format": "prettier --write .",
-                "format:check": "prettier --check .",
-                "i18n:check": "node packages/i18n/scripts/check-locales.mjs"
+                "format:check": "prettier --check ."
         },
         "devDependencies": {
 		"@eslint/css": "^0.10.0",

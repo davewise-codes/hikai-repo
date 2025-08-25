@@ -118,9 +118,36 @@ import { ThemeContext } from "@/providers/theme-provider";
 - Nunca duplicar configuraciones de TS
 
 ### i18n (Internacionalización)
-- Configuración central en `packages/i18n/`
+**🎯 Enfoque**: Cada app gestiona su propia implementación de i18n según su framework
+
+**✅ HACER:**
+- Next.js: Usar `next-intl` con dynamic routing (`[locale]/`)
+- Vite/React: Usar `react-i18next` o similar
+- Cada app mantiene sus propias traducciones en `/messages/` o `/locales/`
 - Apps usan `useTranslations` internamente en componentes
+
+**❌ NO HACER:**
+- No crear package compartido de i18n (diferentes frameworks necesitan diferentes soluciones)
 - No pasar traducciones como props, cada componente maneja sus propias traducciones
+
+**📍 Implementaciones por framework:**
+- **Next.js**: `next-intl` + middleware + dynamic routing
+- **Vite/React**: `react-i18next` + configuración local
+
+**Ejemplo de implementación en Vite (webapp):**
+```tsx
+// src/i18n/config.ts
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import LanguageDetector from 'i18next-browser-languagedetector';
+
+// src/providers/i18n-provider.tsx
+import { I18nextProvider } from 'react-i18next';
+
+// En componentes:
+import { useTranslation } from 'react-i18next';
+const { t } = useTranslation('common');
+```
 
 ## Common Tasks
 

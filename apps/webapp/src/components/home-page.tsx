@@ -1,74 +1,79 @@
 import { Button, Alert, AlertDescription } from "@hikai/ui";
 import { ThemeSwitcher } from "./theme-switcher";
+import { LanguageSelector } from "./language-selector";
+import { useTranslation } from "react-i18next";
 
 export function HomePage() {
+  const { t } = useTranslation('common');
+  
   return (
     <div className="container mx-auto max-w-4xl px-4 py-16">
       {/* Header */}
       <div className="flex justify-between items-center mb-12">
-        <h1 className="text-3xl font-bold">Hikai WebApp</h1>
-        <ThemeSwitcher />
+        <h1 className="text-3xl font-bold">{t('title')}</h1>
+        <div className="flex items-center gap-4">
+          <LanguageSelector />
+          <ThemeSwitcher />
+        </div>
       </div>
 
       {/* Hero section */}
       <div className="text-center mb-16">
         <h2 className="font-serif text-6xl font-bold mb-6 leading-tight">
-          Welcome to our{" "}
-          <span className="text-primary">Vite App</span>
+          {t('hero.welcome')}{" "}
+          <span className="text-primary">{t('hero.viteApp')}</span>
         </h2>
         <p className="font-sans text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          This app demonstrates the integration of our centralized UI system with 
-          Vite and TanStack Router. All themes, fonts, and components are 
-          inherited from @hikai/ui.
+          {t('hero.description')}
         </p>
         <div className="flex gap-4 justify-center">
-          <Button size="lg">Get Started</Button>
-          <Button variant="outline" size="lg">Learn More</Button>
+          <Button size="lg">{t('buttons.getStarted')}</Button>
+          <Button variant="outline" size="lg">{t('buttons.learnMore')}</Button>
         </div>
       </div>
 
       {/* Features section */}
       <div className="grid md:grid-cols-3 gap-8 mb-16">
         <div className="text-center">
-          <h3 className="font-serif text-2xl font-semibold mb-4">🎨 Centralized UI</h3>
+          <h3 className="font-serif text-2xl font-semibold mb-4">{t('features.centralizedUI.title')}</h3>
           <p className="text-muted-foreground">
-            All components, themes, and styles come from @hikai/ui package
+            {t('features.centralizedUI.description')}
           </p>
         </div>
         <div className="text-center">
-          <h3 className="font-serif text-2xl font-semibold mb-4">⚡ Vite Powered</h3>
+          <h3 className="font-serif text-2xl font-semibold mb-4">{t('features.vitePowered.title')}</h3>
           <p className="text-muted-foreground">
-            Lightning fast development with Vite and hot module replacement
+            {t('features.vitePowered.description')}
           </p>
         </div>
         <div className="text-center">
-          <h3 className="font-serif text-2xl font-semibold mb-4">🧭 Type-safe Routing</h3>
+          <h3 className="font-serif text-2xl font-semibold mb-4">{t('features.routing.title')}</h3>
           <p className="text-muted-foreground">
-            TanStack Router provides fully typed navigation and routing
+            {t('features.routing.description')}
           </p>
         </div>
       </div>
 
       {/* Font demo */}
       <div className="mb-16">
-        <h3 className="text-2xl font-bold mb-6">Font System Demo</h3>
+        <h3 className="text-2xl font-bold mb-6">{t('fontDemo.title')}</h3>
         <div className="space-y-4">
           <div className="p-4 border rounded-lg">
-            <h4 className="font-sans text-lg font-semibold mb-2">Sans Serif (Inter)</h4>
+            <h4 className="font-sans text-lg font-semibold mb-2">{t('fontDemo.sans.title')}</h4>
             <p className="font-sans">
-              This text uses Inter font for clean, modern UI elements and body text.
+              {t('fontDemo.sans.description')}
             </p>
           </div>
           <div className="p-4 border rounded-lg">
-            <h4 className="font-serif text-lg font-semibold mb-2">Serif (Playfair Display)</h4>
+            <h4 className="font-serif text-lg font-semibold mb-2">{t('fontDemo.serif.title')}</h4>
             <p className="font-serif">
-              This text uses Playfair Display for elegant headings and display text.
+              {t('fontDemo.serif.description')}
             </p>
           </div>
           <div className="p-4 border rounded-lg">
-            <h4 className="font-mono text-lg font-semibold mb-2">Monospace (JetBrains Mono)</h4>
+            <h4 className="font-mono text-lg font-semibold mb-2">{t('fontDemo.mono.title')}</h4>
             <p className="font-mono">
-              This text uses JetBrains Mono for code blocks and technical content.
+              {t('fontDemo.mono.description')}
             </p>
           </div>
         </div>
@@ -77,8 +82,7 @@ export function HomePage() {
       {/* Alert demo */}
       <Alert className="mb-8">
         <AlertDescription>
-          🎉 Congratulations! The UI system is working correctly. 
-          Try switching between light and dark themes to see the changes.
+          {t('alert.message')}
         </AlertDescription>
       </Alert>
     </div>
