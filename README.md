@@ -142,14 +142,47 @@ mkdir -p packages/mi-paquete/src
 
 ## 🌐 Deploy
 
-La app `apps/web` está desplegada en producción con Vercel:
+Ambas aplicaciones están desplegadas en Vercel:
 
-🔗 https://hikai-xxxxxx.vercel.app _(actualizar si cambia)_
+- **Website** (Next.js): 🔗 [www.hikai.pro](https://www.hikai.pro)
+- **Webapp** (Vite): 🔗 [app.hikai.pro](https://app.hikai.pro)
 
-Puedes desplegar manualmente con:
+### Configuración de Vercel para Monorepo
 
+Cada app tiene su propio `vercel.json` configurado para trabajar desde el contexto del monorepo:
+
+#### Website (Next.js)
+```json
+{
+  "buildCommand": "cd ../.. && pnpm install && pnpm --filter website build",
+  "outputDirectory": ".next",
+  "installCommand": "pnpm install",
+  "framework": "nextjs"
+}
+```
+
+#### Webapp (Vite)
+```json
+{
+  "buildCommand": "cd ../.. && pnpm install && pnpm --filter @hikai/webapp build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install",
+  "framework": null
+}
+```
+
+### Pasos para nuevo despliegue:
+
+1. **En Vercel Dashboard**, crear proyecto separado para cada app
+2. **Root Directory**: 
+   - `apps/website` para la website
+   - `apps/webapp` para la webapp
+3. **Los archivos vercel.json manejan automáticamente** los comandos de build
+
+### Deploy manual local:
 ```bash
-pnpm dlx vercel --prod
+cd apps/website && pnpm dlx vercel --prod
+cd apps/webapp && pnpm dlx vercel --prod
 
 ## ✅ Estado actual del repo
 
