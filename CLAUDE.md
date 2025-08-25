@@ -25,18 +25,33 @@ apps/ → consumes → packages/
 
 **✅ HACER:**
 - Cambiar fuentes SOLO en `packages/ui/src/fonts/fonts.css` y `packages/tailwind-config/index.js`
-- Usar FontProvider de @hikai/ui en apps
+- Crear FontProvider local en cada app (no importar de @hikai/ui)
 - Importar `@hikai/ui/styles/globals.css` en apps
 
 **❌ NO HACER:**
 - Nunca añadir fuentes directamente en apps
 - No usar next/font/google en packages/ui (rompe la compatibilidad con otros frameworks)
 - No crear variables CSS específicas por app
+- No importar FontProvider desde @hikai/ui (ya no existe)
 
 **📍 Para cambiar una fuente:**
 1. Editar `packages/ui/src/fonts/fonts.css` - Cambiar URL de Google Fonts
 2. Editar `packages/tailwind-config/index.js` - Actualizar fontFamily array
 3. Reiniciar dev server
+
+**📍 FontProvider en apps:**
+```tsx
+// Para Next.js: app/providers/font-provider.tsx
+"use client";
+export function FontProvider({ children }) {
+  return <div className="antialiased">{children}</div>;
+}
+
+// Para Vite: src/providers/font-provider.tsx (sin "use client")
+export function FontProvider({ children }) {
+  return <div className="antialiased">{children}</div>;
+}
+```
 
 ### Component Development
 
@@ -50,18 +65,50 @@ apps/ → consumes → packages/
 2. Exportar en `packages/ui/src/components/ui/index.ts`
 3. Usar en apps: `import { NuevoComponente } from "@hikai/ui"`
 
-### Theme & Colors
+### Theme System
 
-**🎯 Sistema**: Variables CSS + Tailwind preset
+**🎯 Sistema**: Variables CSS + providers per-app
 
 **✅ HACER:**
-- Colores definidos en `packages/ui/src/styles/globals.css` (variables CSS)
-- Configuración en `packages/tailwind-config/index.js`
-- Apps importan automáticamente el theme
+- Definiciones de themes en `packages/ui/src/lib/themes.ts`
+- Variables CSS en `packages/ui/src/styles/themes.css`
+- Cada app implementa su propio ThemeProvider + useTheme hook
+- Importar tipos: `import { Theme, themes, defaultTheme } from "@hikai/ui"`
 
 **❌ NO HACER:**
+- No importar ThemeProvider desde @hikai/ui (ya no existe)
 - No añadir colores específicos por app
 - No sobrescribir variables de tema en apps
+
+**📍 ThemeProvider en apps:**
+
+**Next.js:**
+```tsx
+// app/providers/theme-provider.tsx
+"use client";
+import { createContext, useEffect, useState } from "react";
+import { Theme, defaultTheme } from "@hikai/ui";
+// ... implementación completa con localStorage
+```
+
+**Vite:**
+```tsx
+// src/providers/theme-provider.tsx (sin "use client")
+import { createContext, useEffect, useState } from "react";
+import { Theme, defaultTheme } from "@hikai/ui";
+// ... misma implementación pero sin directiva
+```
+
+**📍 useTheme hook:**
+```tsx
+// app/hooks/use-theme.ts
+import { useContext } from "react";
+import { ThemeContext } from "@/providers/theme-provider";
+```
+
+**Referencias completas en:**
+- Next.js: `apps/website/src/providers/`
+- Vite: `apps/webapp/src/providers/`
 
 ## Development Patterns
 
@@ -101,30 +148,67 @@ packages/ui/src/components/ui/index.ts
 import { MyComponent } from "@hikai/ui"
 ```
 
+### Crear nueva app
+
+**Ejemplo: Nueva app Vite**
+```bash
+# 1. Crear estructura
+mkdir -p apps/nueva-app/src/{providers,components,styles}
+
+# 2. package.json básico
+{
+  "dependencies": {
+    "@hikai/ui": "workspace:*",
+    "@hikai/tailwind-config": "workspace:*"
+  }
+}
+
+# 3. tsconfig.json
+{
+  "extends": "../../packages/typescript-config/base.json"
+}
+
+# 4. tailwind.config.js
+import preset from "@hikai/tailwind-config";
+export default { presets: [preset] };
+
+# 5. Crear providers locales
+# - src/providers/font-provider.tsx
+# - src/providers/theme-provider.tsx
+# - src/hooks/use-theme.ts
+
+# 6. CSS principal
+# src/styles/globals.css → @import "@hikai/ui/styles/globals.css";
+```
+
 ### Cambiar colores del tema
 ```bash
-# 1. Variables CSS
+# 1. Variables CSS light theme
 packages/ui/src/styles/globals.css
 
-# 2. Si es necesario, config de Tailwind
+# 2. Variables CSS dark theme  
+packages/ui/src/styles/themes.css
+
+# 3. Si es necesario, config de Tailwind
 packages/tailwind-config/index.js
 ```
 
 ## DO's and DON'Ts
 
 ### ✅ DO's
-- Siempre usar el FontProvider de @hikai/ui
+- Crear FontProvider y ThemeProvider localmente en cada app
 - Hacer cambios de styling solo en packages/
 - Usar useTranslations dentro de componentes
 - Mantener componentes autocontenidos
 - Seguir el patrón de exportación de shadcn/ui
+- Importar definiciones de @hikai/ui: `import { Theme, themes } from "@hikai/ui"`
 
 ### ❌ DON'Ts
 - NUNCA añadir fuentes específicas en apps/
 - No pasar traducciones como props
 - No duplicar código entre packages y apps
 - No mezclar configuraciones de diferentes frameworks en packages/ui
-- No crear providers específicos por app cuando existe uno central
+- No importar providers desde @hikai/ui (crear localmente por app)
 
 ## Framework Compatibility
 

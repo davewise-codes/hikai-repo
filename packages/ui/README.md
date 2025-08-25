@@ -8,7 +8,6 @@ Sistema de diseño centralizado con componentes React, basado en [shadcn/ui](htt
 - **Alert / AlertDescription / AlertTitle** - Componentes de alerta
 - **NavigationMenu / NavigationMenuItem / NavigationMenuLink** - Navegación
 - **DropdownMenu** - Menús desplegables
-- **FontProvider** - Provider para aplicar fuentes del tema
 
 ### Uso básico
 ```tsx
@@ -67,20 +66,31 @@ fontFamily: {
 <code className="font-mono">Código</code>
 ```
 
-## 🎨 Sistema de colores
+## 🎨 Sistema de themes
 
-Los colores se definen como variables CSS y se adaptan automáticamente al modo claro/oscuro:
+Este paquete incluye **definiciones de themes y CSS**, pero **no incluye providers**. Cada app debe implementar sus propios providers según su framework.
 
+### Themes disponibles
+```tsx
+import { Theme, themes, defaultTheme } from "@hikai/ui";
+
+// Themes disponibles: "light" | "dark" | "system"
+console.log(themes);
+// { light: {...}, dark: {...}, system: {...} }
+```
+
+### Variables CSS incluidas
 ```css
-/* Variables disponibles */
---primary
---secondary  
---accent
---muted
---destructive
---background
---foreground
---border
+/* Light theme (por defecto) */
+--primary, --secondary, --accent, --muted, --destructive
+--background, --foreground, --border, --input, --ring
+--chart-1, --chart-2, --chart-3, --chart-4, --chart-5
+
+/* Dark theme */
+.dark { /* Mismas variables con valores oscuros */ }
+
+/* High contrast theme */
+.high-contrast { /* Versión de alto contraste */ }
 ```
 
 ### Usar colores en componentes
@@ -141,13 +151,20 @@ src/
 ├── fonts/
 │   └── fonts.css        # Google Fonts imports
 ├── lib/
+│   ├── themes.ts        # Definiciones de themes
 │   └── utils.ts         # Utilidades (cn helper)
-├── providers/
-│   └── font-provider.tsx # Provider de fuentes
 ├── styles/
-│   └── globals.css      # Variables CSS + Tailwind
+│   ├── globals.css      # Estilos base + imports
+│   └── themes.css       # Variables CSS por theme
 └── index.ts            # Exports principales
 ```
+
+## 📦 ¿Qué exporta este paquete?
+
+- ✅ **Componentes UI** (Button, Alert, etc.)
+- ✅ **Definiciones de themes** (Theme, themes, defaultTheme)
+- ✅ **Estilos CSS** (fonts, themes, variables)
+- ❌ **Providers** (cada app los implementa según necesidad)
 
 ## 🎯 Principios de diseño
 
@@ -160,28 +177,65 @@ src/
 ## 📦 Configuración en apps
 
 **1. Instalar estilos globales**
-```tsx
-// En tu layout o App component
-import "@hikai/ui/styles/globals.css";
+```css
+/* En tu CSS principal */
+@import "@hikai/ui/styles/globals.css";
 ```
 
-**2. Usar FontProvider (opcional)**
-```tsx
-import { FontProvider } from "@hikai/ui";
+**2. Crear providers locales**
 
-export default function App({ children }) {
+Cada app debe implementar sus propios providers según su framework.
+
+**Para Next.js:**
+```tsx
+// app/providers/font-provider.tsx
+"use client";
+export function FontProvider({ children }) {
+  return <div className="antialiased">{children}</div>;
+}
+
+// app/providers/theme-provider.tsx  
+"use client";
+import { createContext, useEffect, useState } from "react";
+import { Theme, defaultTheme } from "@hikai/ui";
+// ... implementación completa
+```
+
+**Para Vite/otros:**
+```tsx
+// src/providers/font-provider.tsx
+export function FontProvider({ children }) {
+  return <div className="antialiased">{children}</div>;
+}
+
+// src/providers/theme-provider.tsx
+import { createContext, useEffect, useState } from "react";
+import { Theme, defaultTheme } from "@hikai/ui";
+// ... implementación completa (sin "use client")
+```
+
+**3. Usar en tu app**
+```tsx
+import { Button, Alert } from "@hikai/ui";
+import { FontProvider } from "./providers/font-provider";
+import { ThemeProvider } from "./providers/theme-provider";
+
+export function App() {
   return (
-    <FontProvider>
-      {children}
-    </FontProvider>
+    <ThemeProvider>
+      <FontProvider>
+        <Button>Mi botón</Button>
+      </FontProvider>
+    </ThemeProvider>
   );
 }
 ```
 
-**3. Importar componentes**
-```tsx
-import { Button, Alert } from "@hikai/ui";
-```
+### Ejemplos completos
+
+Ve las implementaciones de referencia en:
+- **Next.js**: `apps/website/src/providers/`
+- **Vite**: `apps/webapp/src/providers/`
 
 ## 🔗 Referencias
 

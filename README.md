@@ -13,7 +13,7 @@ packages/ (código compartido)
 
 apps/ (aplicaciones)
 ├── website/           - Sitio web marketing (Next.js + i18n)
-└── web/              - Aplicación web (Vite + React)
+└── webapp/            - Aplicación web (Vite + TanStack Router)
 ```
 
 ### 🎯 Principios clave
@@ -154,8 +154,10 @@ pnpm dlx vercel --prod
 ## ✅ Estado actual del repo
 
 - ✅ Estructura de monorepo con pnpm + turbo
-- ✅ App `admin` como entorno de prueba
+- ✅ Apps: `website` (Next.js) y `webapp` (Vite + TanStack Router)
 - ✅ Paquetes: `ui`, `i18n`, `typescript-config`, `tailwind-config`
+- ✅ Sistema de themes centralizado con providers per-app
+- ✅ Sistema de fuentes centralizado (Google Fonts CDN)
 - ✅ Build por paquete con `tsc -b`
 - ✅ Lint y formato unificados
 - ✅ Tests unitarios funcionando con Vitest en `@hikai/ui`

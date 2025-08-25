@@ -8,13 +8,14 @@ import {
 } from "@hikai/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { ThemeSwitcher } from "./theme-switcher";
 
 export function NavigationBar() {
 	const t = useTranslations("Nav");
 
 	return (
-		<nav className="border-b">
-			<div className="container mx-auto flex h-14 items-center">
+		<nav>
+			<div className="container mx-auto flex h-14 items-center justify-between">
 				<NavigationMenu>
 					<NavigationMenuList>
 						<NavigationMenuItem>
@@ -29,6 +30,7 @@ export function NavigationBar() {
 						</NavigationMenuItem>
 					</NavigationMenuList>
 				</NavigationMenu>
+				<ThemeSwitcher />
 			</div>
 		</nav>
 	);

@@ -1,1 +1,0 @@
-export { FontProvider } from "./font-provider";

@@ -1,7 +1,8 @@
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
-import { FontProvider } from "@hikai/ui";
+import { FontProvider } from "@/providers/font-provider";
+import { ThemeProvider } from "@/providers/client-theme-provider";
 import "../globals.css";
 
 export default async function LocaleLayout({
@@ -18,11 +19,17 @@ export default async function LocaleLayout({
 	}
 
 	return (
-		<html lang={locale}>
+		<html lang={locale} suppressHydrationWarning>
 			<body>
-				<FontProvider>
-					<NextIntlClientProvider>{children}</NextIntlClientProvider>
-				</FontProvider>
+				<ThemeProvider
+					defaultTheme="system"
+					storageKey="hikai-theme"
+					enableSystem
+				>
+					<FontProvider>
+						<NextIntlClientProvider>{children}</NextIntlClientProvider>
+					</FontProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);
