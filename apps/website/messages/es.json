@@ -1,19 +1,132 @@
 {
 	"Nav": {
-		"home": "Inicio",
-		"how": "Cómo"
+		"hero": "Inicio",
+		"how": "Cómo funciona",
+		"beforeAfter": "Antes vs Después",
+		"benefits": "Beneficios",
+		"faq": "Preguntas",
+		"cta": "Únete"
 	},
 	"HomePage": {
 		"hero": {
-			"title": "Título del Hero",
-			"subtitle": "Subtítulo atractivo para captar la atención",
-			"cta": "Llamada a la acción"
+			"badge": "Visibilidad para fundadores",
+			"title": "Haz que tu producto",
+			"highlighted": "destaque",
+			"subtitle": "Construir es solo la mitad del camino — Hikai lleva tu producto al mercado sin la carga pesada.",
+			"cta": "Únete a la lista"
 		},
 		"how": {
-			"title": "Cómo funciona",
-			"step1": "Paso 1: Haz algo",
-			"step2": "Paso 2: Haz otra cosa",
-			"step3": "Paso 3: Disfruta el resultado"
+			"badge": "Cómo funciona",
+			"title": "Convierte el progreso en",
+			"highlighted": "visibilidad",
+			"subtitle": "Hikai captura lo que está sucediendo y lo entrega a tu audiencia en tres pasos simples.",
+			"step1": {
+				"title": "Conecta tus fuentes",
+				"description": "GitHub, Linear, Notion... Hikai se conecta donde se está construyendo tu producto, para que nada se pierda."
+			},
+			"step2": {
+				"title": "Hikai selecciona",
+				"description": "Transforma lo que pasó — funcionalidades, correcciones, actualizaciones — en contenido listo para compartir."
+			},
+			"step3": {
+				"title": "Hazlo tuyo",
+				"description": "Dale tu toque con las herramientas de edición de contenido diseñadas especialmente — rápido, simple y siempre auténtico."
+			}
+		},
+		"beforeAfter": {
+			"badge": "Antes vs Después",
+			"title": "De oculto a",
+			"highlighted": "descubierto",
+			"subtitle": "Deja atrás la lucha de pasar desapercibido — abraza la claridad de hacer visible tu progreso al mercado.",
+			"before": {
+				"title": "Antes de Hikai",
+				"items": [
+					"Tu producto vive en una cueva — valioso, pero invisible",
+					"Las actualizaciones quedan encerradas en commits, tickets o docs que nadie lee",
+					"Pasan semanas sin contar tu historia",
+					"El marketing se siente como un trabajo extra que no tienes tiempo de hacer"
+				]
+			},
+			"with": {
+				"title": "Con Hikai",
+				"items": [
+					"Tu progreso se convierte en una narrativa constante que el mercado puede seguir",
+					"El contenido se extiende naturalmente por los canales — social, blog, documentos",
+					"Mantienes tu voz, sin hacer el trabajo pesado",
+					"La visibilidad se acumula: cada actualización construye confianza y momentum"
+				]
+			}
+		},
+		"benefits": {
+			"badge": "Por qué Hikai",
+			"title": "Más que ahorrar tiempo, verdadero",
+			"highlighted": "momentum",
+			"subtitle": "Hikai reduce la carga, te mantiene consistente, y ayuda a que tu producto brille sin perder tu voz.",
+			"items": [
+				{
+					"title": "Ahorra tiempo",
+					"description": "Hikai convierte el progreso en contenido listo para compartir"
+				},
+				{
+					"title": "Gana visibilidad",
+					"description": "Las actualizaciones no se entierran en commits"
+				},
+				{
+					"title": "Mantente consistente",
+					"description": "No más semanas en silencio"
+				},
+				{
+					"title": "Habilita la creatividad",
+					"description": "Enfócate en el trabajo creativo, no en perseguir actualizaciones"
+				},
+				{
+					"title": "Mantén tu voz",
+					"description": "Siempre tienes el control"
+				},
+				{
+					"title": "Trabaja en equipo",
+					"description": "Incluso con un equipo, Hikai mantiene a todos alineados sin coordinación infinita"
+				}
+			]
+		},
+		"faq": {
+			"badge": "Preguntas",
+			"title": "Todo lo que necesitas",
+			"highlighted": "saber",
+			"subtitle": "Desde seguridad hasta casos de uso, esto es lo que más preguntan fundadores y equipos.",
+			"items": [
+				{
+					"question": "¿Hikai está reemplazando a mi equipo de marketing?",
+					"answer": "Para nada. Los equipos de marketing obtienen más de Hikai: menos tiempo persiguiendo actualizaciones de producto, más tiempo enfocándose en estrategia y creatividad."
+				},
+				{
+					"question": "¿Cuándo se lanza la Beta?",
+					"answer": "Pronto abriremos el acceso temprano. Únete a la lista para ser de los primeros fundadores en probarlo."
+				},
+				{
+					"question": "¿Qué tipo de contenido crea Hikai?",
+					"answer": "Desde actualizaciones de producto hasta posts de blog, documentos de usuario y redes sociales. Todo viene directamente de lo que está pasando en tu producto."
+				},
+				{
+					"question": "¿Qué equipos pueden beneficiarse de Hikai?",
+					"answer": "Cualquier equipo que necesite generar contenido relacionado con el producto: marketing, éxito del cliente, incluso producto e ingeniería. Hikai reduce la sobrecarga de coordinación y hace las actualizaciones sin esfuerzo."
+				},
+				{
+					"question": "Soy fundador solo — ¿Hikai es para mí?",
+					"answer": "Exactamente. Eres producto, marketing y éxito del cliente todo a la vez. Hikai te ayuda a cubrir esos roles sin el esfuerzo extra."
+				},
+				{
+					"question": "¿Están seguros los datos de mi producto con Hikai?",
+					"answer": "Sí. Hikai solo trabaja con resúmenes de lo que está pasando — nunca código crudo o datos sensibles. Y siempre tienes la última palabra antes de que algo se haga público."
+				}
+			]
+		},
+		"finalCta": {
+			"badge": "Únete",
+			"title": "Sé de los primeros en",
+			"highlighted": "descubrir",
+			"subtitle": "Obtén acceso temprano a Hikai Beta y sé de los primeros fundadores en deshacerse del trabajo pesado.",
+			"cta": "Únete a la lista"
 		}
 	}
 }

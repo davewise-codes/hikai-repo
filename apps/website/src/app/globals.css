@@ -1,1 +1,11 @@
 @import "@hikai/ui/styles/globals.css";
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scroll margin for fixed navigation */
+section {
+  scroll-margin-top: 4rem;
+}

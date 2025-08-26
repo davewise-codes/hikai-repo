@@ -217,4 +217,14 @@ export {
   Gamepad2,
   Router,
   Type,
+  // New icons for landing page
+  Rocket,
+  Target,
+  TrendingUp,
+  Users2,
+  Sparkles,
+  FlameKindling,
+  BookOpen,
+  MessageSquare,
+  Languages,
 } from "lucide-react";
