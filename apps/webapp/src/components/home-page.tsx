@@ -9,8 +9,6 @@ import {
   Type,
   CheckCircle
 } from "@hikai/ui";
-import { ThemeSwitcher } from "./theme-switcher";
-import { LanguageSelector } from "./language-selector";
 import { useTranslation } from "react-i18next";
 
 export function HomePage() {
@@ -21,10 +19,6 @@ export function HomePage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-12">
         <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <div className="flex items-center gap-4">
-          <LanguageSelector />
-          <ThemeSwitcher />
-        </div>
       </div>
 
       {/* Hero section */}

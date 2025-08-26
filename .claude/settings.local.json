@@ -5,7 +5,9 @@
       "Bash(pnpm add:*)",
       "Read(/C:\\c\\David\\proyectos\\hikai-repo\\packages/**)",
       "Read(/C:\\c\\David\\proyectos/**)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "WebFetch(domain:docs.convex.dev)",
+      "Bash(pnpm dev:*)"
     ],
     "deny": [],
     "ask": [],

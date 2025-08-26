@@ -1,6 +1,6 @@
 import { themes, type Theme, Sun, Moon, Monitor } from "@hikai/ui";
 import { Button } from "@hikai/ui";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "../hooks/use-theme";
 
 const getThemeIcon = (themeKey: string) => {
   switch (themeKey) {

@@ -290,6 +290,170 @@ packages/tailwind-config/index.js
 - ✅ Should consume packages/ as much as possible
 - ❌ Should not implement UI/styling independently
 
+## Webapp Development Rules
+
+### Arquitectura de Dominios
+
+**🎯 Principio Core Unificado**: Todo lo transversal vive en `domains/core`
+
+**✅ HACER:**
+- Auth, theme, i18n, navegación → `domains/core`
+- Hooks globales en `domains/core/hooks/`
+- Estado transversal en `domains/core/store/core-slice.ts`
+- Nuevos dominios SOLO para funcionalidad específica y compleja
+
+**❌ NO HACER:**
+- No fragmentar funcionalidad transversal en múltiples dominios
+- No crear dominios para funcionalidad simple que puede ir en core
+
+**📍 Estructura:**
+```
+src/domains/core/
+├── components/     # UI del core (AppShell, SettingsPage)
+├── hooks/         # Hooks globales (useTheme, useI18n)
+├── store/         # core-slice.ts con todo el estado transversal
+└── index.ts       # API pública (exports internos)
+```
+
+### Estado Global con Zustand
+
+**🎯 Store Unificado**: Un store Zustand con core-slice, sin provider
+
+**✅ HACER:**
+- Todo el estado transversal en `core-slice.ts`: theme, locale, auth, currentOrg
+- Store directo: `const theme = useStore(state => state.theme)`
+- Hooks de dominio que abstraen el store: `const { theme, setTheme } = useTheme()`
+- Persistencia con `partialize` para datos específicos (theme, locale)
+
+**❌ NO HACER:**
+- No crear StoreProvider a menos que sea necesario para testing
+- No fragmentar estado relacionado en múltiples slices inicialmente
+
+**📍 Patrón:**
+```typescript
+// store/index.ts - Store unificado
+export const useStore = create<StoreState>()(
+  devtools(persist(
+    (...args) => ({ ...createCoreSlice(...args) }),
+    { name: 'hikai-store', partialize: (state) => ({ theme: state.theme, locale: state.locale }) }
+  ))
+);
+
+// domains/core/hooks/use-theme.ts - Hook de abstracción
+export function useTheme() {
+  const theme = useStore(state => state.theme);
+  const setTheme = useStore(state => state.setTheme);
+  return { theme, setTheme };
+}
+```
+
+### Sincronización Multi-pestaña
+
+**🎯 Persistencia**: localStorage + storage events automáticos
+
+**✅ IMPLEMENTADO:**
+```typescript
+// store/index.ts - Auto-sync entre pestañas
+window.addEventListener('storage', (e) => {
+  if (e.key === 'hikai-store' && e.newValue) {
+    const newData = JSON.parse(e.newValue);
+    useStore.setState({
+      theme: newData.state.theme,
+      locale: newData.state.locale,
+    });
+  }
+});
+```
+
+### Routing con TanStack Router
+
+**🎯 Rutas Centralizadas**: Todas las rutas en `/routes`, no por dominio
+
+**✅ HACER:**
+- Archivos de ruta en `src/routes/` siguiendo convención de TanStack Router
+- AppShell wrapper en cada ruta que necesite layout
+- Componentes de página en sus dominios respectivos
+
+**❌ NO HACER:**
+- No organizar rutas por carpetas de dominio
+- No duplicar layout logic
+
+**📍 Patrón:**
+```typescript
+// routes/nueva-ruta.tsx
+export const Route = createFileRoute('/nueva-ruta')({
+  component: () => (
+    <AppShell>
+      <NuevaPagina />
+    </AppShell>
+  ),
+});
+```
+
+### Organización de Hooks
+
+**🎯 Hooks por Contexto**: Globales en carpetas, específicos con componentes
+
+**✅ HACER:**
+- Hooks globales (múltiples componentes): `domains/core/hooks/use-nombre.ts`
+- Hooks específicos: `domains/dominio/components/componente/use-componente.ts`
+- Exports públicos solo en hooks globales
+
+**📍 Hook Global:**
+```typescript
+// domains/core/hooks/use-nuevo.ts
+export function useNuevo() {
+  const value = useStore(state => state.nuevo);
+  const setValue = useStore(state => state.setNuevo);
+  return { value, setValue };
+}
+
+// domains/core/hooks/index.ts
+export { useNuevo } from './use-nuevo';
+```
+
+### Principios de Implementación
+
+1. **YAGNI**: No crear abstracciones hasta necesitarlas
+2. **Core Unificado**: Preferir consolidar en core que fragmentar
+3. **Rutas Centralizadas**: `/routes` unificado, no por dominio
+4. **Hooks Contextuales**: Globales en carpetas, específicos inline
+5. **Estado Persistente**: localStorage + storage events para multi-tab
+6. **Sin Over-engineering**: Store directo, provider solo si es necesario
+
+### Flujo para Añadir Funcionalidad
+
+**¿Es transversal?** → Core
+```typescript
+// domains/core/store/core-slice.ts
+nuevaFuncionalidad: TipoNuevo;
+setNuevaFuncionalidad: (value: TipoNuevo) => void;
+
+// domains/core/hooks/use-nueva.ts  
+export function useNueva() { /* implementation */ }
+```
+
+**¿Es específica y compleja?** → Nuevo Dominio
+```typescript
+// domains/nuevo-dominio/
+├── components/
+├── hooks/ (específicos del dominio)
+└── index.ts (NO exportar hacia fuera de webapp)
+```
+
+### Integración con Convex
+
+**🎯 Hooks Nativos**: Usar directamente `useQuery`, `useMutation` de Convex
+
+**✅ HACER:**
+- `import { useQuery } from "convex/react"`
+- `import { api } from "@/convex/_generated/api"`
+- Integrar auth state en core-slice cuando se implemente
+
+**❌ NO HACER:**
+- No crear capa de abstracción sobre Convex hooks
+- No usar TanStack Query encima de Convex
+
 ---
 
 ## Notes for AI Assistants
@@ -299,3 +463,4 @@ Cuando trabajes en este proyecto:
 2. **Preguntar** antes de añadir nuevas dependencias a packages/
 3. **Verificar** que los cambios no rompan la compatibilidad entre packages y apps
 4. **Mantener** la consistencia en patrones ya establecidos
+5. **Para webapp**: Seguir principio Core Unificado y evitar fragmentación prematura

@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useEffect, useState } from "react";
-import { Theme, defaultTheme } from "@hikai/ui";
+import { Theme } from "@hikai/ui";
+import { useTheme } from "@/domains/core";
 
 export interface ThemeContextValue {
 	theme: Theme;
@@ -19,19 +20,10 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
 	children,
-	defaultTheme: initialTheme = defaultTheme,
-	storageKey = "theme",
 	enableSystem = true,
 }: ThemeProviderProps) {
-	const [theme, setThemeState] = useState<Theme>(initialTheme);
+	const { theme, setTheme: setThemeStore } = useTheme();
 	const [actualTheme, setActualTheme] = useState<"light" | "dark">("light");
-
-	useEffect(() => {
-		const stored = localStorage.getItem(storageKey) as Theme;
-		if (stored) {
-			setThemeState(stored);
-		}
-	}, [storageKey]);
 
 	useEffect(() => {
 		const root = window.document.documentElement;
@@ -51,14 +43,9 @@ export function ThemeProvider({
 		}
 	}, [theme, enableSystem]);
 
-	const setTheme = (newTheme: Theme) => {
-		localStorage.setItem(storageKey, newTheme);
-		setThemeState(newTheme);
-	};
-
 	const value: ThemeContextValue = {
 		theme,
-		setTheme,
+		setTheme: setThemeStore,
 		actualTheme,
 	};
 
