@@ -5,6 +5,8 @@ import {
 	NavigationMenuItem,
 	NavigationMenuLink,
 	NavigationMenuList,
+	HomeIcon,
+	HelpCircle
 } from "@hikai/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -20,12 +22,18 @@ export function NavigationBar() {
 					<NavigationMenuList>
 						<NavigationMenuItem>
 							<NavigationMenuLink asChild>
-								<Link href="#hero">{t("home")}</Link>
+								<Link href="#hero" className="flex items-center gap-2">
+									<HomeIcon className="h-4 w-4" />
+									{t("home")}
+								</Link>
 							</NavigationMenuLink>
 						</NavigationMenuItem>
 						<NavigationMenuItem>
 							<NavigationMenuLink asChild>
-								<Link href="#how">{t("how")}</Link>
+								<Link href="#how" className="flex items-center gap-2">
+									<HelpCircle className="h-4 w-4" />
+									{t("how")}
+								</Link>
 							</NavigationMenuLink>
 						</NavigationMenuItem>
 					</NavigationMenuList>

@@ -1,4 +1,14 @@
-import { Button, Alert, AlertDescription } from "@hikai/ui";
+import { 
+  Button, 
+  Alert, 
+  AlertDescription, 
+  InfoIcon,
+  Zap,
+  Palette,
+  Router,
+  Type,
+  CheckCircle
+} from "@hikai/ui";
 import { ThemeSwitcher } from "./theme-switcher";
 import { LanguageSelector } from "./language-selector";
 import { useTranslation } from "react-i18next";
@@ -35,18 +45,27 @@ export function HomePage() {
       {/* Features section */}
       <div className="grid md:grid-cols-3 gap-8 mb-16">
         <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <Palette className="h-12 w-12 text-primary" />
+          </div>
           <h3 className="font-serif text-2xl font-semibold mb-4">{t('features.centralizedUI.title')}</h3>
           <p className="text-muted-foreground">
             {t('features.centralizedUI.description')}
           </p>
         </div>
         <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <Zap className="h-12 w-12 text-primary" />
+          </div>
           <h3 className="font-serif text-2xl font-semibold mb-4">{t('features.vitePowered.title')}</h3>
           <p className="text-muted-foreground">
             {t('features.vitePowered.description')}
           </p>
         </div>
         <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <Router className="h-12 w-12 text-primary" />
+          </div>
           <h3 className="font-serif text-2xl font-semibold mb-4">{t('features.routing.title')}</h3>
           <p className="text-muted-foreground">
             {t('features.routing.description')}
@@ -56,22 +75,34 @@ export function HomePage() {
 
       {/* Font demo */}
       <div className="mb-16">
-        <h3 className="text-2xl font-bold mb-6">{t('fontDemo.title')}</h3>
+        <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+          <Type className="h-6 w-6" />
+          {t('fontDemo.title')}
+        </h3>
         <div className="space-y-4">
           <div className="p-4 border rounded-lg">
-            <h4 className="font-sans text-lg font-semibold mb-2">{t('fontDemo.sans.title')}</h4>
+            <h4 className="font-sans text-lg font-semibold mb-2 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              {t('fontDemo.sans.title')}
+            </h4>
             <p className="font-sans">
               {t('fontDemo.sans.description')}
             </p>
           </div>
           <div className="p-4 border rounded-lg">
-            <h4 className="font-serif text-lg font-semibold mb-2">{t('fontDemo.serif.title')}</h4>
+            <h4 className="font-serif text-lg font-semibold mb-2 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              {t('fontDemo.serif.title')}
+            </h4>
             <p className="font-serif">
               {t('fontDemo.serif.description')}
             </p>
           </div>
           <div className="p-4 border rounded-lg">
-            <h4 className="font-mono text-lg font-semibold mb-2">{t('fontDemo.mono.title')}</h4>
+            <h4 className="font-mono text-lg font-semibold mb-2 flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              {t('fontDemo.mono.title')}
+            </h4>
             <p className="font-mono">
               {t('fontDemo.mono.description')}
             </p>
@@ -81,6 +112,7 @@ export function HomePage() {
 
       {/* Alert demo */}
       <Alert className="mb-8">
+        <InfoIcon className="h-4 w-4" />
         <AlertDescription>
           {t('alert.message')}
         </AlertDescription>

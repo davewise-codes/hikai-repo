@@ -65,6 +65,47 @@ export function FontProvider({ children }) {
 2. Exportar en `packages/ui/src/components/ui/index.ts`
 3. Usar en apps: `import { NuevoComponente } from "@hikai/ui"`
 
+### Icon System
+
+**🎯 Objetivo**: Sistema centralizado de iconos con lucide-react
+
+**✅ HACER:**
+- Importar iconos SOLO desde `@hikai/ui`: `import { ChevronDown, SearchIcon } from "@hikai/ui"`
+- Añadir nuevos iconos en `packages/ui/src/lib/icons.ts`
+- Usar alias semánticos cuando sea apropiado: `CloseIcon`, `SearchIcon`, etc.
+
+**❌ NO HACER:**
+- No importar iconos directamente de `lucide-react` en apps
+- No instalar lucide-react en apps (ya está en packages/ui)
+- No crear iconos duplicados o inconsistentes
+
+**📍 Iconos disponibles:**
+- **Navegación**: ChevronDown, ChevronRight, ChevronLeft, ChevronUp, Arrow*
+- **Acciones**: Check, X, Plus, Minus, Edit, Trash2, Save, Copy
+- **UI Elements**: Circle, Square, Search, Filter, Menu, Grid, List
+- **Estados**: AlertCircle, CheckCircle, XCircle, Info, Warning
+- **Usuario**: User, Users, Settings, Lock, Shield
+- **Archivos**: File, FileText, Folder, Image, Download, Upload
+- **Comunicación**: Mail, Phone, MessageCircle, Bell, Share
+- **Media**: Play, Pause, Stop, Volume2, Camera, Video
+- **Tema**: Sun, Moon, Monitor, Palette
+- **Alias semánticos**: CloseIcon (X), SearchIcon (Search), HomeIcon (Home), etc.
+
+**📍 Para añadir nuevos iconos:**
+1. Editar `packages/ui/src/lib/icons.ts`
+2. Añadir export del icono: `export { NuevoIcon } from "lucide-react"`
+3. Opcionalmente crear alias semántico si es necesario
+4. El icono estará disponible automáticamente en todas las apps
+
+**📍 Uso en componentes:**
+```tsx
+// En packages/ui/src/components/ui/
+import { ChevronDown } from "../../lib/icons";
+
+// En apps/
+import { SearchIcon, CloseIcon } from "@hikai/ui";
+```
+
 ### Theme System
 
 **🎯 Sistema**: Variables CSS + providers per-app
