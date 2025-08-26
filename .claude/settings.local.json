@@ -2,9 +2,15 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Read(/C:\\c\\David\\proyectos\\hikai-repo\\packages/**)",
+      "Read(/C:\\c\\David\\proyectos/**)",
+      "Bash(git add:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\David\\proyectos"
+    ]
   }
 }
