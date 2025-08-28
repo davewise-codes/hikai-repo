@@ -108,6 +108,8 @@ export {
   UserX,
   Crown,
   Key,
+  LogOut,
+  LogIn,
 } from "lucide-react";
 
 // Feedback & Status

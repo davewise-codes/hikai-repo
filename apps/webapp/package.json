@@ -10,10 +10,12 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@convex-dev/auth": "^0.0.69",
     "@hikai/tailwind-config": "workspace:*",
     "@hikai/ui": "workspace:*",
     "@tanstack/react-router": "^1.91.0",
     "@tanstack/router-vite-plugin": "^1.90.0",
+    "convex": "^1.26.1",
     "i18next": "^25.4.2",
     "i18next-browser-languagedetector": "^8.2.0",
     "react": "^19.1.1",

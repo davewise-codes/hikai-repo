@@ -7,3 +7,7 @@ export * from "./card";
 export * from "./accordion";
 export * from "./sheet";
 export * from "./separator";
+export * from "./input";
+export * from "./label";
+export * from "./tabs";
+export * from "./form";

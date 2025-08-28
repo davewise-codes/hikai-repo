@@ -16,8 +16,6 @@ export interface CoreSlice {
   locale: Locale;
   // eslint-disable-next-line no-unused-vars
   setLocale: (newLocale: Locale) => void;
-  
-  // Aquí irán: auth, currentOrg, etc.
 }
 
 export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set) => ({
