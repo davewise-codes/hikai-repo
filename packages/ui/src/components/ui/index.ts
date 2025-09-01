@@ -10,4 +10,5 @@ export * from "./separator";
 export * from "./input";
 export * from "./label";
 export * from "./tabs";
+export * from "./textarea";
 export * from "./form";

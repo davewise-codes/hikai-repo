@@ -6,7 +6,7 @@ export interface AuthSlice {
   isLoading: boolean;
   
   // Auth actions
-  // eslint-disable-next-line no-unused-vars
+   
   setLoading: (loading: boolean) => void;
 }
 

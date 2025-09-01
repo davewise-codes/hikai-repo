@@ -10,11 +10,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@convex-dev/auth": "^0.0.69",
+    "@convex-dev/auth": "^0.0.88",
     "@hikai/tailwind-config": "workspace:*",
     "@hikai/ui": "workspace:*",
-    "@tanstack/react-router": "^1.91.0",
-    "@tanstack/router-vite-plugin": "^1.90.0",
+    "@tanstack/react-router": "^1.131.31",
     "convex": "^1.26.1",
     "i18next": "^25.4.2",
     "i18next-browser-languagedetector": "^8.2.0",
@@ -25,15 +24,16 @@
   },
   "devDependencies": {
     "@hikai/typescript-config": "workspace:*",
+    "@tanstack/router-plugin": "^1.131.31",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@vitejs/plugin-react": "^5.0.2",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.31.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.0",
-    "vite": "^5.4.0",
+    "vite": "^7.1.4",
     "vitest": "^3.2.4"
   }
 }

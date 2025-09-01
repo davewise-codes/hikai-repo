@@ -4,7 +4,7 @@ import { Sun, Moon, Button } from "@hikai/ui";
 import { useTheme } from "@/hooks/use-theme";
 
 export function ThemeSwitcher() {
-	const { theme, setTheme, actualTheme } = useTheme();
+	const { setTheme, actualTheme } = useTheme();
 
 	const toggleTheme = () => {
 		// Simple toggle between light and dark

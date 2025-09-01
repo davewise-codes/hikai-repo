@@ -9,7 +9,7 @@
 		"skipLibCheck": true,
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitAny": true,
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"baseUrl": ".",
 		"paths": {
 			"@hikai/*": ["../packages/*"]

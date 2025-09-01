@@ -4,7 +4,7 @@ import { useTheme } from "@/domains/core";
 
 export interface ThemeContextValue {
 	theme: Theme;
-	// eslint-disable-next-line no-unused-vars
+	 
 	setTheme: (newTheme: Theme) => void;
 	actualTheme: "light" | "dark";
 }

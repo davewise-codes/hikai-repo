@@ -14,7 +14,8 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as auth_auth from "../auth/auth.js";
-import type * as auth from "../auth.js";
+import type * as http from "../http.js";
+import type * as organizations_organizations from "../organizations/organizations.js";
 import type * as users from "../users.js";
 
 /**
@@ -27,7 +28,8 @@ import type * as users from "../users.js";
  */
 declare const fullApi: ApiFromModules<{
   "auth/auth": typeof auth_auth;
-  auth: typeof auth;
+  http: typeof http;
+  "organizations/organizations": typeof organizations_organizations;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

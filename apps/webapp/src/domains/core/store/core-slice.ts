@@ -9,12 +9,12 @@ export const defaultLocale: Locale = 'en';
 export interface CoreSlice {
   // Theme settings
   theme: Theme;
-  // eslint-disable-next-line no-unused-vars
+   
   setTheme: (newTheme: Theme) => void;
   
   // I18n settings  
   locale: Locale;
-  // eslint-disable-next-line no-unused-vars
+   
   setLocale: (newLocale: Locale) => void;
 }
 

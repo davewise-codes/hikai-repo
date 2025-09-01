@@ -15,7 +15,8 @@
       "Bash(pnpm run:*)",
       "Bash(pnpm list:*)",
       "Bash(curl:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "WebFetch(domain:tanstack.com)"
     ],
     "deny": [],
     "ask": [],

@@ -35,6 +35,18 @@ export default [
 			"react/jsx-no-target-blank": "off",
 			"@typescript-eslint/no-explicit-any": "off",
 			"@typescript-eslint/ban-ts-comment": "off",
+
+			// Fixes para falsos positivos
+			"no-unused-vars": "off", // Desactivar la regla base de JS
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{
+					"argsIgnorePattern": "^_", // Ignorar parámetros que empiecen con _
+					"varsIgnorePattern": "^_", // Ignorar variables que empiecen con _
+					"ignoreRestSiblings": true
+				}
+			],
+			"no-undef": "off", // TypeScript ya maneja esto mejor
 		},
 		settings: {
 			react: {

@@ -3,7 +3,7 @@ import { Button, Input, Label, Form, FormField } from '@hikai/ui';
 import type { SignInFormData } from '../hooks/use-auth';
 
 interface SignInFormProps {
-  // eslint-disable-next-line no-unused-vars
+   
   onSubmit: (_formData: SignInFormData) => void;
   isLoading?: boolean;
   error?: string;
