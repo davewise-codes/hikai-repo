@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input, Label, Form, FormField } from '@hikai/ui';
 import type { SignUpFormData } from '../hooks/use-auth';
+import { useTranslation } from 'react-i18next';
 
 interface SignUpFormProps {
    
@@ -16,27 +17,29 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
     confirmPassword: '',
   });
 
+  const { t } = useTranslation('auth');
+
   const [errors, setErrors] = useState<Partial<SignUpFormData>>({});
 
   const validateForm = (): boolean => {
     const newErrors: Partial<SignUpFormData> = {};
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('signup.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = t('signup.emailInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('signup.passwordRequired');
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = t('signup.passwordMinLength');
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Confirm password is required';
+      newErrors.confirmPassword = t('signup.confirmPasswordRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('signup.passwordsDoNotMatch');
     }
 
     setErrors(newErrors);
@@ -73,7 +76,7 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
         <Input
           id="signup-email"
           type="email"
-          placeholder="Enter your email"
+          placeholder={t('signup.emailPlaceholder')}
           value={formData.email}
           onChange={handleInputChange('email')}
           disabled={isLoading}
@@ -85,7 +88,7 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
         <Input
           id="signup-password"
           type="password"
-          placeholder="Create a password"
+          placeholder={t('signup.passwordPlaceholder')}
           value={formData.password}
           onChange={handleInputChange('password')}
           disabled={isLoading}
@@ -97,7 +100,7 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
         <Input
           id="signup-confirm"
           type="password"
-          placeholder="Confirm your password"
+          placeholder={t('signup.confirmPasswordPlaceholder')}
           value={formData.confirmPassword}
           onChange={handleInputChange('confirmPassword')}
           disabled={isLoading}
@@ -105,7 +108,7 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
       </FormField>
 
       <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? 'Creating account...' : 'Create Account'}
+        {isLoading ? t('signup.createButtonLoading') : t('signup.createButton')}
       </Button>
     </Form>
   );

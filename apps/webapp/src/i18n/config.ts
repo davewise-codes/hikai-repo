@@ -5,13 +5,17 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // Import translation files
 import enCommon from './locales/en/common.json';
 import esCommon from './locales/es/common.json';
+import enAuth from './locales/en/auth.json';
+import esAuth from './locales/es/auth.json';
 
 const resources = {
   en: {
     common: enCommon,
+    auth: enAuth,
   },
   es: {
     common: esCommon,
+    auth: esAuth,
   },
 };
 

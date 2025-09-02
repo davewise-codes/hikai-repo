@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger, Card } from "@hikai/ui";
 import { SignInForm } from "./signin-form";
 import { SignUpForm } from "./signup-form";
 import type { SignInFormData, SignUpFormData } from "../hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
 // Form tab type - definido aquí con el componente que lo usa
 type AuthFormTab = "signin" | "signup";
@@ -23,18 +24,19 @@ export function AuthForm({
 	defaultTab = "signin",
 }: AuthFormProps) {
 	const [activeTab, setActiveTab] = useState<AuthFormTab>(defaultTab);
+	const { t } = useTranslation('auth');
 
 	return (
 		<div className="w-full max-w-md mx-auto">
 			<Card className="p-6">
 				<div className="text-center mb-6">
 					<h1 className="text-2xl font-semibold tracking-tight">
-						Welcome to Hikai
+						{t('common.welcomeTitle')}
 					</h1>
 					<p className="text-muted-foreground mt-2">
 						{activeTab === "signin"
-							? "Sign in to your account"
-							: "Create a new account"}
+							? t('common.signinSubtitle')
+							: t('common.signupSubtitle')}
 					</p>
 				</div>
 
@@ -43,8 +45,8 @@ export function AuthForm({
 					onValueChange={(value) => setActiveTab(value as AuthFormTab)}
 				>
 					<TabsList className="grid w-full grid-cols-2">
-						<TabsTrigger value="signin">I have an account</TabsTrigger>
-						<TabsTrigger value="signup">Create user</TabsTrigger>
+						<TabsTrigger value="signin">{t('common.haveAccount')}</TabsTrigger>
+						<TabsTrigger value="signup">{t('common.createAccount')}</TabsTrigger>
 					</TabsList>
 
 					<TabsContent value="signin" className="mt-4">
@@ -65,7 +67,7 @@ export function AuthForm({
 				</Tabs>
 
 				<div className="text-center mt-6 text-sm text-muted-foreground">
-					By continuing, you agree to our Terms of Service and Privacy Policy.
+					{t('common.termsText')}
 				</div>
 			</Card>
 		</div>

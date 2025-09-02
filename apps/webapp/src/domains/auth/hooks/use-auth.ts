@@ -1,7 +1,7 @@
 import { useStore } from "@/store";
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
 // import { useQuery } from "convex/react";
-// import { api } from "@convex/_generated/api";
+import { api } from "@hikai/convex";
 
 // Form data types - definidos aquí con el hook que los usa
 export interface SignInFormData {
