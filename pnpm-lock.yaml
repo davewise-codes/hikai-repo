@@ -81,6 +81,9 @@ importers:
       '@convex-dev/auth':
         specifier: ^0.0.88
         version: 0.0.88(@auth/core@0.37.0)(convex@1.26.1(react@19.1.1))(react@19.1.1)
+      '@hikai/convex':
+        specifier: workspace:*
+        version: link:../../packages/convex
       '@hikai/tailwind-config':
         specifier: workspace:*
         version: link:../../packages/tailwind-config
