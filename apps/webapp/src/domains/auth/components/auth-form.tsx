@@ -14,6 +14,7 @@ interface AuthFormProps {
 	isLoading?: boolean;
 	error?: string;
 	defaultTab?: AuthFormTab;
+	onClearError?: () => void;
 }
 
 export function AuthForm({
@@ -22,6 +23,7 @@ export function AuthForm({
 	isLoading = false,
 	error,
 	defaultTab = "signin",
+	onClearError,
 }: AuthFormProps) {
 	const [activeTab, setActiveTab] = useState<AuthFormTab>(defaultTab);
 	const { t } = useTranslation('auth');
@@ -42,7 +44,11 @@ export function AuthForm({
 
 				<Tabs
 					value={activeTab}
-					onValueChange={(value) => setActiveTab(value as AuthFormTab)}
+					onValueChange={(value) => {
+						setActiveTab(value as AuthFormTab);
+						// Clear error when switching tabs
+						onClearError?.();
+					}}
 				>
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="signin">{t('common.haveAccount')}</TabsTrigger>
