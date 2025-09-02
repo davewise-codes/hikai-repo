@@ -31,6 +31,9 @@ function getAuthErrorKey(error: unknown): string {
 	) {
 		return "errors.accountExists";
 	}
+	if (errorMessage.includes("invalidsecret")) {
+		return "errors.invalidSecret";
+	}
 	if (errorMessage.includes("network") || errorMessage.includes("connection")) {
 		return "errors.networkError";
 	}
@@ -80,7 +83,7 @@ export function useAuth() {
 				password: data.password,
 				flow: "signIn",
 			});
-			
+
 			// Check if sign in was successful
 			if (!result?.signingIn) {
 				// Sign in failed, throw error with translation key
@@ -113,7 +116,7 @@ export function useAuth() {
 				password: data.password,
 				flow: "signUp",
 			});
-			
+
 			// Check if sign up was successful
 			if (!result?.signingIn) {
 				// Sign up failed, check if it's because account already exists
