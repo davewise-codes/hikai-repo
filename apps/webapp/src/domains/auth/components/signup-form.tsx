@@ -3,6 +3,8 @@ import { Button, Input, Label, Form, FormField } from '@hikai/ui';
 import type { SignUpFormData } from '../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
+export type { SignUpFormData };
+
 interface SignUpFormProps {
    
   onSubmit: (_formData: SignUpFormData) => void;

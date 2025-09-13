@@ -11,13 +11,8 @@ function getAuthErrorKey(error: unknown): string {
 			: String(error).toLowerCase();
 
 	// Map common Convex Auth error patterns to translation keys
-	if (
-		errorMessage.includes("invalid credentials") ||
-		errorMessage.includes("wrong password") ||
-		errorMessage.includes("invalid account") ||
-		errorMessage.includes("invalidaccountid")
-	) {
-		return "errors.invalidCredentials";
+	if (errorMessage.includes("invalidaccountid")) {
+		return "errors.invalidaccountid";
 	}
 	if (
 		errorMessage.includes("user not found") ||
@@ -52,6 +47,11 @@ export interface SignUpFormData {
 	email: string;
 	password: string;
 	confirmPassword: string;
+}
+
+export interface VerificationCodeFormData {
+	code: string;
+	email: string;
 }
 
 export function useAuth() {
@@ -117,21 +117,80 @@ export function useAuth() {
 				flow: "signUp",
 			});
 
-			// Check if sign up was successful
+			// Return verification status - if not immediately signed in, verification is needed
+			const needsVerification = !result?.signingIn;
+			return { needsVerification, email: data.email };
+		} catch (error) {
+			// For other errors, map them
+			const errorKey = getAuthErrorKey(error);
+			const translationError = new Error(errorKey);
+			translationError.name = "AuthTranslationError";
+			throw translationError;
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const verifyCode = async (data: VerificationCodeFormData) => {
+		setLoading(true);
+		try {
+			const result = await convexSignIn("password", {
+				email: data.email,
+				code: data.code,
+				flow: "email-verification",
+			});
+
+			// Check if verification was successful
 			if (!result?.signingIn) {
-				// Sign up failed, check if it's because account already exists
-				const errorKey = "errors.accountExists"; // Default assumption for failed signUp
+				const errorKey = "errors.invalidVerificationCode";
 				const translationError = new Error(errorKey);
 				translationError.name = "AuthTranslationError";
 				throw translationError;
 			}
 			// Convex automáticamente actualizará useQuery cuando cambie el token
+			return { success: true };
 		} catch (error) {
 			// If already an AuthTranslationError, re-throw
 			if (error instanceof Error && error.name === "AuthTranslationError") {
 				throw error;
 			}
 			// For other errors, map them
+			const errorKey = getAuthErrorKey(error);
+			const translationError = new Error(errorKey);
+			translationError.name = "AuthTranslationError";
+			throw translationError;
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const resendVerificationCode = async (email: string) => {
+		setLoading(true);
+		try {
+			// Re-trigger the verification process by attempting sign in again
+			await convexSignIn("password", {
+				email,
+				flow: "signIn", // This will trigger verification if account exists but isn't verified
+			});
+			return { success: true };
+		} catch (error) {
+			// For other errors, map them
+			const errorKey = getAuthErrorKey(error);
+			const translationError = new Error(errorKey);
+			translationError.name = "AuthTranslationError";
+			throw translationError;
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const signInWithOAuth = async (provider: 'github' | 'google') => {
+		setLoading(true);
+		try {
+			await convexSignIn(provider);
+			// OAuth will redirect, so no need to handle response here
+		} catch (error) {
+			// For OAuth errors, map them to translation keys
 			const errorKey = getAuthErrorKey(error);
 			const translationError = new Error(errorKey);
 			translationError.name = "AuthTranslationError";
@@ -166,6 +225,9 @@ export function useAuth() {
 		isLoading: isLoading || isTokenLoading, // Combinar loading states
 		signIn,
 		signUp,
+		signInWithOAuth,
+		verifyCode,
+		resendVerificationCode,
 		signOut,
 	};
 }

@@ -16,7 +16,16 @@
       "Bash(pnpm list:*)",
       "Bash(curl:*)",
       "Bash(pnpm lint:*)",
-      "WebFetch(domain:tanstack.com)"
+      "WebFetch(domain:tanstack.com)",
+      "WebFetch(domain:www.convex.dev)",
+      "Bash(find:*)",
+      "Bash(npx convex env:*)",
+      "Bash(npx convex logs:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm info:*)",
+      "Bash(mv:*)",
+      "Bash(timeout 10s npx convex logs --history 10)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": [],

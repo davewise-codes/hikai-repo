@@ -13,6 +13,8 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
+import type * as auth_ResendOTP from "../auth/ResendOTP.js";
+import type * as auth_emailTemplate from "../auth/emailTemplate.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as organizations_organizations from "../organizations/organizations.js";
@@ -27,6 +29,8 @@ import type * as users from "../users.js";
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "auth/ResendOTP": typeof auth_ResendOTP;
+  "auth/emailTemplate": typeof auth_emailTemplate;
   auth: typeof auth;
   http: typeof http;
   "organizations/organizations": typeof organizations_organizations;

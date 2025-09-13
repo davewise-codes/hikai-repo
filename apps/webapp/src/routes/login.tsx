@@ -32,15 +32,11 @@ function LoginPage() {
     }
   };
 
-  const handleSignUp = async (data: SignUpFormData) => {
-    try {
-      setError('');
-      await signUp(data);
-      // La redirección se maneja en el useEffect de arriba
-    } catch (error) {
-      const errorKey = error instanceof Error ? error.message : 'errors.signUpFailed';
-      setError(t(errorKey));
-    }
+  const handleSignUpSuccess = () => {
+    // El SignupWithVerification maneja todo el flujo internamente
+    // Cuando llegue aquí, el usuario ya está autenticado
+    // La redirección se maneja en el useEffect de arriba
+    setError('');
   };
 
   const handleClearError = () => {
@@ -61,7 +57,7 @@ function LoginPage() {
         ) : (
           <AuthForm
             onSignIn={handleSignIn}
-            onSignUp={handleSignUp}
+            onSignUpSuccess={handleSignUpSuccess}
             isLoading={isLoading}
             error={error}
             onClearError={handleClearError}
