@@ -3,6 +3,7 @@ import GitHub from "@auth/core/providers/github";
 import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ResendOTP } from "./auth/ResendOTP";
+import { ResendOTPReset } from "./auth/ResendOTPReset";
 
 export const { auth, signIn, signOut, store } = convexAuth({
 	providers: [
@@ -16,6 +17,9 @@ export const { auth, signIn, signOut, store } = convexAuth({
 				},
 			},
 		}),
-		Password({ verify: ResendOTP }),
+		Password({
+			verify: ResendOTP,
+			reset: ResendOTPReset,
+		}),
 	],
 });

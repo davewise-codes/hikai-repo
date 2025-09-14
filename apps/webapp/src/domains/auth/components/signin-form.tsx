@@ -5,12 +5,14 @@ import { useTranslation } from "react-i18next";
 
 interface SignInFormProps {
 	onSubmit: (_formData: SignInFormData) => void;
+	onForgotPassword?: () => void;
 	isLoading?: boolean;
 	error?: string;
 }
 
 export function SignInForm({
 	onSubmit,
+	onForgotPassword,
 	isLoading = false,
 	error,
 }: SignInFormProps) {
@@ -103,6 +105,19 @@ export function SignInForm({
 						)}
 					</button>
 				</div>
+				{onForgotPassword && (
+					<div className="mt-2">
+						<Button
+							variant="link"
+							onClick={onForgotPassword}
+							// className="text-sm text-primary hover:text-primary/80 transition-colors"
+							className="p-0"
+							disabled={isLoading}
+						>
+							{t("passwordReset.forgotPassword")}
+						</Button>
+					</div>
+				)}
 			</FormField>
 
 			<Button type="submit" className="w-full" disabled={isLoading}>

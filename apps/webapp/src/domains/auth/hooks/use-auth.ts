@@ -29,6 +29,9 @@ function getAuthErrorKey(error: unknown): string {
 	if (errorMessage.includes("invalidsecret")) {
 		return "errors.invalidSecret";
 	}
+	if (errorMessage.includes("could not verify code") || errorMessage.includes("invalid code")) {
+		return "errors.invalidResetCode";
+	}
 	if (errorMessage.includes("network") || errorMessage.includes("connection")) {
 		return "errors.networkError";
 	}
@@ -52,6 +55,17 @@ export interface SignUpFormData {
 export interface VerificationCodeFormData {
 	code: string;
 	email: string;
+}
+
+export interface PasswordResetRequestData {
+	email: string;
+}
+
+export interface PasswordResetFormData {
+	email: string;
+	code: string;
+	password: string;
+	confirmPassword: string;
 }
 
 export function useAuth() {
@@ -200,6 +214,57 @@ export function useAuth() {
 		}
 	};
 
+	const requestPasswordReset = async (data: PasswordResetRequestData) => {
+		setLoading(true);
+		try {
+			await convexSignIn("password", {
+				email: data.email,
+				flow: "reset",
+			});
+
+			return { success: true };
+		} catch (error) {
+			const errorKey = getAuthErrorKey(error);
+			const translationError = new Error(errorKey);
+			translationError.name = "AuthTranslationError";
+			throw translationError;
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const resetPassword = async (data: PasswordResetFormData) => {
+		setLoading(true);
+		try {
+			const result = await convexSignIn("password", {
+				email: data.email,
+				code: data.code,
+				newPassword: data.password,
+				flow: "reset-verification",
+			});
+
+			// Check if password reset was successful
+			if (!result?.signingIn) {
+				const errorKey = "errors.invalidResetCode";
+				const translationError = new Error(errorKey);
+				translationError.name = "AuthTranslationError";
+				throw translationError;
+			}
+
+			return { success: true };
+		} catch (error) {
+			if (error instanceof Error && error.name === "AuthTranslationError") {
+				throw error;
+			}
+			const errorKey = getAuthErrorKey(error);
+			const translationError = new Error(errorKey);
+			translationError.name = "AuthTranslationError";
+			throw translationError;
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const signOut = async () => {
 		setLoading(true);
 		try {
@@ -228,6 +293,8 @@ export function useAuth() {
 		signInWithOAuth,
 		verifyCode,
 		resendVerificationCode,
+		requestPasswordReset,
+		resetPassword,
 		signOut,
 	};
 }
