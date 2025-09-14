@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, Label, Form, FormField } from '@hikai/ui';
+import { Button, Input, Label, Form, FormField, Eye, EyeOff } from '@hikai/ui';
 import type { SignUpFormData } from '../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
 
@@ -22,6 +22,8 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
   const { t } = useTranslation('auth');
 
   const [errors, setErrors] = useState<Partial<SignUpFormData>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<SignUpFormData> = {};
@@ -87,26 +89,56 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
 
       <FormField error={errors.password}>
         <Label htmlFor="signup-password">Password</Label>
-        <Input
-          id="signup-password"
-          type="password"
-          placeholder={t('signup.passwordPlaceholder')}
-          value={formData.password}
-          onChange={handleInputChange('password')}
-          disabled={isLoading}
-        />
+        <div className="relative">
+          <Input
+            id="signup-password"
+            type={showPassword ? "text" : "password"}
+            placeholder={t('signup.passwordPlaceholder')}
+            value={formData.password}
+            onChange={handleInputChange('password')}
+            disabled={isLoading}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            disabled={isLoading}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
       </FormField>
 
       <FormField error={errors.confirmPassword}>
         <Label htmlFor="signup-confirm">Confirm Password</Label>
-        <Input
-          id="signup-confirm"
-          type="password"
-          placeholder={t('signup.confirmPasswordPlaceholder')}
-          value={formData.confirmPassword}
-          onChange={handleInputChange('confirmPassword')}
-          disabled={isLoading}
-        />
+        <div className="relative">
+          <Input
+            id="signup-confirm"
+            type={showConfirmPassword ? "text" : "password"}
+            placeholder={t('signup.confirmPasswordPlaceholder')}
+            value={formData.confirmPassword}
+            onChange={handleInputChange('confirmPassword')}
+            disabled={isLoading}
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            disabled={isLoading}
+          >
+            {showConfirmPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+          </button>
+        </div>
       </FormField>
 
       <Button type="submit" className="w-full" disabled={isLoading}>

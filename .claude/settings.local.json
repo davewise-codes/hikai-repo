@@ -25,7 +25,8 @@
       "Bash(pnpm info:*)",
       "Bash(mv:*)",
       "Bash(timeout 10s npx convex logs --history 10)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npx convex:*)"
     ],
     "deny": [],
     "ask": [],

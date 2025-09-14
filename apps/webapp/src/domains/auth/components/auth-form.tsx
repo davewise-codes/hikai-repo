@@ -64,24 +64,20 @@ export function AuthForm({
 							isLoading={isLoading}
 							error={error}
 						/>
-						<div className="mt-6">
-							<SocialLoginButtons
-								isLoading={isLoading}
-								onClearError={onClearError}
-							/>
-						</div>
 					</TabsContent>
 
 					<TabsContent value="signup" className="mt-4">
 						<SignupWithVerification onSuccess={onSignUpSuccess} />
-						<div className="mt-6">
-							<SocialLoginButtons
-								isLoading={isLoading}
-								onClearError={onClearError}
-							/>
-						</div>
 					</TabsContent>
 				</Tabs>
+
+				{/* Social login buttons - unified outside of tabs */}
+				<div className="mt-6">
+					<SocialLoginButtons
+						isLoading={isLoading}
+						onClearError={onClearError}
+					/>
+				</div>
 
 				<div className="text-center mt-6 text-sm text-muted-foreground">
 					{t("common.termsText")}

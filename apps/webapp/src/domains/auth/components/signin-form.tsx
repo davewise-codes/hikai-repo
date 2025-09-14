@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Input, Label, Form, FormField } from "@hikai/ui";
+import { Button, Input, Label, Form, FormField, Eye, EyeOff } from "@hikai/ui";
 import type { SignInFormData } from "../hooks/use-auth";
 import { useTranslation } from "react-i18next";
 
@@ -22,6 +22,7 @@ export function SignInForm({
 	const { t } = useTranslation("auth");
 
 	const [errors, setErrors] = useState<Partial<SignInFormData>>({});
+	const [showPassword, setShowPassword] = useState(false);
 
 	const validateForm = (): boolean => {
 		const newErrors: Partial<SignInFormData> = {};
@@ -79,14 +80,29 @@ export function SignInForm({
 
 			<FormField error={errors.password}>
 				<Label htmlFor="signin-password">Password</Label>
-				<Input
-					id="signin-password"
-					type="password"
-					placeholder={t("signin.passwordPlaceholder")}
-					value={formData.password}
-					onChange={handleInputChange("password")}
-					disabled={isLoading}
-				/>
+				<div className="relative">
+					<Input
+						id="signin-password"
+						type={showPassword ? "text" : "password"}
+						placeholder={t("signin.passwordPlaceholder")}
+						value={formData.password}
+						onChange={handleInputChange("password")}
+						disabled={isLoading}
+						className="pr-10"
+					/>
+					<button
+						type="button"
+						onClick={() => setShowPassword(!showPassword)}
+						className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+						disabled={isLoading}
+					>
+						{showPassword ? (
+							<EyeOff className="h-4 w-4" />
+						) : (
+							<Eye className="h-4 w-4" />
+						)}
+					</button>
+				</div>
 			</FormField>
 
 			<Button type="submit" className="w-full" disabled={isLoading}>
