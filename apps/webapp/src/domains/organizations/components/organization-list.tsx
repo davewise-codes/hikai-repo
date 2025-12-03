@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hikai/ui";
 import { useUserOrganizations } from "../hooks/use-organizations";
 import { CreateOrganizationForm } from "./create-organization-form";
-import { OrganizationsDebug } from "./organizations-debug";
 
 export function OrganizationList() {
   const organizations = useUserOrganizations();
@@ -26,9 +25,6 @@ export function OrganizationList() {
       </div>
 
       <CreateOrganizationForm />
-
-      {/* Debug panel for testing */}
-      <OrganizationsDebug />
 
       {organizations.length === 0 ? (
         <Card>

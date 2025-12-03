@@ -1,6 +1,32 @@
-● 🔐 Flujo de Autenticación Completo
+# Auth Domain
 
-1. Arquitectura de Autenticación
+Sistema de autenticación usando Convex Auth con múltiples providers.
+
+## Providers Soportados
+
+- **Email/Password**: Con verificación OTP via Resend
+- **Google OAuth**: Login social con Google
+- **GitHub OAuth**: Login social con GitHub
+
+## Estructura
+
+```
+auth/
+├── components/          # UI de autenticación
+│   ├── auth-form.tsx           # Contenedor principal (tabs signin/signup)
+│   ├── signin-form.tsx         # Formulario de login
+│   ├── signup-form.tsx         # Formulario de registro
+│   ├── signup-with-verification.tsx  # Flujo signup + verificación
+│   ├── verification-code-form.tsx    # Input código OTP
+│   ├── password-reset-flow.tsx       # Flujo reset password (3 pasos)
+│   └── social-login-buttons.tsx      # Botones OAuth
+├── hooks/
+│   └── use-auth.ts      # Hook principal con toda la lógica
+└── utils/
+    └── validation.ts    # Validadores reutilizables
+```
+
+## Arquitectura de Autenticación
 
 El sistema usa Convex Auth que es una solución de autenticación basada en tokens JWT:
 

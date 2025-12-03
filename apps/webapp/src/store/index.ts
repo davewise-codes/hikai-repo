@@ -1,10 +1,9 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { CoreSlice, createCoreSlice } from '@/domains/core/store/core-slice';
-import { AuthSlice, createAuthSlice } from '@/domains/auth/store/auth-slice';
 
 // Store State - combina slices de todos los dominios
-interface StoreState extends CoreSlice, AuthSlice {
+interface StoreState extends CoreSlice {
   // Futuros slices de otros dominios se añadirán aquí
 }
 
@@ -13,16 +12,13 @@ export const useStore = create<StoreState>()(
     persist(
       (...args) => ({
         ...createCoreSlice(...args),
-        ...createAuthSlice(...args),
         // Futuros slices de otros dominios se añadirán aquí
       }),
       {
         name: 'hikai-store',
         partialize: (state) => ({
-          // Solo persistir lo necesario del core
           theme: state.theme,
           locale: state.locale,
-          // Auth state ya no se persiste - Convex maneja la persistencia
         }),
       }
     ),
@@ -43,7 +39,6 @@ if (typeof window !== 'undefined') {
           useStore.setState({
             theme: newData.state.theme,
             locale: newData.state.locale,
-            // Auth state se sincroniza automáticamente via Convex
           });
         }
       } catch (error) {

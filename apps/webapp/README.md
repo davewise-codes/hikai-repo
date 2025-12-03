@@ -6,7 +6,7 @@ Aplicación web principal de Hikai que facilita a los equipos de producto llevar
 
 ### Principios Fundamentales
 
-1. **Dominio Core Unificado**: Todo lo transversal (auth, theme, i18n, navegación) vive en `domains/core`
+1. **Dominio Core Unificado**: Funcionalidad transversal (theme, i18n, navegación) vive en `domains/core`. Excepción: dominios con complejidad suficiente (como `auth`) pueden ser separados.
 2. **Estado Global Zustand**: Store unificado con sincronización automática entre pestañas
 3. **Routes Centralizadas**: TanStack Router en `/routes` para todas las rutas
 4. **Hooks por Dominio**: Hooks globales en carpetas, hooks específicos con componentes
@@ -17,11 +17,15 @@ Aplicación web principal de Hikai que facilita a los equipos de producto llevar
 ```
 src/
 ├── domains/
-│   └── core/                    # Todo lo transversal
-│       ├── components/          # Componentes UI del core
-│       ├── hooks/              # Hooks globales (useTheme, useI18n)
-│       ├── store/              # Core slice (theme, locale, auth, org)
-│       └── index.ts            # API pública del dominio
+│   ├── auth/                    # Autenticación (Convex Auth)
+│   │   ├── components/          # Forms de login, signup, reset password
+│   │   ├── hooks/              # useAuth hook principal
+│   │   └── utils/              # Validaciones compartidas
+│   ├── core/                    # Funcionalidad transversal
+│   │   ├── components/          # AppShell, Settings, etc.
+│   │   ├── hooks/              # useTheme, useI18n
+│   │   └── store/              # Core slice (theme, locale)
+│   └── organizations/           # Gestión de organizaciones
 ├── routes/                     # TanStack Router (centralizado)
 ├── store/                      # Store Zustand global + sync pestañas
 ├── components/                 # Componentes no vinculados a dominio
@@ -49,12 +53,14 @@ pnpm type-check
 
 ### Funcionalidades Implementadas
 
+- ✅ **Autenticación**: Email/password, Google OAuth, GitHub OAuth via Convex Auth
 - ✅ **Theme System**: Cambio de tema con persistencia multi-pestaña
 - ✅ **Internacionalización**: Cambio de idioma (EN/ES) con persistencia
 - ✅ **Navegación**: AppShell con sidebar navegable
 - ✅ **Settings**: Página de configuración funcional
 - ✅ **Routing**: TanStack Router configurado
 - ✅ **Store**: Zustand con persistencia localStorage
+- ✅ **Organizaciones**: CRUD de organizaciones con membresías
 
 ## 📋 Reglas de Desarrollo
 
@@ -165,10 +171,8 @@ export function useComponente() {
 
 ## 🎯 Próximos Pasos
 
-1. **Autenticación**: Integrar Convex para auth
-2. **Dominios**: Implementar sources y timeline
-3. **Backend**: Conectar con packages/convex
-4. **Testing**: Configurar testing suite cuando sea necesario
+1. **Dominios**: Implementar sources y timeline
+2. **Testing**: Configurar testing suite cuando sea necesario
 
 ## 📚 Referencias
 

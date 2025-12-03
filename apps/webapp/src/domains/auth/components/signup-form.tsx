@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button, Input, Label, Form, FormField, Eye, EyeOff } from '@hikai/ui';
 import type { SignUpFormData } from '../hooks/use-auth';
 import { useTranslation } from 'react-i18next';
+import { isValidEmail, isValidPassword } from '../utils/validation';
 
 export type { SignUpFormData };
 
@@ -30,13 +31,13 @@ export function SignUpForm({ onSubmit, isLoading = false, error }: SignUpFormPro
 
     if (!formData.email) {
       newErrors.email = t('signup.emailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!isValidEmail(formData.email)) {
       newErrors.email = t('signup.emailInvalid');
     }
 
     if (!formData.password) {
       newErrors.password = t('signup.passwordRequired');
-    } else if (formData.password.length < 6) {
+    } else if (!isValidPassword(formData.password)) {
       newErrors.password = t('signup.passwordMinLength');
     }
 

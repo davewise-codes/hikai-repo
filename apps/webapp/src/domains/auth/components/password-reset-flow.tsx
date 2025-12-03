@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Button, Input, Label, Form, FormField, Eye, EyeOff } from "@hikai/ui";
-import type { PasswordResetRequestData, PasswordResetFormData } from "../hooks/use-auth";
+import type { PasswordResetRequestData } from "../hooks/use-auth";
 import { useTranslation } from "react-i18next";
+import { isValidVerificationCode, isValidPassword, formatVerificationCode, sanitizeCodeInput } from "../utils/validation";
 
 type PasswordResetStep = "request" | "verify" | "reset";
 
@@ -62,12 +63,7 @@ export function PasswordResetFlow({
 			return;
 		}
 
-		if (verificationCode.length !== 8) {
-			setErrors({ code: t("verification.codeInvalid") });
-			return;
-		}
-
-		if (!/^\d{8}$/.test(verificationCode)) {
+		if (!isValidVerificationCode(verificationCode)) {
 			setErrors({ code: t("verification.codeInvalid") });
 			return;
 		}
@@ -88,7 +84,7 @@ export function PasswordResetFlow({
 
 		if (!passwordData.password) {
 			newErrors.password = t("passwordReset.passwordRequired");
-		} else if (passwordData.password.length < 6) {
+		} else if (!isValidPassword(passwordData.password)) {
 			newErrors.password = t("passwordReset.passwordMinLength");
 		}
 		if (!passwordData.confirmPassword) {
@@ -121,17 +117,12 @@ export function PasswordResetFlow({
 		}
 	};
 
-	// Code input handler (similar to verification-code-form)
 	const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+		const value = sanitizeCodeInput(e.target.value);
 		setVerificationCode(value);
 		if (errors.code) {
 			setErrors(prev => ({ ...prev, code: "" }));
 		}
-	};
-
-	const formatCodeDisplay = (value: string) => {
-		return value.replace(/(\d{4})(\d{4})/, '$1 $2');
 	};
 
 	// Step 1: Request reset code
@@ -221,7 +212,7 @@ export function PasswordResetFlow({
 							id="reset-verification-code"
 							type="text"
 							placeholder="0000 0000"
-							value={formatCodeDisplay(verificationCode)}
+							value={formatVerificationCode(verificationCode)}
 							onChange={handleCodeChange}
 							disabled={isLoading}
 							className="text-center text-lg tracking-widest font-mono"

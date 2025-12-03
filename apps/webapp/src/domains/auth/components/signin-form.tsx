@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button, Input, Label, Form, FormField, Eye, EyeOff } from "@hikai/ui";
 import type { SignInFormData } from "../hooks/use-auth";
 import { useTranslation } from "react-i18next";
+import { isValidEmail } from "../utils/validation";
 
 interface SignInFormProps {
 	onSubmit: (_formData: SignInFormData) => void;
@@ -31,7 +32,7 @@ export function SignInForm({
 
 		if (!formData.email) {
 			newErrors.email = t("signin.emailRequired");
-		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+		} else if (!isValidEmail(formData.email)) {
 			newErrors.email = t("signin.emailInvalid");
 		}
 

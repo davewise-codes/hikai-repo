@@ -1,4 +1,4 @@
-import { useStore } from "@/store";
+import { useState } from "react";
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
@@ -79,8 +79,7 @@ export function useAuth() {
 	const user = useQuery(api.users.currentUser);
 
 	// Estado de loading local para operaciones async
-	const isLoading = useStore((state) => state.isLoading);
-	const setLoading = useStore((state) => state.setLoading);
+	const [isLoading, setLoading] = useState(false);
 
 	// Determinar estado de autenticación basado en token de Convex
 	// undefined = loading, null = not authenticated, string = authenticated

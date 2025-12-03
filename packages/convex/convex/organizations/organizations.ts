@@ -2,32 +2,6 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 
-// Query de debug para verificar autenticación con Convex Auth
-export const debugAuth = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-
-    // Obtener el usuario de la DB si está autenticado
-    let user = null;
-    if (userId !== null) {
-      user = await ctx.db.get(userId);
-    }
-
-    return {
-      isAuthenticated: !!userId,
-      userId,
-      identity: user ? {
-        subject: userId,
-        email: user.email,
-        name: user.name,
-        image: user.image
-      } : null,
-      timestamp: Date.now()
-    };
-  },
-});
-
 // Query para obtener todas las organizaciones (pública)
 export const listOrganizations = query({
   args: {},
@@ -55,7 +29,6 @@ export const getUserOrganizations = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    console.log("getUserOrganizations - userId:", userId);
     if (!userId) return [];
 
     // Obtener las membresías del usuario
@@ -104,60 +77,7 @@ export const getOrganizationMembers = query({
   },
 });
 
-// Mutation de test sin autenticación
-export const createOrganizationTest = mutation({
-  args: {
-    name: v.string(),
-    slug: v.string(),
-    description: v.optional(v.string()),
-  },
-  handler: async (ctx, { name, slug, description }) => {
-    console.log("createOrganizationTest - creating without auth check");
-    
-    // Buscar cualquier usuario existente para usar como owner
-    const existingUser = await ctx.db.query("users").first();
-    if (!existingUser) {
-      throw new Error("No hay usuarios en el sistema para crear la organización");
-    }
-    
-    console.log("createOrganizationTest - using existing user:", existingUser._id);
-    
-    // Verificar que el slug no esté en uso
-    const existingOrg = await ctx.db
-      .query("organizations")
-      .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .first();
-
-    if (existingOrg) {
-      throw new Error("El slug ya está en uso");
-    }
-
-    const now = Date.now();
-
-    // Crear la organización con un usuario real
-    const organizationId = await ctx.db.insert("organizations", {
-      name,
-      slug,
-      description,
-      ownerId: existingUser._id,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    // También añadir la membresía
-    await ctx.db.insert("organizationMembers", {
-      organizationId,
-      userId: existingUser._id,
-      role: "owner",
-      joinedAt: now,
-    });
-
-    console.log("createOrganizationTest - created organization:", organizationId);
-    return organizationId;
-  },
-});
-
-// Mutation para crear una nueva organización (con auth)
+// Mutation para crear una nueva organización
 export const createOrganization = mutation({
   args: {
     name: v.string(),
@@ -166,8 +86,6 @@ export const createOrganization = mutation({
   },
   handler: async (ctx, { name, slug, description }) => {
     const userId = await getAuthUserId(ctx);
-    console.log("createOrganization - userId:", userId);
-    
     if (!userId) {
       throw new Error("Usuario no autenticado");
     }

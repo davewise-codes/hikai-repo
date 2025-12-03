@@ -7,8 +7,7 @@ export const currentUser = query({
 	handler: async (ctx) => {
 		const userId = await getAuthUserId(ctx);
 
-		// Validar que userId sea válido antes de intentar obtener el usuario
-		if (!userId || userId === null) {
+		if (!userId) {
 			return null;
 		}
 
@@ -19,15 +18,5 @@ export const currentUser = query({
 			console.error("Error getting user:", error);
 			return null;
 		}
-	},
-});
-
-// Query para listar todos los usuarios (debug/admin)
-export const userList = query({
-	args: {},
-	handler: async (ctx) => {
-		const users = await ctx.db.query("users");
-
-		return users;
 	},
 });

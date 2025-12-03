@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input, Label, Form, FormField } from '@hikai/ui';
 import { useTranslation } from 'react-i18next';
+import { isValidVerificationCode, formatVerificationCode, sanitizeCodeInput } from '../utils/validation';
 
 export interface VerificationCodeFormData {
   code: string;
@@ -34,17 +35,12 @@ export function VerificationCodeForm({
       setCodeError(t('verification.codeRequired'));
       return false;
     }
-    
-    if (code.length !== 8) {
+
+    if (!isValidVerificationCode(code)) {
       setCodeError(t('verification.codeInvalid'));
       return false;
     }
-    
-    if (!/^\d{8}$/.test(code)) {
-      setCodeError(t('verification.codeInvalid'));
-      return false;
-    }
-    
+
     return true;
   };
 
@@ -58,15 +54,11 @@ export function VerificationCodeForm({
   };
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, '').slice(0, 8);
+    const value = sanitizeCodeInput(e.target.value);
     setCode(value);
     if (codeError) {
       setCodeError(undefined);
     }
-  };
-
-  const formatCodeDisplay = (value: string) => {
-    return value.replace(/(\d{4})(\d{4})/, '$1 $2');
   };
 
   return (
@@ -95,7 +87,7 @@ export function VerificationCodeForm({
             id="verification-code"
             type="text"
             placeholder="0000 0000"
-            value={formatCodeDisplay(code)}
+            value={formatVerificationCode(code)}
             onChange={handleCodeChange}
             disabled={isLoading}
             className="text-center text-lg tracking-widest font-mono"
