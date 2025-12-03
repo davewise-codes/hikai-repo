@@ -12,12 +12,8 @@ import { useTranslation } from "react-i18next";
 function LoginPage() {
 	const { signIn, isAuthenticated, isLoading } = useAuth();
 	const navigate = useNavigate();
-	const location = useLocation();
 	const [error, setError] = useState<string>("");
 	const { t } = useTranslation("auth");
-
-	// Check if we're handling an OAuth callback - TanStack Router uses search object, not string
-	const hasOAuthCode = !!(location.search && typeof location.search === 'object' && 'code' in location.search);
 
 
 	// Redirigir si ya está autenticado
@@ -50,14 +46,8 @@ function LoginPage() {
 		setError("");
 	};
 
-	// No renderizar si ya está autenticado o procesando OAuth (evita flickering)
+	// No renderizar si ya está autenticado (evita flickering)
 	if (isAuthenticated && !isLoading) {
-		return null;
-	}
-
-	// If we have an OAuth code in login page, redirect to home to let GlobalAuthGuard handle it
-	if (hasOAuthCode) {
-		navigate({ to: "/", replace: true });
 		return null;
 	}
 

@@ -1,7 +1,7 @@
 import { useStore } from "@/store";
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
-// import { useQuery } from "convex/react";
-// import { api } from "@hikai/convex";
+import { useQuery } from "convex/react";
+import { api } from "@convex/_generated/api";
 
 // Helper function to map Convex auth errors to translation keys
 function getAuthErrorKey(error: unknown): string {
@@ -76,9 +76,7 @@ export function useAuth() {
 	// Token-based authentication state
 
 	// Query de servidor para obtener usuario actual
-	//const user = useQuery(api.users.userList);
-	// const userList = useQuery(api.users.userList);
-	// console.log("userList: ", userList);
+	const user = useQuery(api.users.currentUser);
 
 	// Estado de loading local para operaciones async
 	const isLoading = useStore((state) => state.isLoading);
@@ -275,19 +273,10 @@ export function useAuth() {
 		}
 	};
 
-	// Por ahora devolvemos un usuario simple basado en el token para no romper el flujo
-	const user = token
-		? {
-				_id: "token-user",
-				email: "authenticated@user.com", // Placeholder
-				name: "Authenticated User",
-			}
-		: null;
-
 	return {
 		user,
 		isAuthenticated,
-		isLoading: isLoading || isTokenLoading, // Combinar loading states
+		isLoading: isLoading || isTokenLoading, // Combine loading states
 		signIn,
 		signUp,
 		signInWithOAuth,
