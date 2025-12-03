@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@auth/core": "^0.37.0",
-    "@convex-dev/auth": "^0.0.80",
-    "convex": "^1.17.4",
+    "@convex-dev/auth": "^0.0.88",
+    "convex": "^1.26.1",
     "jose": "^6.0.13",
     "oslo": "^1.2.1",
     "resend": "^4.0.1"

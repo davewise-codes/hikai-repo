@@ -9,10 +9,11 @@ packages/ (código compartido)
 ├── ui/                 - Sistema de diseño y componentes React
 ├── tailwind-config/    - Configuración centralizada de Tailwind
 ├── typescript-config/  - Configuraciones de TypeScript
+└── convex/            - Backend con Convex (auth, DB, funciones)
 
 apps/ (aplicaciones)
-├── website/           - Sitio web marketing (Next.js + i18n)
-└── webapp/            - Aplicación web (Vite + TanStack Router)
+├── website/           - Sitio web marketing (Next.js + i18n) :3003
+└── webapp/            - Aplicación web (Vite + TanStack Router) :3004
 ```
 
 ### 🎯 Principios clave
@@ -28,14 +29,52 @@ apps/ (aplicaciones)
 - [Turborepo](https://turbo.build/) - Orquestación de tareas
 - [TypeScript](https://www.typescriptlang.org/) - Type safety
 - [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.dev/) - Sistema de diseño
+- [Convex](https://convex.dev/) - Backend, database y auth
+- [Convex Auth](https://labs.convex.dev/auth) - Sistema de autenticación
 - [Next.js](https://nextjs.org/) + [next-intl](https://next-intl-docs.vercel.app/) - Website con i18n
 - [Vite](https://vitejs.dev/) - Build tool para apps
+- [TanStack Router](https://tanstack.com/router) - Router para webapp
+- [Zustand](https://zustand-demo.pmnd.rs/) - State management en webapp
 - ESLint + Prettier - Linting y formateo
 - [Vitest](https://vitest.dev) - Testing
 
-## 🚀 Comandos útiles
+## 🚀 Inicio rápido
 
-### Globales (desde la raíz)
+### Primera vez (configuración inicial)
+
+1. **Instalar dependencias:**
+```bash
+pnpm install
+```
+
+2. **Configurar Convex (backend):**
+```bash
+cd packages/convex
+pnpm dev
+# Sigue las instrucciones para crear/conectar tu proyecto Convex
+# Esto generará el archivo .env.local con CONVEX_DEPLOYMENT y CONVEX_URL
+```
+
+3. **Copiar la URL de Convex a la webapp:**
+```bash
+# Después de configurar Convex, copia CONVEX_URL a apps/webapp/.env.local
+cd ../../apps/webapp
+echo "VITE_CONVEX_URL=<tu-url-de-convex>" > .env.local
+# Reemplaza <tu-url-de-convex> con la URL de tu dashboard de Convex
+```
+
+4. **Iniciar todas las aplicaciones:**
+```bash
+cd ../..
+pnpm dev
+```
+
+Esto iniciará:
+- **Website** (marketing): http://localhost:3003
+- **Webapp** (app): http://localhost:3004
+- **Convex** (backend): en modo dev
+
+### Comandos útiles
 
 ```bash
 pnpm install                 # Instala todas las dependencias del monorepo
@@ -177,9 +216,11 @@ cd apps/webapp && pnpm dlx vercel --prod
 
 - ✅ Estructura de monorepo con pnpm + turbo
 - ✅ Apps: `website` (Next.js) y `webapp` (Vite + TanStack Router)
-- ✅ Paquetes: `ui`, `typescript-config`, `tailwind-config`
+- ✅ Paquetes: `ui`, `typescript-config`, `tailwind-config`, `convex`
+- ✅ Backend con Convex + Auth (email OTP, GitHub, Google)
 - ✅ Sistema de themes centralizado con providers per-app
 - ✅ Sistema de fuentes centralizado (Google Fonts CDN)
+- ✅ State management con Zustand en webapp
 - ✅ Build por paquete con `tsc -b`
 - ✅ Lint y formato unificados
 - ✅ Tests unitarios funcionando con Vitest en `@hikai/ui`
