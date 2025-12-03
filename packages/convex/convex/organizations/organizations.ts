@@ -2,32 +2,27 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "../_generated/server";
 import { v } from "convex/values";
 
-// Query de debug para verificar autenticación
+// Query de debug para verificar autenticación con Convex Auth
 export const debugAuth = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    console.log("debugAuth - userId:", userId);
-    
-    // Intentar getUserIdentity directamente
-    let identity = null;
-    try {
-      identity = await ctx.auth.getUserIdentity();
-      console.log("debugAuth - identity:", identity);
-    } catch (error) {
-      console.log("debugAuth - getUserIdentity error:", error);
+
+    // Obtener el usuario de la DB si está autenticado
+    let user = null;
+    if (userId !== null) {
+      user = await ctx.db.get(userId);
     }
-    
-    // Debug adicional: verificar si hay información de auth en el contexto
-    console.log("debugAuth - ctx.auth:", (ctx as any).auth);
-    console.log("debugAuth - full ctx keys:", Object.keys(ctx));
-    
+
     return {
       isAuthenticated: !!userId,
       userId,
-      identity: identity ? { subject: identity.subject, email: (identity as any).email } : null,
-      contextKeys: Object.keys(ctx),
-      hasAuthContext: !!(ctx as any).auth,
+      identity: user ? {
+        subject: userId,
+        email: user.email,
+        name: user.name,
+        image: user.image
+      } : null,
       timestamp: Date.now()
     };
   },
