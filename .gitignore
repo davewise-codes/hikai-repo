@@ -51,3 +51,4 @@ yarn-error.log*
 # Inteleij
 .idea
 .vercel
+apps/auth-demo/
