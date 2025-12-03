@@ -1,5 +1,18 @@
 {
   "title": "Hikai WebApp",
+  "userMenu": {
+    "title": "User menu",
+    "user": "User",
+    "logout": "Log out"
+  },
+  "settings": {
+    "theme": "Theme",
+    "light": "Light",
+    "dark": "Dark",
+    "language": "Language",
+    "english": "English",
+    "spanish": "Español"
+  },
   "hero": {
     "welcome": "Welcome to our",
     "viteApp": "Vite App",

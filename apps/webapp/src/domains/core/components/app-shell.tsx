@@ -1,24 +1,13 @@
-import { HomeIcon, Settings, User, Folder, Clock, LogOut, Building } from "@hikai/ui";
+import { HomeIcon, Folder, Clock, Building } from "@hikai/ui";
 import { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { useAuth } from "@/domains/auth/hooks";
+import { UserMenu } from "./user-menu";
 
 interface AppShellProps {
   children: ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { signOut } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      // La redirección se manejará automáticamente por el cambio de estado
-    } catch {
-      // Silently handle logout errors
-    }
-  };
-
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -38,22 +27,9 @@ export function AppShell({ children }: AppShellProps) {
           <SidebarItem icon={<Clock className="w-5 h-5" />} label="Timeline" to="#" disabled />
         </nav>
         
-        {/* Bottom section - User */}
+        {/* Bottom section - User Menu */}
         <div className="p-2 border-t border-border">
-          <SidebarItem icon={<User className="w-5 h-5" />} label="Profile" to="#" disabled />
-          <SidebarItem icon={<Settings className="w-5 h-5" />} label="Settings" to="/settings" />
-          {/* Logout Button */}
-          <button
-            onClick={handleLogout}
-            className="w-12 h-12 mx-auto flex items-center justify-center rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors group relative mt-2"
-            title="Logout"
-          >
-            <LogOut className="w-5 h-5" />
-            {/* Tooltip */}
-            <span className="absolute left-full ml-2 px-2 py-1 bg-foreground text-background text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-              Logout
-            </span>
-          </button>
+          <UserMenu />
         </div>
       </aside>
       
