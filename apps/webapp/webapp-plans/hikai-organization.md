@@ -2,13 +2,13 @@
 
 ## Progreso
 
-| Fase                                | Estado       |
-| ----------------------------------- | ------------ |
+| Fase                                | Estado        |
+| ----------------------------------- | ------------- |
 | F0: Schema + Seguridad              | ✅ Completado |
-| F1: Orgs + OrgSwitcher + PlanLimits | ⏳ Pendiente |
-| F2: Products CRUD                   | ⏳ Pendiente |
-| F3: Trazabilidad                    | ⏳ Pendiente |
-| F4: Transfer Ownership              | ⏳ Pendiente |
+| F1: Orgs + OrgSwitcher + PlanLimits | ✅ Completado |
+| F2: Products CRUD                   | ⏳ Pendiente  |
+| F3: Trazabilidad                    | ⏳ Pendiente  |
+| F4: Transfer Ownership              | ⏳ Pendiente  |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -19,6 +19,7 @@
 - Analiza el documento y el plan y toma el prompt de esa fase como instrucción para implementarla
 - Cuando tengas un plan para ello compartelo conmigo para validarlo
 - No hagas asunciones, comparteme dudas y las debatimos
+- Este proyecto genera consideraciones de seguridad clave para la app, asegura que los ficheros CLAUDE.md y README.md incluyen estas consideraciones en sus instrucciones para tenerlas en cuenta en cualquier desarrollo.
 - Máxima capacidad de ultrathink
 
 ---

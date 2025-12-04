@@ -180,3 +180,8 @@ export function useComponente() {
 - [TanStack Router](https://tanstack.com/router)
 - [Zustand](https://github.com/pmndrs/zustand)
 - [Hikai UI Package](../../packages/ui/)
+
+### Documentación de Dominios
+
+- [Organizations](./src/domains/organizations/README.md) - Gestión de organizaciones/tenants
+- [Documentación Funcional](./doc/) - Guías de usuario

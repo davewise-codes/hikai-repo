@@ -53,5 +53,18 @@
   },
   "alert": {
     "message": "🎉 Congratulations! The UI system is working correctly. Try switching between light and dark themes to see the changes."
+  },
+  "organizations": {
+    "switcher": {
+      "title": "Switch organization",
+      "createNew": "Create organization",
+      "personal": "Personal",
+      "noOrganizations": "No organizations"
+    },
+    "plans": {
+      "free": "Free",
+      "pro": "Pro",
+      "enterprise": "Enterprise"
+    }
   }
 }

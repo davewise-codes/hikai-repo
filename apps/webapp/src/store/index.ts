@@ -19,6 +19,7 @@ export const useStore = create<StoreState>()(
         partialize: (state) => ({
           theme: state.theme,
           locale: state.locale,
+          currentOrgId: state.currentOrgId,
         }),
       }
     ),
@@ -26,24 +27,7 @@ export const useStore = create<StoreState>()(
   )
 );
 
-// Sincronización entre pestañas
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    // Solo reaccionar a cambios en nuestro store
-    if (e.key === 'hikai-store' && e.newValue) {
-      try {
-        const newData = JSON.parse(e.newValue);
-        
-        // Actualizar solo las propiedades que persisten
-        if (newData.state) {
-          useStore.setState({
-            theme: newData.state.theme,
-            locale: newData.state.locale,
-          });
-        }
-      } catch (error) {
-        console.warn('Error parsing localStorage data for sync:', error);
-      }
-    }
-  });
-}
+// NOTA: No sincronizamos entre pestañas porque todas las preferencias
+// (theme, locale, currentOrgId) son específicas del usuario.
+// Si dos usuarios distintos están en pestañas diferentes, no queremos
+// que los cambios de uno afecten al otro.

@@ -53,5 +53,18 @@
   },
   "alert": {
     "message": "🎉 ¡Felicitaciones! El sistema de UI está funcionando correctamente. Prueba cambiar entre temas claro y oscuro para ver los cambios."
+  },
+  "organizations": {
+    "switcher": {
+      "title": "Cambiar organización",
+      "createNew": "Crear organización",
+      "personal": "Personal",
+      "noOrganizations": "Sin organizaciones"
+    },
+    "plans": {
+      "free": "Gratis",
+      "pro": "Pro",
+      "enterprise": "Empresa"
+    }
   }
 }

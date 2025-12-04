@@ -2,6 +2,7 @@ import { HomeIcon, Folder, Clock, Building } from "@hikai/ui";
 import { ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { UserMenu } from "./user-menu";
+import { OrgSwitcher } from "@/domains/organizations/components";
 
 interface AppShellProps {
   children: ReactNode;
@@ -12,11 +13,9 @@ export function AppShell({ children }: AppShellProps) {
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
       <aside className="w-16 bg-muted/30 border-r border-border flex flex-col">
-        {/* Top section - Organization selector placeholder */}
+        {/* Top section - Organization selector */}
         <div className="h-16 flex items-center justify-center border-b border-border">
-          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <span className="text-primary-foreground text-sm font-bold">H</span>
-          </div>
+          <OrgSwitcher />
         </div>
         
         {/* Middle section - Navigation */}

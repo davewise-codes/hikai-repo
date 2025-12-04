@@ -4,6 +4,8 @@ import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
 import { ResendOTP } from "./auth/ResendOTP";
 import { ResendOTPReset } from "./auth/ResendOTPReset";
+import { internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 export const { auth, signIn, signOut, store } = convexAuth({
 	providers: [
@@ -25,4 +27,17 @@ export const { auth, signIn, signOut, store } = convexAuth({
 			reset: ResendOTPReset,
 		}),
 	],
+	callbacks: {
+		async afterUserCreatedOrUpdated(ctx, args) {
+			// Solo para usuarios nuevos (existingUserId es null)
+			if (args.existingUserId) {
+				return;
+			}
+
+			// Llamar a la internal mutation para crear org personal
+			await ctx.runMutation(internal.organizations.organizations.createPersonalOrg, {
+				userId: args.userId as Id<"users">,
+			});
+		},
+	},
 });

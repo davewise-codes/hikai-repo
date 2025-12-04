@@ -43,7 +43,7 @@ export function SignupWithVerification({ onSuccess }: SignupWithVerificationProp
 
   const handleVerifyCode = async (data: VerificationCodeFormData) => {
     setError(undefined);
-    
+
     try {
       await verifyCode(data);
       onSuccess?.();

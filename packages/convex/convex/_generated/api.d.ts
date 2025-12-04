@@ -19,6 +19,8 @@ import type * as auth_emailTemplate from "../auth/emailTemplate.js";
 import type * as auth_passwordResetTemplate from "../auth/passwordResetTemplate.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
+import type * as lib_access from "../lib/access.js";
+import type * as lib_planLimits from "../lib/planLimits.js";
 import type * as organizations_organizations from "../organizations/organizations.js";
 import type * as users from "../users.js";
 
@@ -37,6 +39,8 @@ declare const fullApi: ApiFromModules<{
   "auth/passwordResetTemplate": typeof auth_passwordResetTemplate;
   auth: typeof auth;
   http: typeof http;
+  "lib/access": typeof lib_access;
+  "lib/planLimits": typeof lib_planLimits;
   "organizations/organizations": typeof organizations_organizations;
   users: typeof users;
 }>;
