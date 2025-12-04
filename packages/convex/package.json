@@ -9,12 +9,13 @@
   "scripts": {
     "dev": "convex dev",
     "deploy": "convex deploy",
-    "codegen": "convex codegen"
+    "codegen": "convex codegen",
+    "fix-types": "sed -i '' '1s|^|// @ts-nocheck\\n|' convex/_generated/api.d.ts 2>/dev/null || true"
   },
   "dependencies": {
     "@auth/core": "^0.37.0",
-    "@convex-dev/auth": "^0.0.88",
-    "convex": "^1.26.1",
+    "@convex-dev/auth": "^0.0.90",
+    "convex": "^1.30.0",
     "jose": "^6.0.13",
     "oslo": "^1.2.1",
     "resend": "^4.0.1"

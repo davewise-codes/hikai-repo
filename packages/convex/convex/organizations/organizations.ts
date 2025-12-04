@@ -83,8 +83,10 @@ export const createOrganization = mutation({
     name: v.string(),
     slug: v.string(),
     description: v.optional(v.string()),
+    plan: v.optional(v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))),
+    isPersonal: v.optional(v.boolean()),
   },
-  handler: async (ctx, { name, slug, description }) => {
+  handler: async (ctx, { name, slug, description, plan = "free", isPersonal = false }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Usuario no autenticado");
@@ -108,6 +110,8 @@ export const createOrganization = mutation({
       slug,
       description,
       ownerId: userId,
+      plan,
+      isPersonal,
       createdAt: now,
       updatedAt: now,
     });

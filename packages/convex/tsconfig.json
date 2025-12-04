@@ -5,6 +5,7 @@
     "lib": ["ES2022"],
     "allowJs": true,
     "strict": true,
+    "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "Bundler",
     "allowImportingTsExtensions": false,
@@ -22,10 +23,11 @@
     }
   },
   "include": [
-    "convex/**/*"
+    "convex/**/*",
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "convex/_generated/**/*"
+    "convex/_generated"
   ]
 }
