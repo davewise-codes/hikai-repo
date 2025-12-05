@@ -20,8 +20,9 @@ apps/ (aplicaciones)
 - **UI centralizada**: Todo el styling y componentes definidos en `packages/ui`
 - **Tema consistente**: Colores, fuentes y tokens de diseño compartidos
 - **Sin duplicación**: Las apps nunca implementan UI independientemente
+- **Seguridad multi-tenant**: Validación obligatoria de acceso en todas las operaciones
 
-> 📖 Ver [CLAUDE.md](./CLAUDE.md) para directivas detalladas de desarrollo
+> 📖 Ver [CLAUDE.md](./CLAUDE.md) para directivas detalladas de desarrollo y **seguridad multi-tenant**
 
 ## ✨ Stack tecnológico
 

@@ -456,6 +456,135 @@ export function useNueva() { /* implementation */ }
 
 ---
 
+## Multi-Tenant Security (CRÍTICO)
+
+Hikai es una aplicación multi-tenant donde las organizaciones son los tenants. La seguridad del acceso a datos es **CRÍTICA**.
+
+### Modelo de Acceso
+
+```
+Usuario → Organización (via organizationMembers) → Producto (via productMembers)
+```
+
+- Un usuario DEBE ser miembro de una organización para acceder a sus datos
+- Un usuario DEBE ser miembro de un producto para acceder a sus datos
+- La membresía a producto REQUIERE membresía previa a la organización padre
+
+### Helpers de Seguridad
+
+**📍 Ubicación**: `packages/convex/convex/lib/access.ts`
+
+| Helper | Uso | Comportamiento |
+|--------|-----|----------------|
+| `assertOrgAccess(ctx, orgId)` | Operaciones de org | Lanza error si no es miembro |
+| `assertProductAccess(ctx, productId)` | Operaciones de producto | Lanza error si no es miembro |
+| `getOrgMembership(ctx, orgId)` | Verificación opcional | Retorna null si no es miembro |
+| `getProductMembership(ctx, productId)` | Verificación opcional | Retorna null si no es miembro |
+
+### Reglas de Implementación
+
+**✅ OBLIGATORIO en queries/mutations:**
+```typescript
+// SIEMPRE validar acceso al inicio de la función
+export const myQuery = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    // PRIMERA LÍNEA: validar acceso
+    const { membership, organization, userId } = await assertOrgAccess(ctx, organizationId);
+
+    // Luego la lógica...
+  },
+});
+```
+
+**✅ Validaciones de rol para operaciones sensibles:**
+```typescript
+// Para operaciones admin (crear, editar, eliminar)
+if (membership.role !== "owner" && membership.role !== "admin") {
+  throw new Error("Solo administradores pueden realizar esta acción");
+}
+```
+
+**✅ Membresía a producto requiere membresía a org:**
+```typescript
+// Antes de añadir miembro a producto, verificar que es miembro de la org
+const orgMembership = await ctx.db
+  .query("organizationMembers")
+  .withIndex("by_organization_user", (q) =>
+    q.eq("organizationId", product.organizationId).eq("userId", userId)
+  )
+  .first();
+
+if (!orgMembership) {
+  throw new Error("El usuario debe ser miembro de la organización primero");
+}
+```
+
+**✅ Proteger último admin:**
+```typescript
+// No permitir eliminar/degradar último admin
+const adminCount = await ctx.db
+  .query("productMembers")
+  .withIndex("by_product", (q) => q.eq("productId", productId))
+  .filter((q) => q.eq(q.field("role"), "admin"))
+  .collect();
+
+if (adminCount.length === 1) {
+  throw new Error("No puedes eliminar el último administrador");
+}
+```
+
+### Límites por Plan
+
+**📍 Ubicación**: `packages/convex/convex/lib/planLimits.ts`
+
+| Plan | Orgs | Productos/Org | Miembros/Org |
+|------|------|---------------|--------------|
+| free | 1 | 1 | 5 |
+| pro | 5 | 10 | 50 |
+| enterprise | ∞ | ∞ | ∞ |
+
+**✅ Validar límites antes de crear recursos:**
+```typescript
+import { checkLimit, type Plan } from "../lib/planLimits";
+
+const plan = organization.plan as Plan;
+const limitCheck = checkLimit(plan, "maxProductsPerOrg", currentCount);
+
+if (!limitCheck.allowed) {
+  throw new Error(`Límite alcanzado: ${limitCheck.limit} productos`);
+}
+```
+
+### Anti-patrones de Seguridad
+
+**❌ NUNCA hacer:**
+```typescript
+// MAL: Query sin validación de acceso
+export const getProducts = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    // ⚠️ PELIGRO: Cualquier usuario puede ver productos de cualquier org
+    return ctx.db.query("products")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+  },
+});
+
+// BIEN: Con validación
+export const getProducts = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, { organizationId }) => {
+    await assertOrgAccess(ctx, organizationId); // ✅ Primero validar
+    return ctx.db.query("products")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+  },
+});
+```
+
+---
+
 ## Notes for AI Assistants
 
 Cuando trabajes en este proyecto:

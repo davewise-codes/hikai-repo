@@ -61,6 +61,7 @@ pnpm type-check
 - ✅ **Routing**: TanStack Router configurado
 - ✅ **Store**: Zustand con persistencia localStorage
 - ✅ **Organizaciones**: CRUD de organizaciones con membresías
+- ✅ **Productos**: CRUD de productos con membresías y límites por plan
 
 ## 📋 Reglas de Desarrollo
 
@@ -184,4 +185,5 @@ export function useComponente() {
 ### Documentación de Dominios
 
 - [Organizations](./src/domains/organizations/README.md) - Gestión de organizaciones/tenants
+- [Products](./src/domains/products/README.md) - Gestión de productos
 - [Documentación Funcional](./doc/) - Guías de usuario
