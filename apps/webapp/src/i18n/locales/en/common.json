@@ -7,6 +7,15 @@
     "delete": "Delete",
     "unknown": "Unknown"
   },
+  "nav": {
+    "openMenu": "Open menu",
+    "home": "Home",
+    "organizations": "Organizations",
+    "products": "Products",
+    "timeline": "Timeline",
+    "comingSoon": "Coming soon",
+    "selectProduct": "Select product"
+  },
   "userMenu": {
     "title": "User menu",
     "user": "User",

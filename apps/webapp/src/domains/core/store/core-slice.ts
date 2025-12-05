@@ -22,6 +22,11 @@ export interface CoreSlice {
   // Current product
   currentProductId: string | null;
   setCurrentProductId: (id: string | null) => void;
+
+  // Sidebar state (not persisted)
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
 }
 
 export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set) => ({
@@ -40,4 +45,9 @@ export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set)
   // Current product management
   currentProductId: null,
   setCurrentProductId: (id) => set({ currentProductId: id }),
+
+  // Sidebar management (not persisted - closes on reload)
+  sidebarOpen: false,
+  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 });

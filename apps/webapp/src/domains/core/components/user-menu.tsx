@@ -61,7 +61,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="w-12 h-12 mx-auto flex items-center justify-center rounded-lg hover:bg-accent transition-colors cursor-pointer"
+          className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent transition-colors cursor-pointer"
           title={user?.name || user?.email || t("userMenu.title")}
         >
           <Avatar className="h-8 w-8">
@@ -70,7 +70,7 @@ export function UserMenu() {
           </Avatar>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="right" align="end" className="w-56">
+      <DropdownMenuContent side="bottom" align="end" className="w-56">
         {/* User info */}
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
