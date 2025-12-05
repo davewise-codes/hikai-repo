@@ -4,9 +4,42 @@ const preset = {
 	theme: {
 		extend: {
 			borderRadius: {
-				lg: "var(--radius)",
-				md: "calc(var(--radius) - 2px)",
-				sm: "calc(var(--radius) - 4px)",
+				xs: "var(--radius-xs)",
+				sm: "var(--radius-sm)",
+				md: "var(--radius-md)",
+				lg: "var(--radius-lg)",
+				xl: "var(--radius-xl)",
+				"2xl": "var(--radius-2xl)",
+				"3xl": "var(--radius-3xl)",
+			},
+			zIndex: {
+				base: "var(--z-base)",
+				dropdown: "var(--z-dropdown)",
+				sticky: "var(--z-sticky)",
+				fixed: "var(--z-fixed)",
+				"modal-backdrop": "var(--z-modal-backdrop)",
+				modal: "var(--z-modal)",
+				popover: "var(--z-popover)",
+				tooltip: "var(--z-tooltip)",
+				notification: "var(--z-notification)",
+			},
+			boxShadow: {
+				sm: "var(--shadow-sm)",
+				md: "var(--shadow-md)",
+				lg: "var(--shadow-lg)",
+				xl: "var(--shadow-xl)",
+			},
+			transitionDuration: {
+				fast: "var(--duration-fast)",
+				normal: "var(--duration-normal)",
+				slow: "var(--duration-slow)",
+				slower: "var(--duration-slower)",
+			},
+			transitionTimingFunction: {
+				"ease-in": "var(--ease-in)",
+				"ease-out": "var(--ease-out)",
+				"ease-in-out": "var(--ease-in-out)",
+				bounce: "var(--ease-bounce)",
 			},
 			colors: {
 				background: "hsl(var(--background))",
