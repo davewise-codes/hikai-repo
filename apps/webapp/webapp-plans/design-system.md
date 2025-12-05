@@ -12,7 +12,7 @@
 | ------------------------------------ | ------------- |
 | F1: Token System Foundation          | ✅ Completado |
 | F2: Missing Base Components (shadcn) | ✅ Completado |
-| F3: Webapp Refactoring               | ⏳ Pendiente  |
+| F3: Webapp Refactoring               | ✅ Completado |
 | F4: Documentation                    | ⏳ Pendiente  |
 | F5: Website Migration                | ⏳ Pendiente  |
 
@@ -25,7 +25,7 @@
 - Analiza el documento y el plan y toma el prompt de esa fase como instrucción para implementarla
 - Cuando tengas un plan para ello compártelo conmigo para validarlo
 - No hagas asunciones, compárteme dudas y las debatimos
-- Commit tras cada fase al comprobar que todo funciona como esperamos
+- Commit tras cada fase al comprobar que todo funciona como esperamos. Yo te doy el visto bueno
 - Máxima capacidad de ultrathink
 
 ---
@@ -509,7 +509,7 @@ VALIDACIÓN F4:
    - `tooltip.tsx` - Tooltips
    - `sonner.tsx` - Toast notifications
 
-2. Dependencias @radix-ui/* añadidas:
+2. Dependencias @radix-ui/\* añadidas:
    - @radix-ui/react-alert-dialog
    - @radix-ui/react-checkbox
    - @radix-ui/react-radio-group
@@ -526,3 +526,47 @@ VALIDACIÓN F4:
 - `packages/ui/src/components/ui/index.ts`
 - `packages/ui/src/components/ui/*.tsx` (8 nuevos componentes)
 - `pnpm-lock.yaml`
+
+### 2025-12-05 - F3 Completada
+
+**Cambios realizados:**
+
+1. Badge - Nuevas variantes de rol:
+   - `owner` - bg-primary text-primary-foreground
+   - `admin` - bg-accent text-accent-foreground con borde
+   - `member` - bg-muted text-muted-foreground
+
+2. Button - Nueva variante:
+   - `ghost-destructive` - text-destructive con hover rojo suave
+
+3. Error alerts unificados con `<Alert variant="destructive">`:
+   - domains/auth: signin-form, signup-form, verification-code-form, password-reset-flow (4 instancias)
+   - domains/organizations: create-organization-form, org-members
+   - domains/products: create-product-form, product-members, delete-product-dialog
+
+4. Role badges actualizados:
+   - product-card.tsx → `<Badge variant={userRole}>`
+   - organization-list.tsx → `<Badge variant={org.role}>`
+   - org-members.tsx → `<Badge variant={member.role}>`
+   - product-members.tsx → `<Badge variant={member.role}>`
+
+5. Selects nativos migrados a `<Select>` component:
+   - org-members.tsx (2 selects)
+   - product-members.tsx (3 selects)
+
+6. DeleteProductDialog refactorizado:
+   - Ahora usa AlertDialog con trigger integrado
+   - API simplificada (eliminado onClose, maneja estado interno)
+
+7. Botones de eliminar actualizados:
+   - org-members.tsx → `variant="ghost-destructive"`
+   - product-members.tsx → `variant="ghost-destructive"`
+
+**Archivos modificados:**
+
+- `packages/ui/src/components/ui/badge.tsx`
+- `packages/ui/src/components/ui/button.tsx`
+- `apps/webapp/src/domains/auth/components/*.tsx` (4 archivos)
+- `apps/webapp/src/domains/organizations/components/*.tsx` (3 archivos)
+- `apps/webapp/src/domains/products/components/*.tsx` (4 archivos)
+- `apps/webapp/src/routes/products/$slug.tsx`
