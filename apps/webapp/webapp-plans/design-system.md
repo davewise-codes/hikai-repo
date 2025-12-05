@@ -13,7 +13,7 @@
 | F1: Token System Foundation          | ✅ Completado |
 | F2: Missing Base Components (shadcn) | ✅ Completado |
 | F3: Webapp Refactoring               | ✅ Completado |
-| F4: Documentation                    | ⏳ Pendiente  |
+| F4: Documentation                    | ✅ Completado |
 | F5: Website Migration                | ⏳ Pendiente  |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
@@ -570,3 +570,34 @@ VALIDACIÓN F4:
 - `apps/webapp/src/domains/organizations/components/*.tsx` (3 archivos)
 - `apps/webapp/src/domains/products/components/*.tsx` (4 archivos)
 - `apps/webapp/src/routes/products/$slug.tsx`
+
+### 2025-12-05 - F4 Completada
+
+**Cambios realizados:**
+
+1. Creado `packages/ui/DESIGN-TOKENS.md`:
+   - Referencia completa de tokens por categoría
+   - Tablas de colores, border-radius, shadows, z-index, animations
+   - Guía de compatibilidad con tweakcn.com
+   - Ejemplos de uso en Tailwind
+   - Instrucciones para extender tokens
+
+2. Creado `packages/ui/COMPONENT-GUIDELINES.md`:
+   - Anatomía de componentes (cva, cn, forwardRef)
+   - Convenciones de naming para variantes y sizes
+   - Requisitos de accesibilidad (focus ring, aria)
+   - Patrones de composición (compound components, asChild)
+   - Anti-patrones a evitar
+   - Lista de componentes disponibles
+
+3. Actualizado `/CLAUDE.md`:
+   - Nueva sección "Design System (Tokens y Componentes)"
+   - Referencias a documentación completa
+   - Patrones ✅ HACER y ❌ NO HACER
+   - Ejemplos de variantes de Badge y Button
+
+**Archivos creados/modificados:**
+
+- `packages/ui/DESIGN-TOKENS.md` (nuevo)
+- `packages/ui/COMPONENT-GUIDELINES.md` (nuevo)
+- `/CLAUDE.md` (actualizado)

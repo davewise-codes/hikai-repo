@@ -151,6 +151,50 @@ import { ThemeContext } from "@/providers/theme-provider";
 - Next.js: `apps/website/src/providers/`
 - Vite: `apps/webapp/src/providers/`
 
+### Design System (Tokens y Componentes)
+
+**🎯 Sistema**: Tokens CSS centralizados + componentes shadcn/ui
+
+**📍 Archivos clave:**
+- Tokens: `packages/ui/src/tokens/tokens.css`
+- Componentes: `packages/ui/src/components/ui/`
+- Tailwind config: `packages/tailwind-config/index.js`
+
+**📖 Documentación completa:**
+- `packages/ui/DESIGN-TOKENS.md` - Referencia de tokens
+- `packages/ui/COMPONENT-GUIDELINES.md` - Patrones de componentes
+
+**✅ HACER:**
+- Usar colores semánticos: `bg-primary`, `text-muted-foreground`, `border-destructive`
+- Usar z-index semánticos: `z-modal`, `z-dropdown`, `z-tooltip`
+- Importar componentes de `@hikai/ui`: `import { Button, Badge, Dialog } from "@hikai/ui"`
+- Usar variantes existentes: `<Badge variant="admin">`, `<Button variant="ghost">`
+- Usar `<Alert variant="destructive">` para mensajes de error
+
+**❌ NO HACER:**
+- No usar colores hardcodeados: `bg-blue-500`, `text-gray-600`, `text-red-500`
+- No usar z-index arbitrarios: `z-50`, `z-[9999]`
+- No usar inline styles: `style={{ color: '#fff' }}`
+- No crear componentes duplicados (usar variantes del existente)
+- No crear estilos de error manuales (usar Alert)
+
+**📍 Variantes de Badge para roles:**
+```tsx
+<Badge variant="owner">Owner</Badge>
+<Badge variant="admin">Admin</Badge>
+<Badge variant="member">Member</Badge>
+```
+
+**📍 Variantes de Button:**
+```tsx
+<Button variant="default" />      // CTA principal
+<Button variant="secondary" />    // Acción secundaria
+<Button variant="destructive" />  // Acción destructiva
+<Button variant="outline" />      // Con borde
+<Button variant="ghost" />        // Sin fondo
+<Button variant="ghost-destructive" /> // Ghost rojo
+```
+
 ## Development Patterns
 
 ### TypeScript
