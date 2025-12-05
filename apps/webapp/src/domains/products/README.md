@@ -42,6 +42,9 @@ const members = useProductMembers(productId);
 
 // Miembros de org disponibles para añadir
 const available = useAvailableOrgMembers(productId);
+
+// Productos recientes (cross-org)
+const recent = useRecentProducts();
 ```
 
 ### Mutations
@@ -53,6 +56,7 @@ const deleteProduct = useDeleteProduct();
 const addMember = useAddProductMember();
 const removeMember = useRemoveProductMember();
 const updateRole = useUpdateProductMemberRole();
+const updateLastAccess = useUpdateLastProductAccess();
 ```
 
 ## Backend
@@ -67,6 +71,10 @@ Convex queries/mutations en `packages/convex/convex/products/`:
 - `canCreateProduct(organizationId)` - validación límites
 - `getProductMembers(productId)` - miembros con info de usuario
 - `getAvailableOrgMembers(productId)` - miembros de org no en producto
+- `getRecentProducts()` - últimos 5 productos accedidos (cross-org)
+
+Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
+- `updateLastProductAccess(productId)` - registra acceso al producto
 
 ### Mutations
 - `createProduct` - crea producto + membership admin

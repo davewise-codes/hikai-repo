@@ -66,3 +66,18 @@ Solo administradores pueden eliminar un producto:
 Al cambiar de organización en el OrgSwitcher mientras estás en `/products`:
 - Se te redirige a la lista de productos de la nueva organización
 - Si estabas viendo un producto específico, volverás a la lista
+
+## Productos Recientes
+
+La página de productos muestra una sección de productos accedidos recientemente:
+
+1. **Sección "Recientes"**: Últimos 5 productos accedidos (de cualquier organización)
+2. **Sección de productos**: Productos de la organización actual
+
+### Cross-org
+
+Los productos recientes pueden ser de diferentes organizaciones:
+- Cada producto reciente muestra la organización a la que pertenece si es diferente a la actual
+- Al hacer clic en un producto de otra organización, se cambia automáticamente la org activa y se navega al producto
+
+Esto permite acceder rápidamente a los productos que usas con frecuencia, sin importar en qué organización estés actualmente.

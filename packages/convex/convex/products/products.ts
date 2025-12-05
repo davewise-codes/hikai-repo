@@ -310,6 +310,59 @@ export const getAvailableOrgMembers = query({
   },
 });
 
+/**
+ * Obtiene los productos accedidos recientemente por el usuario.
+ * Cross-org: retorna productos de todas las organizaciones del usuario.
+ */
+export const getRecentProducts = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    // Obtener membresías del usuario que tienen lastAccessAt
+    const memberships = await ctx.db
+      .query("productMembers")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Filtrar las que tienen lastAccessAt y ordenar por acceso más reciente
+    const membershipsWithAccess = memberships
+      .filter((m) => m.lastAccessAt != null)
+      .sort((a, b) => (b.lastAccessAt || 0) - (a.lastAccessAt || 0))
+      .slice(0, 5); // Limitar a 5
+
+    // Obtener datos de los productos con info de org
+    const recentProducts = await Promise.all(
+      membershipsWithAccess.map(async (membership) => {
+        const product = await ctx.db.get(membership.productId);
+        if (!product) return null;
+
+        const organization = await ctx.db.get(product.organizationId);
+        if (!organization) return null;
+
+        return {
+          _id: product._id,
+          name: product.name,
+          slug: product.slug,
+          description: product.description,
+          organization: {
+            _id: organization._id,
+            name: organization.name,
+            slug: organization.slug,
+          },
+          role: membership.role,
+          lastAccessAt: membership.lastAccessAt!,
+        };
+      })
+    );
+
+    return recentProducts.filter(Boolean) as NonNullable<
+      (typeof recentProducts)[number]
+    >[];
+  },
+});
+
 // ============================================================================
 // MUTATIONS
 // ============================================================================

@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/domains/core/components/app-shell";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import {
   useGetProductBySlug,
+  useUpdateLastProductAccess,
   ProductMembers,
   DeleteProductDialog,
 } from "@/domains/products";
@@ -33,6 +35,16 @@ function ProductDetailPage() {
   const { currentOrg, isLoading: isOrgLoading } = useCurrentOrg();
 
   const product = useGetProductBySlug(currentOrg?._id, slug);
+  const updateLastAccess = useUpdateLastProductAccess();
+
+  // Track product access when product is loaded
+  useEffect(() => {
+    if (product?._id) {
+      updateLastAccess({ productId: product._id }).catch((error) => {
+        console.error("Error tracking product access:", error);
+      });
+    }
+  }, [product?._id, updateLastAccess]);
 
   // Loading state
   if (isOrgLoading || product === undefined) {

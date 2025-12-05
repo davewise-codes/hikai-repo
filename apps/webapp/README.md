@@ -63,6 +63,28 @@ pnpm type-check
 - ✅ **Organizaciones**: CRUD de organizaciones con membresías
 - ✅ **Productos**: CRUD de productos con membresías y límites por plan
 
+## 🔒 Seguridad Multi-Tenant
+
+Hikai es una aplicación multi-tenant donde las organizaciones son los tenants.
+La seguridad del acceso a datos es **CRÍTICA**.
+
+### Modelo de Acceso
+- Usuario → Organización (via organizationMembers) → Producto (via productMembers)
+- Un usuario DEBE ser miembro de una organización para acceder a sus datos
+- Un usuario DEBE ser miembro de un producto para acceder a sus datos
+
+### Helpers de Seguridad
+En `packages/convex/convex/lib/access.ts`:
+- `assertOrgAccess(ctx, orgId)` - Validar acceso a org (lanza error si no es miembro)
+- `assertProductAccess(ctx, productId)` - Validar acceso a producto (lanza error si no es miembro)
+- `getOrgMembership(ctx, orgId)` - Verificar membresía (retorna null si no es miembro)
+- `getProductMembership(ctx, productId)` - Verificar membresía (retorna null si no es miembro)
+
+### Regla de Oro
+**TODA query/mutation que acceda a datos de org/producto DEBE validar acceso primero.**
+
+Ver documentación completa en [CLAUDE.md](/CLAUDE.md#multi-tenant-security-crítico)
+
 ## 📋 Reglas de Desarrollo
 
 ### Añadir Nueva Funcionalidad

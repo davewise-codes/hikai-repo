@@ -1,8 +1,9 @@
 import { useEffect, useCallback } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { api } from "@hikai/convex";
 import { useStore } from "@/store";
+import { Id } from "@hikai/convex/convex/_generated/dataModel";
 
 /**
  * Hook para gestionar la organización actual del usuario.
@@ -22,6 +23,11 @@ export function useCurrentOrg() {
     api.organizations.organizations.getUserOrganizationsWithDetails
   );
 
+  // Mutation para trackear acceso a org
+  const updateLastOrgAccess = useMutation(
+    api.userPreferences.updateLastOrgAccess
+  );
+
   // Auto-seleccionar primera org si ninguna está seleccionada
   useEffect(() => {
     if (!currentOrgId && organizations && organizations.length > 0) {
@@ -39,12 +45,20 @@ export function useCurrentOrg() {
   const setCurrentOrg = useCallback(
     (orgId: string) => {
       setCurrentOrgId(orgId);
+
+      // Trackear acceso a la org (no bloquea UX si falla)
+      updateLastOrgAccess({
+        organizationId: orgId as Id<"organizations">,
+      }).catch((error) => {
+        console.error("Error tracking org access:", error);
+      });
+
       // Si estamos en una ruta de productos, navegar a /products
       if (location.pathname.startsWith("/products")) {
         navigate({ to: "/products" });
       }
     },
-    [setCurrentOrgId, navigate, location.pathname]
+    [setCurrentOrgId, updateLastOrgAccess, navigate, location.pathname]
   );
 
   return {

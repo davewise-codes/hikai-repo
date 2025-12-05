@@ -1,15 +1,33 @@
-import { Card, CardContent } from "@hikai/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "@tanstack/react-router";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
-import { useListProducts } from "../hooks";
+import { useListProducts, useRecentProducts } from "../hooks";
 import { ProductCard } from "./product-card";
 import { CreateProductForm } from "./create-product-form";
 
 export function ProductList() {
   const { t } = useTranslation("common");
-  const { currentOrg, isLoading: isOrgLoading } = useCurrentOrg();
+  const navigate = useNavigate();
+  const { currentOrg, isLoading: isOrgLoading, setCurrentOrg } = useCurrentOrg();
 
   const products = useListProducts(currentOrg?._id);
+  const recentProducts = useRecentProducts();
+
+  // IDs de productos recientes para filtrar duplicados
+  const recentProductIds = new Set(recentProducts?.map((p) => p._id) ?? []);
+  // Productos de la org actual que no están en recientes
+  const nonRecentProducts = products?.filter((p) => !recentProductIds.has(p._id)) ?? [];
+
+  // Handler para click en producto reciente de otra org
+  const handleRecentProductClick = (product: NonNullable<typeof recentProducts>[number]) => {
+    // Si el producto es de otra org, cambiar la org activa primero
+    if (product.organization._id !== currentOrg?._id) {
+      setCurrentOrg(product.organization._id);
+    }
+    // Navegar al producto
+    navigate({ to: "/products/$slug", params: { slug: product.slug } });
+  };
 
   // Loading state
   if (isOrgLoading || products === undefined) {
@@ -56,19 +74,78 @@ export function ProductList() {
 
       <CreateProductForm organizationId={currentOrg._id} />
 
-      {products.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">{t("products.empty")}</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
-            <ProductCard key={product._id} product={product} />
-          ))}
+      {/* Recent products section (cross-org) */}
+      {recentProducts && recentProducts.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            {t("products.list.recent")}
+          </h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {recentProducts.map((product) => {
+              const isOtherOrg = product.organization._id !== currentOrg._id;
+              return (
+                <Card
+                  key={product._id}
+                  className="cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => handleRecentProductClick(product)}
+                >
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center justify-between">
+                      <span className="truncate">{product.name}</span>
+                      <Badge variant="secondary" className="text-xs flex-shrink-0">
+                        {t(`products.roles.${product.role}`)}
+                      </Badge>
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      /{product.slug}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {product.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                        {product.description}
+                      </p>
+                    )}
+                    {isOtherOrg && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("products.list.inOrg", { org: product.organization.name })}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
+
+      {/* Products in current organization (excluding recent) */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">
+          {t("products.list.allInOrg", { org: currentOrg.name })}
+        </h2>
+        {nonRecentProducts.length === 0 && (!recentProducts || recentProducts.length === 0) ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <p className="text-muted-foreground">{t("products.empty")}</p>
+            </CardContent>
+          </Card>
+        ) : nonRecentProducts.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-4">
+              <p className="text-muted-foreground text-sm">
+                {t("products.empty")}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {nonRecentProducts.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

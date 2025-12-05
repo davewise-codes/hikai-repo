@@ -22,6 +22,10 @@ import { Link } from "@tanstack/react-router";
  *
  * Diseño: Avatar/icono que abre dropdown con lista de orgs.
  * Ubicación: Parte superior del sidebar (reemplaza logo "H").
+ *
+ * Incluye secciones:
+ * - Recent: organizaciones accedidas recientemente
+ * - All organizations: todas las demás organizaciones
  */
 export function OrgSwitcher() {
   const { t } = useTranslation("common");
@@ -31,6 +35,15 @@ export function OrgSwitcher() {
   const canCreateResult = useQuery(
     api.organizations.organizations.canCreateOrganization
   );
+
+  // Obtener organizaciones recientes
+  const recentOrgs = useQuery(
+    api.organizations.organizations.getRecentOrganizations
+  );
+
+  // Filtrar orgs que no están en recientes para evitar duplicados
+  const recentOrgIds = new Set(recentOrgs?.map((o) => o._id) ?? []);
+  const nonRecentOrgs = organizations.filter((o) => !recentOrgIds.has(o._id));
 
   // Obtener iniciales de la org para el avatar
   const getOrgInitials = (name: string) => {
@@ -102,40 +115,89 @@ export function OrgSwitcher() {
           </>
         )}
 
-        {/* Organization list */}
-        {organizations.length > 0 ? (
-          organizations.map((org) => (
-            <DropdownMenuItem
-              key={org._id}
-              onClick={() => setCurrentOrg(org._id)}
-              className="cursor-pointer"
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-medium">
-                      {getOrgInitials(org.name)}
-                    </span>
+        {/* Recent organizations section */}
+        {recentOrgs && recentOrgs.length > 0 && (
+          <>
+            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+              {t("organizations.switcher.recent")}
+            </DropdownMenuLabel>
+            {recentOrgs.map((org) => (
+              <DropdownMenuItem
+                key={org._id}
+                onClick={() => setCurrentOrg(org._id)}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium">
+                        {getOrgInitials(org.name)}
+                      </span>
+                    </div>
+                    <span className="truncate">{org.name}</span>
+                    {org.isPersonal && (
+                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                        {t("organizations.switcher.personal")}
+                      </Badge>
+                    )}
+                    {!org.isPersonal && org.plan !== "free" && (
+                      <Badge variant="default" className="text-xs flex-shrink-0">
+                        {t(`organizations.plans.${org.plan}`)}
+                      </Badge>
+                    )}
                   </div>
-                  <span className="truncate">{org.name}</span>
-                  {org.isPersonal && (
-                    <Badge variant="outline" className="text-xs flex-shrink-0">
-                      {t("organizations.switcher.personal")}
-                    </Badge>
-                  )}
-                  {!org.isPersonal && org.plan !== "free" && (
-                    <Badge variant="default" className="text-xs flex-shrink-0">
-                      {t(`organizations.plans.${org.plan}`)}
-                    </Badge>
+                  {org._id === currentOrg?._id && (
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
                   )}
                 </div>
-                {org._id === currentOrg?._id && (
-                  <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                )}
-              </div>
-            </DropdownMenuItem>
-          ))
-        ) : (
+              </DropdownMenuItem>
+            ))}
+          </>
+        )}
+
+        {/* All organizations section (excluding recent) */}
+        {nonRecentOrgs.length > 0 && (
+          <>
+            {recentOrgs && recentOrgs.length > 0 && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+              {t("organizations.switcher.all")}
+            </DropdownMenuLabel>
+            {nonRecentOrgs.map((org) => (
+              <DropdownMenuItem
+                key={org._id}
+                onClick={() => setCurrentOrg(org._id)}
+                className="cursor-pointer"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 bg-muted rounded flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-medium">
+                        {getOrgInitials(org.name)}
+                      </span>
+                    </div>
+                    <span className="truncate">{org.name}</span>
+                    {org.isPersonal && (
+                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                        {t("organizations.switcher.personal")}
+                      </Badge>
+                    )}
+                    {!org.isPersonal && org.plan !== "free" && (
+                      <Badge variant="default" className="text-xs flex-shrink-0">
+                        {t(`organizations.plans.${org.plan}`)}
+                      </Badge>
+                    )}
+                  </div>
+                  {org._id === currentOrg?._id && (
+                    <Check className="w-4 h-4 text-primary flex-shrink-0" />
+                  )}
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </>
+        )}
+
+        {/* Empty state when no organizations at all */}
+        {organizations.length === 0 && (
           <DropdownMenuItem disabled>
             {t("organizations.switcher.noOrganizations")}
           </DropdownMenuItem>

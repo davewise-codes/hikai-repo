@@ -38,3 +38,14 @@ Desde el dropdown del OrgSwitcher:
 - **Owner**: Control total, puede transferir ownership
 - **Admin**: Gestión de miembros y productos
 - **Member**: Acceso a productos asignados
+
+## Organizaciones Recientes
+
+El dropdown del OrgSwitcher muestra las organizaciones que has accedido recientemente:
+
+1. **Sección "Recientes"**: Últimas 5 organizaciones accedidas
+2. **Sección "Todas las organizaciones"**: El resto de tus organizaciones
+
+El acceso se registra automáticamente cuando cambias de organización, permitiendo:
+- Acceso rápido a las orgs que usas frecuentemente
+- Sincronización entre dispositivos (se guarda en el servidor)

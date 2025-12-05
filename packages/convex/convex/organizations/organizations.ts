@@ -546,6 +546,47 @@ export const deleteOrganization = mutation({
   },
 });
 
+// Query para obtener las organizaciones accedidas recientemente
+export const getRecentOrganizations = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    // Obtener membresías del usuario que tienen lastAccessAt
+    const memberships = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Filtrar las que tienen lastAccessAt y ordenar por acceso más reciente
+    const membershipsWithAccess = memberships
+      .filter((m) => m.lastAccessAt != null)
+      .sort((a, b) => (b.lastAccessAt || 0) - (a.lastAccessAt || 0))
+      .slice(0, 5); // Limitar a 5
+
+    // Obtener datos de las organizaciones
+    const recentOrgs = await Promise.all(
+      membershipsWithAccess.map(async (membership) => {
+        const org = await ctx.db.get(membership.organizationId);
+        if (!org) return null;
+
+        return {
+          _id: org._id,
+          name: org.name,
+          slug: org.slug,
+          plan: org.plan,
+          isPersonal: org.isPersonal,
+          role: membership.role,
+          lastAccessAt: membership.lastAccessAt!,
+        };
+      })
+    );
+
+    return recentOrgs.filter(Boolean) as NonNullable<typeof recentOrgs[number]>[];
+  },
+});
+
 // Helper para generar slug URL-friendly
 function slugify(text: string): string {
   return text

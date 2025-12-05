@@ -66,7 +66,9 @@
       "title": "Switch organization",
       "createNew": "Create organization",
       "personal": "Personal",
-      "noOrganizations": "No organizations"
+      "noOrganizations": "No organizations",
+      "recent": "Recent",
+      "all": "All organizations"
     },
     "plans": {
       "free": "Free",
@@ -117,6 +119,11 @@
     "notFound": "Product not found or you don't have access.",
     "backToList": "Back to products",
     "create": "Create product",
+    "list": {
+      "recent": "Recent",
+      "allInOrg": "Products in {{org}}",
+      "inOrg": "in {{org}}"
+    },
     "createTitle": "Create New Product",
     "createDescription": "Create a new product to organize your marketing efforts.",
     "creating": "Creating...",

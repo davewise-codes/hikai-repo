@@ -81,6 +81,13 @@ export function useAvailableOrgMembers(productId: Id<"products"> | undefined) {
   );
 }
 
+/**
+ * Obtiene los productos accedidos recientemente (cross-org).
+ */
+export function useRecentProducts() {
+  return useQuery(api.products.products.getRecentProducts);
+}
+
 // ============================================================================
 // MUTATIONS
 // ============================================================================
@@ -125,4 +132,12 @@ export function useRemoveProductMember() {
  */
 export function useUpdateProductMemberRole() {
   return useMutation(api.products.products.updateProductMemberRole);
+}
+
+/**
+ * Hook para trackear acceso a un producto.
+ * Se llama al navegar a la página de detalle del producto.
+ */
+export function useUpdateLastProductAccess() {
+  return useMutation(api.userPreferences.updateLastProductAccess);
 }

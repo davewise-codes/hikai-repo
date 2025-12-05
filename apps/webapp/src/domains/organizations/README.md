@@ -43,6 +43,10 @@ Convex queries/mutations en `packages/convex/convex/organizations/`:
 - `canCreateOrganization`: Verifica límites del plan
 - `createOrganization`: Crea org (valida límites)
 - `createPersonalOrg`: Internal mutation para org personal automática
+- `getRecentOrganizations`: Últimas 5 orgs accedidas
+
+Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
+- `updateLastOrgAccess`: Registra acceso a una org
 
 ## Límites
 

@@ -66,7 +66,9 @@
       "title": "Cambiar organización",
       "createNew": "Crear organización",
       "personal": "Personal",
-      "noOrganizations": "Sin organizaciones"
+      "noOrganizations": "Sin organizaciones",
+      "recent": "Recientes",
+      "all": "Todas las organizaciones"
     },
     "plans": {
       "free": "Gratis",
@@ -117,6 +119,11 @@
     "notFound": "Producto no encontrado o no tienes acceso.",
     "backToList": "Volver a productos",
     "create": "Crear producto",
+    "list": {
+      "recent": "Recientes",
+      "allInOrg": "Productos en {{org}}",
+      "inOrg": "en {{org}}"
+    },
     "createTitle": "Crear Nuevo Producto",
     "createDescription": "Crea un nuevo producto para organizar tus esfuerzos de marketing.",
     "creating": "Creando...",
