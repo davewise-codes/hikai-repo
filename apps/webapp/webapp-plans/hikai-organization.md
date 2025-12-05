@@ -6,7 +6,8 @@
 | ----------------------------------- | ------------- |
 | F0: Schema + Seguridad              | ✅ Completado |
 | F1: Orgs + OrgSwitcher + PlanLimits | ✅ Completado |
-| F2: Products CRUD                   | ⏳ Pendiente  |
+| F2: Products CRUD                   | ✅ Completado |
+| F2.5: Org Detail + Members          | ✅ Completado |
 | F3: Trazabilidad                    | ⏳ Pendiente  |
 | F4: Transfer Ownership              | ⏳ Pendiente  |
 

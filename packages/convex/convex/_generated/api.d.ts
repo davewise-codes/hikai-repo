@@ -22,6 +22,8 @@ import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_planLimits from "../lib/planLimits.js";
 import type * as organizations_organizations from "../organizations/organizations.js";
+import type * as products_index from "../products/index.js";
+import type * as products_products from "../products/products.js";
 import type * as users from "../users.js";
 
 /**
@@ -42,6 +44,8 @@ declare const fullApi: ApiFromModules<{
   "lib/access": typeof lib_access;
   "lib/planLimits": typeof lib_planLimits;
   "organizations/organizations": typeof organizations_organizations;
+  "products/index": typeof products_index;
+  "products/products": typeof products_products;
   users: typeof users;
 }>;
 export declare const api: FilterApi<

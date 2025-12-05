@@ -22,7 +22,7 @@ export function AppShell({ children }: AppShellProps) {
         <nav className="flex-1 py-4 flex flex-col gap-2">
           <SidebarItem icon={<HomeIcon className="w-5 h-5" />} label="Home" to="/" />
           <SidebarItem icon={<Building className="w-5 h-5" />} label="Organizations" to="/organizations" />
-          <SidebarItem icon={<Folder className="w-5 h-5" />} label="Sources" to="#" disabled />
+          <SidebarItem icon={<Folder className="w-5 h-5" />} label="Products" to="/products" />
           <SidebarItem icon={<Clock className="w-5 h-5" />} label="Timeline" to="#" disabled />
         </nav>
         

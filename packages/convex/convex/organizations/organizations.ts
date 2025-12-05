@@ -12,16 +12,40 @@ export const listOrganizations = query({
   },
 });
 
-// Query para obtener una organización específica por slug
+// Query para obtener una organización específica por slug (con verificación de acceso)
 export const getOrganizationBySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, { slug }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
     const organization = await ctx.db
       .query("organizations")
       .withIndex("by_slug", (q) => q.eq("slug", slug))
       .first();
-    
-    return organization;
+
+    if (!organization) return null;
+
+    // Verificar membership
+    const membership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization_user", (q) =>
+        q.eq("organizationId", organization._id).eq("userId", userId))
+      .first();
+
+    if (!membership) return null;
+
+    // Contar miembros
+    const members = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organization._id))
+      .collect();
+
+    return {
+      ...organization,
+      userRole: membership.role,
+      memberCount: members.length,
+    };
   },
 });
 
@@ -316,16 +340,33 @@ export const addMember = mutation({
       throw new Error("Usuario no autenticado");
     }
 
+    // Obtener la organización para verificar plan
+    const org = await ctx.db.get(organizationId);
+    if (!org) {
+      throw new Error("Organización no encontrada");
+    }
+
     // Verificar que el solicitante es owner o admin
     const requesterMembership = await ctx.db
       .query("organizationMembers")
-      .withIndex("by_organization_user", (q) => 
+      .withIndex("by_organization_user", (q) =>
         q.eq("organizationId", organizationId).eq("userId", requesterId)
       )
       .first();
 
     if (!requesterMembership || (requesterMembership.role !== "owner" && requesterMembership.role !== "admin")) {
       throw new Error("No tienes permisos para añadir miembros");
+    }
+
+    // Validar límite de miembros según plan
+    const members = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    const limits = PLAN_LIMITS[org.plan as Plan];
+    if (members.length >= limits.maxMembersPerOrg) {
+      throw new Error("MEMBER_LIMIT_REACHED");
     }
 
     // Buscar el usuario por email
@@ -335,19 +376,19 @@ export const addMember = mutation({
       .first();
 
     if (!user) {
-      throw new Error("Usuario no encontrado");
+      throw new Error("USER_NOT_FOUND");
     }
 
     // Verificar que no sea ya miembro
     const existingMembership = await ctx.db
       .query("organizationMembers")
-      .withIndex("by_organization_user", (q) => 
+      .withIndex("by_organization_user", (q) =>
         q.eq("organizationId", organizationId).eq("userId", user._id)
       )
       .first();
 
     if (existingMembership) {
-      throw new Error("El usuario ya es miembro de la organización");
+      throw new Error("ALREADY_MEMBER");
     }
 
     // Añadir el miembro
@@ -416,6 +457,54 @@ export const removeMember = mutation({
     }
 
     await ctx.db.delete(membership._id);
+    return membership._id;
+  },
+});
+
+// Mutation para actualizar el rol de un miembro
+export const updateMemberRole = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    role: v.union(v.literal("admin"), v.literal("member")),
+  },
+  handler: async (ctx, { organizationId, userId, role }) => {
+    const requesterId = await getAuthUserId(ctx);
+    if (!requesterId) {
+      throw new Error("Usuario no autenticado");
+    }
+
+    // Verificar que el solicitante es owner o admin
+    const requesterMembership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization_user", (q) =>
+        q.eq("organizationId", organizationId).eq("userId", requesterId)
+      )
+      .first();
+
+    if (!requesterMembership || (requesterMembership.role !== "owner" && requesterMembership.role !== "admin")) {
+      throw new Error("No tienes permisos para cambiar roles");
+    }
+
+    // Obtener la membresía del usuario a modificar
+    const membership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization_user", (q) =>
+        q.eq("organizationId", organizationId).eq("userId", userId)
+      )
+      .first();
+
+    if (!membership) {
+      throw new Error("El usuario no es miembro de la organización");
+    }
+
+    // No permitir cambiar el rol del owner
+    if (membership.role === "owner") {
+      throw new Error("CANNOT_CHANGE_OWNER_ROLE");
+    }
+
+    // Actualizar el rol
+    await ctx.db.patch(membership._id, { role });
     return membership._id;
   },
 });

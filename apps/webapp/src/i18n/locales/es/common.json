@@ -1,5 +1,12 @@
 {
   "title": "Hikai WebApp",
+  "common": {
+    "loading": "Cargando...",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "unknown": "Desconocido"
+  },
   "userMenu": {
     "title": "Menú de usuario",
     "user": "Usuario",
@@ -65,6 +72,103 @@
       "free": "Gratis",
       "pro": "Pro",
       "enterprise": "Empresa"
+    },
+    "notFound": "Organización no encontrada o no tienes acceso.",
+    "backToHome": "Volver al inicio",
+    "detail": {
+      "title": "Detalles de la Organización",
+      "description": "Información básica sobre esta organización.",
+      "manage": "Gestionar organización",
+      "name": "Nombre",
+      "slug": "Identificador (slug)",
+      "plan": "Plan",
+      "members": "Miembros",
+      "createdAt": "Creado",
+      "descriptionLabel": "Descripción"
+    },
+    "tabs": {
+      "overview": "General",
+      "members": "Miembros"
+    },
+    "members": {
+      "title": "Miembros",
+      "count": "{{count}} miembro(s)",
+      "add": "Añadir Miembro",
+      "addButton": "Añadir",
+      "emailPlaceholder": "usuario@ejemplo.com",
+      "selectRole": "Seleccionar rol",
+      "empty": "No hay miembros en esta organización.",
+      "userNotFound": "Usuario no encontrado. Debe crear una cuenta en Hikai primero.",
+      "limitReached": "Límite de miembros alcanzado para tu plan.",
+      "alreadyMember": "El usuario ya es miembro.",
+      "cannotRemoveOwner": "No se puede eliminar al owner de la organización."
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Miembro"
+    }
+  },
+  "products": {
+    "title": "Productos",
+    "subtitle": "Productos en {{org}}",
+    "empty": "Aún no hay productos. Crea tu primer producto para comenzar.",
+    "noOrgSelected": "Selecciona una organización para ver productos.",
+    "notFound": "Producto no encontrado o no tienes acceso.",
+    "backToList": "Volver a productos",
+    "create": "Crear producto",
+    "createTitle": "Crear Nuevo Producto",
+    "createDescription": "Crea un nuevo producto para organizar tus esfuerzos de marketing.",
+    "creating": "Creando...",
+    "createButton": "Crear Producto",
+    "limitInfo": "{{current}} de {{max}} productos",
+    "member": "miembro",
+    "members": "miembros",
+    "roles": {
+      "admin": "Admin",
+      "member": "Miembro"
+    },
+    "form": {
+      "name": "Nombre del producto",
+      "namePlaceholder": "Mi Producto",
+      "slug": "Identificador (slug)",
+      "slugPlaceholder": "mi-producto",
+      "slugHint": "Identificador amigable para URL. Solo letras minúsculas, números y guiones.",
+      "description": "Descripción (opcional)",
+      "descriptionPlaceholder": "Breve descripción de tu producto..."
+    },
+    "errors": {
+      "requiredFields": "El nombre y el slug son obligatorios",
+      "unknown": "Ocurrió un error desconocido"
+    },
+    "tabs": {
+      "overview": "General",
+      "members": "Miembros"
+    },
+    "overview": {
+      "title": "Detalles del Producto",
+      "description": "Información básica sobre este producto.",
+      "createdAt": "Creado",
+      "members": "Miembros"
+    },
+    "delete": {
+      "title": "Eliminar Producto",
+      "warning": "Esta acción no se puede deshacer.",
+      "consequences": "Esto eliminará permanentemente el producto y todos sus miembros. Todos los datos asociados se perderán.",
+      "confirmLabel": "Escribe \"{{name}}\" para confirmar:",
+      "confirm": "Eliminar Producto",
+      "deleting": "Eliminando..."
+    },
+    "members": {
+      "title": "Miembros",
+      "count": "{{count}} miembro(s)",
+      "add": "Añadir Miembro",
+      "addButton": "Añadir",
+      "selectUser": "Seleccionar usuario",
+      "selectPlaceholder": "Elige un miembro...",
+      "selectRole": "Seleccionar rol",
+      "empty": "No hay miembros en este producto.",
+      "noAvailable": "No hay miembros disponibles"
     }
   }
 }

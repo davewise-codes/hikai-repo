@@ -9,6 +9,7 @@ import {
   Building,
   Plus,
   Check,
+  Settings,
 } from "@hikai/ui";
 import { useQuery } from "convex/react";
 import { api } from "@hikai/convex";
@@ -87,6 +88,16 @@ export function OrgSwitcher() {
                 </span>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link
+                to="/organizations/$slug"
+                params={{ slug: currentOrg.slug }}
+                className="flex items-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                {t("organizations.detail.manage")}
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}

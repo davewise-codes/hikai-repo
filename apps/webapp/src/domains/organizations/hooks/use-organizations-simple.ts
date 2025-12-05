@@ -34,6 +34,16 @@ export function useRemoveMember() {
   return useMutation(api.organizations.organizations.removeMember as any) as any;
 }
 
+export function useUpdateMemberRole() {
+  return useMutation(api.organizations.organizations.updateMemberRole as any) as any;
+}
+
+export function useOrganizationMembers(organizationId: string) {
+  return useQuery(api.organizations.organizations.getOrganizationMembers as any, {
+    organizationId,
+  }) as any;
+}
+
 // Types for forms
 export interface CreateOrganizationData {
   name: string;

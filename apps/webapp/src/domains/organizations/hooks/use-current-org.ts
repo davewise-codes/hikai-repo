@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useQuery } from "convex/react";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 import { api } from "@hikai/convex";
 import { useStore } from "@/store";
 
@@ -9,10 +10,13 @@ import { useStore } from "@/store";
  * - Lee currentOrgId del store (persistido en localStorage)
  * - Auto-selecciona la primera org (personal) si ninguna está seleccionada
  * - Sincroniza entre pestañas automáticamente
+ * - Al cambiar de org en rutas de productos, navega a /products
  */
 export function useCurrentOrg() {
   const currentOrgId = useStore((state) => state.currentOrgId);
   const setCurrentOrgId = useStore((state) => state.setCurrentOrgId);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const organizations = useQuery(
     api.organizations.organizations.getUserOrganizationsWithDetails
@@ -31,10 +35,22 @@ export function useCurrentOrg() {
   const currentOrg =
     organizations?.find((o) => o._id === currentOrgId) ?? null;
 
+  // Cambiar org con navegación a /products si estamos en una ruta de productos
+  const setCurrentOrg = useCallback(
+    (orgId: string) => {
+      setCurrentOrgId(orgId);
+      // Si estamos en una ruta de productos, navegar a /products
+      if (location.pathname.startsWith("/products")) {
+        navigate({ to: "/products" });
+      }
+    },
+    [setCurrentOrgId, navigate, location.pathname]
+  );
+
   return {
     currentOrg,
     organizations: organizations ?? [],
     isLoading: organizations === undefined,
-    setCurrentOrg: (orgId: string) => setCurrentOrgId(orgId),
+    setCurrentOrg,
   };
 }

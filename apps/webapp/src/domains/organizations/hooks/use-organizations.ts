@@ -48,6 +48,11 @@ export function useRemoveMember() {
   return useMutation(api.organizations.organizations.removeMember);
 }
 
+// Hook para actualizar el rol de un miembro
+export function useUpdateMemberRole() {
+  return useMutation(api.organizations.organizations.updateMemberRole);
+}
+
 // Types para los forms
 export interface CreateOrganizationData {
   name: string;
