@@ -13,3 +13,13 @@ export * from "./label";
 export * from "./tabs";
 export * from "./textarea";
 export * from "./form";
+
+// F2: New shadcn components
+export * from "./dialog";
+export * from "./alert-dialog";
+export * from "./select";
+export * from "./checkbox";
+export * from "./switch";
+export * from "./radio-group";
+export * from "./tooltip";
+export { Toaster } from "./sonner";
