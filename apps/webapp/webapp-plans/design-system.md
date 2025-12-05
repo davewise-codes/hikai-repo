@@ -11,7 +11,7 @@
 | Fase                                 | Estado        |
 | ------------------------------------ | ------------- |
 | F1: Token System Foundation          | ✅ Completado |
-| F2: Missing Base Components (shadcn) | ⏳ Pendiente  |
+| F2: Missing Base Components (shadcn) | ✅ Completado |
 | F3: Webapp Refactoring               | ⏳ Pendiente  |
 | F4: Documentation                    | ⏳ Pendiente  |
 | F5: Website Migration                | ⏳ Pendiente  |
@@ -494,3 +494,35 @@ VALIDACIÓN F4:
 - `packages/tailwind-config/index.js`
 - `packages/ui/src/styles/globals.css`
 - `packages/ui/src/styles/themes.css` (eliminado)
+
+### 2025-12-05 - F2 Completada
+
+**Cambios realizados:**
+
+1. Añadidos 8 componentes via shadcn CLI:
+   - `dialog.tsx` - Modales genéricos
+   - `alert-dialog.tsx` - Diálogos de confirmación
+   - `select.tsx` - Dropdowns estilizados
+   - `checkbox.tsx` - Checkboxes accesibles
+   - `switch.tsx` - Toggles
+   - `radio-group.tsx` - Grupos de radio buttons
+   - `tooltip.tsx` - Tooltips
+   - `sonner.tsx` - Toast notifications
+
+2. Dependencias @radix-ui/* añadidas:
+   - @radix-ui/react-alert-dialog
+   - @radix-ui/react-checkbox
+   - @radix-ui/react-radio-group
+   - @radix-ui/react-select
+   - @radix-ui/react-switch
+   - @radix-ui/react-tooltip
+   - sonner
+
+3. Actualizado `packages/ui/src/components/ui/index.ts` con nuevos exports
+
+**Archivos modificados:**
+
+- `packages/ui/package.json`
+- `packages/ui/src/components/ui/index.ts`
+- `packages/ui/src/components/ui/*.tsx` (8 nuevos componentes)
+- `pnpm-lock.yaml`
