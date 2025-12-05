@@ -1,5 +1,7 @@
 import { useState } from "react";
 import {
+  Alert,
+  AlertDescription,
   Button,
   Card,
   CardContent,
@@ -182,9 +184,9 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-              {error}
-            </div>
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           <div className="flex gap-2">

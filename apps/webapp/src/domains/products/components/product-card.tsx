@@ -25,11 +25,6 @@ interface ProductCardProps {
 export function ProductCard({ product, userRole }: ProductCardProps) {
   const { t } = useTranslation("common");
 
-  const roleColors = {
-    admin: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    member: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-  };
-
   return (
     <Link to="/products/$slug" params={{ slug: product.slug }}>
       <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
@@ -42,7 +37,7 @@ export function ProductCard({ product, userRole }: ProductCardProps) {
               </CardDescription>
             </div>
             {userRole && (
-              <Badge variant="secondary" className={roleColors[userRole]}>
+              <Badge variant={userRole}>
                 {t(`products.roles.${userRole}`)}
               </Badge>
             )}

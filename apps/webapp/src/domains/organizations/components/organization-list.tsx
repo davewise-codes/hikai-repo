@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hikai/ui";
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@hikai/ui";
 import { useUserOrganizations } from "../hooks/use-organizations";
 import { CreateOrganizationForm } from "./create-organization-form";
 
@@ -44,15 +44,9 @@ export function OrganizationList() {
                     <CardTitle>{org.name}</CardTitle>
                     <CardDescription>@{org.slug}</CardDescription>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    org.role === "owner" 
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                      : org.role === "admin"
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
-                  }`}>
+                  <Badge variant={org.role as "owner" | "admin" | "member"}>
                     {org.role}
-                  </span>
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>

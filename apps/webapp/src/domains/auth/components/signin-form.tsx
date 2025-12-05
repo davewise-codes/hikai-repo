@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Input, Label, Form, FormField, Eye, EyeOff } from "@hikai/ui";
+import { Alert, AlertDescription, Button, Input, Label, Form, FormField, Eye, EyeOff } from "@hikai/ui";
 import type { SignInFormData } from "../hooks/use-auth";
 import { useTranslation } from "react-i18next";
 import { isValidEmail } from "../utils/validation";
@@ -64,9 +64,9 @@ export function SignInForm({
 	return (
 		<Form onSubmit={handleSubmit}>
 			{error && (
-				<div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-					{error}
-				</div>
+				<Alert variant="destructive">
+					<AlertDescription>{error}</AlertDescription>
+				</Alert>
 			)}
 
 			<FormField error={errors.email}>

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/domains/core/components/app-shell";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
@@ -20,7 +19,6 @@ import {
   Button,
   Badge,
   ArrowLeft,
-  Trash2,
 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 
@@ -33,7 +31,6 @@ function ProductDetailPage() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const { currentOrg, isLoading: isOrgLoading } = useCurrentOrg();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const product = useGetProductBySlug(currentOrg?._id, slug);
 
@@ -98,14 +95,11 @@ function ProductDetailPage() {
           </div>
 
           {isAdmin && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              {t("common.delete")}
-            </Button>
+            <DeleteProductDialog
+              productId={product._id}
+              productName={product.name}
+              onDeleted={() => navigate({ to: "/products" })}
+            />
           )}
         </div>
 
@@ -170,16 +164,6 @@ function ProductDetailPage() {
             <ProductMembers productId={product._id} userRole={product.userRole} />
           </TabsContent>
         </Tabs>
-
-        {/* Delete dialog */}
-        {showDeleteDialog && (
-          <DeleteProductDialog
-            productId={product._id}
-            productName={product.name}
-            onClose={() => setShowDeleteDialog(false)}
-            onDeleted={() => navigate({ to: "/products" })}
-          />
-        )}
       </div>
     </AppShell>
   );

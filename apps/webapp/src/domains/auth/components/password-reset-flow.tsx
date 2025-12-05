@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Input, Label, Form, FormField, Eye, EyeOff } from "@hikai/ui";
+import { Alert, AlertDescription, Button, Input, Label, Form, FormField, Eye, EyeOff } from "@hikai/ui";
 import type { PasswordResetRequestData } from "../hooks/use-auth";
 import { useTranslation } from "react-i18next";
 import { isValidVerificationCode, isValidPassword, formatVerificationCode, sanitizeCodeInput } from "../utils/validation";
@@ -137,9 +137,9 @@ export function PasswordResetFlow({
 				</div>
 
 				{error && (
-					<div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-						{error}
-					</div>
+					<Alert variant="destructive">
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
 				)}
 
 				<Form onSubmit={handleRequestSubmit}>
@@ -198,9 +198,9 @@ export function PasswordResetFlow({
 				</div>
 
 				{error && (
-					<div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-						{error}
-					</div>
+					<Alert variant="destructive">
+						<AlertDescription>{error}</AlertDescription>
+					</Alert>
 				)}
 
 				<Form onSubmit={handleVerifySubmit}>
@@ -287,9 +287,9 @@ export function PasswordResetFlow({
 			</div>
 
 			{error && (
-				<div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-					{error}
-				</div>
+				<Alert variant="destructive">
+					<AlertDescription>{error}</AlertDescription>
+				</Alert>
 			)}
 
 			<Form onSubmit={handleResetSubmit}>

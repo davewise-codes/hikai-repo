@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Input, Label, Form, FormField } from '@hikai/ui';
+import { Alert, AlertDescription, Button, Input, Label, Form, FormField } from '@hikai/ui';
 import { useTranslation } from 'react-i18next';
 import { isValidVerificationCode, formatVerificationCode, sanitizeCodeInput } from '../utils/validation';
 
@@ -74,9 +74,9 @@ export function VerificationCodeForm({
 
       <Form onSubmit={handleSubmit}>
         {error && (
-          <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md mb-4">
-            {error}
-          </div>
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         <FormField error={codeError}>

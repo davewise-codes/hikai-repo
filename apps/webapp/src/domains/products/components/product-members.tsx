@@ -1,5 +1,7 @@
 import { useState } from "react";
 import {
+  Alert,
+  AlertDescription,
   Button,
   Card,
   CardContent,
@@ -13,6 +15,11 @@ import {
   UserPlus,
   Trash2,
   Crown,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 import {
@@ -135,34 +142,41 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
               <label className="text-sm font-medium">
                 {t("products.members.selectUser")}
               </label>
-              <select
-                className="w-full mt-1 p-2 border rounded-md bg-background"
+              <Select
                 value={selectedUserId || ""}
-                onChange={(e) => setSelectedUserId(e.target.value as Id<"users">)}
+                onValueChange={(value) => setSelectedUserId(value as Id<"users">)}
               >
-                <option value="">{t("products.members.selectPlaceholder")}</option>
-                {availableMembers
-                  .filter((m): m is NonNullable<typeof m> => m !== null)
-                  .map((member) => (
-                    <option key={member.userId} value={member.userId}>
-                      {member.name || member.email} ({member.orgRole})
-                    </option>
-                  ))}
-              </select>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder={t("products.members.selectPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableMembers
+                    .filter((m): m is NonNullable<typeof m> => m !== null)
+                    .map((member) => (
+                      <SelectItem key={member.userId} value={member.userId}>
+                        {member.name || member.email} ({member.orgRole})
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
               <label className="text-sm font-medium">
                 {t("products.members.selectRole")}
               </label>
-              <select
-                className="w-full mt-1 p-2 border rounded-md bg-background"
+              <Select
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as "admin" | "member")}
+                onValueChange={(value) => setSelectedRole(value as "admin" | "member")}
               >
-                <option value="member">{t("products.roles.member")}</option>
-                <option value="admin">{t("products.roles.admin")}</option>
-              </select>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="member">{t("products.roles.member")}</SelectItem>
+                  <SelectItem value="admin">{t("products.roles.admin")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex gap-2">
@@ -185,9 +199,9 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
         )}
 
         {error && (
-          <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-            {error}
-          </div>
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
 
         {/* Members list */}
@@ -223,28 +237,31 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
 
               <div className="flex items-center gap-2">
                 {isAdmin ? (
-                  <select
-                    className="p-1 text-sm border rounded bg-background"
+                  <Select
                     value={member.role}
-                    onChange={(e) =>
-                      handleRoleChange(member.userId, e.target.value as "admin" | "member")
+                    onValueChange={(value) =>
+                      handleRoleChange(member.userId, value as "admin" | "member")
                     }
                   >
-                    <option value="member">{t("products.roles.member")}</option>
-                    <option value="admin">{t("products.roles.admin")}</option>
-                  </select>
+                    <SelectTrigger className="w-auto h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">{t("products.roles.member")}</SelectItem>
+                      <SelectItem value="admin">{t("products.roles.admin")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 ) : (
-                  <Badge variant="secondary">
+                  <Badge variant={member.role as "admin" | "member"}>
                     {t(`products.roles.${member.role}`)}
                   </Badge>
                 )}
 
                 {isAdmin && (
                   <Button
-                    variant="ghost"
+                    variant="ghost-destructive"
                     size="sm"
                     onClick={() => handleRemoveMember(member.userId)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
