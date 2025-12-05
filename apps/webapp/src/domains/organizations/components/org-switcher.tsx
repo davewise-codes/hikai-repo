@@ -28,13 +28,9 @@ import { Link } from "@tanstack/react-router";
  * - All organizations: todas las demás organizaciones
  */
 export function OrgSwitcher() {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("organizations");
   const { currentOrg, organizations, isLoading, setCurrentOrg } =
     useCurrentOrg();
-
-  const canCreateResult = useQuery(
-    api.organizations.organizations.canCreateOrganization
-  );
 
   // Obtener organizaciones recientes
   const recentOrgs = useQuery(
@@ -68,7 +64,7 @@ export function OrgSwitcher() {
       <DropdownMenuTrigger asChild>
         <button
           className="w-8 h-8 bg-primary rounded-md flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
-          title={currentOrg?.name || t("organizations.switcher.title")}
+          title={currentOrg?.name || t("switcher.title")}
         >
           {currentOrg ? (
             <span className="text-primary-foreground text-xs font-bold">
@@ -91,7 +87,7 @@ export function OrgSwitcher() {
                   </span>
                   {currentOrg.isPersonal && (
                     <Badge variant="secondary" className="text-xs">
-                      {t("organizations.switcher.personal")}
+                      {t("switcher.personal")}
                     </Badge>
                   )}
                 </div>
@@ -108,7 +104,7 @@ export function OrgSwitcher() {
                 className="flex items-center gap-2"
               >
                 <Settings className="w-4 h-4" />
-                {t("organizations.detail.manage")}
+                {t("detail.manage")}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -119,7 +115,7 @@ export function OrgSwitcher() {
         {recentOrgs && recentOrgs.length > 0 && (
           <>
             <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-              {t("organizations.switcher.recent")}
+              {t("switcher.recent")}
             </DropdownMenuLabel>
             {recentOrgs.map((org) => (
               <DropdownMenuItem
@@ -137,12 +133,12 @@ export function OrgSwitcher() {
                     <span className="truncate">{org.name}</span>
                     {org.isPersonal && (
                       <Badge variant="outline" className="text-xs flex-shrink-0">
-                        {t("organizations.switcher.personal")}
+                        {t("switcher.personal")}
                       </Badge>
                     )}
                     {!org.isPersonal && org.plan !== "free" && (
                       <Badge variant="default" className="text-xs flex-shrink-0">
-                        {t(`organizations.plans.${org.plan}`)}
+                        {t(`plans.${org.plan}`)}
                       </Badge>
                     )}
                   </div>
@@ -160,7 +156,7 @@ export function OrgSwitcher() {
           <>
             {recentOrgs && recentOrgs.length > 0 && <DropdownMenuSeparator />}
             <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-              {t("organizations.switcher.all")}
+              {t("switcher.all")}
             </DropdownMenuLabel>
             {nonRecentOrgs.map((org) => (
               <DropdownMenuItem
@@ -178,12 +174,12 @@ export function OrgSwitcher() {
                     <span className="truncate">{org.name}</span>
                     {org.isPersonal && (
                       <Badge variant="outline" className="text-xs flex-shrink-0">
-                        {t("organizations.switcher.personal")}
+                        {t("switcher.personal")}
                       </Badge>
                     )}
                     {!org.isPersonal && org.plan !== "free" && (
                       <Badge variant="default" className="text-xs flex-shrink-0">
-                        {t(`organizations.plans.${org.plan}`)}
+                        {t(`plans.${org.plan}`)}
                       </Badge>
                     )}
                   </div>
@@ -199,22 +195,18 @@ export function OrgSwitcher() {
         {/* Empty state when no organizations at all */}
         {organizations.length === 0 && (
           <DropdownMenuItem disabled>
-            {t("organizations.switcher.noOrganizations")}
+            {t("switcher.noOrganizations")}
           </DropdownMenuItem>
         )}
 
-        {/* Create new org */}
-        {canCreateResult?.canCreate && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link to="/organizations" className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                {t("organizations.switcher.createNew")}
-              </Link>
-            </DropdownMenuItem>
-          </>
-        )}
+        {/* Create new org - always available for authenticated users */}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link to="/organizations" className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            {t("switcher.createNew")}
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -9,9 +9,18 @@
 | F2: Products CRUD                   | ✅ Completado |
 | F2.5: Org Detail + Members          | ✅ Completado |
 | F3: Trazabilidad                    | ✅ Completado |
-| F4: Transfer Ownership              | ⏳ Pendiente  |
+| F4: Transfer Ownership + Settings   | ✅ Completado |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
+
+### Notas F4
+- Implementado transfer ownership + delete organization
+- Nueva ruta `/organizations/$slug/settings` con danger zone
+- Corregido modelo de tenants: organización es el tenant que paga
+  - Org personal: siempre plan "free", no se puede transferir/eliminar
+  - Org profesional: requiere selección de plan (pro/enterprise) al crear
+  - Eliminado `maxOrganizations` de PLAN_LIMITS
+- Reorganización i18n por dominios: `organizations.json`, `products.json`
 
 ## Prompt para arrancar cada fase
 

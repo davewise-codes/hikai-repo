@@ -7,15 +7,23 @@ import enCommon from './locales/en/common.json';
 import esCommon from './locales/es/common.json';
 import enAuth from './locales/en/auth.json';
 import esAuth from './locales/es/auth.json';
+import enOrganizations from './locales/en/organizations.json';
+import esOrganizations from './locales/es/organizations.json';
+import enProducts from './locales/en/products.json';
+import esProducts from './locales/es/products.json';
 
 const resources = {
   en: {
     common: enCommon,
     auth: enAuth,
+    organizations: enOrganizations,
+    products: enProducts,
   },
   es: {
     common: esCommon,
     auth: esAuth,
+    organizations: esOrganizations,
+    products: esProducts,
   },
 };
 

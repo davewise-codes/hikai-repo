@@ -1,7 +1,13 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation, internalMutation } from "../_generated/server";
 import { v } from "convex/values";
-import { PLAN_LIMITS, checkLimit, type Plan } from "../lib/planLimits";
+import {
+  PLAN_LIMITS,
+  checkLimit,
+  isProfessionalPlan,
+  type Plan,
+  type ProfessionalPlan,
+} from "../lib/planLimits";
 
 // Query para obtener todas las organizaciones (pública)
 export const listOrganizations = query({
@@ -121,50 +127,19 @@ export const getPersonalOrg = query({
 });
 
 // Query para verificar si el usuario puede crear una nueva organización
+// NOTA: Cualquier usuario autenticado puede crear organizaciones profesionales.
+// Crear una org profesional = contratar un plan (Pro o Enterprise).
+// No hay límite de cuántas orgs puede crear un usuario.
 export const canCreateOrganization = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      return { canCreate: false, reason: "Usuario no autenticado", currentCount: 0, maxAllowed: 0 };
+      return { canCreate: false, reason: "Usuario no autenticado" };
     }
 
-    // Obtener las membresías del usuario
-    const memberships = await ctx.db
-      .query("organizationMembers")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-
-    // Obtener las orgs y filtrar las no-personales donde es owner
-    const orgs = await Promise.all(
-      memberships
-        .filter((m) => m.role === "owner")
-        .map((m) => ctx.db.get(m.organizationId))
-    );
-
-    const nonPersonalOrgs = orgs.filter((org) => org && !org.isPersonal);
-    const currentCount = nonPersonalOrgs.length;
-
-    // Por ahora usamos plan free para el límite base
-    // Esto se puede mejorar basándose en el plan más alto del usuario
-    const maxAllowed = PLAN_LIMITS.free.maxOrganizations;
-
-    const limitCheck = checkLimit("free", "maxOrganizations", currentCount);
-
-    if (!limitCheck.allowed) {
-      return {
-        canCreate: false,
-        reason: `Has alcanzado el límite de ${maxAllowed} organización(es) en el plan gratuito`,
-        currentCount,
-        maxAllowed,
-      };
-    }
-
-    return {
-      canCreate: true,
-      currentCount,
-      maxAllowed,
-    };
+    // Cualquier usuario autenticado puede crear organizaciones profesionales
+    return { canCreate: true };
   },
 });
 
@@ -216,42 +191,34 @@ export const getUserOrganizationsWithDetails = query({
 });
 
 // Mutation para crear una nueva organización
+// MODELO DE TENANTS:
+// - Org Personal (isPersonal=true): plan siempre "free", creada automáticamente al registro
+// - Org Profesional (isPersonal=false): requiere plan "pro" o "enterprise"
 export const createOrganization = mutation({
   args: {
     name: v.string(),
     slug: v.string(),
     description: v.optional(v.string()),
-    plan: v.optional(v.union(v.literal("free"), v.literal("pro"), v.literal("enterprise"))),
+    plan: v.optional(v.union(v.literal("pro"), v.literal("enterprise"))),
     isPersonal: v.optional(v.boolean()),
   },
-  handler: async (ctx, { name, slug, description, plan = "free", isPersonal = false }) => {
+  handler: async (ctx, { name, slug, description, plan, isPersonal = false }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("Usuario no autenticado");
     }
 
-    // Validar límites solo para orgs no personales
-    if (!isPersonal) {
-      const memberships = await ctx.db
-        .query("organizationMembers")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
-
-      const orgs = await Promise.all(
-        memberships
-          .filter((m) => m.role === "owner")
-          .map((m) => ctx.db.get(m.organizationId))
-      );
-
-      const nonPersonalOrgs = orgs.filter((org) => org && !org.isPersonal);
-      const currentCount = nonPersonalOrgs.length;
-      const maxAllowed = PLAN_LIMITS.free.maxOrganizations;
-
-      if (currentCount >= maxAllowed) {
-        throw new Error(
-          `Has alcanzado el límite de ${maxAllowed} organización(es) en el plan gratuito`
-        );
+    // Determinar el plan según el tipo de organización
+    let actualPlan: Plan;
+    if (isPersonal) {
+      // Las organizaciones personales siempre son free
+      actualPlan = "free";
+    } else {
+      // Las organizaciones profesionales REQUIEREN un plan pro o enterprise
+      if (!plan) {
+        throw new Error("PROFESSIONAL_ORG_REQUIRES_PLAN");
       }
+      actualPlan = plan;
     }
 
     // Verificar que el slug no esté en uso
@@ -272,7 +239,7 @@ export const createOrganization = mutation({
       slug,
       description,
       ownerId: userId,
-      plan,
+      plan: actualPlan,
       isPersonal,
       createdAt: now,
       updatedAt: now,
@@ -523,13 +490,19 @@ export const deleteOrganization = mutation({
     // Verificar que el usuario es owner
     const membership = await ctx.db
       .query("organizationMembers")
-      .withIndex("by_organization_user", (q) => 
+      .withIndex("by_organization_user", (q) =>
         q.eq("organizationId", organizationId).eq("userId", userId)
       )
       .first();
 
     if (!membership || membership.role !== "owner") {
       throw new Error("Solo el owner puede eliminar la organización");
+    }
+
+    // Obtener la org para verificar que no es personal
+    const org = await ctx.db.get(organizationId);
+    if (org?.isPersonal) {
+      throw new Error("CANNOT_DELETE_PERSONAL_ORG");
     }
 
     // Eliminar todos los miembros
@@ -542,6 +515,81 @@ export const deleteOrganization = mutation({
 
     // Eliminar la organización
     await ctx.db.delete(organizationId);
+    return organizationId;
+  },
+});
+
+// Mutation para transferir la propiedad de una organización
+export const transferOwnership = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    newOwnerId: v.id("users"),
+  },
+  handler: async (ctx, { organizationId, newOwnerId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Usuario no autenticado");
+    }
+
+    // Verificar acceso y obtener membership del solicitante
+    const requesterMembership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization_user", (q) =>
+        q.eq("organizationId", organizationId).eq("userId", userId)
+      )
+      .first();
+
+    if (!requesterMembership) {
+      throw new Error("No tienes acceso a esta organización");
+    }
+
+    // Solo el owner puede transferir
+    if (requesterMembership.role !== "owner") {
+      throw new Error("ONLY_OWNER_CAN_TRANSFER");
+    }
+
+    // Obtener la organización
+    const organization = await ctx.db.get(organizationId);
+    if (!organization) {
+      throw new Error("Organización no encontrada");
+    }
+
+    // No se puede transferir org personal
+    if (organization.isPersonal) {
+      throw new Error("CANNOT_TRANSFER_PERSONAL_ORG");
+    }
+
+    // No transferir a sí mismo
+    if (newOwnerId === userId) {
+      throw new Error("CANNOT_TRANSFER_TO_SELF");
+    }
+
+    // Verificar que el nuevo owner es miembro de la org
+    const newOwnerMembership = await ctx.db
+      .query("organizationMembers")
+      .withIndex("by_organization_user", (q) =>
+        q.eq("organizationId", organizationId).eq("userId", newOwnerId)
+      )
+      .first();
+
+    if (!newOwnerMembership) {
+      throw new Error("NEW_OWNER_NOT_MEMBER");
+    }
+
+    const now = Date.now();
+
+    // Actualizar la organización con el nuevo owner
+    await ctx.db.patch(organizationId, {
+      ownerId: newOwnerId,
+      updatedAt: now,
+    });
+
+    // El owner actual pasa a admin
+    await ctx.db.patch(requesterMembership._id, { role: "admin" });
+
+    // El nuevo owner obtiene rol de owner
+    await ctx.db.patch(newOwnerMembership._id, { role: "owner" });
+
     return organizationId;
   },
 });

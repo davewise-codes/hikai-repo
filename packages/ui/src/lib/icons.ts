@@ -193,6 +193,7 @@ export type { LucideIcon, LucideProps } from "lucide-react";
 export {
   Home,
   Building,
+  Building2,
   Globe,
   Wifi,
   WifiOff,

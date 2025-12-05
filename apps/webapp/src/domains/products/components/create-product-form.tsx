@@ -22,7 +22,7 @@ interface CreateProductFormProps {
 }
 
 export function CreateProductForm({ organizationId }: CreateProductFormProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("products");
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -38,7 +38,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.slug.trim()) {
-      setError(t("products.errors.requiredFields"));
+      setError(t("errors.requiredFields"));
       return;
     }
 
@@ -55,7 +55,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
       setFormData({ name: "", slug: "", description: "" });
       setIsOpen(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("products.errors.unknown"));
+      setError(err instanceof Error ? err.message : t("errors.unknown"));
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +95,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
           <div className="text-center text-muted-foreground">
             <p>{canCreateResult.reason}</p>
             <p className="text-sm mt-2">
-              {t("products.limitInfo", {
+              {t("limitInfo", {
                 current: canCreateResult.currentCount,
                 max: canCreateResult.maxAllowed,
               })}
@@ -116,7 +116,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
             className="w-full"
           >
             <Plus className="w-4 h-4 mr-2" />
-            {t("products.create")}
+            {t("create")}
           </Button>
         </CardContent>
       </Card>
@@ -126,26 +126,26 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t("products.createTitle")}</CardTitle>
-        <CardDescription>{t("products.createDescription")}</CardDescription>
+        <CardTitle>{t("createTitle")}</CardTitle>
+        <CardDescription>{t("createDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="product-name">{t("products.form.name")} *</Label>
+            <Label htmlFor="product-name">{t("form.name")} *</Label>
             <Input
               id="product-name"
               type="text"
               value={formData.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={t("products.form.namePlaceholder")}
+              placeholder={t("form.namePlaceholder")}
               required
               disabled={isLoading}
             />
           </div>
 
           <div>
-            <Label htmlFor="product-slug">{t("products.form.slug")} *</Label>
+            <Label htmlFor="product-slug">{t("form.slug")} *</Label>
             <Input
               id="product-slug"
               type="text"
@@ -153,20 +153,20 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, slug: e.target.value }))
               }
-              placeholder={t("products.form.slugPlaceholder")}
+              placeholder={t("form.slugPlaceholder")}
               required
               disabled={isLoading}
               pattern="^[a-z0-9-]+$"
-              title={t("products.form.slugHint")}
+              title={t("form.slugHint")}
             />
             <p className="text-xs text-muted-foreground mt-1">
-              {t("products.form.slugHint")}
+              {t("form.slugHint")}
             </p>
           </div>
 
           <div>
             <Label htmlFor="product-description">
-              {t("products.form.description")}
+              {t("form.description")}
             </Label>
             <Textarea
               id="product-description"
@@ -177,7 +177,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
                   description: e.target.value,
                 }))
               }
-              placeholder={t("products.form.descriptionPlaceholder")}
+              placeholder={t("form.descriptionPlaceholder")}
               rows={3}
               disabled={isLoading}
             />
@@ -196,7 +196,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
                 isLoading || !formData.name.trim() || !formData.slug.trim()
               }
             >
-              {isLoading ? t("products.creating") : t("products.createButton")}
+              {isLoading ? t("creating") : t("createButton")}
             </Button>
             <Button
               type="button"

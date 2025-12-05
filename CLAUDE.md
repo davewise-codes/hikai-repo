@@ -578,15 +578,31 @@ if (adminCount.length === 1) {
 }
 ```
 
+### Modelo de Tenants y Planes
+
+**🎯 Principio**: La **organización** es el tenant que paga, no el usuario.
+
+**Tipos de organización:**
+- **Org Personal**: Se crea automáticamente al registro. Plan siempre "free". No se puede eliminar ni transferir.
+- **Org Profesional**: El usuario la crea manualmente. Requiere seleccionar plan "pro" o "enterprise".
+
+**📍 Tipos:**
+```typescript
+type Plan = "free" | "pro" | "enterprise";
+type ProfessionalPlan = "pro" | "enterprise"; // Solo para orgs profesionales
+```
+
 ### Límites por Plan
 
 **📍 Ubicación**: `packages/convex/convex/lib/planLimits.ts`
 
-| Plan | Orgs | Productos/Org | Miembros/Org |
-|------|------|---------------|--------------|
-| free | 1 | 1 | 5 |
-| pro | 5 | 10 | 50 |
-| enterprise | ∞ | ∞ | ∞ |
+| Plan | Productos/Org | Miembros/Org | Notas |
+|------|---------------|--------------|-------|
+| free | 1 | 5 | Solo org personal |
+| pro | 10 | 50 | Orgs profesionales |
+| enterprise | ∞ | ∞ | Orgs profesionales |
+
+**Nota**: Ya no existe límite de organizaciones por usuario. Crear una org profesional = contratar un plan.
 
 **✅ Validar límites antes de crear recursos:**
 ```typescript

@@ -32,7 +32,7 @@ export function DeleteProductDialog({
   onDeleted,
   children,
 }: DeleteProductDialogProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("products");
   const [open, setOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -53,7 +53,7 @@ export function DeleteProductDialog({
       setOpen(false);
       onDeleted();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("products.errors.unknown"));
+      setError(err instanceof Error ? err.message : t("errors.unknown"));
       setIsLoading(false);
     }
   };
@@ -81,21 +81,21 @@ export function DeleteProductDialog({
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t("products.delete.title")}</AlertDialogTitle>
+          <AlertDialogTitle>{t("delete.title")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("products.delete.warning")}
+            {t("delete.warning")}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         <Alert variant="destructive">
           <AlertDescription>
-            {t("products.delete.consequences")}
+            {t("delete.consequences")}
           </AlertDescription>
         </Alert>
 
         <div className="space-y-2">
           <Label htmlFor="confirm-name">
-            {t("products.delete.confirmLabel", { name: productName })}
+            {t("delete.confirmLabel", { name: productName })}
           </Label>
           <Input
             id="confirm-name"
@@ -122,7 +122,7 @@ export function DeleteProductDialog({
             onClick={handleDelete}
             disabled={!isConfirmValid || isLoading}
           >
-            {isLoading ? t("products.delete.deleting") : t("products.delete.confirm")}
+            {isLoading ? t("delete.deleting") : t("delete.confirm")}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

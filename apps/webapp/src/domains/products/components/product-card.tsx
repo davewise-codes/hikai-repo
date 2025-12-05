@@ -23,7 +23,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, userRole }: ProductCardProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("products");
 
   return (
     <Link to="/products/$slug" params={{ slug: product.slug }}>
@@ -38,7 +38,7 @@ export function ProductCard({ product, userRole }: ProductCardProps) {
             </div>
             {userRole && (
               <Badge variant={userRole}>
-                {t(`products.roles.${userRole}`)}
+                {t(`roles.${userRole}`)}
               </Badge>
             )}
           </div>
@@ -55,8 +55,8 @@ export function ProductCard({ product, userRole }: ProductCardProps) {
               <span>
                 {product.memberCount}{" "}
                 {product.memberCount === 1
-                  ? t("products.member")
-                  : t("products.members")}
+                  ? t("member")
+                  : t("members")}
               </span>
             </div>
             <span>

@@ -29,7 +29,7 @@ export const Route = createFileRoute("/products/$slug")({
 });
 
 function ProductDetailPage() {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("products");
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const { currentOrg, isLoading: isOrgLoading } = useCurrentOrg();
@@ -67,11 +67,11 @@ function ProductDetailPage() {
           <Card>
             <CardContent className="text-center py-8">
               <p className="text-muted-foreground mb-4">
-                {t("products.notFound")}
+                {t("notFound")}
               </p>
               <Button variant="outline" onClick={() => navigate({ to: "/products" })}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                {t("products.backToList")}
+                {t("backToList")}
               </Button>
             </CardContent>
           </Card>
@@ -99,7 +99,7 @@ function ProductDetailPage() {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold">{product.name}</h1>
                 <Badge variant="secondary">
-                  {t(`products.roles.${product.userRole}`)}
+                  {t(`roles.${product.userRole}`)}
                 </Badge>
               </div>
               <p className="text-muted-foreground">/{product.slug}</p>
@@ -118,35 +118,35 @@ function ProductDetailPage() {
         {/* Tabs */}
         <Tabs defaultValue="overview">
           <TabsList>
-            <TabsTrigger value="overview">{t("products.tabs.overview")}</TabsTrigger>
-            <TabsTrigger value="members">{t("products.tabs.members")}</TabsTrigger>
+            <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
+            <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>{t("products.overview.title")}</CardTitle>
+                <CardTitle>{t("overview.title")}</CardTitle>
                 <CardDescription>
-                  {t("products.overview.description")}
+                  {t("overview.description")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      {t("products.form.name")}
+                      {t("form.name")}
                     </label>
                     <p className="text-lg">{product.name}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      {t("products.form.slug")}
+                      {t("form.slug")}
                     </label>
                     <p className="text-lg font-mono">/{product.slug}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      {t("products.overview.createdAt")}
+                      {t("overview.createdAt")}
                     </label>
                     <p className="text-lg">
                       {new Date(product.createdAt).toLocaleDateString()}
@@ -154,7 +154,7 @@ function ProductDetailPage() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      {t("products.overview.members")}
+                      {t("overview.members")}
                     </label>
                     <p className="text-lg">{product.memberCount}</p>
                   </div>
@@ -163,7 +163,7 @@ function ProductDetailPage() {
                 {product.description && (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">
-                      {t("products.form.description")}
+                      {t("form.description")}
                     </label>
                     <p className="mt-1">{product.description}</p>
                   </div>

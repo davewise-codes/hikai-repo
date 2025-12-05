@@ -7,13 +7,15 @@ Gestión de organizaciones (tenants) en Hikai.
 ```
 organizations/
 ├── components/
-│   ├── org-switcher.tsx       # Selector de org en sidebar
-│   ├── organization-list.tsx  # Lista de orgs
-│   └── create-organization-form.tsx
+│   ├── org-switcher.tsx              # Selector de org en sidebar
+│   ├── org-members.tsx               # Gestión de miembros
+│   ├── organization-list.tsx         # Lista de orgs
+│   ├── create-organization-form.tsx  # Formulario de creación
+│   ├── transfer-ownership-dialog.tsx # Dialog para transferir propiedad
+│   └── delete-organization-dialog.tsx # Dialog para eliminar org
 ├── hooks/
-│   ├── use-current-org.ts     # Hook principal para org actual
-│   ├── use-organizations.ts   # Hooks de queries/mutations
-│   └── use-organizations-simple.ts
+│   ├── use-current-org.ts            # Hook principal para org actual
+│   └── use-organizations-simple.ts   # Hooks de queries/mutations
 └── index.ts
 ```
 
@@ -44,9 +46,16 @@ Convex queries/mutations en `packages/convex/convex/organizations/`:
 - `createOrganization`: Crea org (valida límites)
 - `createPersonalOrg`: Internal mutation para org personal automática
 - `getRecentOrganizations`: Últimas 5 orgs accedidas
+- `transferOwnership`: Transfiere propiedad a otro miembro
+- `deleteOrganization`: Elimina org (solo owner, no personal)
 
 Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
 - `updateLastOrgAccess`: Registra acceso a una org
+
+## Rutas
+
+- `/organizations/$slug` - Detalle de organización
+- `/organizations/$slug_/settings` - Configuración (solo admin/owner)
 
 ## Límites
 

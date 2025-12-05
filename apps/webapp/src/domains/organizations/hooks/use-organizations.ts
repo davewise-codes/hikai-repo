@@ -58,6 +58,7 @@ export interface CreateOrganizationData {
   name: string;
   slug: string;
   description?: string;
+  plan: "pro" | "enterprise"; // Required for professional organizations
 }
 
 export interface UpdateOrganizationData {

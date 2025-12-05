@@ -7,7 +7,7 @@ import { ProductCard } from "./product-card";
 import { CreateProductForm } from "./create-product-form";
 
 export function ProductList() {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("products");
   const navigate = useNavigate();
   const { currentOrg, isLoading: isOrgLoading, setCurrentOrg } = useCurrentOrg();
 
@@ -34,7 +34,7 @@ export function ProductList() {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{t("products.title")}</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
         </div>
         <div className="text-center py-8 text-muted-foreground">
           {t("common.loading")}
@@ -48,12 +48,12 @@ export function ProductList() {
     return (
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">{t("products.title")}</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
         </div>
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground">
-              {t("products.noOrgSelected")}
+              {t("noOrgSelected")}
             </p>
           </CardContent>
         </Card>
@@ -65,9 +65,9 @@ export function ProductList() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">{t("products.title")}</h1>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground text-sm">
-            {t("products.subtitle", { org: currentOrg.name })}
+            {t("subtitle", { org: currentOrg.name })}
           </p>
         </div>
       </div>
@@ -78,7 +78,7 @@ export function ProductList() {
       {recentProducts && recentProducts.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground">
-            {t("products.list.recent")}
+            {t("list.recent")}
           </h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {recentProducts.map((product) => {
@@ -93,7 +93,7 @@ export function ProductList() {
                     <CardTitle className="text-base flex items-center justify-between">
                       <span className="truncate">{product.name}</span>
                       <Badge variant="secondary" className="text-xs flex-shrink-0">
-                        {t(`products.roles.${product.role}`)}
+                        {t(`roles.${product.role}`)}
                       </Badge>
                     </CardTitle>
                     <p className="text-xs text-muted-foreground font-mono">
@@ -108,7 +108,7 @@ export function ProductList() {
                     )}
                     {isOtherOrg && (
                       <p className="text-xs text-muted-foreground">
-                        {t("products.list.inOrg", { org: product.organization.name })}
+                        {t("list.inOrg", { org: product.organization.name })}
                       </p>
                     )}
                   </CardContent>
@@ -122,19 +122,19 @@ export function ProductList() {
       {/* Products in current organization (excluding recent) */}
       <div className="space-y-3">
         <h2 className="text-sm font-medium text-muted-foreground">
-          {t("products.list.allInOrg", { org: currentOrg.name })}
+          {t("list.allInOrg", { org: currentOrg.name })}
         </h2>
         {nonRecentProducts.length === 0 && (!recentProducts || recentProducts.length === 0) ? (
           <Card>
             <CardContent className="text-center py-8">
-              <p className="text-muted-foreground">{t("products.empty")}</p>
+              <p className="text-muted-foreground">{t("empty")}</p>
             </CardContent>
           </Card>
         ) : nonRecentProducts.length === 0 ? (
           <Card>
             <CardContent className="text-center py-4">
               <p className="text-muted-foreground text-sm">
-                {t("products.empty")}
+                {t("empty")}
               </p>
             </CardContent>
           </Card>

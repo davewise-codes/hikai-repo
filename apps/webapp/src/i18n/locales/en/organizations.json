@@ -1,0 +1,135 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "unknown": "Unknown"
+  },
+  "switcher": {
+    "title": "Switch organization",
+    "createNew": "Create organization",
+    "personal": "Personal",
+    "noOrganizations": "No organizations",
+    "recent": "Recent",
+    "all": "All organizations"
+  },
+  "plans": {
+    "free": "Free",
+    "pro": "Pro",
+    "enterprise": "Enterprise",
+    "recommended": "Recommended",
+    "proDescription": "For growing teams with advanced needs.",
+    "enterpriseDescription": "For large organizations with custom requirements.",
+    "features": {
+      "products": "Up to {{count}} products",
+      "members": "Up to {{count}} members",
+      "productsUnlimited": "Unlimited products",
+      "membersUnlimited": "Unlimited members",
+      "analytics": "Advanced analytics",
+      "apiAccess": "API access",
+      "sso": "Single Sign-On (SSO)",
+      "customIntegrations": "Custom integrations"
+    }
+  },
+  "create": {
+    "button": "Create Organization",
+    "title": "Create Professional Organization",
+    "description": "Organizations allow you to collaborate with your team on products.",
+    "selectPlan": "Select a plan",
+    "planRequired": "A plan is required for professional organizations.",
+    "billingNote": "Billing integration coming soon. Organizations are free during beta.",
+    "submit": "Create Organization",
+    "creating": "Creating...",
+    "errors": {
+      "requiredFields": "Name and identifier are required.",
+      "unknown": "An unknown error occurred."
+    }
+  },
+  "form": {
+    "name": "Organization name",
+    "namePlaceholder": "My Organization",
+    "slug": "Identifier (slug)",
+    "slugPlaceholder": "my-organization",
+    "slugHint": "URL-friendly identifier. Only lowercase letters, numbers, and hyphens.",
+    "description": "Description (optional)",
+    "descriptionPlaceholder": "Brief description of your organization..."
+  },
+  "notFound": "Organization not found or you don't have access.",
+  "backToHome": "Back to home",
+  "detail": {
+    "title": "Organization Details",
+    "description": "Basic information about this organization.",
+    "manage": "Manage organization",
+    "name": "Name",
+    "slug": "Identifier (slug)",
+    "plan": "Plan",
+    "members": "Members",
+    "createdAt": "Created",
+    "descriptionLabel": "Description"
+  },
+  "tabs": {
+    "overview": "Overview",
+    "members": "Members"
+  },
+  "members": {
+    "title": "Members",
+    "count": "{{count}} member(s)",
+    "add": "Add Member",
+    "addButton": "Add",
+    "emailPlaceholder": "user@example.com",
+    "selectRole": "Select role",
+    "empty": "No members in this organization.",
+    "userNotFound": "User not found. They must create a Hikai account first.",
+    "limitReached": "Member limit reached for your plan.",
+    "alreadyMember": "User is already a member.",
+    "cannotRemoveOwner": "Cannot remove the organization owner."
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "settings": {
+    "title": "Settings",
+    "general": {
+      "title": "General Settings",
+      "description": "Basic information about your organization."
+    },
+    "slugReadonly": "The identifier cannot be changed.",
+    "yourRole": "Your role",
+    "save": "Save changes",
+    "saveSuccess": "Changes saved successfully.",
+    "personalOrgInfo": "Personal organizations cannot be transferred or deleted.",
+    "dangerZone": {
+      "title": "Danger Zone",
+      "description": "Irreversible actions for your organization."
+    }
+  },
+  "transfer": {
+    "title": "Transfer ownership",
+    "description": "Transfer ownership of this organization to another member.",
+    "warning": "This action is irreversible. You will lose owner control over this organization and become an admin.",
+    "selectMember": "Select new owner",
+    "selectPlaceholder": "Choose a member...",
+    "confirm": "Transfer ownership",
+    "transferring": "Transferring...",
+    "cannotTransferPersonal": "Personal organization ownership cannot be transferred.",
+    "noEligibleMembers": "No other members to transfer ownership to. Add members first.",
+    "confirmMessage": "{{name}} will become the new owner of {{org}}.",
+    "errors": {
+      "onlyOwner": "Only the owner can transfer ownership.",
+      "cannotTransferToSelf": "You cannot transfer ownership to yourself.",
+      "notMember": "The selected user is not a member of this organization."
+    }
+  },
+  "delete": {
+    "title": "Delete organization",
+    "description": "Permanently delete this organization.",
+    "shortDescription": "Once deleted, it cannot be recovered.",
+    "warning": "This action cannot be undone.",
+    "consequences": "This will permanently delete the organization, all its products and members. All associated data will be lost.",
+    "confirmLabel": "Type \"{{name}}\" to confirm:",
+    "confirm": "Delete organization",
+    "deleting": "Deleting...",
+    "cannotDeletePersonal": "Personal organizations cannot be deleted."
+  }
+}

@@ -1,14 +1,31 @@
 /**
  * Sistema centralizado de límites por plan y verificación de features.
  * Usado para determinar qué puede hacer cada organización según su plan.
+ *
+ * MODELO DE TENANTS:
+ * - La organización es el tenant que paga
+ * - Org Personal: plan "free" (automática al registro, no se puede cambiar)
+ * - Org Profesional: plan "pro" o "enterprise" (requiere selección al crear)
  */
 
 // Tipos de planes disponibles
 export type Plan = "free" | "pro" | "enterprise";
 
-// Estructura de límites por plan
+// Planes disponibles para organizaciones profesionales (no incluye free)
+export type ProfessionalPlan = "pro" | "enterprise";
+
+// Array de planes profesionales para validación
+export const PROFESSIONAL_PLANS: ProfessionalPlan[] = ["pro", "enterprise"];
+
+/**
+ * Verifica si un plan es profesional (pro o enterprise)
+ */
+export function isProfessionalPlan(plan: Plan): plan is ProfessionalPlan {
+  return plan === "pro" || plan === "enterprise";
+}
+
+// Estructura de límites por plan (dentro de la organización)
 export interface PlanLimits {
-  maxOrganizations: number;
   maxProductsPerOrg: number;
   maxMembersPerOrg: number;
 }
@@ -16,17 +33,14 @@ export interface PlanLimits {
 // Límites por plan
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   free: {
-    maxOrganizations: 1,
     maxProductsPerOrg: 1,
     maxMembersPerOrg: 5,
   },
   pro: {
-    maxOrganizations: 5,
     maxProductsPerOrg: 10,
     maxMembersPerOrg: 50,
   },
   enterprise: {
-    maxOrganizations: Infinity,
     maxProductsPerOrg: Infinity,
     maxMembersPerOrg: Infinity,
   },

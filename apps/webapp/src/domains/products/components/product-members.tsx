@@ -37,7 +37,7 @@ interface ProductMembersProps {
 }
 
 export function ProductMembers({ productId, userRole }: ProductMembersProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("products");
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<Id<"users"> | null>(null);
   const [selectedRole, setSelectedRole] = useState<"admin" | "member">("member");
@@ -65,7 +65,7 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
       setSelectedUserId(null);
       setSelectedRole("member");
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("products.errors.unknown"));
+      setError(err instanceof Error ? err.message : t("errors.unknown"));
     }
   };
 
@@ -73,7 +73,7 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
     try {
       await removeMember({ productId, userId });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("products.errors.unknown"));
+      setError(err instanceof Error ? err.message : t("errors.unknown"));
     }
   };
 
@@ -81,7 +81,7 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
     try {
       await updateRole({ productId, userId, role: newRole });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("products.errors.unknown"));
+      setError(err instanceof Error ? err.message : t("errors.unknown"));
     }
   };
 
@@ -112,9 +112,9 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>{t("products.members.title")}</CardTitle>
+            <CardTitle>{t("members.title")}</CardTitle>
             <CardDescription>
-              {t("products.members.count", { count: members.length })}
+              {t("members.count", { count: members.length })}
             </CardDescription>
           </div>
           {isAdmin && !isAddingMember && availableMembers && availableMembers.length > 0 && (
@@ -124,12 +124,12 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
               onClick={() => setIsAddingMember(true)}
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              {t("products.members.add")}
+              {t("members.add")}
             </Button>
           )}
           {isAdmin && !isAddingMember && availableMembers && availableMembers.length === 0 && (
             <span className="text-sm text-muted-foreground">
-              {t("products.members.noAvailable")}
+              {t("members.noAvailable")}
             </span>
           )}
         </div>
@@ -140,14 +140,14 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
           <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
             <div>
               <label className="text-sm font-medium">
-                {t("products.members.selectUser")}
+                {t("members.selectUser")}
               </label>
               <Select
                 value={selectedUserId || ""}
                 onValueChange={(value) => setSelectedUserId(value as Id<"users">)}
               >
                 <SelectTrigger className="mt-1">
-                  <SelectValue placeholder={t("products.members.selectPlaceholder")} />
+                  <SelectValue placeholder={t("members.selectPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {availableMembers
@@ -163,7 +163,7 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
 
             <div>
               <label className="text-sm font-medium">
-                {t("products.members.selectRole")}
+                {t("members.selectRole")}
               </label>
               <Select
                 value={selectedRole}
@@ -173,15 +173,15 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">{t("products.roles.member")}</SelectItem>
-                  <SelectItem value="admin">{t("products.roles.admin")}</SelectItem>
+                  <SelectItem value="member">{t("roles.member")}</SelectItem>
+                  <SelectItem value="admin">{t("roles.admin")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex gap-2">
               <Button onClick={handleAddMember} disabled={!selectedUserId} size="sm">
-                {t("products.members.addButton")}
+                {t("members.addButton")}
               </Button>
               <Button
                 variant="outline"
@@ -247,13 +247,13 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="member">{t("products.roles.member")}</SelectItem>
-                      <SelectItem value="admin">{t("products.roles.admin")}</SelectItem>
+                      <SelectItem value="member">{t("roles.member")}</SelectItem>
+                      <SelectItem value="admin">{t("roles.admin")}</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (
                   <Badge variant={member.role as "admin" | "member"}>
-                    {t(`products.roles.${member.role}`)}
+                    {t(`roles.${member.role}`)}
                   </Badge>
                 )}
 
@@ -273,7 +273,7 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
 
         {members.length === 0 && (
           <div className="text-center py-4 text-muted-foreground">
-            {t("products.members.empty")}
+            {t("members.empty")}
           </div>
         )}
       </CardContent>

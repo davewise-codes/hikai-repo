@@ -37,7 +37,7 @@ interface OrgMembersProps {
 }
 
 export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation("organizations");
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [email, setEmail] = useState("");
   const [selectedRole, setSelectedRole] = useState<"admin" | "member">("member");
@@ -67,11 +67,11 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       // Traducir códigos de error específicos
       if (errorMessage === "USER_NOT_FOUND") {
-        setError(t("organizations.members.userNotFound"));
+        setError(t("members.userNotFound"));
       } else if (errorMessage === "MEMBER_LIMIT_REACHED") {
-        setError(t("organizations.members.limitReached"));
+        setError(t("members.limitReached"));
       } else if (errorMessage === "ALREADY_MEMBER") {
-        setError(t("organizations.members.alreadyMember"));
+        setError(t("members.alreadyMember"));
       } else {
         setError(errorMessage);
       }
@@ -81,7 +81,7 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
   const handleRemoveMember = async (userId: Id<"users">, memberRole: string) => {
     // No permitir eliminar al owner
     if (memberRole === "owner") {
-      setError(t("organizations.members.cannotRemoveOwner"));
+      setError(t("members.cannotRemoveOwner"));
       return;
     }
 
@@ -105,7 +105,7 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       if (errorMessage === "CANNOT_CHANGE_OWNER_ROLE") {
-        setError(t("organizations.members.cannotRemoveOwner"));
+        setError(t("members.cannotRemoveOwner"));
       } else {
         setError(errorMessage);
       }
@@ -139,9 +139,9 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>{t("organizations.members.title")}</CardTitle>
+            <CardTitle>{t("members.title")}</CardTitle>
             <CardDescription>
-              {t("organizations.members.count", { count: members.length })}
+              {t("members.count", { count: members.length })}
             </CardDescription>
           </div>
           {canManage && !isAddingMember && (
@@ -151,7 +151,7 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
               onClick={() => setIsAddingMember(true)}
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              {t("organizations.members.add")}
+              {t("members.add")}
             </Button>
           )}
         </div>
@@ -162,11 +162,11 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
           <div className="border rounded-lg p-4 space-y-4 bg-muted/30">
             <div>
               <label className="text-sm font-medium">
-                {t("organizations.members.add")}
+                {t("members.add")}
               </label>
               <Input
                 type="email"
-                placeholder={t("organizations.members.emailPlaceholder")}
+                placeholder={t("members.emailPlaceholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1"
@@ -175,7 +175,7 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
 
             <div>
               <label className="text-sm font-medium">
-                {t("organizations.members.selectRole")}
+                {t("members.selectRole")}
               </label>
               <Select
                 value={selectedRole}
@@ -185,15 +185,15 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="member">{t("organizations.roles.member")}</SelectItem>
-                  <SelectItem value="admin">{t("organizations.roles.admin")}</SelectItem>
+                  <SelectItem value="member">{t("roles.member")}</SelectItem>
+                  <SelectItem value="admin">{t("roles.admin")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex gap-2">
               <Button onClick={handleAddMember} disabled={!email.trim()} size="sm">
-                {t("organizations.members.addButton")}
+                {t("members.addButton")}
               </Button>
               <Button
                 variant="outline"
@@ -259,13 +259,13 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="member">{t("organizations.roles.member")}</SelectItem>
-                      <SelectItem value="admin">{t("organizations.roles.admin")}</SelectItem>
+                      <SelectItem value="member">{t("roles.member")}</SelectItem>
+                      <SelectItem value="admin">{t("roles.admin")}</SelectItem>
                     </SelectContent>
                   </Select>
                 ) : (
                   <Badge variant={member.role as "owner" | "admin" | "member"}>
-                    {t(`organizations.roles.${member.role}`)}
+                    {t(`roles.${member.role}`)}
                   </Badge>
                 )}
 
@@ -285,7 +285,7 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
 
         {members.length === 0 && (
           <div className="text-center py-4 text-muted-foreground">
-            {t("organizations.members.empty")}
+            {t("members.empty")}
           </div>
         )}
       </CardContent>

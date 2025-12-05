@@ -1,0 +1,135 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "cancel": "Cancelar",
+    "unknown": "Desconocido"
+  },
+  "switcher": {
+    "title": "Cambiar organización",
+    "createNew": "Crear organización",
+    "personal": "Personal",
+    "noOrganizations": "Sin organizaciones",
+    "recent": "Recientes",
+    "all": "Todas las organizaciones"
+  },
+  "plans": {
+    "free": "Gratis",
+    "pro": "Pro",
+    "enterprise": "Empresa",
+    "recommended": "Recomendado",
+    "proDescription": "Para equipos en crecimiento con necesidades avanzadas.",
+    "enterpriseDescription": "Para grandes organizaciones con requisitos personalizados.",
+    "features": {
+      "products": "Hasta {{count}} productos",
+      "members": "Hasta {{count}} miembros",
+      "productsUnlimited": "Productos ilimitados",
+      "membersUnlimited": "Miembros ilimitados",
+      "analytics": "Analíticas avanzadas",
+      "apiAccess": "Acceso a API",
+      "sso": "Single Sign-On (SSO)",
+      "customIntegrations": "Integraciones personalizadas"
+    }
+  },
+  "create": {
+    "button": "Crear Organización",
+    "title": "Crear Organización Profesional",
+    "description": "Las organizaciones te permiten colaborar con tu equipo en productos.",
+    "selectPlan": "Selecciona un plan",
+    "planRequired": "Se requiere un plan para organizaciones profesionales.",
+    "billingNote": "Integración de facturación próximamente. Las organizaciones son gratuitas durante la beta.",
+    "submit": "Crear Organización",
+    "creating": "Creando...",
+    "errors": {
+      "requiredFields": "El nombre y el identificador son obligatorios.",
+      "unknown": "Ocurrió un error desconocido."
+    }
+  },
+  "form": {
+    "name": "Nombre de la organización",
+    "namePlaceholder": "Mi Organización",
+    "slug": "Identificador (slug)",
+    "slugPlaceholder": "mi-organizacion",
+    "slugHint": "Identificador amigable para URL. Solo letras minúsculas, números y guiones.",
+    "description": "Descripción (opcional)",
+    "descriptionPlaceholder": "Breve descripción de tu organización..."
+  },
+  "notFound": "Organización no encontrada o no tienes acceso.",
+  "backToHome": "Volver al inicio",
+  "detail": {
+    "title": "Detalles de la Organización",
+    "description": "Información básica sobre esta organización.",
+    "manage": "Gestionar organización",
+    "name": "Nombre",
+    "slug": "Identificador (slug)",
+    "plan": "Plan",
+    "members": "Miembros",
+    "createdAt": "Creado",
+    "descriptionLabel": "Descripción"
+  },
+  "tabs": {
+    "overview": "General",
+    "members": "Miembros"
+  },
+  "members": {
+    "title": "Miembros",
+    "count": "{{count}} miembro(s)",
+    "add": "Añadir Miembro",
+    "addButton": "Añadir",
+    "emailPlaceholder": "usuario@ejemplo.com",
+    "selectRole": "Seleccionar rol",
+    "empty": "No hay miembros en esta organización.",
+    "userNotFound": "Usuario no encontrado. Debe crear una cuenta en Hikai primero.",
+    "limitReached": "Límite de miembros alcanzado para tu plan.",
+    "alreadyMember": "El usuario ya es miembro.",
+    "cannotRemoveOwner": "No se puede eliminar al owner de la organización."
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "member": "Miembro"
+  },
+  "settings": {
+    "title": "Configuración",
+    "general": {
+      "title": "Configuración General",
+      "description": "Información básica de tu organización."
+    },
+    "slugReadonly": "El identificador no se puede cambiar.",
+    "yourRole": "Tu rol",
+    "save": "Guardar cambios",
+    "saveSuccess": "Cambios guardados correctamente.",
+    "personalOrgInfo": "Las organizaciones personales no se pueden transferir ni eliminar.",
+    "dangerZone": {
+      "title": "Zona de peligro",
+      "description": "Acciones irreversibles para tu organización."
+    }
+  },
+  "transfer": {
+    "title": "Transferir propiedad",
+    "description": "Transfiere la propiedad de esta organización a otro miembro.",
+    "warning": "Esta acción es irreversible. Perderás el control de owner sobre esta organización y pasarás a ser admin.",
+    "selectMember": "Seleccionar nuevo owner",
+    "selectPlaceholder": "Elige un miembro...",
+    "confirm": "Transferir propiedad",
+    "transferring": "Transfiriendo...",
+    "cannotTransferPersonal": "No se puede transferir la propiedad de una organización personal.",
+    "noEligibleMembers": "No hay otros miembros a los que transferir la propiedad. Añade miembros primero.",
+    "confirmMessage": "{{name}} se convertirá en el nuevo owner de {{org}}.",
+    "errors": {
+      "onlyOwner": "Solo el owner puede transferir la propiedad.",
+      "cannotTransferToSelf": "No puedes transferir la propiedad a ti mismo.",
+      "notMember": "El usuario seleccionado no es miembro de esta organización."
+    }
+  },
+  "delete": {
+    "title": "Eliminar organización",
+    "description": "Elimina permanentemente esta organización.",
+    "shortDescription": "Una vez eliminada, no se puede recuperar.",
+    "warning": "Esta acción no se puede deshacer.",
+    "consequences": "Esto eliminará permanentemente la organización, todos sus productos y miembros. Todos los datos asociados se perderán.",
+    "confirmLabel": "Escribe \"{{name}}\" para confirmar:",
+    "confirm": "Eliminar organización",
+    "deleting": "Eliminando...",
+    "cannotDeletePersonal": "No se puede eliminar una organización personal."
+  }
+}

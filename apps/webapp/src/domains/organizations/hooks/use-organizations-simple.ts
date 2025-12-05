@@ -26,6 +26,10 @@ export function useDeleteOrganization() {
   return useMutation(api.organizations.organizations.deleteOrganization as any) as any;
 }
 
+export function useTransferOwnership() {
+  return useMutation(api.organizations.organizations.transferOwnership as any) as any;
+}
+
 export function useAddMember() {
   return useMutation(api.organizations.organizations.addMember as any) as any;
 }
