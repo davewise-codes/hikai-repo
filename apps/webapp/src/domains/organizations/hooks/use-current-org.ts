@@ -16,6 +16,7 @@ import { Id } from "@hikai/convex/convex/_generated/dataModel";
 export function useCurrentOrg() {
   const currentOrgId = useStore((state) => state.currentOrgId);
   const setCurrentOrgId = useStore((state) => state.setCurrentOrgId);
+  const setCurrentProductId = useStore((state) => state.setCurrentProductId);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -46,6 +47,9 @@ export function useCurrentOrg() {
     (orgId: string) => {
       setCurrentOrgId(orgId);
 
+      // Limpiar producto actual al cambiar de org (productos son específicos de org)
+      setCurrentProductId(null);
+
       // Trackear acceso a la org (no bloquea UX si falla)
       updateLastOrgAccess({
         organizationId: orgId as Id<"organizations">,
@@ -58,7 +62,7 @@ export function useCurrentOrg() {
         navigate({ to: "/products" });
       }
     },
-    [setCurrentOrgId, updateLastOrgAccess, navigate, location.pathname]
+    [setCurrentOrgId, setCurrentProductId, updateLastOrgAccess, navigate, location.pathname]
   );
 
   return {

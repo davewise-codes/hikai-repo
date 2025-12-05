@@ -18,6 +18,10 @@ export interface CoreSlice {
   // Current organization
   currentOrgId: string | null;
   setCurrentOrgId: (id: string | null) => void;
+
+  // Current product
+  currentProductId: string | null;
+  setCurrentProductId: (id: string | null) => void;
 }
 
 export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set) => ({
@@ -32,4 +36,8 @@ export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set)
   // Current organization management
   currentOrgId: null,
   setCurrentOrgId: (id) => set({ currentOrgId: id }),
+
+  // Current product management
+  currentProductId: null,
+  setCurrentProductId: (id) => set({ currentProductId: id }),
 });

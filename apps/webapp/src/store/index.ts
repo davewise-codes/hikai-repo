@@ -20,6 +20,7 @@ export const useStore = create<StoreState>()(
           theme: state.theme,
           locale: state.locale,
           currentOrgId: state.currentOrgId,
+          currentProductId: state.currentProductId,
         }),
       }
     ),

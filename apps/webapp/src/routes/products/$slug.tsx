@@ -4,7 +4,7 @@ import { AppShell } from "@/domains/core/components/app-shell";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import {
   useGetProductBySlug,
-  useUpdateLastProductAccess,
+  useCurrentProduct,
   ProductMembers,
   DeleteProductDialog,
 } from "@/domains/products";
@@ -35,16 +35,15 @@ function ProductDetailPage() {
   const { currentOrg, isLoading: isOrgLoading } = useCurrentOrg();
 
   const product = useGetProductBySlug(currentOrg?._id, slug);
-  const updateLastAccess = useUpdateLastProductAccess();
+  const { setCurrentProduct } = useCurrentProduct();
 
-  // Track product access when product is loaded
+  // Track product access and set as current product when loaded
   useEffect(() => {
     if (product?._id) {
-      updateLastAccess({ productId: product._id }).catch((error) => {
-        console.error("Error tracking product access:", error);
-      });
+      // Set as current product (also tracks access internally)
+      setCurrentProduct(product._id);
     }
-  }, [product?._id, updateLastAccess]);
+  }, [product?._id, setCurrentProduct]);
 
   // Loading state
   if (isOrgLoading || product === undefined) {
