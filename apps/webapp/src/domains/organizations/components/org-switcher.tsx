@@ -6,10 +6,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   Badge,
+  Button,
   Building,
   Plus,
   Check,
   Settings,
+  ChevronDown,
 } from "@hikai/ui";
 import { useQuery } from "convex/react";
 import { api } from "@hikai/convex";
@@ -18,14 +20,16 @@ import { useCurrentOrg } from "../hooks/use-current-org";
 import { Link } from "@tanstack/react-router";
 
 /**
- * OrgSwitcher - Componente compacto para cambiar de organización.
+ * OrgSwitcher - Componente para cambiar de organización.
  *
- * Diseño: Avatar/icono que abre dropdown con lista de orgs.
- * Ubicación: Parte superior del sidebar (reemplaza logo "H").
+ * Diseño: Botón con avatar + nombre + chevron que abre dropdown.
+ * Ubicación: Header horizontal.
  *
  * Incluye secciones:
- * - Recent: organizaciones accedidas recientemente
- * - All organizations: todas las demás organizaciones
+ * - Current org header con gear de settings (admin/owner)
+ * - Recent: organizaciones accedidas recientemente + link a Mis Orgs
+ * - All organizations: todas las demás (solo si hay recientes)
+ * - Create new organization
  */
 export function OrgSwitcher() {
   const { t } = useTranslation("organizations");
@@ -41,6 +45,13 @@ export function OrgSwitcher() {
   const recentOrgIds = new Set(recentOrgs?.map((o) => o._id) ?? []);
   const nonRecentOrgs = organizations.filter((o) => !recentOrgIds.has(o._id));
 
+  // Determinar si hay sección de recientes
+  const hasRecentOrgs = recentOrgs && recentOrgs.length > 0;
+
+  // Verificar si el usuario es admin/owner de la org actual
+  const isAdminOrOwner =
+    currentOrg?.role === "admin" || currentOrg?.role === "owner";
+
   // Obtener iniciales de la org para el avatar
   const getOrgInitials = (name: string) => {
     return name
@@ -53,66 +64,81 @@ export function OrgSwitcher() {
 
   if (isLoading) {
     return (
-      <div className="w-8 h-8 bg-muted rounded-md animate-pulse flex items-center justify-center">
-        <Building className="w-4 h-4 text-muted-foreground" />
-      </div>
+      <Button variant="ghost" size="sm" disabled className="h-8 gap-2">
+        <div className="w-5 h-5 bg-muted rounded animate-pulse" />
+        <span className="text-muted-foreground">...</span>
+      </Button>
     );
   }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          className="w-8 h-8 bg-primary rounded-md flex items-center justify-center hover:opacity-90 transition-opacity cursor-pointer"
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 gap-2 max-w-48"
           title={currentOrg?.name || t("switcher.title")}
         >
-          {currentOrg ? (
-            <span className="text-primary-foreground text-xs font-bold">
-              {getOrgInitials(currentOrg.name)}
-            </span>
-          ) : (
-            <Building className="w-4 h-4 text-primary-foreground" />
-          )}
-        </button>
+          {/* Avatar */}
+          <div className="w-5 h-5 bg-primary rounded flex items-center justify-center flex-shrink-0">
+            {currentOrg ? (
+              <span className="text-primary-foreground text-[10px] font-bold">
+                {getOrgInitials(currentOrg.name)}
+              </span>
+            ) : (
+              <Building className="w-3 h-3 text-primary-foreground" />
+            )}
+          </div>
+          {/* Name */}
+          <span className="truncate">
+            {currentOrg?.name || t("switcher.title")}
+          </span>
+          {/* Chevron */}
+          <ChevronDown className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+        </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="right" align="start" className="w-64">
+      <DropdownMenuContent align="start" className="w-64">
         {/* Current org header */}
         {currentOrg && (
           <>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-medium truncate flex-1">
                     {currentOrg.name}
                   </span>
                   {currentOrg.isPersonal && (
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs flex-shrink-0">
                       {t("switcher.personal")}
                     </Badge>
+                  )}
+                  {isAdminOrOwner && (
+                    <Link
+                      to="/organizations/$slug/settings"
+                      params={{ slug: currentOrg.slug }}
+                      className="flex-shrink-0 p-1 rounded hover:bg-accent transition-colors"
+                      title={t("switcher.settings")}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    </Link>
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground">
                   {currentOrg.memberCount}{" "}
-                  {currentOrg.memberCount === 1 ? "member" : "members"}
+                  {currentOrg.memberCount === 1
+                    ? t("detail.members").replace(/s$/, "")
+                    : t("detail.members")}
                 </span>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuItem asChild className="cursor-pointer">
-              <Link
-                to="/organizations/$slug"
-                params={{ slug: currentOrg.slug }}
-                className="flex items-center gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                {t("detail.manage")}
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}
 
         {/* Recent organizations section */}
-        {recentOrgs && recentOrgs.length > 0 && (
+        {hasRecentOrgs && (
           <>
             <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
               {t("switcher.recent")}
@@ -148,16 +174,28 @@ export function OrgSwitcher() {
                 </div>
               </DropdownMenuItem>
             ))}
+            {/* Link to My Organizations */}
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link
+                to="/organizations"
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                {t("switcher.myOrganizations")}
+              </Link>
+            </DropdownMenuItem>
           </>
         )}
 
         {/* All organizations section (excluding recent) */}
         {nonRecentOrgs.length > 0 && (
           <>
-            {recentOrgs && recentOrgs.length > 0 && <DropdownMenuSeparator />}
-            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
-              {t("switcher.all")}
-            </DropdownMenuLabel>
+            {hasRecentOrgs && <DropdownMenuSeparator />}
+            {/* Only show label if there are recent orgs above */}
+            {hasRecentOrgs && (
+              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+                {t("switcher.all")}
+              </DropdownMenuLabel>
+            )}
             {nonRecentOrgs.map((org) => (
               <DropdownMenuItem
                 key={org._id}
@@ -189,6 +227,17 @@ export function OrgSwitcher() {
                 </div>
               </DropdownMenuItem>
             ))}
+            {/* Link to My Organizations when no recents */}
+            {!hasRecentOrgs && (
+              <DropdownMenuItem asChild className="cursor-pointer">
+                <Link
+                  to="/organizations"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {t("switcher.myOrganizations")}
+                </Link>
+              </DropdownMenuItem>
+            )}
           </>
         )}
 

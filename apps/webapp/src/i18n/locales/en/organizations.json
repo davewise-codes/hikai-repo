@@ -10,7 +10,9 @@
     "personal": "Personal",
     "noOrganizations": "No organizations",
     "recent": "Recent",
-    "all": "All organizations"
+    "all": "All organizations",
+    "settings": "Settings",
+    "myOrganizations": "My Organizations"
   },
   "plans": {
     "free": "Free",
