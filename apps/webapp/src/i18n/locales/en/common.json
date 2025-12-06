@@ -19,7 +19,11 @@
   "userMenu": {
     "title": "User menu",
     "user": "User",
-    "logout": "Log out"
+    "logout": "Log out",
+    "profile": "Profile",
+    "recentProducts": "Recent Products",
+    "myProducts": "My Products",
+    "noRecentProducts": "No recent products"
   },
   "settings": {
     "theme": "Theme",

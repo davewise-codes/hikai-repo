@@ -15,6 +15,7 @@ import { Route as ProductsIndexRouteImport } from './routes/products/index'
 import { Route as OrganizationsIndexRouteImport } from './routes/organizations/index'
 import { Route as ProductsSlugRouteImport } from './routes/products/$slug'
 import { Route as OrganizationsSlugRouteImport } from './routes/organizations/$slug'
+import { Route as OrganizationsSlugSettingsRouteImport } from './routes/organizations/$slug_.settings'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -46,6 +47,12 @@ const OrganizationsSlugRoute = OrganizationsSlugRouteImport.update({
   path: '/organizations/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrganizationsSlugSettingsRoute =
+  OrganizationsSlugSettingsRouteImport.update({
+    id: '/organizations/$slug_/settings',
+    path: '/organizations/$slug/settings',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByFullPath {
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations': typeof OrganizationsIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/organizations/$slug/settings': typeof OrganizationsSlugSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +70,7 @@ export interface FileRoutesByTo {
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations': typeof OrganizationsIndexRoute
   '/products': typeof ProductsIndexRoute
+  '/organizations/$slug/settings': typeof OrganizationsSlugSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +80,7 @@ export interface FileRoutesById {
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/products/': typeof ProductsIndexRoute
+  '/organizations/$slug_/settings': typeof OrganizationsSlugSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +91,7 @@ export interface FileRouteTypes {
     | '/products/$slug'
     | '/organizations'
     | '/products'
+    | '/organizations/$slug/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +100,7 @@ export interface FileRouteTypes {
     | '/products/$slug'
     | '/organizations'
     | '/products'
+    | '/organizations/$slug/settings'
   id:
     | '__root__'
     | '/'
@@ -97,6 +109,7 @@ export interface FileRouteTypes {
     | '/products/$slug'
     | '/organizations/'
     | '/products/'
+    | '/organizations/$slug_/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +119,7 @@ export interface RootRouteChildren {
   ProductsSlugRoute: typeof ProductsSlugRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
+  OrganizationsSlugSettingsRoute: typeof OrganizationsSlugSettingsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/organizations/$slug_/settings': {
+      id: '/organizations/$slug_/settings'
+      path: '/organizations/$slug/settings'
+      fullPath: '/organizations/$slug/settings'
+      preLoaderRoute: typeof OrganizationsSlugSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,6 +183,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProductsSlugRoute: ProductsSlugRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
+  OrganizationsSlugSettingsRoute: OrganizationsSlugSettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

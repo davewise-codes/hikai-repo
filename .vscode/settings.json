@@ -16,5 +16,6 @@
 		"mode": "none",
 		"listeners": true,
 		"visitors": false
-	}
+	},
+	"typescript.tsdk": "node_modules/typescript/lib"
 }

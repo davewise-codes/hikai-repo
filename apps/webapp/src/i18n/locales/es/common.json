@@ -19,7 +19,11 @@
   "userMenu": {
     "title": "Menú de usuario",
     "user": "Usuario",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "profile": "Perfil",
+    "recentProducts": "Productos recientes",
+    "myProducts": "Mis Productos",
+    "noRecentProducts": "Sin productos recientes"
   },
   "settings": {
     "theme": "Tema",
