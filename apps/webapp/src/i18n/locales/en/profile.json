@@ -1,0 +1,21 @@
+{
+  "title": "Profile",
+  "subtitle": "Manage your account settings",
+  "personalInfo": "Personal Information",
+  "personalInfoDescription": "Your basic account information",
+  "name": "Name",
+  "namePlaceholder": "Enter your name",
+  "email": "Email",
+  "emailReadonly": "Email cannot be changed",
+  "avatar": "Avatar",
+  "avatarComingSoon": "Avatar customization coming soon",
+  "save": "Save changes",
+  "saving": "Saving...",
+  "saveSuccess": "Profile updated successfully",
+  "saveError": "Failed to update profile",
+  "authMethods": "Authentication Methods",
+  "authMethodsDescription": "Ways you can sign in to your account",
+  "emailVerified": "Email verified",
+  "moreOptionsSoon": "More options coming soon",
+  "backToHome": "Back to home"
+}

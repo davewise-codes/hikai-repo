@@ -1,0 +1,21 @@
+{
+  "title": "Perfil",
+  "subtitle": "Gestiona la configuraci\u00f3n de tu cuenta",
+  "personalInfo": "Informaci\u00f3n Personal",
+  "personalInfoDescription": "Tu informaci\u00f3n b\u00e1sica de cuenta",
+  "name": "Nombre",
+  "namePlaceholder": "Introduce tu nombre",
+  "email": "Correo electr\u00f3nico",
+  "emailReadonly": "El correo no se puede cambiar",
+  "avatar": "Avatar",
+  "avatarComingSoon": "Personalizaci\u00f3n de avatar pr\u00f3ximamente",
+  "save": "Guardar cambios",
+  "saving": "Guardando...",
+  "saveSuccess": "Perfil actualizado correctamente",
+  "saveError": "Error al actualizar el perfil",
+  "authMethods": "M\u00e9todos de Autenticaci\u00f3n",
+  "authMethodsDescription": "Formas en que puedes iniciar sesi\u00f3n",
+  "emailVerified": "Correo verificado",
+  "moreOptionsSoon": "M\u00e1s opciones pr\u00f3ximamente",
+  "backToHome": "Volver al inicio"
+}

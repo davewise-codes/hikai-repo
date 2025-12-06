@@ -22,4 +22,4 @@ export * from "./checkbox";
 export * from "./switch";
 export * from "./radio-group";
 export * from "./tooltip";
-export { Toaster } from "./sonner";
+export { Toaster, toast } from "./sonner";

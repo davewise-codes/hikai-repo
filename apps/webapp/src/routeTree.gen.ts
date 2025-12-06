@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProductsIndexRouteImport } from './routes/products/index'
@@ -17,6 +18,11 @@ import { Route as ProductsSlugRouteImport } from './routes/products/$slug'
 import { Route as OrganizationsSlugRouteImport } from './routes/organizations/$slug'
 import { Route as OrganizationsSlugSettingsRouteImport } from './routes/organizations/$slug_.settings'
 
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -57,6 +63,7 @@ const OrganizationsSlugSettingsRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/organizations/$slug': typeof OrganizationsSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations': typeof OrganizationsIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/organizations/$slug': typeof OrganizationsSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations': typeof OrganizationsIndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/profile': typeof ProfileRoute
   '/organizations/$slug': typeof OrganizationsSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations/': typeof OrganizationsIndexRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/profile'
     | '/organizations/$slug'
     | '/products/$slug'
     | '/organizations'
@@ -96,6 +106,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/profile'
     | '/organizations/$slug'
     | '/products/$slug'
     | '/organizations'
@@ -105,6 +116,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
+    | '/profile'
     | '/organizations/$slug'
     | '/products/$slug'
     | '/organizations/'
@@ -115,6 +127,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  ProfileRoute: typeof ProfileRoute
   OrganizationsSlugRoute: typeof OrganizationsSlugRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
@@ -124,6 +137,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -179,6 +199,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  ProfileRoute: ProfileRoute,
   OrganizationsSlugRoute: OrganizationsSlugRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,

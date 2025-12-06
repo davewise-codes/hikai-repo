@@ -114,8 +114,7 @@ export function UserMenu() {
                   title={t("userMenu.profile")}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // TODO: Navigate to /profile when F6 is implemented
-                    window.location.href = "/profile";
+                    navigate({ to: "/profile" });
                   }}
                 >
                   <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground" />

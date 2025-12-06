@@ -11,6 +11,8 @@ import enOrganizations from './locales/en/organizations.json';
 import esOrganizations from './locales/es/organizations.json';
 import enProducts from './locales/en/products.json';
 import esProducts from './locales/es/products.json';
+import enProfile from './locales/en/profile.json';
+import esProfile from './locales/es/profile.json';
 
 const resources = {
   en: {
@@ -18,12 +20,14 @@ const resources = {
     auth: enAuth,
     organizations: enOrganizations,
     products: enProducts,
+    profile: enProfile,
   },
   es: {
     common: esCommon,
     auth: esAuth,
     organizations: esOrganizations,
     products: esProducts,
+    profile: esProfile,
   },
 };
 
