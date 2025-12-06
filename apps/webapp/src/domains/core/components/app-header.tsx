@@ -1,12 +1,8 @@
-import {
-  Button,
-  HamburgerIcon,
-  Folder,
-  ChevronDown,
-} from "@hikai/ui";
+import { Button, HamburgerIcon } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 import { useStore } from "@/store";
 import { OrgSwitcher } from "@/domains/organizations/components";
+import { ProductSwitcher } from "@/domains/products";
 import { UserMenu } from "./user-menu";
 
 /**
@@ -15,7 +11,7 @@ import { UserMenu } from "./user-menu";
  * Contiene:
  * - Botón hamburguesa para abrir sidebar
  * - OrgSwitcher (avatar de organización)
- * - ProductSwitcher (placeholder hasta F4)
+ * - ProductSwitcher (selector de producto)
  * - UserMenu (avatar de usuario)
  */
 export function AppHeader() {
@@ -44,17 +40,8 @@ export function AppHeader() {
           {/* Separator */}
           <span className="text-muted-foreground/50">/</span>
 
-          {/* Product switcher placeholder (F4) */}
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            className="h-8 gap-2 text-muted-foreground"
-          >
-            <Folder className="h-4 w-4" />
-            <span className="text-sm">{t("nav.selectProduct")}</span>
-            <ChevronDown className="h-3 w-3" />
-          </Button>
+          {/* Product switcher */}
+          <ProductSwitcher />
         </div>
 
         {/* Right section */}

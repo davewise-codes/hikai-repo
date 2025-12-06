@@ -5,6 +5,15 @@
     "delete": "Delete",
     "unknown": "Unknown"
   },
+  "switcher": {
+    "title": "Product",
+    "select": "Select product",
+    "other": "Other products",
+    "myProducts": "My Products",
+    "empty": "No products yet",
+    "create": "Create product",
+    "settings": "Settings"
+  },
   "title": "Products",
   "subtitle": "Products in {{org}}",
   "empty": "No products yet. Create your first product to get started.",

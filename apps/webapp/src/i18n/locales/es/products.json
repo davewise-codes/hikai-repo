@@ -5,6 +5,15 @@
     "delete": "Eliminar",
     "unknown": "Desconocido"
   },
+  "switcher": {
+    "title": "Producto",
+    "select": "Seleccionar producto",
+    "other": "Otros productos",
+    "myProducts": "Mis Productos",
+    "empty": "Sin productos aún",
+    "create": "Crear producto",
+    "settings": "Configuración"
+  },
   "title": "Productos",
   "subtitle": "Productos en {{org}}",
   "empty": "Aún no hay productos. Crea tu primer producto para comenzar.",

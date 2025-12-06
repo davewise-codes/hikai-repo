@@ -26,12 +26,13 @@ import { checkLimit, type Plan } from "../lib/planLimits";
 /**
  * Lista productos de una organización.
  * Requiere ser miembro de la org.
+ * Incluye userRole para cada producto donde el usuario es miembro (null si no).
  */
 export const listProducts = query({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, { organizationId }) => {
     // Validar acceso a la org
-    await assertOrgAccess(ctx, organizationId);
+    const { userId } = await assertOrgAccess(ctx, organizationId);
 
     // Obtener productos de la org
     const products = await ctx.db
@@ -39,7 +40,7 @@ export const listProducts = query({
       .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
       .collect();
 
-    // Añadir memberCount a cada producto
+    // Añadir memberCount y userRole a cada producto
     const productsWithDetails = await Promise.all(
       products.map(async (product) => {
         const members = await ctx.db
@@ -47,9 +48,13 @@ export const listProducts = query({
           .withIndex("by_product", (q) => q.eq("productId", product._id))
           .collect();
 
+        // Buscar membresía del usuario actual en este producto
+        const userMembership = members.find((m) => m.userId === userId);
+
         return {
           ...product,
           memberCount: members.length,
+          userRole: userMembership?.role ?? null,
         };
       })
     );

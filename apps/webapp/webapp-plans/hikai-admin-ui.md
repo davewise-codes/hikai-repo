@@ -64,7 +64,7 @@ Hikai es una app saas B2B orientada a facilitar el marketing de productos digita
 | F1: Core Infrastructure (currentProductId) | ✅ Completado |
 | F2: Header + Sidebar Colapsable | ✅ Completado |
 | F3: OrgSwitcher Mejorado | ✅ Completado |
-| F4: ProductSwitcher (nuevo) | ⏳ Pendiente |
+| F4: ProductSwitcher (nuevo) | ✅ Completado |
 | F5: UserMenu Mejorado | ⏳ Pendiente |
 | F6: Profile Page | ⏳ Pendiente |
 | F7: Product Settings Page | ⏳ Pendiente |
