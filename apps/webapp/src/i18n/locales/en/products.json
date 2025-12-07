@@ -78,5 +78,26 @@
     "selectRole": "Select role",
     "empty": "No members in this product.",
     "noAvailable": "No members available to add"
+  },
+  "settings": {
+    "title": "Product Settings",
+    "general": {
+      "title": "General",
+      "description": "Basic product information"
+    },
+    "name": "Name",
+    "slug": "Slug",
+    "slugReadonly": "Slug cannot be changed",
+    "description": "Description",
+    "members": "Members",
+    "createdAt": "Created",
+    "yourRole": "Your role",
+    "save": "Save changes",
+    "saving": "Saving...",
+    "saveSuccess": "Product updated successfully",
+    "dangerZone": {
+      "title": "Danger Zone",
+      "description": "Irreversible actions"
+    }
   }
 }

@@ -78,5 +78,26 @@
     "selectRole": "Seleccionar rol",
     "empty": "No hay miembros en este producto.",
     "noAvailable": "No hay miembros disponibles"
+  },
+  "settings": {
+    "title": "Configuración del Producto",
+    "general": {
+      "title": "General",
+      "description": "Información básica del producto"
+    },
+    "name": "Nombre",
+    "slug": "Slug",
+    "slugReadonly": "El slug no se puede cambiar",
+    "description": "Descripción",
+    "members": "Miembros",
+    "createdAt": "Creado",
+    "yourRole": "Tu rol",
+    "save": "Guardar cambios",
+    "saving": "Guardando...",
+    "saveSuccess": "Producto actualizado correctamente",
+    "dangerZone": {
+      "title": "Zona de Peligro",
+      "description": "Acciones irreversibles"
+    }
   }
 }
