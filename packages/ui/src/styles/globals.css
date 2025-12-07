@@ -7,6 +7,7 @@
 
 @import '../fonts/fonts.css';
 @import '../tokens/tokens.css';
+@import '../tokens/density.css';
 
 @tailwind base;
 @tailwind components;

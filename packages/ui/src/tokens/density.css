@@ -1,0 +1,69 @@
+/* ============================================
+ * DENSITY SYSTEM
+ * ============================================
+ * Tres niveles de densidad que afectan:
+ * - Tamaño base de fuente
+ * - Espaciado (padding/margin)
+ * - Altura de línea
+ *
+ * Se aplica via clase en <html>: density-compact, density-normal, density-comfortable
+ */
+
+:root {
+  /* Base multiplier - usado por componentes que quieran ser density-aware */
+  --density-multiplier: 1;
+
+  /* Font size base */
+  --density-font-xs: 0.75rem;
+  --density-font-sm: 0.875rem;
+  --density-font-base: 1rem;
+
+  /* Spacing base */
+  --density-space-xs: 0.25rem;
+  --density-space-sm: 0.5rem;
+  --density-space-md: 1rem;
+  --density-space-lg: 1.5rem;
+
+  /* Component heights */
+  --density-input-height: 2.25rem;
+  --density-button-height: 2.25rem;
+}
+
+/* Compact: Para usuarios power que quieren ver más información */
+.density-compact {
+  --density-multiplier: 0.875;
+
+  --density-font-xs: 0.6875rem;
+  --density-font-sm: 0.75rem;
+  --density-font-base: 0.875rem;
+
+  --density-space-xs: 0.125rem;
+  --density-space-sm: 0.375rem;
+  --density-space-md: 0.75rem;
+  --density-space-lg: 1rem;
+
+  --density-input-height: 1.75rem;
+  --density-button-height: 1.75rem;
+}
+
+/* Normal: Por defecto, balance entre información y comodidad */
+.density-normal {
+  /* Usa los valores de :root */
+}
+
+/* Comfortable: Para usuarios que prefieren más espacio */
+.density-comfortable {
+  --density-multiplier: 1.125;
+
+  --density-font-xs: 0.8125rem;
+  --density-font-sm: 0.9375rem;
+  --density-font-base: 1.125rem;
+
+  --density-space-xs: 0.375rem;
+  --density-space-sm: 0.625rem;
+  --density-space-md: 1.25rem;
+  --density-space-lg: 2rem;
+
+  --density-input-height: 2.75rem;
+  --density-button-height: 2.75rem;
+}

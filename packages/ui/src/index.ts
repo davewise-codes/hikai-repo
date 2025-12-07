@@ -4,6 +4,9 @@ export * from "./components/ui";
 // Theme definitions and utilities
 export * from "./lib/themes";
 
+// Density system
+export * from "./lib/density";
+
 // Icons (from lucide-react)
 export * from "./lib/icons";
 

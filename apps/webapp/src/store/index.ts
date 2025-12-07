@@ -18,9 +18,15 @@ export const useStore = create<StoreState>()(
         name: 'hikai-store',
         partialize: (state) => ({
           theme: state.theme,
+          density: state.density,
           locale: state.locale,
           currentOrgId: state.currentOrgId,
           currentProductId: state.currentProductId,
+        }),
+        // Merge persisted state with initial state to handle new fields
+        merge: (persistedState, currentState) => ({
+          ...currentState,
+          ...(persistedState as Partial<StoreState>),
         }),
       }
     ),

@@ -1,7 +1,8 @@
 // Export all core hooks
 export { useTheme } from './use-theme';
+export { useDensity } from './use-density';
 export { useI18n } from './use-i18n';
 
 // Export types from their original sources
-export type { Theme } from '@hikai/ui';
+export type { Theme, Density } from '@hikai/ui';
 export type { Locale } from '../store/core-slice';

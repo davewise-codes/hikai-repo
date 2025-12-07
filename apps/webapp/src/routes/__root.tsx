@@ -2,6 +2,7 @@ import { createRootRoute, Outlet, useLocation, useNavigate } from "@tanstack/rea
 import { Authenticated, Unauthenticated } from "convex/react";
 import { FontProvider } from "@/providers/font-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { DensityProvider } from "@/providers/density-provider";
 import { I18nProvider } from "@/providers/i18n-provider";
 import { ReactNode, useEffect } from "react";
 
@@ -47,11 +48,13 @@ function RootComponent() {
 					storageKey="webapp-theme"
 					enableSystem
 				>
-					<FontProvider>
-						<div className="min-h-screen bg-background text-foreground">
-							<Outlet />
-						</div>
-					</FontProvider>
+					<DensityProvider>
+						<FontProvider>
+							<div className="min-h-screen bg-background text-foreground">
+								<Outlet />
+							</div>
+						</FontProvider>
+					</DensityProvider>
 				</ThemeProvider>
 			</I18nProvider>
 		</GlobalAuthGuard>

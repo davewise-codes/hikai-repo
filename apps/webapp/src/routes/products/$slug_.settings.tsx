@@ -217,11 +217,11 @@ function ProductSettingsPage() {
                 <label className="text-sm font-medium text-muted-foreground">
                   {t("settings.yourRole")}
                 </label>
-                <p className="mt-1">
+                <div className="mt-1">
                   <Badge variant={product.userRole as "admin" | "member"}>
                     {t(`roles.${product.userRole}`)}
                   </Badge>
-                </p>
+                </div>
               </div>
             </div>
 
@@ -229,7 +229,7 @@ function ProductSettingsPage() {
               <p className="text-sm text-destructive">{saveError}</p>
             )}
             {saveSuccess && (
-              <p className="text-sm text-green-600">
+              <p className="text-sm text-success">
                 {t("settings.saveSuccess")}
               </p>
             )}
