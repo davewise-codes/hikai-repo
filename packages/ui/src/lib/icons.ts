@@ -169,6 +169,7 @@ export {
   Monitor,
   Palette,
   Contrast,
+  Rows3,
 } from "lucide-react";
 
 // Semantic aliases for better developer experience

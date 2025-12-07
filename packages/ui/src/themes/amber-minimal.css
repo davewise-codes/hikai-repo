@@ -7,25 +7,36 @@
 
 /* === LIGHT MODE === */
 .theme-amber-minimal {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 14.902%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 14.902%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 14.902%;
-  --primary: 37.6923 92.126% 50.1961%;
+  /* Warm cream/amber tinted backgrounds */
+  --background: 40 33% 98%;
+  --foreground: 30 10% 15%;
+  --card: 40 40% 99%;
+  --card-foreground: 30 10% 15%;
+  --popover: 40 40% 99%;
+  --popover-foreground: 30 10% 15%;
+  /* Amber primary */
+  --primary: 38 92% 50%;
   --primary-foreground: 0 0% 0%;
-  --secondary: 220 14.2857% 95.8824%;
-  --secondary-foreground: 215 13.7931% 34.1176%;
-  --muted: 210 20% 98.0392%;
-  --muted-foreground: 220 8.9362% 46.0784%;
-  --accent: 48 100% 96.0784%;
-  --accent-foreground: 22.7273 82.5% 31.3725%;
-  --destructive: 0 84.2365% 60.1961%;
+  /* Warm secondary */
+  --secondary: 40 30% 94%;
+  --secondary-foreground: 30 15% 30%;
+  /* Warm muted tones */
+  --muted: 40 25% 95%;
+  --muted-foreground: 30 10% 45%;
+  /* Golden accent */
+  --accent: 45 100% 94%;
+  --accent-foreground: 25 80% 30%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 13.0435% 90.9804%;
-  --input: 220 13.0435% 90.9804%;
-  --ring: 37.6923 92.126% 50.1961%;
+  /* Success and Warning */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 0%;
+  /* Warm borders */
+  --border: 35 20% 88%;
+  --input: 35 20% 88%;
+  --ring: 38 92% 50%;
   --chart-1: 37.6923 92.126% 50.1961%;
   --chart-2: 32.1327 94.6188% 43.7255%;
   --chart-3: 25.9649 90.4762% 37.0588%;
@@ -62,25 +73,36 @@
 
 /* === DARK MODE === */
 .theme-amber-minimal.dark {
-  --background: 0 0% 9.0196%;
-  --foreground: 0 0% 89.8039%;
-  --card: 0 0% 14.902%;
-  --card-foreground: 0 0% 89.8039%;
-  --popover: 0 0% 14.902%;
-  --popover-foreground: 0 0% 89.8039%;
-  --primary: 37.6923 92.126% 50.1961%;
+  /* Warm dark backgrounds with amber undertones */
+  --background: 30 15% 8%;
+  --foreground: 40 15% 90%;
+  --card: 30 12% 11%;
+  --card-foreground: 40 15% 90%;
+  --popover: 30 12% 11%;
+  --popover-foreground: 40 15% 90%;
+  /* Amber primary */
+  --primary: 38 92% 50%;
   --primary-foreground: 0 0% 0%;
-  --secondary: 0 0% 14.902%;
-  --secondary-foreground: 0 0% 89.8039%;
-  --muted: 0 0% 12.1569%;
-  --muted-foreground: 0 0% 63.9216%;
-  --accent: 22.7273 82.5% 31.3725%;
-  --accent-foreground: 48 96.6387% 76.6667%;
-  --destructive: 0 84.2365% 60.1961%;
+  /* Warm secondary */
+  --secondary: 30 10% 15%;
+  --secondary-foreground: 40 15% 85%;
+  /* Warm muted */
+  --muted: 30 8% 13%;
+  --muted-foreground: 35 10% 60%;
+  /* Golden accent */
+  --accent: 25 80% 28%;
+  --accent-foreground: 45 95% 75%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --border: 0 0% 25.098%;
-  --input: 0 0% 25.098%;
-  --ring: 37.6923 92.126% 50.1961%;
+  /* Success and Warning */
+  --success: 142 70% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 0%;
+  /* Warm borders */
+  --border: 30 8% 20%;
+  --input: 30 8% 20%;
+  --ring: 38 92% 50%;
   --chart-1: 43.2558 96.4126% 56.2745%;
   --chart-2: 32.1327 94.6188% 43.7255%;
   --chart-3: 22.7273 82.5% 31.3725%;

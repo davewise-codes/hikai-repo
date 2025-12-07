@@ -13,6 +13,7 @@
 @import '../themes/default.css';
 @import '../themes/amber-minimal.css';
 @import '../themes/dark-matter.css';
+@import '../themes/neo-brutalism.css';
 
 @tailwind base;
 @tailwind components;
@@ -22,7 +23,21 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground font-sans;
+  }
+}
+
+/* Font size preference utility classes */
+@layer utilities {
+  .text-fontSize-xs {
+    font-size: var(--fontSize-xs);
+  }
+  .text-fontSize-sm {
+    font-size: var(--fontSize-sm);
+  }
+  .text-fontSize-base {
+    font-size: var(--fontSize-base);
   }
 }

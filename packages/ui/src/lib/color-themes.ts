@@ -6,7 +6,7 @@
  */
 
 // Available color theme IDs
-export type ColorThemeId = 'default' | 'amber-minimal' | 'dark-matter';
+export type ColorThemeId = 'default' | 'amber-minimal' | 'dark-matter' | 'neo-brutalism';
 
 // Color theme metadata
 export interface ColorTheme {
@@ -31,6 +31,11 @@ export const colorThemes: Record<ColorThemeId, ColorTheme> = {
     id: 'dark-matter',
     name: 'Dark Matter',
     description: 'Sophisticated dark theme with coral accents',
+  },
+  'neo-brutalism': {
+    id: 'neo-brutalism',
+    name: 'Neo Brutalism',
+    description: 'Bold high-contrast theme with hard shadows',
   },
 };
 

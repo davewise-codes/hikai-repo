@@ -2,8 +2,8 @@ import { StateCreator } from 'zustand';
 import {
   Theme,
   defaultTheme,
-  Density,
-  defaultDensity,
+  FontSize,
+  defaultFontSize,
   ColorThemeId,
   defaultColorTheme,
 } from '@hikai/ui';
@@ -18,9 +18,9 @@ export interface CoreSlice {
   theme: Theme;
   setTheme: (newTheme: Theme) => void;
 
-  // Density settings
-  density: Density;
-  setDensity: (newDensity: Density) => void;
+  // Font size settings
+  fontSize: FontSize;
+  setFontSize: (newFontSize: FontSize) => void;
 
   // Color theme settings
   colorTheme: ColorThemeId;
@@ -49,9 +49,9 @@ export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set)
   theme: defaultTheme,
   setTheme: (newTheme) => set({ theme: newTheme }),
 
-  // Density management
-  density: defaultDensity,
-  setDensity: (newDensity) => set({ density: newDensity }),
+  // Font size management
+  fontSize: defaultFontSize,
+  setFontSize: (newFontSize) => set({ fontSize: newFontSize }),
 
   // Color theme management
   colorTheme: defaultColorTheme,

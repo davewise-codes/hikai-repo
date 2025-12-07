@@ -184,7 +184,7 @@ export function ProductSwitcher() {
         {/* Empty state */}
         {!hasProducts && (
           <>
-            <DropdownMenuItem disabled className="text-muted-foreground">
+            <DropdownMenuItem disabled className="text-muted-foreground text-xs">
               {t("switcher.empty")}
             </DropdownMenuItem>
           </>

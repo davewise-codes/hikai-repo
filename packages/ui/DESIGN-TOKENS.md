@@ -151,6 +151,60 @@ Escala estándar de Tailwind. Fuentes definidas en `fonts.css`.
 
 ---
 
+## Sistema de Tamaño de Fuente
+
+El sistema permite ajustar el tamaño de fuente de componentes UI específicos sin afectar el layout (heights, paddings, avatares permanecen constantes).
+
+**Cómo funciona**: Se aplica una clase al `<html>` (`font-size-compact`, `font-size-normal`, `font-size-comfortable`) que define las variables CSS. Solo los elementos con clases `text-fontSize-*` escalan.
+
+### Niveles
+
+| Nivel | XS | SM | Base | Descripción |
+|-------|-----|-----|------|-------------|
+| Compact | 10px | 11px | 13px | Para power users |
+| Normal | 11px | 13px | 15px | Equivalente a Linear |
+| Comfortable | 12px | 14px | 16px | Mayor accesibilidad |
+
+### Variables CSS
+
+Definidas en `src/tokens/density.css`:
+
+| Variable | Compact | Normal | Comfortable |
+|----------|---------|--------|-------------|
+| `--fontSize-xs` | 10px | 11px | 12px |
+| `--fontSize-sm` | 11px | 13px | 14px |
+| `--fontSize-base` | 13px | 15px | 16px |
+
+### Clases Utility
+
+```css
+.text-fontSize-xs   /* Captions, hints, shortcuts */
+.text-fontSize-sm   /* UI controls, labels, menu items */
+.text-fontSize-base /* Body text en controles */
+```
+
+### Uso en Componentes
+
+Los componentes de UI (`Button`, `Input`, `DropdownMenu`) ya usan estas clases internamente. El texto responde a la preferencia del usuario, pero heights/paddings permanecen constantes.
+
+```tsx
+// Button usa text-fontSize-sm
+// Input usa text-fontSize-sm
+// DropdownMenuItem usa text-fontSize-sm
+```
+
+### Aplicar Preferencia
+
+La clase se aplica al elemento `<html>`:
+
+```tsx
+<html className={`font-size-${level}`}>
+```
+
+Los valores válidos son: `font-size-compact`, `font-size-normal`, `font-size-comfortable`.
+
+---
+
 ## Importar Temas de tweakcn.com
 
 1. Ir a [tweakcn.com](https://tweakcn.com)

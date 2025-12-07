@@ -18,7 +18,7 @@ export const useStore = create<StoreState>()(
         name: 'hikai-store',
         partialize: (state) => ({
           theme: state.theme,
-          density: state.density,
+          fontSize: state.fontSize,
           colorTheme: state.colorTheme,
           locale: state.locale,
           currentOrgId: state.currentOrgId,

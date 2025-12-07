@@ -1,0 +1,134 @@
+/**
+ * Neo Brutalism Theme
+ *
+ * Bold, high-contrast theme with hard shadows and vibrant colors
+ * Features: No border radius, solid black borders, punchy colors
+ */
+
+/* === LIGHT MODE === */
+.theme-neo-brutalism {
+  /* Pure black and white base */
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 0%;
+  /* Bright red primary */
+  --primary: 0 100% 60%;
+  --primary-foreground: 0 0% 100%;
+  /* Yellow secondary */
+  --secondary: 60 100% 50%;
+  --secondary-foreground: 0 0% 0%;
+  /* Muted grays */
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 20%;
+  /* Blue accent */
+  --accent: 216 100% 50%;
+  --accent-foreground: 0 0% 100%;
+  /* Black destructive */
+  --destructive: 0 0% 0%;
+  --destructive-foreground: 0 0% 100%;
+  /* Success and Warning */
+  --success: 120 100% 40%;
+  --success-foreground: 0 0% 100%;
+  --warning: 60 100% 50%;
+  --warning-foreground: 0 0% 0%;
+  /* Hard black borders */
+  --border: 0 0% 0%;
+  --input: 0 0% 0%;
+  --ring: 0 100% 60%;
+  --chart-1: 0 100% 60%;
+  --chart-2: 60 100% 50%;
+  --chart-3: 216 100% 50%;
+  --chart-4: 120 100% 40%;
+  --chart-5: 300 100% 40%;
+
+  /* Sidebar */
+  --sidebar: 0 0% 94%;
+  --sidebar-foreground: 0 0% 0%;
+  --sidebar-primary: 0 100% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 216 100% 50%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 0 0% 0%;
+  --sidebar-ring: 0 100% 60%;
+
+  /* Typography - Bold sans-serif */
+  --font-sans: DM Sans, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Space Mono, monospace;
+
+  /* Zero radius - brutalist style */
+  --radius: 0px;
+
+  /* Hard offset shadows */
+  --shadow-sm: 4px 4px 0px 0px hsl(0 0% 0% / 1);
+  --shadow-md: 4px 4px 0px 0px hsl(0 0% 0% / 1);
+  --shadow-lg: 6px 6px 0px 0px hsl(0 0% 0% / 1);
+  --shadow-xl: 8px 8px 0px 0px hsl(0 0% 0% / 1);
+}
+
+/* === DARK MODE === */
+.theme-neo-brutalism.dark {
+  /* Pure black background, white text */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 15%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 15%;
+  --popover-foreground: 0 0% 100%;
+  /* Bright red primary */
+  --primary: 0 100% 65%;
+  --primary-foreground: 0 0% 0%;
+  /* Yellow secondary */
+  --secondary: 60 100% 55%;
+  --secondary-foreground: 0 0% 0%;
+  /* Muted */
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 75%;
+  /* Blue accent */
+  --accent: 210 100% 60%;
+  --accent-foreground: 0 0% 0%;
+  /* White destructive for dark mode */
+  --destructive: 0 0% 100%;
+  --destructive-foreground: 0 0% 0%;
+  /* Success and Warning */
+  --success: 120 60% 50%;
+  --success-foreground: 0 0% 0%;
+  --warning: 60 100% 55%;
+  --warning-foreground: 0 0% 0%;
+  /* White borders for dark mode */
+  --border: 0 0% 100%;
+  --input: 0 0% 100%;
+  --ring: 0 100% 65%;
+  --chart-1: 0 100% 65%;
+  --chart-2: 60 100% 55%;
+  --chart-3: 210 100% 60%;
+  --chart-4: 120 60% 50%;
+  --chart-5: 300 60% 50%;
+
+  /* Sidebar */
+  --sidebar: 0 0% 0%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 0 100% 65%;
+  --sidebar-primary-foreground: 0 0% 0%;
+  --sidebar-accent: 210 100% 60%;
+  --sidebar-accent-foreground: 0 0% 0%;
+  --sidebar-border: 0 0% 100%;
+  --sidebar-ring: 0 100% 65%;
+
+  /* Typography */
+  --font-sans: DM Sans, sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: Space Mono, monospace;
+
+  /* Zero radius */
+  --radius: 0px;
+
+  /* Hard offset shadows (white for dark mode) */
+  --shadow-sm: 4px 4px 0px 0px hsl(0 0% 100% / 0.3);
+  --shadow-md: 4px 4px 0px 0px hsl(0 0% 100% / 0.3);
+  --shadow-lg: 6px 6px 0px 0px hsl(0 0% 100% / 0.3);
+  --shadow-xl: 8px 8px 0px 0px hsl(0 0% 100% / 0.3);
+}

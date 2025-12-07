@@ -7,25 +7,36 @@
 
 /* === LIGHT MODE === */
 .theme-dark-matter {
-  --background: 0 0% 100%;
-  --foreground: 220.9091 39.2857% 10.9804%;
-  --card: 0 0% 100%;
-  --card-foreground: 220.9091 39.2857% 10.9804%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 220.9091 39.2857% 10.9804%;
-  --primary: 21.745 65.6388% 55.4902%;
+  /* Cool gray backgrounds with subtle purple undertones */
+  --background: 240 10% 98%;
+  --foreground: 220 40% 12%;
+  --card: 240 15% 99%;
+  --card-foreground: 220 40% 12%;
+  --popover: 240 15% 99%;
+  --popover-foreground: 220 40% 12%;
+  /* Coral/orange primary */
+  --primary: 22 75% 55%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 180 17.5879% 39.0196%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 220 14.2857% 95.8824%;
-  --muted-foreground: 220 8.9362% 46.0784%;
-  --accent: 0 0% 93.3333%;
-  --accent-foreground: 220.9091 39.2857% 10.9804%;
-  --destructive: 0 84.2365% 60.1961%;
-  --destructive-foreground: 0 0% 98.0392%;
-  --border: 220 13.0435% 90.9804%;
-  --input: 220 13.0435% 90.9804%;
-  --ring: 21.745 65.6388% 55.4902%;
+  /* Teal secondary */
+  --secondary: 180 20% 92%;
+  --secondary-foreground: 180 25% 30%;
+  /* Cool muted tones */
+  --muted: 230 15% 95%;
+  --muted-foreground: 220 10% 45%;
+  /* Warm coral accent */
+  --accent: 20 100% 95%;
+  --accent-foreground: 22 75% 40%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  /* Success and Warning */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 0%;
+  /* Cool borders */
+  --border: 230 15% 90%;
+  --input: 230 15% 90%;
+  --ring: 22 75% 55%;
   --chart-1: 180 17.3913% 45.098%;
   --chart-2: 22.2973 75.5102% 61.5686%;
   --chart-3: 31.2 92.5926% 78.8235%;
@@ -62,25 +73,36 @@
 
 /* === DARK MODE === */
 .theme-dark-matter.dark {
-  --background: 270 5.5556% 7.0588%;
-  --foreground: 0 0% 75.6863%;
-  --card: 0 0% 7.0588%;
-  --card-foreground: 0 0% 75.6863%;
-  --popover: 270 5.5556% 7.0588%;
-  --popover-foreground: 0 0% 75.6863%;
-  --primary: 22.2973 75.5102% 61.5686%;
-  --primary-foreground: 270 5.5556% 7.0588%;
-  --secondary: 180 17.3913% 45.098%;
-  --secondary-foreground: 270 5.5556% 7.0588%;
-  --muted: 0 0% 13.3333%;
-  --muted-foreground: 0 0% 53.3333%;
-  --accent: 0 0% 20%;
-  --accent-foreground: 0 0% 75.6863%;
-  --destructive: 180 17.3913% 45.098%;
-  --destructive-foreground: 270 5.5556% 7.0588%;
-  --border: 0 0% 13.3333%;
-  --input: 0 0% 13.3333%;
-  --ring: 22.2973 75.5102% 61.5686%;
+  /* Deep purple-black backgrounds */
+  --background: 270 8% 6%;
+  --foreground: 0 0% 85%;
+  --card: 270 6% 9%;
+  --card-foreground: 0 0% 85%;
+  --popover: 270 6% 9%;
+  --popover-foreground: 0 0% 85%;
+  /* Coral/orange primary */
+  --primary: 22 75% 60%;
+  --primary-foreground: 270 8% 6%;
+  /* Teal secondary */
+  --secondary: 180 20% 40%;
+  --secondary-foreground: 180 15% 90%;
+  /* Deep muted tones */
+  --muted: 260 5% 12%;
+  --muted-foreground: 0 0% 55%;
+  /* Warm coral accent */
+  --accent: 22 50% 18%;
+  --accent-foreground: 22 80% 75%;
+  --destructive: 0 70% 50%;
+  --destructive-foreground: 0 0% 100%;
+  /* Success and Warning */
+  --success: 142 70% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 0%;
+  /* Subtle borders */
+  --border: 260 5% 15%;
+  --input: 260 5% 15%;
+  --ring: 22 75% 60%;
   --chart-1: 180 17.3913% 45.098%;
   --chart-2: 22.2973 75.5102% 61.5686%;
   --chart-3: 31.2 92.5926% 78.8235%;

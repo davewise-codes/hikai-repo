@@ -7,7 +7,7 @@ export * from "./lib/themes";
 // Color theme system
 export * from "./lib/color-themes";
 
-// Density system
+// Font size system (formerly density)
 export * from "./lib/density";
 
 // Icons (from lucide-react)

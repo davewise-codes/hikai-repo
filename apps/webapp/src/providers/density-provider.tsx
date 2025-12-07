@@ -1,25 +1,28 @@
 import { ReactNode, useEffect } from "react";
-import { useDensity } from "@/domains/core";
-import { getDensityClass, densities, Density } from "@hikai/ui";
+import { useFontSize } from "@/domains/core";
+import { getFontSizeClass, fontSizes, FontSize } from "@hikai/ui";
 
-interface DensityProviderProps {
+interface FontSizeProviderProps {
   children: ReactNode;
 }
 
-export function DensityProvider({ children }: DensityProviderProps) {
-  const { density } = useDensity();
+export function FontSizeProvider({ children }: FontSizeProviderProps) {
+  const { fontSize } = useFontSize();
 
   useEffect(() => {
     const root = window.document.documentElement;
 
-    // Remove all density classes
-    Object.keys(densities).forEach((d) => {
-      root.classList.remove(getDensityClass(d as Density));
+    // Remove all font size classes
+    Object.keys(fontSizes).forEach((fs) => {
+      root.classList.remove(getFontSizeClass(fs as FontSize));
     });
 
-    // Add current density class
-    root.classList.add(getDensityClass(density));
-  }, [density]);
+    // Add current font size class
+    root.classList.add(getFontSizeClass(fontSize));
+  }, [fontSize]);
 
   return <>{children}</>;
 }
+
+// Backwards compatibility alias (deprecated)
+export const DensityProvider = FontSizeProvider;

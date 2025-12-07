@@ -21,17 +21,28 @@
     "user": "User",
     "logout": "Log out",
     "profile": "Profile",
+    "appearance": "Appearance",
     "recentProducts": "Recent Products",
     "myProducts": "My Products",
     "noRecentProducts": "No recent products"
   },
   "settings": {
     "theme": "Theme",
+    "mode": "Mode",
     "light": "Light",
     "dark": "Dark",
+    "system": "System",
     "language": "Language",
     "english": "English",
-    "spanish": "Español"
+    "spanish": "Español",
+    "colorTheme": "Color Theme",
+    "fontSize": "Font Size",
+    "fontSizeCompact": "Compact",
+    "fontSizeCompactDesc": "Smaller text",
+    "fontSizeNormal": "Normal",
+    "fontSizeNormalDesc": "Default size",
+    "fontSizeComfortable": "Comfortable",
+    "fontSizeComfortableDesc": "Larger text"
   },
   "hero": {
     "welcome": "Welcome to our",

@@ -1,34 +1,40 @@
-export type Density = "compact" | "normal" | "comfortable";
+export type FontSize = "compact" | "normal" | "comfortable";
 
-export interface DensityConfig {
-  name: Density;
+export interface FontSizeConfig {
+  name: FontSize;
   displayName: string;
   description: string;
 }
 
-export const densities: Record<Density, DensityConfig> = {
+export const fontSizes: Record<FontSize, FontSizeConfig> = {
   compact: {
     name: "compact",
     displayName: "Compact",
-    description: "More information, smaller elements",
+    description: "Smaller text",
   },
   normal: {
     name: "normal",
     displayName: "Normal",
-    description: "Balanced view",
+    description: "Default size",
   },
   comfortable: {
     name: "comfortable",
     displayName: "Comfortable",
-    description: "Larger elements, more spacing",
+    description: "Larger text",
   },
 };
 
-export const defaultDensity: Density = "normal";
+export const defaultFontSize: FontSize = "normal";
 
 /**
- * Helper to get the CSS class for a density level
+ * Helper to get the CSS class for a font size level
  */
-export function getDensityClass(density: Density): string {
-  return `density-${density}`;
+export function getFontSizeClass(fontSize: FontSize): string {
+  return `font-size-${fontSize}`;
 }
+
+// Backwards compatibility aliases (deprecated)
+export type Density = FontSize;
+export const densities = fontSizes;
+export const defaultDensity = defaultFontSize;
+export const getDensityClass = getFontSizeClass;

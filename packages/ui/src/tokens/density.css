@@ -1,69 +1,35 @@
 /* ============================================
- * DENSITY SYSTEM
+ * FONT SIZE SYSTEM
  * ============================================
- * Tres niveles de densidad que afectan:
- * - Tamaño base de fuente
- * - Espaciado (padding/margin)
- * - Altura de línea
+ * Permite ajustar el tamaño de fuente de textos específicos.
+ * Solo los elementos con clases text-fontSize-* responden.
+ * Los layouts (heights, paddings, margins) permanecen constantes.
  *
- * Se aplica via clase en <html>: density-compact, density-normal, density-comfortable
+ * Se aplica via clase en <html>: font-size-compact, font-size-normal, font-size-comfortable
  */
 
 :root {
-  /* Base multiplier - usado por componentes que quieran ser density-aware */
-  --density-multiplier: 1;
-
-  /* Font size base */
-  --density-font-xs: 0.75rem;
-  --density-font-sm: 0.875rem;
-  --density-font-base: 1rem;
-
-  /* Spacing base */
-  --density-space-xs: 0.25rem;
-  --density-space-sm: 0.5rem;
-  --density-space-md: 1rem;
-  --density-space-lg: 1.5rem;
-
-  /* Component heights */
-  --density-input-height: 2.25rem;
-  --density-button-height: 2.25rem;
+  /* Font size variables - Normal = Linear regular */
+  --fontSize-xs: 0.6875rem;    /* 11px - captions, hints */
+  --fontSize-sm: 0.8125rem;    /* 13px - UI controls, labels */
+  --fontSize-base: 0.9375rem;  /* 15px - body text */
 }
 
-/* Compact: Para usuarios power que quieren ver más información */
-.density-compact {
-  --density-multiplier: 0.875;
-
-  --density-font-xs: 0.6875rem;
-  --density-font-sm: 0.75rem;
-  --density-font-base: 0.875rem;
-
-  --density-space-xs: 0.125rem;
-  --density-space-sm: 0.375rem;
-  --density-space-md: 0.75rem;
-  --density-space-lg: 1rem;
-
-  --density-input-height: 1.75rem;
-  --density-button-height: 1.75rem;
+/* Compact: Smaller fonts for power users */
+.font-size-compact {
+  --fontSize-xs: 0.625rem;     /* 10px */
+  --fontSize-sm: 0.6875rem;    /* 11px */
+  --fontSize-base: 0.8125rem;  /* 13px */
 }
 
-/* Normal: Por defecto, balance entre información y comodidad */
-.density-normal {
+/* Normal: Default - uses :root values */
+.font-size-normal {
   /* Usa los valores de :root */
 }
 
-/* Comfortable: Para usuarios que prefieren más espacio */
-.density-comfortable {
-  --density-multiplier: 1.125;
-
-  --density-font-xs: 0.8125rem;
-  --density-font-sm: 0.9375rem;
-  --density-font-base: 1.125rem;
-
-  --density-space-xs: 0.375rem;
-  --density-space-sm: 0.625rem;
-  --density-space-md: 1.25rem;
-  --density-space-lg: 2rem;
-
-  --density-input-height: 2.75rem;
-  --density-button-height: 2.75rem;
+/* Comfortable: Larger fonts for accessibility */
+.font-size-comfortable {
+  --fontSize-xs: 0.75rem;      /* 12px */
+  --fontSize-sm: 0.875rem;     /* 14px */
+  --fontSize-base: 1rem;       /* 16px */
 }
