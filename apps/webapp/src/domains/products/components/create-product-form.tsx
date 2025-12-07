@@ -5,18 +5,15 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-  Textarea,
-  Plus,
 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 import { useCreateProduct, useCanCreateProduct } from "../hooks";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
-import { generateSlug, shouldAutoUpdateSlug } from "@/domains/shared";
+import {
+  EntityFormCard,
+  EntityFields,
+  type EntityFieldsValues,
+} from "@/domains/shared";
 
 interface CreateProductFormProps {
   organizationId: Id<"organizations">;
@@ -25,7 +22,7 @@ interface CreateProductFormProps {
 export function CreateProductForm({ organizationId }: CreateProductFormProps) {
   const { t } = useTranslation("products");
   const [isOpen, setIsOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EntityFieldsValues>({
     name: "",
     slug: "",
     description: "",
@@ -62,14 +59,10 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
     }
   };
 
-  const handleNameChange = (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      name: value,
-      slug: shouldAutoUpdateSlug(prev.slug, prev.name)
-        ? generateSlug(value)
-        : prev.slug,
-    }));
+  const handleCancel = () => {
+    setIsOpen(false);
+    setFormData({ name: "", slug: "", description: "" });
+    setError(null);
   };
 
   // Loading state
@@ -77,7 +70,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
     return null;
   }
 
-  // Can't create more products
+  // Can't create more products - limit reached
   if (!canCreateResult.canCreate) {
     return (
       <Card className="border-dashed">
@@ -96,113 +89,56 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
     );
   }
 
-  if (!isOpen) {
-    return (
-      <Card className="border-dashed">
-        <CardContent className="pt-6">
-          <Button
-            onClick={() => setIsOpen(true)}
-            variant="outline"
-            className="w-full"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            {t("create")}
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t("createTitle")}</CardTitle>
-        <CardDescription>{t("createDescription")}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="product-name">{t("form.name")} *</Label>
-            <Input
-              id="product-name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={t("form.namePlaceholder")}
-              required
-              disabled={isLoading}
-            />
-          </div>
+    <EntityFormCard
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      collapsedButtonLabel={t("create")}
+      title={t("createTitle")}
+      description={t("createDescription")}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <EntityFields
+          values={formData}
+          onValuesChange={setFormData}
+          labels={{
+            name: t("form.name"),
+            namePlaceholder: t("form.namePlaceholder"),
+            slug: t("form.slug"),
+            slugPlaceholder: t("form.slugPlaceholder"),
+            slugHint: t("form.slugHint"),
+            description: t("form.description"),
+            descriptionPlaceholder: t("form.descriptionPlaceholder"),
+          }}
+          isLoading={isLoading}
+          idPrefix="product"
+        />
 
-          <div>
-            <Label htmlFor="product-slug">{t("form.slug")} *</Label>
-            <Input
-              id="product-slug"
-              type="text"
-              value={formData.slug}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, slug: e.target.value }))
-              }
-              placeholder={t("form.slugPlaceholder")}
-              required
-              disabled={isLoading}
-              pattern="^[a-z0-9-]+$"
-              title={t("form.slugHint")}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              {t("form.slugHint")}
-            </p>
-          </div>
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
-          <div>
-            <Label htmlFor="product-description">
-              {t("form.description")}
-            </Label>
-            <Textarea
-              id="product-description"
-              value={formData.description}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  description: e.target.value,
-                }))
-              }
-              placeholder={t("form.descriptionPlaceholder")}
-              rows={3}
-              disabled={isLoading}
-            />
-          </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={
-                isLoading || !formData.name.trim() || !formData.slug.trim()
-              }
-            >
-              {isLoading ? t("creating") : t("createButton")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setIsOpen(false);
-                setFormData({ name: "", slug: "", description: "" });
-                setError(null);
-              }}
-              disabled={isLoading}
-            >
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+        <div className="flex gap-2">
+          <Button
+            type="submit"
+            disabled={
+              isLoading || !formData.name.trim() || !formData.slug.trim()
+            }
+          >
+            {isLoading ? t("creating") : t("createButton")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isLoading}
+          >
+            {t("common.cancel")}
+          </Button>
+        </div>
+      </form>
+    </EntityFormCard>
   );
 }

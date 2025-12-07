@@ -48,7 +48,7 @@ Hikai es una app saas B2B orientada a facilitar el marketing de productos digita
 | F1: SettingsSection + SettingsRow | ✅ Completado |
 | F1b: Unificar detail pages con tabs | ✅ Completado |
 | F2: MembersTable                  | ✅ Completado |
-| F3: EntityForm                    | ⏳ Pendiente |
+| F3: EntityForm                    | ✅ Completado |
 | F4: ConfirmDeleteDialog           | ⏳ Pendiente |
 | F5: Danger Actions (estilo Linear)| ⏳ Pendiente |
 | F6: Migración y Cleanup           | ⏳ Pendiente |
