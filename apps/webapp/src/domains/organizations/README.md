@@ -7,7 +7,7 @@ Gestión de organizaciones (tenants) en Hikai.
 ```
 organizations/
 ├── components/
-│   ├── org-switcher.tsx              # Selector de org en sidebar
+│   ├── org-switcher.tsx              # Selector de org en header
 │   ├── org-members.tsx               # Gestión de miembros
 │   ├── organization-list.tsx         # Lista de orgs
 │   ├── create-organization-form.tsx  # Formulario de creación
@@ -54,13 +54,18 @@ Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
 
 ## Rutas
 
+- `/organizations` - Lista de organizaciones del usuario
 - `/organizations/$slug` - Detalle de organización
-- `/organizations/$slug_/settings` - Configuración (solo admin/owner)
+- `/organizations/$slug/settings` - Configuración (solo admin/owner)
 
 ## Límites
 
-Definidos en `packages/convex/convex/lib/planLimits.ts`:
+Definidos en `packages/convex/convex/lib/planLimits.ts`.
 
-- Free: 1 org, 1 producto/org, 5 miembros/org
-- Pro: 5 orgs, 10 productos/org, 50 miembros/org
-- Enterprise: Ilimitado
+**Nota**: Ya no hay límite de organizaciones por usuario. Cada org tiene su propio plan.
+
+| Plan | Productos/org | Miembros/org | Tipo |
+|------|---------------|--------------|------|
+| Free | 1 | 5 | Solo org personal |
+| Pro | 10 | 50 | Orgs profesionales |
+| Enterprise | ∞ | ∞ | Orgs profesionales |

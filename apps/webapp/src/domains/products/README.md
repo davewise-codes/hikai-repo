@@ -7,13 +7,15 @@ Gestión de productos dentro de organizaciones.
 ```
 products/
 ├── components/
-│   ├── product-list.tsx        # Lista de productos de org actual
-│   ├── product-card.tsx        # Card individual con link a detalle
-│   ├── create-product-form.tsx # Formulario crear producto
-│   ├── product-members.tsx     # Gestión de miembros
-│   └── delete-product-dialog.tsx # Confirmación tipo GitHub
+│   ├── product-list.tsx          # Lista de productos de org actual
+│   ├── product-card.tsx          # Card individual con link a detalle
+│   ├── create-product-form.tsx   # Formulario crear producto
+│   ├── product-members.tsx       # Gestión de miembros
+│   ├── delete-product-dialog.tsx # Confirmación tipo GitHub
+│   └── product-switcher.tsx      # Selector de producto en header
 ├── hooks/
-│   └── use-products.ts         # Wrappers queries/mutations
+│   ├── use-products.ts           # Wrappers queries/mutations
+│   └── use-current-product.ts    # Hook para producto actual
 └── index.ts
 ```
 
@@ -46,6 +48,20 @@ const available = useAvailableOrgMembers(productId);
 // Productos recientes (cross-org)
 const recent = useRecentProducts();
 ```
+
+### useCurrentProduct
+
+Hook para gestionar el producto actualmente seleccionado:
+
+```tsx
+const { currentProduct, isLoading, setCurrentProduct } = useCurrentProduct();
+```
+
+- `currentProduct`: Producto seleccionado con detalles
+- `isLoading`: Estado de carga
+- `setCurrentProduct(productId)`: Cambiar producto actual (también trackea acceso)
+
+El estado persiste en localStorage y sincroniza entre pestañas.
 
 ### Mutations
 
@@ -86,8 +102,9 @@ Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
 
 ## Rutas
 
-- `/products` - lista de productos de org actual
-- `/products/:slug` - detalle del producto (Overview + Members tabs)
+- `/products` - Lista de productos de org actual
+- `/products/$slug` - Detalle del producto (Overview + Members tabs)
+- `/products/$slug/settings` - Configuración del producto (solo admin)
 
 ## Seguridad
 

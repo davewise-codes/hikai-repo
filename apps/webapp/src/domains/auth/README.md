@@ -12,158 +12,113 @@ Sistema de autenticación usando Convex Auth con múltiples providers.
 
 ```
 auth/
-├── components/          # UI de autenticación
-│   ├── auth-form.tsx           # Contenedor principal (tabs signin/signup)
-│   ├── signin-form.tsx         # Formulario de login
-│   ├── signup-form.tsx         # Formulario de registro
-│   ├── signup-with-verification.tsx  # Flujo signup + verificación
+├── components/
+│   ├── auth-form.tsx              # Contenedor principal (tabs signin/signup)
+│   ├── signin-form.tsx            # Formulario de login
+│   ├── signup-form.tsx            # Formulario de registro
+│   ├── signup-with-verification.tsx  # Flujo signup + verificación OTP
 │   ├── verification-code-form.tsx    # Input código OTP
 │   ├── password-reset-flow.tsx       # Flujo reset password (3 pasos)
-│   └── social-login-buttons.tsx      # Botones OAuth
+│   └── social-login-buttons.tsx      # Botones OAuth (Google, GitHub)
 ├── hooks/
-│   └── use-auth.ts      # Hook principal con toda la lógica
-└── utils/
-    └── validation.ts    # Validadores reutilizables
+│   └── use-auth.ts                # Hook principal con toda la lógica
+└── index.ts
 ```
 
-## Arquitectura de Autenticación
+## Arquitectura
 
-El sistema usa Convex Auth que es una solución de autenticación basada en tokens JWT:
-
+```
 Cliente (React) ←→ Convex Auth Provider ←→ Convex Backend
+```
 
-2. Flujo de Signup Paso a Paso
+El sistema usa Convex Auth, una solución de autenticación basada en tokens JWT.
 
-📝 Paso 1: Usuario llena el formulario
+## Hooks
 
-- Usuario entra a /login
-- Cambia a la pestaña "Sign Up"
-- Ingresa email, password y confirmación
+### useAuth
 
-🚀 Paso 2: Envío del formulario
+Hook principal que expone toda la funcionalidad de autenticación:
 
-// En login.tsx
-handleSignUp() → signUp() → convexSignIn("password", { flow: "signUp" })
+```tsx
+const { isAuthenticated, isLoading, signIn, signUp, signOut } = useAuth();
+```
 
-🔑 Paso 3: Convex Backend procesa
+- `isAuthenticated`: `true` si hay token válido
+- `isLoading`: `true` mientras verifica estado de auth
+- `signIn(email, password)`: Login con credenciales
+- `signUp(email, password)`: Registro con verificación
+- `signOut()`: Cierra sesión
 
-- Convex Auth (packages/convex/convex/auth/auth.config.ts) recibe la petición
-- Crea el usuario en la base de datos
-- Genera un JWT token
-- Devuelve el token al cliente
+## Flujos
 
-💾 Paso 4: Cliente recibe el token
+### Signup (Registro)
 
-// En use-auth.ts
-const token = useAuthToken(); // Hook de Convex que obtiene el token
-const isAuthenticated = !!token; // true si hay token
+1. Usuario llena formulario (email, password, confirmación)
+2. `signUp()` → Convex Auth crea usuario
+3. Se envía código OTP por email (via Resend)
+4. Usuario ingresa código de verificación
+5. Token JWT generado → `isAuthenticated = true`
+6. Redirección automática a home
 
-🔄 Paso 5: Redirección automática
-
-// En login.tsx
-useEffect(() => {
-if (isAuthenticated && !isLoading) {
-setTimeout(() => navigate({ to: '/' }), 100);
-}
-}, [isAuthenticated, isLoading]);
-
-🛡️ Paso 6: AuthGuard protege rutas
-
-// En index.tsx (ruta home)
-<AuthGuard>
-<AppShell>
-<HomePage />
-</AppShell>
-</AuthGuard>
-
-3. Estados del Sistema
-
-// Estados posibles durante el flujo:
-token = undefined → isLoading (verificando auth)
-token = null → No autenticado
-token = "string" → Autenticado
-
-4. Componentes Clave
-
-🔐 ConvexAuthProvider
-
-- Envuelve toda la app en \_\_root.tsx
-- Proporciona contexto de autenticación
-- Maneja la persistencia del token
-
-🪝 useAuth Hook
-
-export function useAuth() {
-const token = useAuthToken(); // Token de Convex
-const isAuthenticated = !!token; // Estado de auth
-const isLoading = token === undefined; // Cargando
-
-    return {
-      isAuthenticated,
-      isLoading,
-      signIn,   // Función para login
-      signUp,   // Función para registro
-      signOut   // Función para logout
-    };
-
-}
-
-🛡️ AuthGuard Component
-
-- Protege rutas que requieren autenticación
-- Redirige a /login si no está autenticado
-- Muestra loading mientras verifica
-
-5. Flujo de Login (Sign In)
-
-Similar al signup pero con flow: "signIn":
+### Login (Sign In)
 
 1. Usuario ingresa credenciales
-2. signIn() → convexSignIn("password", { flow: "signIn" })
-3. Convex valida credenciales
-4. Devuelve token si son correctas
+2. `signIn()` → Convex Auth valida
+3. Token JWT generado → `isAuthenticated = true`
+4. Redirección automática a home
+
+### OAuth (Google/GitHub)
+
+1. Clic en botón del provider
+2. Redirección a página del provider
+3. Usuario autoriza
+4. Callback → Token JWT generado
 5. Redirección automática a home
 
-6. Problema del Bucle (Resuelto)
+### Password Reset
 
-Antes:
+Flujo de 3 pasos en `password-reset-flow.tsx`:
 
-- Usábamos window.location.href (recarga completa)
-- No había delay para propagación del token
-- AuthGuard y LoginPage peleaban por redirigir
+1. **Solicitar código**: Email → código OTP enviado
+2. **Verificar código**: Ingresar código recibido
+3. **Nueva contraseña**: Establecer nueva password
 
-Ahora:
+### Logout
 
-- Usamos navegación SPA con useNavigate()
-- Delay de 100ms asegura propagación
-- Condiciones precisas: isAuthenticated && !isLoading
+```
+signOut() → token = null → redirección a /login
+```
 
-7. Persistencia de Sesión
+## Estados del Sistema
 
-- El token JWT se guarda en localStorage/cookies (manejado por Convex)
-- Al recargar la página, ConvexAuthProvider recupera el token
-- Si el token es válido, mantiene la sesión activa
+```typescript
+token = undefined  // isLoading (verificando auth)
+token = null       // No autenticado
+token = "string"   // Autenticado
+```
 
-8. Logout
+## Componentes Clave
 
-signOut() → convexSignOut() → token = null → AuthGuard redirige a /login
+### ConvexAuthProvider
 
-9. Diagrama de Flujo Completo
+- Envuelve la app en `__root.tsx`
+- Proporciona contexto de autenticación
+- Maneja persistencia del token (localStorage/cookies)
 
-Usuario no autenticado
-↓
-/login (LoginPage)
-↓
-Signup Form
-↓
-signUp() → Convex Auth
-↓
-Token generado
-↓
-isAuthenticated = true
-↓
-navigate({ to: '/' })
-↓
-AuthGuard verifica
-↓
-✅ Acceso permitido
+### AuthGuard
+
+- Protege rutas que requieren autenticación
+- Redirige a `/login` si no está autenticado
+- Muestra loading mientras verifica
+
+## Persistencia
+
+- Token JWT guardado en localStorage/cookies (manejado por Convex)
+- Al recargar, ConvexAuthProvider recupera el token
+- Sesión activa hasta logout manual
+
+## Backend
+
+Configuración en `packages/convex/convex/auth.ts`:
+- Providers: Password (con email), Google, GitHub
+- Callbacks para crear organización personal al registro

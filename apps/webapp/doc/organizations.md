@@ -33,8 +33,8 @@ Desde el dropdown del OrgSwitcher:
 
 ## Cambiar de Organización
 
-En el sidebar (esquina superior izquierda):
-1. Clic en el icono de la organización actual
+En el header (OrgSwitcher):
+1. Clic en el avatar/nombre de la organización actual
 2. Selecciona otra organización del dropdown
 3. El cambio persiste entre sesiones y pestañas
 
@@ -67,7 +67,9 @@ El acceso se registra automáticamente cuando cambias de organización, permitie
 
 ## Configuración de Organización
 
-Los administradores y owners pueden acceder a la configuración desde el botón "Configuración" en la página de detalle de la organización.
+Los administradores y owners pueden acceder a la configuración:
+- Desde el **engranaje** en el dropdown del OrgSwitcher (junto al nombre de la org actual)
+- Desde el botón "Configuración" en la página de detalle (`/organizations/$slug`)
 
 ### Configuración General
 - Editar nombre y descripción de la organización

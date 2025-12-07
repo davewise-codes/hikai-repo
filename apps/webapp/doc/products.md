@@ -52,20 +52,40 @@ En la página de detalle del producto (tab "Miembros"):
 | **Admin** | Control total: editar producto, gestionar miembros, eliminar |
 | **Member** | Acceso de lectura y colaboración |
 
-## Eliminar Producto
+## Configuración de Producto
 
+Los administradores pueden acceder a `/products/$slug/settings`:
+- Desde el **engranaje** en el dropdown del ProductSwitcher
+- Desde la página de detalle del producto
+
+### Configuración General
+- Editar nombre y descripción
+- Ver slug (no editable)
+- Ver número de miembros y fecha de creación
+- Ver tu rol en el producto
+
+### Zona de Peligro
+
+#### Eliminar Producto
 Solo administradores pueden eliminar un producto:
-1. En la página de detalle, clic en "Eliminar"
+1. Clic en "Eliminar Producto"
 2. Escribe el nombre del producto para confirmar
 3. Se elimina el producto y todas sus membresías
 
 **Atención**: Esta acción es irreversible.
 
+## Cambiar de Producto
+
+En el header hay un **ProductSwitcher** que muestra el producto actual:
+- Clic para ver otros productos de la organización
+- Selecciona otro producto para navegar a él
+- Si no hay producto seleccionado, muestra "Seleccionar producto"
+
 ## Cambiar de Organización
 
-Al cambiar de organización en el OrgSwitcher mientras estás en `/products`:
-- Se te redirige a la lista de productos de la nueva organización
-- Si estabas viendo un producto específico, volverás a la lista
+Al cambiar de organización en el OrgSwitcher:
+- Se actualiza la lista de productos disponibles
+- Si estabas en un producto, volverás a la lista de productos
 
 ## Productos Recientes
 
