@@ -189,7 +189,7 @@ export function ProfilePage() {
             {/* Email verified status */}
             {user.emailVerificationTime && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+                <CheckCircle className="w-5 h-5 text-success" />
                 <div>
                   <p className="text-sm font-medium">{t("emailVerified")}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>

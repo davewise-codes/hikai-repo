@@ -23,6 +23,8 @@ Tokens semánticos con soporte para light, dark y high-contrast.
 | `--muted` | Elementos de bajo énfasis | `240 4.8% 95.9%` | `240 3.7% 15.9%` |
 | `--accent` | Hover states, destacados | `240 4.8% 95.9%` | `240 3.7% 15.9%` |
 | `--destructive` | Errores, acciones destructivas | `0 84.2% 60.2%` | `0 62.8% 30.6%` |
+| `--success` | Estados de éxito, confirmaciones | `142 76% 36%` | `142 70% 45%` |
+| `--warning` | Avisos, estados de atención | `38 92% 50%` | `38 92% 50%` |
 | `--card` | Superficies elevadas | `0 0% 100%` | `240 10% 3.9%` |
 | `--popover` | Elementos flotantes | `0 0% 100%` | `240 10% 3.9%` |
 | `--border` | Bordes | `240 5.9% 90%` | `240 3.7% 15.9%` |
@@ -34,6 +36,8 @@ Tokens semánticos con soporte para light, dark y high-contrast.
 <div className="bg-primary text-primary-foreground" />
 <span className="text-muted-foreground" />
 <div className="border-destructive" />
+<CheckCircle className="text-success" />
+<AlertTriangle className="text-warning" />
 ```
 
 ---

@@ -76,7 +76,7 @@ export function HomePage() {
         <div className="space-y-4">
           <div className="p-4 border rounded-lg">
             <h4 className="font-sans text-lg font-semibold mb-2 flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success" />
               {t('fontDemo.sans.title')}
             </h4>
             <p className="font-sans">
@@ -85,7 +85,7 @@ export function HomePage() {
           </div>
           <div className="p-4 border rounded-lg">
             <h4 className="font-serif text-lg font-semibold mb-2 flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success" />
               {t('fontDemo.serif.title')}
             </h4>
             <p className="font-serif">
@@ -94,7 +94,7 @@ export function HomePage() {
           </div>
           <div className="p-4 border rounded-lg">
             <h4 className="font-mono text-lg font-semibold mb-2 flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-success" />
               {t('fontDemo.mono.title')}
             </h4>
             <p className="font-mono">

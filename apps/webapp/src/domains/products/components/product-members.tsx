@@ -224,7 +224,7 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
                       {member.user?.name || member.user?.email || t("common.unknown")}
                     </span>
                     {member.role === "admin" && (
-                      <Crown className="w-4 h-4 text-yellow-500" />
+                      <Crown className="w-4 h-4 text-warning" />
                     )}
                   </div>
                   {member.user?.email && member.user?.name && (

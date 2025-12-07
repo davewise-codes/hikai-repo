@@ -74,6 +74,14 @@
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
 
+  /* Success state */
+  --success: 142 76% 36%;
+  --success-foreground: 0 0% 100%;
+
+  /* Warning state */
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 0%;
+
   /* Bordes y elementos de entrada */
   --border: 240 5.9% 90%;
   --input: 240 5.9% 90%;
@@ -109,6 +117,14 @@
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
 
+  /* Success state */
+  --success: 142 70% 45%;
+  --success-foreground: 0 0% 100%;
+
+  /* Warning state */
+  --warning: 38 92% 50%;
+  --warning-foreground: 0 0% 0%;
+
   --border: 240 3.7% 15.9%;
   --input: 240 3.7% 15.9%;
   --ring: 240 4.9% 83.9%;
@@ -140,6 +156,14 @@
   --accent-foreground: 0 0% 0%;
   --destructive: 0 100% 40%;
   --destructive-foreground: 0 0% 100%;
+
+  /* Success state */
+  --success: 142 100% 30%;
+  --success-foreground: 0 0% 100%;
+
+  /* Warning state */
+  --warning: 38 100% 40%;
+  --warning-foreground: 0 0% 0%;
 
   --border: 0 0% 60%;
   --input: 0 0% 85%;

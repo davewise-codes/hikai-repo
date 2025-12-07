@@ -236,7 +236,7 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
                       {member.user?.name || member.user?.email || t("common.unknown")}
                     </span>
                     {member.role === "owner" && (
-                      <Crown className="w-4 h-4 text-yellow-500" />
+                      <Crown className="w-4 h-4 text-warning" />
                     )}
                   </div>
                   {member.user?.email && member.user?.name && (
