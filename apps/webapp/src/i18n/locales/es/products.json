@@ -78,7 +78,14 @@
     "selectPlaceholder": "Elige un miembro...",
     "selectRole": "Seleccionar rol",
     "empty": "No hay miembros en este producto.",
-    "noAvailable": "No hay miembros disponibles"
+    "noAvailable": "No hay miembros disponibles",
+    "searchPlaceholder": "Buscar miembros...",
+    "columnName": "Nombre",
+    "columnEmail": "Email",
+    "columnRole": "Rol",
+    "columnJoined": "Unido",
+    "columnLastSeen": "Último acceso",
+    "neverSeen": "Nunca"
   },
   "settings": {
     "title": "Configuración del Producto",

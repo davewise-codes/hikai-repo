@@ -84,7 +84,14 @@
     "userNotFound": "Usuario no encontrado. Debe crear una cuenta en Hikai primero.",
     "limitReached": "Límite de miembros alcanzado para tu plan.",
     "alreadyMember": "El usuario ya es miembro.",
-    "cannotRemoveOwner": "No se puede eliminar al owner de la organización."
+    "cannotRemoveOwner": "No se puede eliminar al owner de la organización.",
+    "searchPlaceholder": "Buscar miembros...",
+    "columnName": "Nombre",
+    "columnEmail": "Email",
+    "columnRole": "Rol",
+    "columnJoined": "Unido",
+    "columnLastSeen": "Último acceso",
+    "neverSeen": "Nunca"
   },
   "roles": {
     "owner": "Owner",

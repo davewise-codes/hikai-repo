@@ -134,7 +134,7 @@ function ProductDetailPage() {
 
   return (
     <AppShell>
-      <SettingsLayout>
+      <SettingsLayout variant="wide">
         <SettingsHeader
           title={product.name}
           subtitle={`/${product.slug}`}

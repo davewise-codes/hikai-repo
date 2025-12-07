@@ -5,3 +5,9 @@ export {
   SettingsRow,
   SettingsRowContent,
 } from "./settings-section";
+export {
+  MembersTable,
+  type MembersTableProps,
+  type MembersTableTranslations,
+  type MemberData,
+} from "./members-table";

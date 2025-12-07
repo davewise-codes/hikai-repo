@@ -78,7 +78,14 @@
     "selectPlaceholder": "Choose a member...",
     "selectRole": "Select role",
     "empty": "No members in this product.",
-    "noAvailable": "No members available to add"
+    "noAvailable": "No members available to add",
+    "searchPlaceholder": "Search members...",
+    "columnName": "Name",
+    "columnEmail": "Email",
+    "columnRole": "Role",
+    "columnJoined": "Joined",
+    "columnLastSeen": "Last seen",
+    "neverSeen": "Never"
   },
   "settings": {
     "title": "Product Settings",

@@ -125,7 +125,7 @@ function OrganizationDetailPage() {
 
   return (
     <AppShell>
-      <SettingsLayout>
+      <SettingsLayout variant="wide">
         <SettingsHeader
           title={organization.name}
           subtitle={`/${organization.slug}`}
