@@ -56,9 +56,23 @@ Validar que el sistema de tokens de diseño está correctamente implementado med
 | F0: Fix Token Violations          | ✅ Completado |
 | F1: Density System Infrastructure | ✅ Completado |
 | F2: Color Theme Infrastructure    | ✅ Completado |
-| F3: Settings UI in UserMenu       | ⏳ Pendiente |
+| F3: Settings UI in UserMenu       | ✅ Completado |
 | F4: Settings Page Completa        | ⏳ Pendiente |
-| F5: Validación y Ajustes          | ⏳ Pendiente |
+| F5: Validación y Ajustes          | ✅ Completado |
+
+### Notas F3
+
+**Font Size System (renombrado de Density)**:
+- Renombrado de "Density" a "Font Size" para mayor claridad
+- Sistema corregido: solo texto escala, layouts permanecen constantes
+- Clases: `font-size-compact`, `font-size-normal`, `font-size-comfortable`
+- Componentes usan `text-fontSize-sm`, `text-fontSize-xs` explícitamente
+
+**Color Themes disponibles**:
+- Default: Neutral, grises puros (tema base)
+- Amber Minimal: Cálido, tonos crema/dorado
+- Dark Matter: Sofisticado, púrpura/coral
+- Neo Brutalism: Bold, alto contraste, bordes duros, sin radius
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
