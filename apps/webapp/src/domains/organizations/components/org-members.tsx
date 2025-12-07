@@ -30,6 +30,7 @@ import {
   useUpdateMemberRole,
 } from "../hooks";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
+import { getInitials } from "@/domains/shared";
 
 interface OrgMembersProps {
   organizationId: Id<"organizations">;
@@ -110,18 +111,6 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
         setError(errorMessage);
       }
     }
-  };
-
-  const getInitials = (name?: string | null, email?: string | null) => {
-    if (name) {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return email?.slice(0, 2).toUpperCase() || "??";
   };
 
   if (members === undefined) {

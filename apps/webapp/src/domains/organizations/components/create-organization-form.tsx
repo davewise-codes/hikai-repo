@@ -18,6 +18,7 @@ import {
 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 import { useOrganizationsActions } from "../hooks/use-organizations";
+import { generateSlug, shouldAutoUpdateSlug } from "@/domains/shared";
 
 type ProfessionalPlan = "pro" | "enterprise";
 
@@ -86,24 +87,13 @@ export function CreateOrganizationForm() {
     setIsLoading(false);
   };
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim()
-      .substring(0, 50);
-  };
-
   const handleNameChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
       name: value,
-      slug:
-        prev.slug === generateSlug(prev.name) || !prev.slug
-          ? generateSlug(value)
-          : prev.slug,
+      slug: shouldAutoUpdateSlug(prev.slug, prev.name)
+        ? generateSlug(value)
+        : prev.slug,
     }));
   };
 

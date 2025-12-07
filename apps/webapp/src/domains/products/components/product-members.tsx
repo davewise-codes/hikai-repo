@@ -30,6 +30,7 @@ import {
   useUpdateProductMemberRole,
 } from "../hooks";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
+import { getInitials } from "@/domains/shared";
 
 interface ProductMembersProps {
   productId: Id<"products">;
@@ -83,18 +84,6 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.unknown"));
     }
-  };
-
-  const getInitials = (name?: string | null, email?: string | null) => {
-    if (name) {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return email?.slice(0, 2).toUpperCase() || "??";
   };
 
   if (members === undefined) {

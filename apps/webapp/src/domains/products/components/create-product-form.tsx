@@ -16,6 +16,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { useCreateProduct, useCanCreateProduct } from "../hooks";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
+import { generateSlug, shouldAutoUpdateSlug } from "@/domains/shared";
 
 interface CreateProductFormProps {
   organizationId: Id<"organizations">;
@@ -61,24 +62,13 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
     }
   };
 
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .trim()
-      .substring(0, 50);
-  };
-
   const handleNameChange = (value: string) => {
     setFormData((prev) => ({
       ...prev,
       name: value,
-      slug:
-        prev.slug === generateSlug(prev.name) || !prev.slug
-          ? generateSlug(value)
-          : prev.slug,
+      slug: shouldAutoUpdateSlug(prev.slug, prev.name)
+        ? generateSlug(value)
+        : prev.slug,
     }));
   };
 
