@@ -1,8 +1,11 @@
 // UI Components
 export * from "./components/ui";
 
-// Theme definitions and utilities
+// Theme definitions and utilities (light/dark/system)
 export * from "./lib/themes";
+
+// Color theme system
+export * from "./lib/color-themes";
 
 // Density system
 export * from "./lib/density";

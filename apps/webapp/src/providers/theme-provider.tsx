@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useEffect, useState } from "react";
-import { Theme } from "@hikai/ui";
-import { useTheme } from "@/domains/core";
+import { Theme, getColorThemeClass, getColorThemeIds, ColorThemeId } from "@hikai/ui";
+import { useTheme, useColorTheme } from "@/domains/core";
 
 export interface ThemeContextValue {
 	theme: Theme;
@@ -23,8 +23,10 @@ export function ThemeProvider({
 	enableSystem = true,
 }: ThemeProviderProps) {
 	const { theme, setTheme: setThemeStore } = useTheme();
+	const { colorTheme } = useColorTheme();
 	const [actualTheme, setActualTheme] = useState<"light" | "dark">("light");
 
+	// Apply light/dark theme class
 	useEffect(() => {
 		const root = window.document.documentElement;
 		root.classList.remove("light", "dark");
@@ -42,6 +44,19 @@ export function ThemeProvider({
 			setActualTheme(themeToApply as "light" | "dark");
 		}
 	}, [theme, enableSystem]);
+
+	// Apply color theme class
+	useEffect(() => {
+		const root = window.document.documentElement;
+
+		// Remove all color theme classes
+		getColorThemeIds().forEach((themeId) => {
+			root.classList.remove(getColorThemeClass(themeId));
+		});
+
+		// Add current color theme class
+		root.classList.add(getColorThemeClass(colorTheme));
+	}, [colorTheme]);
 
 	const value: ThemeContextValue = {
 		theme,

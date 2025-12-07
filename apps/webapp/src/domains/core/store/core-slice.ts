@@ -1,5 +1,12 @@
 import { StateCreator } from 'zustand';
-import { Theme, defaultTheme, Density, defaultDensity } from '@hikai/ui';
+import {
+  Theme,
+  defaultTheme,
+  Density,
+  defaultDensity,
+  ColorThemeId,
+  defaultColorTheme,
+} from '@hikai/ui';
 
 // Supported locales
 export type Locale = 'en' | 'es';
@@ -14,6 +21,10 @@ export interface CoreSlice {
   // Density settings
   density: Density;
   setDensity: (newDensity: Density) => void;
+
+  // Color theme settings
+  colorTheme: ColorThemeId;
+  setColorTheme: (newColorTheme: ColorThemeId) => void;
 
   // I18n settings
   locale: Locale;
@@ -41,6 +52,10 @@ export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set)
   // Density management
   density: defaultDensity,
   setDensity: (newDensity) => set({ density: newDensity }),
+
+  // Color theme management
+  colorTheme: defaultColorTheme,
+  setColorTheme: (newColorTheme) => set({ colorTheme: newColorTheme }),
 
   // I18n management
   locale: defaultLocale,

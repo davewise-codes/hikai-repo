@@ -19,6 +19,7 @@ export const useStore = create<StoreState>()(
         partialize: (state) => ({
           theme: state.theme,
           density: state.density,
+          colorTheme: state.colorTheme,
           locale: state.locale,
           currentOrgId: state.currentOrgId,
           currentProductId: state.currentProductId,

@@ -9,6 +9,11 @@
 @import '../tokens/tokens.css';
 @import '../tokens/density.css';
 
+/* Color themes - each theme defines colors wrapped in .theme-* class */
+@import '../themes/default.css';
+@import '../themes/amber-minimal.css';
+@import '../themes/dark-matter.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
