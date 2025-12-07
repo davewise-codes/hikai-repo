@@ -70,7 +70,8 @@
   },
   "tabs": {
     "overview": "Overview",
-    "members": "Members"
+    "members": "Members",
+    "settings": "Settings"
   },
   "members": {
     "title": "Members",
@@ -96,6 +97,7 @@
       "title": "General Settings",
       "description": "Basic information about your organization."
     },
+    "info": "Information",
     "slugReadonly": "The identifier cannot be changed.",
     "yourRole": "Your role",
     "save": "Save changes",

@@ -251,6 +251,14 @@ export function UserMenu() {
             </DropdownMenuSubContent>
           </DropdownMenuPortal>
         </DropdownMenuSub>
+
+        {/* All Settings Link */}
+        <DropdownMenuItem asChild className="cursor-pointer">
+          <Link to="/settings">
+            <Settings className="mr-2 h-4 w-4" />
+            {t("settings.allSettings")}
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
 
         {/* Recent Products */}

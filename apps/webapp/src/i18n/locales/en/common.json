@@ -27,6 +27,13 @@
     "noRecentProducts": "No recent products"
   },
   "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your preferences",
+    "appearance": "Appearance",
+    "appearanceDescription": "Customize how Hikai looks on your device",
+    "preferences": "Preferences",
+    "preferencesDescription": "Configure your language and regional settings",
+    "allSettings": "All settings",
     "theme": "Theme",
     "mode": "Mode",
     "light": "Light",

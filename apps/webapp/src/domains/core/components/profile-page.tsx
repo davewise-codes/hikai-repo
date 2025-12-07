@@ -4,23 +4,23 @@ import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useAuth } from "@/domains/auth/hooks";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
   Button,
   Input,
   Avatar,
   AvatarImage,
   AvatarFallback,
-  ArrowLeft,
-  User,
-  Mail,
-  CheckCircle,
   Camera,
+  CheckCircle,
   toast,
 } from "@hikai/ui";
+import {
+  SettingsLayout,
+  SettingsHeader,
+  SettingsSection,
+  SettingsRow,
+  SettingsRowContent,
+} from "@/domains/shared";
+import { getInitials } from "@/domains/shared";
 import { useTranslation } from "react-i18next";
 
 export function ProfilePage() {
@@ -41,32 +41,14 @@ export function ProfilePage() {
     }
   }, [user?.name]);
 
-  // Get user initials for fallback
-  const getInitials = () => {
-    if (user?.name) {
-      return user.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    if (user?.email) {
-      return user.email[0].toUpperCase();
-    }
-    return "U";
-  };
-
   // Loading state
   if (isAuthLoading || user === undefined) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center py-8 text-muted-foreground">
-            {t("common:loading", "Loading...")}
-          </div>
+      <SettingsLayout>
+        <div className="text-center py-8 text-muted-foreground">
+          {t("common:loading", "Loading...")}
         </div>
-      </div>
+      </SettingsLayout>
     );
   }
 
@@ -92,118 +74,93 @@ export function ProfilePage() {
   const hasChanges = name.trim() !== (user.name || "");
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-start gap-4 mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.history.back()}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              <h1 className="text-2xl font-bold">{t("title")}</h1>
-            </div>
-            <p className="text-muted-foreground">{t("subtitle")}</p>
-          </div>
-        </div>
+    <SettingsLayout>
+      <SettingsHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        backButton={{
+          onClick: () => router.history.back(),
+        }}
+      />
 
-        {/* Personal Information */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>{t("personalInfo")}</CardTitle>
-            <CardDescription>{t("personalInfoDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Avatar section */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("avatar")}</label>
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage
-                    src={user.image || undefined}
-                    alt={user.name || t("title")}
-                    referrerPolicy="no-referrer"
-                  />
-                  <AvatarFallback className="text-xl">
-                    {getInitials()}
-                  </AvatarFallback>
-                </Avatar>
-                <Button variant="outline" disabled className="gap-2">
-                  <Camera className="w-4 h-4" />
-                  {t("avatarComingSoon")}
-                </Button>
-              </div>
-            </div>
-
-            {/* Name field */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("name")}</label>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t("namePlaceholder")}
-                disabled={isSaving}
-              />
-            </div>
-
-            {/* Email field (read-only) */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("email")}</label>
-              <div className="flex items-center gap-2">
-                <Input
-                  value={user.email || ""}
-                  disabled
-                  className="bg-muted"
+      {/* Personal Information */}
+      <SettingsSection title={t("personalInfo")}>
+        {/* Avatar */}
+        <SettingsRow
+          label={t("avatar")}
+          control={
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage
+                  src={user.image || undefined}
+                  alt={user.name || t("title")}
+                  referrerPolicy="no-referrer"
                 />
-                <Mail className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {t("emailReadonly")}
-              </p>
-            </div>
-
-            {/* Save button */}
-            <div className="flex justify-end">
-              <Button
-                onClick={handleSave}
-                disabled={!hasChanges || isSaving || !name.trim()}
-              >
-                {isSaving ? t("saving") : t("save")}
+                <AvatarFallback>
+                  {getInitials(user.name, user.email)}
+                </AvatarFallback>
+              </Avatar>
+              <Button variant="outline" size="sm" disabled className="gap-2">
+                <Camera className="w-4 h-4" />
+                {t("avatarComingSoon")}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          }
+        />
 
-        {/* Authentication Methods */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("authMethods")}</CardTitle>
-            <CardDescription>{t("authMethodsDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Email verified status */}
-            {user.emailVerificationTime && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <CheckCircle className="w-5 h-5 text-success" />
-                <div>
-                  <p className="text-sm font-medium">{t("emailVerified")}</p>
-                  <p className="text-xs text-muted-foreground">{user.email}</p>
-                </div>
-              </div>
-            )}
+        {/* Name */}
+        <SettingsRow
+          label={t("name")}
+          control={
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("namePlaceholder")}
+              disabled={isSaving}
+              className="w-64"
+            />
+          }
+        />
 
-            {/* Placeholder for future options */}
-            <p className="text-sm text-muted-foreground">
-              {t("moreOptionsSoon")}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Email (read-only) */}
+        <SettingsRow
+          label={t("email")}
+          description={t("emailReadonly")}
+          control={
+            <Input
+              value={user.email || ""}
+              disabled
+              className="w-64 bg-muted"
+            />
+          }
+        />
+      </SettingsSection>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSave}
+          disabled={!hasChanges || isSaving || !name.trim()}
+        >
+          {isSaving ? t("saving") : t("save")}
+        </Button>
       </div>
-    </div>
+
+      {/* Authentication Methods */}
+      <SettingsSection title={t("authMethods")}>
+        {user.emailVerificationTime && (
+          <SettingsRow
+            label={t("emailVerified")}
+            description={user.email || ""}
+            control={<CheckCircle className="w-5 h-5 text-success" />}
+          />
+        )}
+        <SettingsRowContent>
+          <p className="text-fontSize-sm text-muted-foreground">
+            {t("moreOptionsSoon")}
+          </p>
+        </SettingsRowContent>
+      </SettingsSection>
+    </SettingsLayout>
   );
 }

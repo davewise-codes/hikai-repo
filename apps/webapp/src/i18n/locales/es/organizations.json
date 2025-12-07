@@ -70,7 +70,8 @@
   },
   "tabs": {
     "overview": "General",
-    "members": "Miembros"
+    "members": "Miembros",
+    "settings": "Configuración"
   },
   "members": {
     "title": "Miembros",
@@ -96,6 +97,7 @@
       "title": "Configuración General",
       "description": "Información básica de tu organización."
     },
+    "info": "Información",
     "slugReadonly": "El identificador no se puede cambiar.",
     "yourRole": "Tu rol",
     "save": "Guardar cambios",

@@ -17,7 +17,7 @@ import { useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { useTranslation } from "react-i18next";
 import { useCurrentOrg } from "../hooks/use-current-org";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 /**
  * OrgSwitcher - Componente para cambiar de organización.
@@ -33,6 +33,7 @@ import { Link } from "@tanstack/react-router";
  */
 export function OrgSwitcher() {
   const { t } = useTranslation("organizations");
+  const navigate = useNavigate();
   const { currentOrg, organizations, isLoading, setCurrentOrg } =
     useCurrentOrg();
 
@@ -114,15 +115,21 @@ export function OrgSwitcher() {
                     </Badge>
                   )}
                   {isAdminOrOwner && (
-                    <Link
-                      to="/organizations/$slug/settings"
-                      params={{ slug: currentOrg.slug }}
+                    <button
+                      type="button"
                       className="flex-shrink-0 p-1 rounded hover:bg-accent transition-colors"
                       title={t("switcher.settings")}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        navigate({
+                          to: "/organizations/$slug",
+                          params: { slug: currentOrg.slug },
+                        });
+                      }}
                     >
                       <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                    </Link>
+                    </button>
                   )}
                 </div>
                 <span className="text-xs text-muted-foreground">

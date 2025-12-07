@@ -1,20 +1,33 @@
+import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/domains/core/components/app-shell";
-import { useOrganizationBySlug, OrgMembers } from "@/domains/organizations";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+  useOrganizationBySlug,
+  useOrganizationMembers,
+  useUpdateOrganization,
+  OrgMembers,
+  TransferOwnershipDialog,
+  DeleteOrganizationDialog,
+} from "@/domains/organizations";
+import {
+  SettingsLayout,
+  SettingsHeader,
+  SettingsSection,
+  SettingsRow,
+  SettingsRowContent,
+} from "@/domains/shared";
+import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
   Button,
   Badge,
+  Input,
+  Textarea,
+  Card,
+  CardContent,
   ArrowLeft,
-  Settings,
 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 
@@ -28,16 +41,37 @@ function OrganizationDetailPage() {
   const navigate = useNavigate();
 
   const organization = useOrganizationBySlug(slug);
+  const members = useOrganizationMembers(organization?._id);
+  const updateOrganization = useUpdateOrganization();
+
+  // Form state for settings tab
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Dialog states
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Initialize form when organization loads
+  useEffect(() => {
+    if (organization && name === "" && description === "") {
+      setName(organization.name);
+      setDescription(organization.description || "");
+    }
+  }, [organization, name, description]);
 
   // Loading state
   if (organization === undefined) {
     return (
       <AppShell>
-        <div className="container mx-auto px-4 py-8">
+        <SettingsLayout>
           <div className="text-center py-8 text-muted-foreground">
             {t("common.loading")}
           </div>
-        </div>
+        </SettingsLayout>
       </AppShell>
     );
   }
@@ -46,131 +80,266 @@ function OrganizationDetailPage() {
   if (!organization) {
     return (
       <AppShell>
-        <div className="container mx-auto px-4 py-8">
+        <SettingsLayout>
           <Card>
             <CardContent className="text-center py-8">
-              <p className="text-muted-foreground mb-4">
-                {t("notFound")}
-              </p>
+              <p className="text-muted-foreground mb-4">{t("notFound")}</p>
               <Button variant="outline" onClick={() => navigate({ to: "/" })}>
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 {t("backToHome")}
               </Button>
             </CardContent>
           </Card>
-        </div>
+        </SettingsLayout>
       </AppShell>
     );
   }
 
+  const isOwner = organization.userRole === "owner";
+  const isAdminOrOwner =
+    organization.userRole === "owner" || organization.userRole === "admin";
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      await updateOrganization({
+        organizationId: organization._id,
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const hasChanges =
+    name !== organization.name ||
+    description !== (organization.description || "");
+
   return (
     <AppShell>
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate({ to: "/" })}
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">{organization.name}</h1>
-                {organization.isPersonal && (
-                  <Badge variant="outline">{t("switcher.personal")}</Badge>
-                )}
-                <Badge variant="secondary">
-                  {t(`roles.${organization.userRole}`)}
-                </Badge>
-                <Badge>{t(`plans.${organization.plan}`)}</Badge>
-              </div>
-              <p className="text-muted-foreground">/{organization.slug}</p>
+      <SettingsLayout>
+        <SettingsHeader
+          title={organization.name}
+          subtitle={`/${organization.slug}`}
+          backButton={{
+            onClick: () => navigate({ to: "/" }),
+          }}
+          actions={
+            <div className="flex items-center gap-2">
+              {organization.isPersonal && (
+                <Badge variant="outline">{t("switcher.personal")}</Badge>
+              )}
+              <Badge
+                variant={
+                  organization.userRole as "owner" | "admin" | "member"
+                }
+              >
+                {t(`roles.${organization.userRole}`)}
+              </Badge>
+              <Badge>{t(`plans.${organization.plan}`)}</Badge>
             </div>
-          </div>
-          {/* Settings button - only for admin/owner */}
-          {(organization.userRole === "owner" || organization.userRole === "admin") && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate({ to: "/organizations/$slug/settings", params: { slug } })}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              {t("settings.title")}
-            </Button>
-          )}
-        </div>
+          }
+        />
 
-        {/* Tabs */}
         <Tabs defaultValue="overview">
           <TabsList>
             <TabsTrigger value="overview">{t("tabs.overview")}</TabsTrigger>
             <TabsTrigger value="members">{t("tabs.members")}</TabsTrigger>
+            {isAdminOrOwner && (
+              <TabsTrigger value="settings">{t("tabs.settings")}</TabsTrigger>
+            )}
           </TabsList>
 
-          <TabsContent value="overview" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("detail.title")}</CardTitle>
-                <CardDescription>
-                  {t("detail.description")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {t("detail.name")}
-                    </label>
-                    <p className="text-lg">{organization.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {t("detail.slug")}
-                    </label>
-                    <p className="text-lg font-mono">/{organization.slug}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {t("detail.plan")}
-                    </label>
-                    <p className="text-lg">{t(`plans.${organization.plan}`)}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {t("detail.members")}
-                    </label>
-                    <p className="text-lg">{organization.memberCount}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
-                      {t("detail.createdAt")}
-                    </label>
-                    <p className="text-lg">
-                      {new Date(organization.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-
-                {organization.description && (
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="mt-6 space-y-6">
+            <SettingsSection title={t("detail.title")}>
+              <SettingsRow
+                label={t("detail.name")}
+                control={
+                  <span className="text-fontSize-sm">{organization.name}</span>
+                }
+              />
+              <SettingsRow
+                label={t("detail.slug")}
+                control={
+                  <span className="text-fontSize-sm font-mono">
+                    /{organization.slug}
+                  </span>
+                }
+              />
+              <SettingsRow
+                label={t("detail.plan")}
+                control={<Badge>{t(`plans.${organization.plan}`)}</Badge>}
+              />
+              <SettingsRow
+                label={t("detail.members")}
+                control={
+                  <span className="text-fontSize-sm">
+                    {organization.memberCount}
+                  </span>
+                }
+              />
+              <SettingsRow
+                label={t("detail.createdAt")}
+                control={
+                  <span className="text-fontSize-sm">
+                    {new Date(organization.createdAt).toLocaleDateString()}
+                  </span>
+                }
+              />
+              {organization.description && (
+                <SettingsRowContent>
+                  <div className="space-y-1">
+                    <label className="text-fontSize-sm font-medium text-muted-foreground">
                       {t("detail.descriptionLabel")}
                     </label>
-                    <p className="mt-1">{organization.description}</p>
+                    <p className="text-fontSize-sm">{organization.description}</p>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </SettingsRowContent>
+              )}
+            </SettingsSection>
           </TabsContent>
 
+          {/* Members Tab */}
           <TabsContent value="members" className="mt-6">
-            <OrgMembers organizationId={organization._id} userRole={organization.userRole} />
+            <OrgMembers
+              organizationId={organization._id}
+              userRole={organization.userRole}
+            />
           </TabsContent>
+
+          {/* Settings Tab (admin/owner only) */}
+          {isAdminOrOwner && (
+            <TabsContent value="settings" className="mt-6 space-y-6">
+              <SettingsSection title={t("settings.general.title")}>
+                <SettingsRow
+                  label={t("detail.name")}
+                  control={
+                    <Input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={isSaving}
+                      className="w-64"
+                    />
+                  }
+                />
+                <SettingsRow
+                  label={t("detail.slug")}
+                  description={t("settings.slugReadonly")}
+                  control={
+                    <Input
+                      value={organization.slug}
+                      disabled
+                      className="w-64 font-mono bg-muted"
+                    />
+                  }
+                />
+                <SettingsRowContent>
+                  <div className="space-y-2">
+                    <label className="text-fontSize-sm font-medium">
+                      {t("detail.descriptionLabel")}
+                    </label>
+                    <Textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      disabled={isSaving}
+                      rows={3}
+                    />
+                  </div>
+                </SettingsRowContent>
+              </SettingsSection>
+
+              {/* Save Button */}
+              <div className="flex items-center justify-end gap-4">
+                {saveError && (
+                  <p className="text-fontSize-sm text-destructive">{saveError}</p>
+                )}
+                {saveSuccess && (
+                  <p className="text-fontSize-sm text-success">
+                    {t("settings.saveSuccess")}
+                  </p>
+                )}
+                <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+                  {isSaving ? t("common.loading") : t("settings.save")}
+                </Button>
+              </div>
+
+              {/* Danger Zone - Only for owners of non-personal orgs */}
+              {isOwner && !organization.isPersonal && (
+                <SettingsSection title={t("settings.dangerZone.title")}>
+                  <SettingsRow
+                    label={t("transfer.title")}
+                    description={t("transfer.description")}
+                    control={
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTransferDialogOpen(true)}
+                      >
+                        {t("transfer.title")}
+                      </Button>
+                    }
+                  />
+                  <SettingsRow
+                    label={t("delete.title")}
+                    description={t("delete.shortDescription")}
+                    control={
+                      <Button
+                        variant="ghost-destructive"
+                        size="sm"
+                        onClick={() => setDeleteDialogOpen(true)}
+                      >
+                        {t("delete.title")}
+                      </Button>
+                    }
+                  />
+                </SettingsSection>
+              )}
+
+              {/* Info for personal org owners */}
+              {isOwner && organization.isPersonal && (
+                <SettingsSection>
+                  <SettingsRowContent>
+                    <p className="text-fontSize-sm text-muted-foreground">
+                      {t("settings.personalOrgInfo")}
+                    </p>
+                  </SettingsRowContent>
+                </SettingsSection>
+              )}
+            </TabsContent>
+          )}
         </Tabs>
-      </div>
+      </SettingsLayout>
+
+      {/* Dialogs */}
+      {members && (
+        <TransferOwnershipDialog
+          organizationId={organization._id}
+          organizationName={organization.name}
+          members={members}
+          currentUserId={organization.ownerId}
+          open={transferDialogOpen}
+          onOpenChange={setTransferDialogOpen}
+          onSuccess={() => {
+            setTransferDialogOpen(false);
+          }}
+        />
+      )}
+
+      <DeleteOrganizationDialog
+        organizationId={organization._id}
+        organizationName={organization.name}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+      />
     </AppShell>
   );
 }

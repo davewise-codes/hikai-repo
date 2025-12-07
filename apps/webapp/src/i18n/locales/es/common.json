@@ -27,6 +27,13 @@
     "noRecentProducts": "Sin productos recientes"
   },
   "settings": {
+    "title": "Ajustes",
+    "subtitle": "Gestiona tus preferencias",
+    "appearance": "Apariencia",
+    "appearanceDescription": "Personaliza cómo se ve Hikai en tu dispositivo",
+    "preferences": "Preferencias",
+    "preferencesDescription": "Configura tu idioma y ajustes regionales",
+    "allSettings": "Todos los ajustes",
     "theme": "Tema",
     "mode": "Modo",
     "light": "Claro",

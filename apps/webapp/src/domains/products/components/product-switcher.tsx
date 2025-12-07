@@ -111,14 +111,15 @@ export function ProductSwitcher() {
                     {t(`roles.${currentProduct.userRole}`)}
                   </Badge>
                   {isAdmin && (
-                    <a
-                      href={`/products/${currentProduct.slug}/settings`}
+                    <Link
+                      to="/products/$slug"
+                      params={{ slug: currentProduct.slug }}
                       className="flex-shrink-0 p-1 rounded hover:bg-accent transition-colors"
                       title={t("switcher.settings")}
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                    </a>
+                    </Link>
                   )}
                 </div>
                 {currentProduct.description && (

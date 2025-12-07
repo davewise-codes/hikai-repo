@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
@@ -16,9 +17,12 @@ import { Route as ProductsIndexRouteImport } from './routes/products/index'
 import { Route as OrganizationsIndexRouteImport } from './routes/organizations/index'
 import { Route as ProductsSlugRouteImport } from './routes/products/$slug'
 import { Route as OrganizationsSlugRouteImport } from './routes/organizations/$slug'
-import { Route as ProductsSlugSettingsRouteImport } from './routes/products/$slug_.settings'
-import { Route as OrganizationsSlugSettingsRouteImport } from './routes/organizations/$slug_.settings'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -54,51 +58,37 @@ const OrganizationsSlugRoute = OrganizationsSlugRouteImport.update({
   path: '/organizations/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProductsSlugSettingsRoute = ProductsSlugSettingsRouteImport.update({
-  id: '/products/$slug_/settings',
-  path: '/products/$slug/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrganizationsSlugSettingsRoute =
-  OrganizationsSlugSettingsRouteImport.update({
-    id: '/organizations/$slug_/settings',
-    path: '/organizations/$slug/settings',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/organizations/$slug': typeof OrganizationsSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations': typeof OrganizationsIndexRoute
   '/products': typeof ProductsIndexRoute
-  '/organizations/$slug/settings': typeof OrganizationsSlugSettingsRoute
-  '/products/$slug/settings': typeof ProductsSlugSettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/organizations/$slug': typeof OrganizationsSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations': typeof OrganizationsIndexRoute
   '/products': typeof ProductsIndexRoute
-  '/organizations/$slug/settings': typeof OrganizationsSlugSettingsRoute
-  '/products/$slug/settings': typeof ProductsSlugSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
   '/organizations/$slug': typeof OrganizationsSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/products/': typeof ProductsIndexRoute
-  '/organizations/$slug_/settings': typeof OrganizationsSlugSettingsRoute
-  '/products/$slug_/settings': typeof ProductsSlugSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -106,50 +96,53 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/profile'
+    | '/settings'
     | '/organizations/$slug'
     | '/products/$slug'
     | '/organizations'
     | '/products'
-    | '/organizations/$slug/settings'
-    | '/products/$slug/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/profile'
+    | '/settings'
     | '/organizations/$slug'
     | '/products/$slug'
     | '/organizations'
     | '/products'
-    | '/organizations/$slug/settings'
-    | '/products/$slug/settings'
   id:
     | '__root__'
     | '/'
     | '/login'
     | '/profile'
+    | '/settings'
     | '/organizations/$slug'
     | '/products/$slug'
     | '/organizations/'
     | '/products/'
-    | '/organizations/$slug_/settings'
-    | '/products/$slug_/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
+  SettingsRoute: typeof SettingsRoute
   OrganizationsSlugRoute: typeof OrganizationsSlugRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
-  OrganizationsSlugSettingsRoute: typeof OrganizationsSlugSettingsRoute
-  ProductsSlugSettingsRoute: typeof ProductsSlugSettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -199,20 +192,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/products/$slug_/settings': {
-      id: '/products/$slug_/settings'
-      path: '/products/$slug/settings'
-      fullPath: '/products/$slug/settings'
-      preLoaderRoute: typeof ProductsSlugSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/organizations/$slug_/settings': {
-      id: '/organizations/$slug_/settings'
-      path: '/organizations/$slug/settings'
-      fullPath: '/organizations/$slug/settings'
-      preLoaderRoute: typeof OrganizationsSlugSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -220,12 +199,11 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
+  SettingsRoute: SettingsRoute,
   OrganizationsSlugRoute: OrganizationsSlugRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
-  OrganizationsSlugSettingsRoute: OrganizationsSlugSettingsRoute,
-  ProductsSlugSettingsRoute: ProductsSlugSettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
