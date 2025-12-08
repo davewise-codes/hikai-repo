@@ -91,5 +91,26 @@
   },
   "alert": {
     "message": "🎉 Congratulations! The UI system is working correctly. Try switching between light and dark themes to see the changes."
+  },
+  "settingsNav": {
+    "user": "User",
+    "profile": "Profile",
+    "preferences": "Preferences",
+    "security": "Security & Access",
+    "myOrganizations": "My Organizations",
+    "myProducts": "My Products",
+    "connectedAccounts": "Connected Accounts",
+    "comingSoon": "Soon",
+    "general": "General",
+    "plan": "Plan",
+    "seats": "Seats",
+    "billing": "Billing",
+    "products": "Products",
+    "team": "Team"
+  },
+  "settingsPages": {
+    "organizationsSubtitle": "Manage your organization memberships",
+    "productsSubtitle": "Manage your product memberships",
+    "comingSoonContent": "This page is coming soon"
   }
 }

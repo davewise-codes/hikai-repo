@@ -91,5 +91,26 @@
   },
   "alert": {
     "message": "🎉 ¡Felicitaciones! El sistema de UI está funcionando correctamente. Prueba cambiar entre temas claro y oscuro para ver los cambios."
+  },
+  "settingsNav": {
+    "user": "Usuario",
+    "profile": "Perfil",
+    "preferences": "Preferencias",
+    "security": "Seguridad y Acceso",
+    "myOrganizations": "Mis Organizaciones",
+    "myProducts": "Mis Productos",
+    "connectedAccounts": "Cuentas Conectadas",
+    "comingSoon": "Pronto",
+    "general": "General",
+    "plan": "Plan",
+    "seats": "Licencias",
+    "billing": "Facturación",
+    "products": "Productos",
+    "team": "Equipo"
+  },
+  "settingsPages": {
+    "organizationsSubtitle": "Gestiona tus membresías de organización",
+    "productsSubtitle": "Gestiona tus membresías de productos",
+    "comingSoonContent": "Esta página estará disponible pronto"
   }
 }

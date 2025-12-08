@@ -1,15 +1,157 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { AppShell } from "@/domains/core/components/app-shell";
-import { SettingsPage } from "@/domains/core/components/settings-page";
+import {
+  SettingsNav,
+  SettingsNavSection,
+  SettingsNavItem,
+} from "@/domains/shared";
+import { useCurrentOrg } from "@/domains/organizations/hooks";
+import { useCurrentProduct } from "@/domains/products/hooks";
+import {
+  User,
+  Settings,
+  Shield,
+  Building2,
+  Folder,
+  Link2,
+  CreditCard,
+  Users,
+  Receipt,
+} from "@hikai/ui";
 
 export const Route = createFileRoute("/settings")({
-  component: SettingsRoute,
+  component: SettingsLayout,
 });
 
-function SettingsRoute() {
+function SettingsLayout() {
+  const { t } = useTranslation("common");
+  const location = useLocation();
+  const { currentOrg } = useCurrentOrg();
+  const { currentProduct } = useCurrentProduct();
+
+  const isOrgAdmin =
+    currentOrg?.role === "owner" || currentOrg?.role === "admin";
+  const isProductAdmin = currentProduct?.userRole === "admin";
+
   return (
     <AppShell>
-      <SettingsPage />
+      <div className="flex h-[calc(100vh-var(--header-height))]">
+        <SettingsNav>
+          {/* User Section */}
+          <SettingsNavSection title={t("settingsNav.user")}>
+            <SettingsNavItem
+              label={t("settingsNav.profile")}
+              href="/settings/profile"
+              icon={User}
+              isActive={location.pathname === "/settings/profile"}
+            />
+            <SettingsNavItem
+              label={t("settingsNav.preferences")}
+              href="/settings/preferences"
+              icon={Settings}
+              isActive={location.pathname === "/settings/preferences"}
+            />
+            <SettingsNavItem
+              label={t("settingsNav.security")}
+              href="/settings/security"
+              icon={Shield}
+              disabled
+              badge={t("settingsNav.comingSoon")}
+            />
+            <SettingsNavItem
+              label={t("settingsNav.myOrganizations")}
+              href="/settings/organizations"
+              icon={Building2}
+              isActive={location.pathname === "/settings/organizations"}
+            />
+            <SettingsNavItem
+              label={t("settingsNav.myProducts")}
+              href="/settings/products"
+              icon={Folder}
+              isActive={location.pathname === "/settings/products"}
+            />
+            <SettingsNavItem
+              label={t("settingsNav.connectedAccounts")}
+              href="/settings/accounts"
+              icon={Link2}
+              disabled
+              badge={t("settingsNav.comingSoon")}
+            />
+          </SettingsNavSection>
+
+          {/* Organization Section (if org selected and user is admin) */}
+          {currentOrg && isOrgAdmin && (
+            <SettingsNavSection title={currentOrg.name}>
+              <SettingsNavItem
+                label={t("settingsNav.general")}
+                href={`/settings/org/${currentOrg.slug}/general`}
+                icon={Settings}
+                isActive={location.pathname.startsWith(
+                  `/settings/org/${currentOrg.slug}/general`
+                )}
+              />
+              <SettingsNavItem
+                label={t("settingsNav.plan")}
+                href={`/settings/org/${currentOrg.slug}/plan`}
+                icon={CreditCard}
+                isActive={location.pathname.startsWith(
+                  `/settings/org/${currentOrg.slug}/plan`
+                )}
+              />
+              <SettingsNavItem
+                label={t("settingsNav.seats")}
+                href={`/settings/org/${currentOrg.slug}/seats`}
+                icon={Users}
+                disabled
+                badge={t("settingsNav.comingSoon")}
+              />
+              <SettingsNavItem
+                label={t("settingsNav.billing")}
+                href={`/settings/org/${currentOrg.slug}/billing`}
+                icon={Receipt}
+                disabled
+                badge={t("settingsNav.comingSoon")}
+              />
+              <SettingsNavItem
+                label={t("settingsNav.products")}
+                href={`/settings/org/${currentOrg.slug}/products`}
+                icon={Folder}
+                isActive={location.pathname.startsWith(
+                  `/settings/org/${currentOrg.slug}/products`
+                )}
+              />
+            </SettingsNavSection>
+          )}
+
+          {/* Product Section (if product selected and user is admin) */}
+          {currentProduct && isProductAdmin && (
+            <SettingsNavSection title={currentProduct.name}>
+              <SettingsNavItem
+                label={t("settingsNav.general")}
+                href={`/settings/product/${currentProduct.slug}/general`}
+                icon={Settings}
+                isActive={location.pathname.startsWith(
+                  `/settings/product/${currentProduct.slug}/general`
+                )}
+              />
+              <SettingsNavItem
+                label={t("settingsNav.team")}
+                href={`/settings/product/${currentProduct.slug}/team`}
+                icon={Users}
+                isActive={location.pathname.startsWith(
+                  `/settings/product/${currentProduct.slug}/team`
+                )}
+              />
+            </SettingsNavSection>
+          )}
+        </SettingsNav>
+
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto">
+          <Outlet />
+        </div>
+      </div>
     </AppShell>
   );
 }
