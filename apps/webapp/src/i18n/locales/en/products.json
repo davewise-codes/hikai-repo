@@ -12,6 +12,8 @@
   },
   "actions": {
     "menu": "Open menu",
+    "select": "Select",
+    "selected": "Selected",
     "view": "View",
     "settings": "Settings",
     "leave": "Leave",
@@ -33,7 +35,8 @@
     "myProducts": "My Products",
     "empty": "No products yet",
     "create": "Create product",
-    "settings": "Settings"
+    "settings": "Settings",
+    "switched": "Switched to {{name}}"
   },
   "title": "Products",
   "subtitle": "Products in {{org}}",
@@ -52,8 +55,9 @@
   "creating": "Creating...",
   "createButton": "Create Product",
   "limitInfo": "{{current}} of {{max}} products",
-  "member": "member",
-  "members": "members",
+  "memberSingular": "member",
+  "memberPlural": "members",
+  "noDescription": "No description",
   "roles": {
     "admin": "Admin",
     "member": "Member"
@@ -91,7 +95,8 @@
     "deleting": "Deleting..."
   },
   "members": {
-    "title": "Members",
+    "title": "Product Team",
+    "subtitle": "Manage who can access {{name}}",
     "count": "{{count}} member(s)",
     "add": "Add Member",
     "addButton": "Add",
@@ -111,7 +116,8 @@
   "settings": {
     "title": "Product Settings",
     "general": {
-      "title": "General",
+      "title": "General Settings",
+      "subtitle": "Basic settings for {{name}}",
       "description": "Basic product information"
     },
     "info": "Information",
@@ -133,6 +139,7 @@
   "orgSettings": {
     "products": {
       "title": "Products",
+      "subtitle": "Manage products in {{name}}",
       "count": "{{current}} of {{max}} products",
       "empty": "No products yet. Create your first product to get started."
     }

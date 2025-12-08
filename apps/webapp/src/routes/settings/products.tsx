@@ -1,9 +1,11 @@
+import { useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Folder } from "@hikai/ui";
 import { SettingsLayout, SettingsHeader } from "@/domains/shared";
 import { useUserProducts, useRecentProducts } from "@/domains/products/hooks/use-products";
 import { ProductCard } from "@/domains/products/components";
+import type { Id } from "@hikai/convex/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/settings/products")({
   component: MyProductsPage,
@@ -18,6 +20,13 @@ function MyProductsPage() {
 
   const userProducts = useUserProducts();
   const recentProducts = useRecentProducts();
+
+  // Capture initial recent order only once to avoid reordering while user is on the page
+  const initialRecentOrderRef = useRef<Id<"products">[] | null>(null);
+  if (recentProducts && initialRecentOrderRef.current === null) {
+    initialRecentOrderRef.current = recentProducts.map((r) => r._id);
+  }
+  const initialRecentOrder = initialRecentOrderRef.current;
 
   // Loading state
   if (userProducts === undefined) {
@@ -36,16 +45,16 @@ function MyProductsPage() {
     );
   }
 
-  // Filter out nulls and sort products: recent first, then by name
+  // Filter out nulls and sort products: recent first (using initial order), then by name
   const validProducts = userProducts.filter(
     (p): p is NonNullable<typeof p> => p !== null
   );
   const sortedProducts = [...validProducts].sort((a, b) => {
-    // Check if product is in recent list and get its position
-    const aRecentIndex = recentProducts?.findIndex((r) => r._id === a._id) ?? -1;
-    const bRecentIndex = recentProducts?.findIndex((r) => r._id === b._id) ?? -1;
+    // Check if product is in initial recent list and get its position
+    const aRecentIndex = initialRecentOrder?.indexOf(a._id) ?? -1;
+    const bRecentIndex = initialRecentOrder?.indexOf(b._id) ?? -1;
 
-    // Both in recent - sort by recent order
+    // Both in recent - sort by initial recent order
     if (aRecentIndex !== -1 && bRecentIndex !== -1) {
       return aRecentIndex - bRecentIndex;
     }

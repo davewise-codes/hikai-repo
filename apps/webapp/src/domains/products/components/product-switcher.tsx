@@ -12,9 +12,10 @@ import {
   Check,
   Settings,
   ChevronDown,
+  toast,
 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import { useCurrentProduct, useListProducts } from "../hooks";
 
@@ -33,6 +34,7 @@ import { useCurrentProduct, useListProducts } from "../hooks";
 export function ProductSwitcher() {
   const { t } = useTranslation("products");
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentOrg } = useCurrentOrg();
   const { currentProduct, setCurrentProduct, isLoading: isProductLoading } = useCurrentProduct();
 
@@ -53,9 +55,17 @@ export function ProductSwitcher() {
   const hasOtherProducts = otherProducts.length > 0;
 
   // Handler para seleccionar producto
-  const handleSelectProduct = (productId: string, productSlug: string) => {
+  // Si estamos en /settings/product/$slug/*, redirige a la página equivalente del nuevo producto
+  const handleSelectProduct = (productId: string, productName: string, productSlug: string) => {
     setCurrentProduct(productId);
-    navigate({ to: "/products/$slug", params: { slug: productSlug } });
+    toast.success(t("switcher.switched", { name: productName }));
+
+    // Check if we're on a product-specific settings page
+    const productSettingsMatch = location.pathname.match(/^\/settings\/product\/([^/]+)\/(.+)$/);
+    if (productSettingsMatch) {
+      const subPage = productSettingsMatch[2]; // e.g., "general", "team"
+      navigate({ to: `/settings/product/${productSlug}/${subPage}` });
+    }
   };
 
   // Estado de carga o sin org seleccionada
@@ -112,7 +122,7 @@ export function ProductSwitcher() {
                   </Badge>
                   {isAdmin && (
                     <Link
-                      to="/products/$slug"
+                      to="/settings/product/$slug/general"
                       params={{ slug: currentProduct.slug }}
                       className="flex-shrink-0 p-1 rounded hover:bg-accent transition-colors"
                       title={t("switcher.settings")}
@@ -130,8 +140,8 @@ export function ProductSwitcher() {
                 <span className="text-xs text-muted-foreground">
                   {currentProduct.memberCount}{" "}
                   {currentProduct.memberCount === 1
-                    ? t("member")
-                    : t("members")}
+                    ? t("memberSingular")
+                    : t("memberPlural")}
                 </span>
               </div>
             </DropdownMenuLabel>
@@ -148,7 +158,7 @@ export function ProductSwitcher() {
             {otherProducts.map((product) => (
               <DropdownMenuItem
                 key={product._id}
-                onClick={() => handleSelectProduct(product._id, product.slug)}
+                onClick={() => handleSelectProduct(product._id, product.name, product.slug)}
                 className="cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full">
@@ -174,7 +184,7 @@ export function ProductSwitcher() {
         {hasProducts && (
           <DropdownMenuItem asChild className="cursor-pointer">
             <Link
-              to="/products"
+              to="/settings/products"
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               {t("switcher.myProducts")}
@@ -192,13 +202,21 @@ export function ProductSwitcher() {
         )}
 
         {/* Create product */}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="cursor-pointer">
-          <Link to="/products" search={{ create: true }} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            {t("switcher.create")}
-          </Link>
-        </DropdownMenuItem>
+        {currentOrg && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer">
+              <Link
+                to="/settings/org/$slug/products"
+                params={{ slug: currentOrg.slug }}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                {t("switcher.create")}
+              </Link>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

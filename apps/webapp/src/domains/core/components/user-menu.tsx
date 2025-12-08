@@ -15,15 +15,11 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   LogOut,
-  Sun,
-  Moon,
-  Monitor,
   Settings,
   Folder,
-  Palette,
-  Type,
   colorThemes,
   fontSizes,
+  toast,
   type Theme,
   type ColorThemeId,
   type FontSize,
@@ -67,16 +63,16 @@ export function UserMenu() {
     i18n.changeLanguage(newLocale);
   };
 
-  // Navegar a producto reciente (manejando cambio de org si es necesario)
+  // Seleccionar producto reciente (solo cambia contexto, no navega)
   const handleProductClick = (product: NonNullable<typeof recentProducts>[number]) => {
-    // Si el producto es de otra org, cambiar org primero (sin navegar automáticamente)
+    // Si el producto es de otra org, cambiar org primero
     if (product.organization._id !== currentOrg?._id) {
       setCurrentOrgId(product.organization._id);
     }
     // Establecer producto actual
     setCurrentProduct(product._id);
-    // Navegar al producto
-    navigate({ to: "/products/$slug", params: { slug: product.slug } });
+    // Toast de confirmación
+    toast.success(t("products:switcher.switched", { name: product.name }));
   };
 
   // Get user initials for fallback
@@ -127,7 +123,7 @@ export function UserMenu() {
                   title={t("userMenu.profile")}
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate({ to: "/profile" });
+                    navigate({ to: "/settings/profile" });
                   }}
                 >
                   <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground" />
@@ -150,10 +146,7 @@ export function UserMenu() {
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="cursor-pointer">
             <span className="flex-1">{t("settings.mode")}</span>
-            <span className="flex items-center gap-1">
-              {theme === "light" && <Sun className="h-4 w-4" />}
-              {theme === "dark" && <Moon className="h-4 w-4" />}
-              {theme === "system" && <Monitor className="h-4 w-4" />}
+            <span className="text-muted-foreground">
               {theme === "light" && t("settings.light")}
               {theme === "dark" && t("settings.dark")}
               {theme === "system" && t("settings.system")}
@@ -163,15 +156,12 @@ export function UserMenu() {
             <DropdownMenuSubContent>
               <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as Theme)}>
                 <DropdownMenuRadioItem value="light" className="cursor-pointer">
-                  <Sun className="mr-2 h-4 w-4" />
                   {t("settings.light")}
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="dark" className="cursor-pointer">
-                  <Moon className="mr-2 h-4 w-4" />
                   {t("settings.dark")}
                 </DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="system" className="cursor-pointer">
-                  <Monitor className="mr-2 h-4 w-4" />
                   {t("settings.system")}
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
@@ -182,7 +172,6 @@ export function UserMenu() {
         {/* Color Theme */}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="cursor-pointer">
-            <Palette className="mr-2 h-4 w-4" />
             <span className="flex-1">{t("settings.colorTheme")}</span>
             <span className="text-muted-foreground">
               {colorThemes[colorTheme]?.name}
@@ -201,10 +190,31 @@ export function UserMenu() {
           </DropdownMenuPortal>
         </DropdownMenuSub>
 
+        {/* Language */}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="cursor-pointer">
+            <span className="flex-1">{t("settings.language")}</span>
+            <span className="text-muted-foreground">
+              {locale === "en" ? t("settings.english") : t("settings.spanish")}
+            </span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent>
+              <DropdownMenuRadioGroup value={locale} onValueChange={handleLocaleChange}>
+                <DropdownMenuRadioItem value="en" className="cursor-pointer">
+                  {t("settings.english")}
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="es" className="cursor-pointer">
+                  {t("settings.spanish")}
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+        </DropdownMenuSub>
+
         {/* Font Size */}
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="cursor-pointer">
-            <Type className="mr-2 h-4 w-4" />
             <span className="flex-1">{t("settings.fontSize")}</span>
             <span className="text-muted-foreground">
               {t(`settings.fontSize${fontSize.charAt(0).toUpperCase() + fontSize.slice(1)}`)}
@@ -228,37 +238,6 @@ export function UserMenu() {
           </DropdownMenuPortal>
         </DropdownMenuSub>
 
-        <DropdownMenuSeparator />
-
-        {/* Preferences: Language */}
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="cursor-pointer">
-            <span className="flex-1">{t("settings.language")}</span>
-            <span>
-              {locale === "en" ? t("settings.english") : t("settings.spanish")}
-            </span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuSubContent>
-              <DropdownMenuRadioGroup value={locale} onValueChange={handleLocaleChange}>
-                <DropdownMenuRadioItem value="en" className="cursor-pointer">
-                  {t("settings.english")}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="es" className="cursor-pointer">
-                  {t("settings.spanish")}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuSubContent>
-          </DropdownMenuPortal>
-        </DropdownMenuSub>
-
-        {/* All Settings Link */}
-        <DropdownMenuItem asChild className="cursor-pointer">
-          <Link to="/settings">
-            <Settings className="mr-2 h-4 w-4" />
-            {t("settings.allSettings")}
-          </Link>
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
 
         {/* Recent Products */}
@@ -292,9 +271,10 @@ export function UserMenu() {
             {t("userMenu.noRecentProducts")}
           </DropdownMenuItem>
         )}
+        <DropdownMenuSeparator className="my-1" />
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link
-            to="/products"
+            to="/settings/products"
             className="text-xs text-muted-foreground hover:text-foreground"
           >
             {t("userMenu.myProducts")}

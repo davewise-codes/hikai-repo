@@ -12,6 +12,8 @@
   },
   "actions": {
     "menu": "Abrir menú",
+    "select": "Seleccionar",
+    "selected": "Seleccionado",
     "view": "Ver",
     "settings": "Configuración",
     "leave": "Abandonar",
@@ -33,7 +35,8 @@
     "myProducts": "Mis Productos",
     "empty": "Sin productos aún",
     "create": "Crear producto",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "switched": "Cambiado a {{name}}"
   },
   "title": "Productos",
   "subtitle": "Productos en {{org}}",
@@ -52,8 +55,9 @@
   "creating": "Creando...",
   "createButton": "Crear Producto",
   "limitInfo": "{{current}} de {{max}} productos",
-  "member": "miembro",
-  "members": "miembros",
+  "memberSingular": "miembro",
+  "memberPlural": "miembros",
+  "noDescription": "Sin descripción",
   "roles": {
     "admin": "Admin",
     "member": "Miembro"
@@ -91,7 +95,8 @@
     "deleting": "Eliminando..."
   },
   "members": {
-    "title": "Miembros",
+    "title": "Equipo del Producto",
+    "subtitle": "Gestiona quién puede acceder a {{name}}",
     "count": "{{count}} miembro(s)",
     "add": "Añadir Miembro",
     "addButton": "Añadir",
@@ -111,7 +116,8 @@
   "settings": {
     "title": "Configuración del Producto",
     "general": {
-      "title": "General",
+      "title": "Configuración General",
+      "subtitle": "Configuración básica de {{name}}",
       "description": "Información básica del producto"
     },
     "info": "Información",
@@ -133,6 +139,7 @@
   "orgSettings": {
     "products": {
       "title": "Productos",
+      "subtitle": "Gestiona los productos de {{name}}",
       "count": "{{current}} de {{max}} productos",
       "empty": "Aún no hay productos. Crea tu primer producto para comenzar."
     }

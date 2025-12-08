@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { Building2, Plus } from "@hikai/ui";
@@ -8,6 +8,7 @@ import {
   useRecentOrganizations,
 } from "@/domains/organizations/hooks/use-organizations";
 import { OrgCard, CreateOrganizationForm } from "@/domains/organizations/components";
+import type { Id } from "@hikai/convex/convex/_generated/dataModel";
 
 export const Route = createFileRoute("/settings/organizations")({
   component: MyOrganizationsPage,
@@ -23,6 +24,13 @@ function MyOrganizationsPage() {
 
   const organizationsWithDetails = useUserOrganizationsWithDetails();
   const recentOrgs = useRecentOrganizations();
+
+  // Capture initial recent order only once to avoid reordering while user is on the page
+  const initialRecentOrderRef = useRef<Id<"organizations">[] | null>(null);
+  if (recentOrgs && initialRecentOrderRef.current === null) {
+    initialRecentOrderRef.current = recentOrgs.map((r) => r._id);
+  }
+  const initialRecentOrder = initialRecentOrderRef.current;
 
   // Loading state
   if (organizationsWithDetails === undefined) {
@@ -41,13 +49,13 @@ function MyOrganizationsPage() {
     );
   }
 
-  // Sort organizations: recent first, then by name
+  // Sort organizations: recent first (using initial order), then by name
   const sortedOrganizations = [...organizationsWithDetails].sort((a, b) => {
-    // Check if org is in recent list and get its position
-    const aRecentIndex = recentOrgs?.findIndex((r) => r._id === a._id) ?? -1;
-    const bRecentIndex = recentOrgs?.findIndex((r) => r._id === b._id) ?? -1;
+    // Check if org is in initial recent list and get its position
+    const aRecentIndex = initialRecentOrder?.indexOf(a._id) ?? -1;
+    const bRecentIndex = initialRecentOrder?.indexOf(b._id) ?? -1;
 
-    // Both in recent - sort by recent order
+    // Both in recent - sort by initial recent order
     if (aRecentIndex !== -1 && bRecentIndex !== -1) {
       return aRecentIndex - bRecentIndex;
     }

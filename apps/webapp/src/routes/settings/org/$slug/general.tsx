@@ -102,7 +102,7 @@ function OrgGeneralPage() {
     <SettingsLayout>
       <SettingsHeader
         title={t("settings.general.title")}
-        subtitle={organization.name}
+        subtitle={t("settings.general.subtitle", { name: organization.name })}
       />
 
       {/* General Information */}

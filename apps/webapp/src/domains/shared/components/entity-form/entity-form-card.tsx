@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
   Button,
+  Plus,
 } from "@hikai/ui";
 
 interface EntityFormCardProps {
@@ -27,7 +28,8 @@ interface EntityFormCardProps {
 
 /**
  * Card wrapper for entity creation forms with toggle open/closed state.
- * When collapsed, shows a button to expand. When expanded, shows the form.
+ * When collapsed, shows a compact card with title and button.
+ * When expanded, shows the full form.
  */
 export function EntityFormCard({
   isOpen,
@@ -40,11 +42,26 @@ export function EntityFormCard({
 }: EntityFormCardProps) {
   if (!isOpen) {
     return (
-      <Card className={className}>
-        <CardContent className="pt-6">
-          <Button onClick={() => onOpenChange(true)} className="w-full">
-            + {collapsedButtonLabel}
-          </Button>
+      <Card className={`border-dashed ${className ?? ""}`}>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-fontSize-sm">{title}</p>
+              {description && (
+                <p className="text-fontSize-xs text-muted-foreground">
+                  {description}
+                </p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onOpenChange(true)}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              {collapsedButtonLabel}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

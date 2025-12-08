@@ -77,7 +77,7 @@ function OrgPlanPage() {
     <SettingsLayout>
       <SettingsHeader
         title={t("orgSettings.plan.title")}
-        subtitle={organization.name}
+        subtitle={t("orgSettings.plan.subtitle", { name: organization.name })}
       />
 
       {/* Current Plan */}

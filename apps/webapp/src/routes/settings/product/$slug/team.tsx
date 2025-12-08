@@ -27,7 +27,7 @@ function ProductTeamPage() {
     <SettingsLayout variant="wide">
       <SettingsHeader
         title={t("members.title")}
-        subtitle={product.name}
+        subtitle={t("members.subtitle", { name: product.name })}
       />
 
       <ProductMembers productId={product._id} userRole={product.userRole} />

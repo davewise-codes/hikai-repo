@@ -12,12 +12,14 @@ import {
   Check,
   Settings,
   ChevronDown,
+  toast,
 } from "@hikai/ui";
 import { useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { useTranslation } from "react-i18next";
 import { useCurrentOrg } from "../hooks/use-current-org";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
+import { Id } from "@hikai/convex/convex/_generated/dataModel";
 
 /**
  * OrgSwitcher - Componente para cambiar de organización.
@@ -34,6 +36,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 export function OrgSwitcher() {
   const { t } = useTranslation("organizations");
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentOrg, organizations, isLoading, setCurrentOrg } =
     useCurrentOrg();
 
@@ -61,6 +64,20 @@ export function OrgSwitcher() {
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  // Handler para seleccionar org
+  // Si estamos en /settings/org/$slug/*, redirige a la página equivalente de la nueva org
+  const handleSelectOrg = (orgId: Id<"organizations">, orgName: string, orgSlug: string) => {
+    setCurrentOrg(orgId);
+    toast.success(t("switcher.switched", { name: orgName }));
+
+    // Check if we're on an org-specific settings page
+    const orgSettingsMatch = location.pathname.match(/^\/settings\/org\/([^/]+)\/(.+)$/);
+    if (orgSettingsMatch) {
+      const subPage = orgSettingsMatch[2]; // e.g., "general", "products", "plan"
+      navigate({ to: `/settings/org/${orgSlug}/${subPage}` });
+    }
   };
 
   if (isLoading) {
@@ -123,7 +140,7 @@ export function OrgSwitcher() {
                         e.stopPropagation();
                         e.preventDefault();
                         navigate({
-                          to: "/organizations/$slug",
+                          to: "/settings/org/$slug/general",
                           params: { slug: currentOrg.slug },
                         });
                       }}
@@ -153,7 +170,7 @@ export function OrgSwitcher() {
             {recentOrgs.map((org) => (
               <DropdownMenuItem
                 key={org._id}
-                onClick={() => setCurrentOrg(org._id)}
+                onClick={() => handleSelectOrg(org._id, org.name, org.slug)}
                 className="cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full">
@@ -182,9 +199,10 @@ export function OrgSwitcher() {
               </DropdownMenuItem>
             ))}
             {/* Link to My Organizations */}
+            <DropdownMenuSeparator className="my-1" />
             <DropdownMenuItem asChild className="cursor-pointer">
               <Link
-                to="/organizations"
+                to="/settings/organizations"
                 className="text-xs text-muted-foreground hover:text-foreground"
               >
                 {t("switcher.myOrganizations")}
@@ -206,7 +224,7 @@ export function OrgSwitcher() {
             {nonRecentOrgs.map((org) => (
               <DropdownMenuItem
                 key={org._id}
-                onClick={() => setCurrentOrg(org._id)}
+                onClick={() => handleSelectOrg(org._id, org.name, org.slug)}
                 className="cursor-pointer"
               >
                 <div className="flex items-center justify-between w-full">
@@ -238,7 +256,7 @@ export function OrgSwitcher() {
             {!hasRecentOrgs && (
               <DropdownMenuItem asChild className="cursor-pointer">
                 <Link
-                  to="/organizations"
+                  to="/settings/organizations"
                   className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   {t("switcher.myOrganizations")}
@@ -258,7 +276,7 @@ export function OrgSwitcher() {
         {/* Create new org - always available for authenticated users */}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="cursor-pointer">
-          <Link to="/organizations" className="flex items-center gap-2">
+          <Link to="/settings/organizations" className="flex items-center gap-2">
             <Plus className="w-4 h-4" />
             {t("switcher.createNew")}
           </Link>

@@ -103,8 +103,9 @@ function SettingsLayout() {
                 label={t("settingsNav.seats")}
                 href={`/settings/org/${currentOrg.slug}/seats`}
                 icon={Users}
-                disabled
-                badge={t("settingsNav.comingSoon")}
+                isActive={location.pathname.startsWith(
+                  `/settings/org/${currentOrg.slug}/seats`
+                )}
               />
               <SettingsNavItem
                 label={t("settingsNav.billing")}

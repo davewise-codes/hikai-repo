@@ -5,8 +5,9 @@
     "unknown": "Unknown"
   },
   "personal": "Personal",
-  "member": "member",
-  "members": "members",
+  "memberSingular": "member",
+  "memberPlural": "members",
+  "noDescription": "No description",
   "myOrganizations": {
     "title": "My Organizations",
     "subtitle": "Manage your organization memberships",
@@ -14,6 +15,8 @@
   },
   "actions": {
     "menu": "Open menu",
+    "select": "Select",
+    "selected": "Selected",
     "view": "View",
     "settings": "Settings",
     "leave": "Leave",
@@ -36,7 +39,8 @@
     "recent": "Recent",
     "all": "All organizations",
     "settings": "Settings",
-    "myOrganizations": "My Organizations"
+    "myOrganizations": "My Organizations",
+    "switched": "Switched to {{name}}"
   },
   "plans": {
     "free": "Free",
@@ -98,7 +102,8 @@
     "settings": "Settings"
   },
   "members": {
-    "title": "Members",
+    "title": "Organization Members",
+    "subtitle": "Manage who has access to {{name}} and its products",
     "count": "{{count}} member(s)",
     "add": "Add Member",
     "addButton": "Add",
@@ -126,6 +131,7 @@
     "title": "Settings",
     "general": {
       "title": "General Settings",
+      "subtitle": "Basic settings for {{name}}",
       "description": "Basic information about your organization."
     },
     "info": "Information",
@@ -169,7 +175,8 @@
   },
   "orgSettings": {
     "plan": {
-      "title": "Plan",
+      "title": "Plan & Billing",
+      "subtitle": "Manage subscription and limits for {{name}}",
       "currentPlan": "Current Plan",
       "usage": "Usage & Limits",
       "products": "Products",

@@ -5,8 +5,9 @@
     "unknown": "Desconocido"
   },
   "personal": "Personal",
-  "member": "miembro",
-  "members": "miembros",
+  "memberSingular": "miembro",
+  "memberPlural": "miembros",
+  "noDescription": "Sin descripción",
   "myOrganizations": {
     "title": "Mis Organizaciones",
     "subtitle": "Gestiona tus membresías de organización",
@@ -14,6 +15,8 @@
   },
   "actions": {
     "menu": "Abrir menú",
+    "select": "Seleccionar",
+    "selected": "Seleccionado",
     "view": "Ver",
     "settings": "Configuración",
     "leave": "Abandonar",
@@ -36,7 +39,8 @@
     "recent": "Recientes",
     "all": "Todas las organizaciones",
     "settings": "Configuración",
-    "myOrganizations": "Mis Organizaciones"
+    "myOrganizations": "Mis Organizaciones",
+    "switched": "Cambiado a {{name}}"
   },
   "plans": {
     "free": "Gratis",
@@ -98,7 +102,8 @@
     "settings": "Configuración"
   },
   "members": {
-    "title": "Miembros",
+    "title": "Miembros de la Organización",
+    "subtitle": "Gestiona quién tiene acceso a {{name}} y sus productos",
     "count": "{{count}} miembro(s)",
     "add": "Añadir Miembro",
     "addButton": "Añadir",
@@ -126,6 +131,7 @@
     "title": "Configuración",
     "general": {
       "title": "Configuración General",
+      "subtitle": "Configuración básica de {{name}}",
       "description": "Información básica de tu organización."
     },
     "info": "Información",
@@ -169,7 +175,8 @@
   },
   "orgSettings": {
     "plan": {
-      "title": "Plan",
+      "title": "Plan y Facturación",
+      "subtitle": "Gestiona la suscripción y límites de {{name}}",
       "currentPlan": "Plan Actual",
       "usage": "Uso y Límites",
       "products": "Productos",

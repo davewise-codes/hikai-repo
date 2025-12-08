@@ -4,6 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { ConfirmDeleteDialog } from "@/domains/shared";
+import { useCurrentOrg } from "../hooks/use-current-org";
 
 interface DeleteOrganizationDialogProps {
   organizationId: Id<"organizations">;
@@ -20,10 +21,23 @@ export function DeleteOrganizationDialog({
 }: DeleteOrganizationDialogProps) {
   const { t } = useTranslation("organizations");
   const navigate = useNavigate();
+  const { currentOrg, setCurrentOrg, organizations } = useCurrentOrg();
 
   const deleteOrganization = useMutation(
     api.organizations.organizations.deleteOrganization
   );
+
+  const handleSuccess = () => {
+    // If we deleted the current org, switch to another one (preferably personal)
+    if (currentOrg?._id === organizationId) {
+      const personalOrg = organizations.find((o) => o.isPersonal);
+      const nextOrg = personalOrg || organizations.find((o) => o._id !== organizationId);
+      if (nextOrg) {
+        setCurrentOrg(nextOrg._id);
+      }
+    }
+    navigate({ to: "/settings/organizations" });
+  };
 
   return (
     <ConfirmDeleteDialog
@@ -39,7 +53,7 @@ export function DeleteOrganizationDialog({
         cancelLabel: t("common.cancel"),
       }}
       onConfirm={() => deleteOrganization({ organizationId })}
-      onSuccess={() => navigate({ to: "/" })}
+      onSuccess={handleSuccess}
       errorTransform={(err) =>
         err.message === "CANNOT_DELETE_PERSONAL_ORG"
           ? t("delete.cannotDeletePersonal")

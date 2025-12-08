@@ -36,7 +36,7 @@ function OrgProductsPage() {
       <SettingsLayout variant="wide">
         <SettingsHeader
           title={t("orgSettings.products.title")}
-          subtitle={organization.name}
+          subtitle={t("orgSettings.products.subtitle", { name: organization.name })}
         />
         <div className="flex items-center justify-center py-16">
           <div className="text-fontSize-sm text-muted-foreground">
@@ -55,7 +55,7 @@ function OrgProductsPage() {
     <SettingsLayout variant="wide">
       <SettingsHeader
         title={t("orgSettings.products.title")}
-        subtitle={organization.name}
+        subtitle={t("orgSettings.products.subtitle", { name: organization.name })}
       />
 
       {/* Create Product Form */}

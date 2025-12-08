@@ -2,7 +2,7 @@ import { Button, Trash2 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { ConfirmDeleteDialog } from "@/domains/shared";
-import { useDeleteProduct } from "../hooks";
+import { useDeleteProduct, useCurrentProduct } from "../hooks";
 
 interface DeleteProductDialogBaseProps {
   productId: Id<"products">;
@@ -36,6 +36,15 @@ export function DeleteProductDialog({
 }: DeleteProductDialogProps) {
   const { t } = useTranslation("products");
   const deleteProduct = useDeleteProduct();
+  const { currentProductId, clearCurrentProduct } = useCurrentProduct();
+
+  const handleSuccess = () => {
+    // Clear currentProduct if we're deleting the current one
+    if (currentProductId === productId) {
+      clearCurrentProduct();
+    }
+    onDeleted();
+  };
 
   const baseProps = {
     entityName: productName,
@@ -49,7 +58,7 @@ export function DeleteProductDialog({
       cancelLabel: t("common.cancel"),
     },
     onConfirm: () => deleteProduct({ productId }),
-    onSuccess: onDeleted,
+    onSuccess: handleSuccess,
   };
 
   // Controlled mode

@@ -104,7 +104,7 @@ function ProductGeneralPage() {
     <SettingsLayout>
       <SettingsHeader
         title={t("settings.general.title")}
-        subtitle={product.name}
+        subtitle={t("settings.general.subtitle", { name: product.name })}
       />
 
       {/* General Information */}
