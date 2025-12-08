@@ -231,4 +231,8 @@ export {
   BookOpen,
   MessageSquare,
   Languages,
+  // Settings navigation icons
+  CreditCard,
+  Receipt,
+  Link2,
 } from "lucide-react";

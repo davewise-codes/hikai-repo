@@ -22,3 +22,8 @@ export {
   type ConfirmDeleteDialogProps,
   type ConfirmDeleteDialogTranslations,
 } from "./confirm-delete-dialog";
+export {
+  SettingsNav,
+  SettingsNavSection,
+  SettingsNavItem,
+} from "./settings-nav";
