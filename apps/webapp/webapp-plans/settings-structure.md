@@ -95,8 +95,8 @@ product - (current product, forAdmins)
 | F2: User Settings Pages         | Profile, Preferences, My Organizations, My Products        | ✅ Completado |
 | F3: Organization Settings Pages | General, Plan, Products                                    | ✅ Completado |
 | F4: Product Settings Pages      | General, Team                                              | ✅ Completado |
-| F5: Width Variants & Polish     | Anchos específicos por página, resize handle               | ⏳ Pendiente  |
-| F6: Cleanup & Documentation     | Eliminar tabs, código muerto, documentar                   | ⏳ Pendiente  |
+| F5: Width Variants & Polish     | Cards, switchers, settings pages polish                    | ✅ Completado |
+| F6: Cleanup & Documentation     | Eliminar tabs, código muerto, documentar                   | ✅ Completado |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 

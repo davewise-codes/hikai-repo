@@ -28,7 +28,7 @@ Desde la página de Productos (`/products`):
 
 ## Gestionar Miembros
 
-En la página de detalle del producto (tab "Miembros"):
+En la configuración del producto (`/settings/product/$slug/team`):
 
 ### Añadir miembro
 1. Clic en "Añadir Miembro"
@@ -54,9 +54,9 @@ En la página de detalle del producto (tab "Miembros"):
 
 ## Configuración de Producto
 
-Los administradores pueden acceder a `/products/$slug/settings`:
+Los administradores pueden acceder a `/settings/product/$slug/*`:
 - Desde el **engranaje** en el dropdown del ProductSwitcher
-- Desde la página de detalle del producto
+- Desde el menú de acciones en las cards de producto
 
 ### Configuración General
 - Editar nombre y descripción

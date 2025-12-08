@@ -21,10 +21,12 @@ Resumen de todos los flujos de usuario en Hikai.
 
 | Flujo | Descripción |
 |-------|-------------|
-| Ver perfil | `/profile` - nombre, email, métodos de auth |
+| Ver perfil | `/settings/profile` - nombre, email, métodos de auth |
 | Editar nombre | Modificar nombre desde perfil |
 | Cambiar tema | Light / Dark (persiste, sincroniza tabs) |
 | Cambiar idioma | English / Español (persiste, sincroniza tabs) |
+| Ver mis orgs | `/settings/organizations` - cards con acciones |
+| Ver mis productos | `/settings/products` - cards con acciones |
 | Productos recientes | Acceso rápido desde UserMenu (cross-org) |
 
 → **Detalle**: [user.md](./user.md)
@@ -37,8 +39,10 @@ Resumen de todos los flujos de usuario en Hikai.
 |-------|-------------|
 | Crear org | Requiere seleccionar plan (Pro/Enterprise) |
 | Cambiar org | OrgSwitcher en header (persiste, sincroniza tabs) |
-| Ver detalle | `/organizations/$slug` |
-| Editar settings | `/organizations/$slug/settings` (admin/owner) |
+| Ver mis orgs | `/settings/organizations` - cards con acciones |
+| Editar settings | `/settings/org/$slug/general` (admin/owner) |
+| Ver plan | `/settings/org/$slug/plan` |
+| Ver productos | `/settings/org/$slug/products` |
 | Gestionar miembros | Añadir, cambiar rol, eliminar |
 | Transferir ownership | Solo owner → otro miembro pasa a ser owner |
 | Eliminar org | Solo owner de orgs no-personales |
@@ -53,9 +57,9 @@ Resumen de todos los flujos de usuario en Hikai.
 |-------|-------------|
 | Crear producto | Nombre + slug (límite según plan) |
 | Cambiar producto | ProductSwitcher en header |
-| Ver detalle | `/products/$slug` (Overview + Members) |
-| Editar settings | `/products/$slug/settings` (admin) |
-| Gestionar miembros | Añadir de org, cambiar rol, eliminar |
+| Ver mis productos | `/settings/products` - cards con acciones |
+| Editar settings | `/settings/product/$slug/general` (admin) |
+| Gestionar equipo | `/settings/product/$slug/team` (admin) |
 | Eliminar producto | Solo admins (confirmación con nombre) |
 
 → **Detalle**: [products.md](./products.md)

@@ -103,8 +103,9 @@ Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
 ## Rutas
 
 - `/products` - Lista de productos de org actual
-- `/products/$slug` - Detalle del producto (Overview + Members tabs)
-- `/products/$slug/settings` - Configuración del producto (solo admin)
+- `/settings/products` - Mis productos (cards con acciones)
+- `/settings/product/$slug/general` - Configuración general (solo admin)
+- `/settings/product/$slug/team` - Gestión de equipo (solo admin)
 
 ## Seguridad
 

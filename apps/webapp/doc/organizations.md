@@ -67,9 +67,9 @@ El acceso se registra automáticamente cuando cambias de organización, permitie
 
 ## Configuración de Organización
 
-Los administradores y owners pueden acceder a la configuración:
+Los administradores y owners pueden acceder a la configuración en `/settings/org/$slug/*`:
 - Desde el **engranaje** en el dropdown del OrgSwitcher (junto al nombre de la org actual)
-- Desde el botón "Configuración" en la página de detalle (`/organizations/$slug`)
+- Desde el menú de acciones en las cards de organización (`/settings/organizations`)
 
 ### Configuración General
 - Editar nombre y descripción de la organización

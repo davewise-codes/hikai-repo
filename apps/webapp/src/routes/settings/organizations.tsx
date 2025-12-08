@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { Building2, Plus } from "@hikai/ui";
+import { Building2 } from "@hikai/ui";
 import { SettingsLayout, SettingsHeader } from "@/domains/shared";
 import {
   useUserOrganizationsWithDetails,
@@ -20,7 +20,6 @@ export const Route = createFileRoute("/settings/organizations")({
  */
 function MyOrganizationsPage() {
   const { t } = useTranslation("organizations");
-  const [showCreateForm, setShowCreateForm] = useState(false);
 
   const organizationsWithDetails = useUserOrganizationsWithDetails();
   const recentOrgs = useRecentOrganizations();

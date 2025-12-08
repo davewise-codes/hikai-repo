@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
@@ -20,8 +19,6 @@ import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsProductsRouteImport } from './routes/settings/products'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings/preferences'
 import { Route as SettingsOrganizationsRouteImport } from './routes/settings/organizations'
-import { Route as ProductsSlugRouteImport } from './routes/products/$slug'
-import { Route as OrganizationsSlugRouteImport } from './routes/organizations/$slug'
 import { Route as SettingsProductSlugRouteImport } from './routes/settings/product/$slug'
 import { Route as SettingsOrgSlugRouteImport } from './routes/settings/org/$slug'
 import { Route as SettingsProductSlugIndexRouteImport } from './routes/settings/product/$slug/index'
@@ -36,11 +33,6 @@ import { Route as SettingsOrgSlugGeneralRouteImport } from './routes/settings/or
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProfileRoute = ProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -87,16 +79,6 @@ const SettingsOrganizationsRoute = SettingsOrganizationsRouteImport.update({
   id: '/organizations',
   path: '/organizations',
   getParentRoute: () => SettingsRoute,
-} as any)
-const ProductsSlugRoute = ProductsSlugRouteImport.update({
-  id: '/products/$slug',
-  path: '/products/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OrganizationsSlugRoute = OrganizationsSlugRouteImport.update({
-  id: '/organizations/$slug',
-  path: '/organizations/$slug',
-  getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsProductSlugRoute = SettingsProductSlugRouteImport.update({
   id: '/product/$slug',
@@ -154,10 +136,7 @@ const SettingsOrgSlugGeneralRoute = SettingsOrgSlugGeneralRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRouteWithChildren
-  '/organizations/$slug': typeof OrganizationsSlugRoute
-  '/products/$slug': typeof ProductsSlugRoute
   '/settings/organizations': typeof SettingsOrganizationsRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/products': typeof SettingsProductsRoute
@@ -179,9 +158,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
-  '/organizations/$slug': typeof OrganizationsSlugRoute
-  '/products/$slug': typeof ProductsSlugRoute
   '/settings/organizations': typeof SettingsOrganizationsRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/products': typeof SettingsProductsRoute
@@ -202,10 +178,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/profile': typeof ProfileRoute
   '/settings': typeof SettingsRouteWithChildren
-  '/organizations/$slug': typeof OrganizationsSlugRoute
-  '/products/$slug': typeof ProductsSlugRoute
   '/settings/organizations': typeof SettingsOrganizationsRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/products': typeof SettingsProductsRoute
@@ -229,10 +202,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
-    | '/profile'
     | '/settings'
-    | '/organizations/$slug'
-    | '/products/$slug'
     | '/settings/organizations'
     | '/settings/preferences'
     | '/settings/products'
@@ -254,9 +224,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
-    | '/profile'
-    | '/organizations/$slug'
-    | '/products/$slug'
     | '/settings/organizations'
     | '/settings/preferences'
     | '/settings/products'
@@ -276,10 +243,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/login'
-    | '/profile'
     | '/settings'
-    | '/organizations/$slug'
-    | '/products/$slug'
     | '/settings/organizations'
     | '/settings/preferences'
     | '/settings/products'
@@ -302,10 +266,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
-  ProfileRoute: typeof ProfileRoute
   SettingsRoute: typeof SettingsRouteWithChildren
-  OrganizationsSlugRoute: typeof OrganizationsSlugRoute
-  ProductsSlugRoute: typeof ProductsSlugRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
 }
@@ -317,13 +278,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -388,20 +342,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/organizations'
       preLoaderRoute: typeof SettingsOrganizationsRouteImport
       parentRoute: typeof SettingsRoute
-    }
-    '/products/$slug': {
-      id: '/products/$slug'
-      path: '/products/$slug'
-      fullPath: '/products/$slug'
-      preLoaderRoute: typeof ProductsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/organizations/$slug': {
-      id: '/organizations/$slug'
-      path: '/organizations/$slug'
-      fullPath: '/organizations/$slug'
-      preLoaderRoute: typeof OrganizationsSlugRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/settings/product/$slug': {
       id: '/settings/product/$slug'
@@ -538,10 +478,7 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
-  ProfileRoute: ProfileRoute,
   SettingsRoute: SettingsRouteWithChildren,
-  OrganizationsSlugRoute: OrganizationsSlugRoute,
-  ProductsSlugRoute: ProductsSlugRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
 }

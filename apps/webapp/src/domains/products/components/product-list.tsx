@@ -26,7 +26,7 @@ export function ProductList() {
       setCurrentOrg(product.organization._id);
     }
     // Navegar al producto
-    navigate({ to: "/products/$slug", params: { slug: product.slug } });
+    navigate({ to: "/settings/product/$slug/general", params: { slug: product.slug } });
   };
 
   // Loading state

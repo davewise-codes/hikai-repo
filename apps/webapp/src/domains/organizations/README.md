@@ -54,9 +54,10 @@ Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
 
 ## Rutas
 
-- `/organizations` - Lista de organizaciones del usuario
-- `/organizations/$slug` - Detalle de organización
-- `/organizations/$slug/settings` - Configuración (solo admin/owner)
+- `/settings/organizations` - Mis organizaciones (cards con acciones)
+- `/settings/org/$slug/general` - Configuración general (solo admin/owner)
+- `/settings/org/$slug/plan` - Plan y límites
+- `/settings/org/$slug/products` - Productos de la organización
 
 ## Límites
 
