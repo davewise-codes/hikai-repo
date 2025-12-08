@@ -166,5 +166,28 @@
     "confirm": "Eliminar organización",
     "deleting": "Eliminando...",
     "cannotDeletePersonal": "No se puede eliminar una organización personal."
+  },
+  "orgSettings": {
+    "plan": {
+      "title": "Plan",
+      "currentPlan": "Plan Actual",
+      "usage": "Uso y Límites",
+      "products": "Productos",
+      "members": "Miembros",
+      "of": "de",
+      "unlimited": "Ilimitado",
+      "upgrade": "Mejorar Plan",
+      "upgradeTitle": "¿Necesitas más?",
+      "billingNote": "Integración de facturación próximamente.",
+      "features": {
+        "title": "Características del Plan",
+        "teamCollaboration": "Colaboración en equipo"
+      }
+    },
+    "products": {
+      "title": "Productos",
+      "count": "{{current}} de {{max}} productos",
+      "empty": "Aún no hay productos. Crea tu primer producto para comenzar."
+    }
   }
 }

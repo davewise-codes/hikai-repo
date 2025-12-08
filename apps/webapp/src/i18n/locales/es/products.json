@@ -14,7 +14,8 @@
     "menu": "Abrir menú",
     "view": "Ver",
     "settings": "Configuración",
-    "leave": "Abandonar"
+    "leave": "Abandonar",
+    "delete": "Eliminar"
   },
   "leave": {
     "title": "Abandonar Producto",
@@ -127,6 +128,13 @@
     "dangerZone": {
       "title": "Zona de Peligro",
       "description": "Acciones irreversibles"
+    }
+  },
+  "orgSettings": {
+    "products": {
+      "title": "Productos",
+      "count": "{{current}} de {{max}} productos",
+      "empty": "Aún no hay productos. Crea tu primer producto para comenzar."
     }
   }
 }

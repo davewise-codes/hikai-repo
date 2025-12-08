@@ -14,7 +14,8 @@
     "menu": "Open menu",
     "view": "View",
     "settings": "Settings",
-    "leave": "Leave"
+    "leave": "Leave",
+    "delete": "Delete"
   },
   "leave": {
     "title": "Leave Product",
@@ -127,6 +128,13 @@
     "dangerZone": {
       "title": "Danger Zone",
       "description": "Irreversible actions"
+    }
+  },
+  "orgSettings": {
+    "products": {
+      "title": "Products",
+      "count": "{{current}} of {{max}} products",
+      "empty": "No products yet. Create your first product to get started."
     }
   }
 }

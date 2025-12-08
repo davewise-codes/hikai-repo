@@ -166,5 +166,28 @@
     "confirm": "Delete organization",
     "deleting": "Deleting...",
     "cannotDeletePersonal": "Personal organizations cannot be deleted."
+  },
+  "orgSettings": {
+    "plan": {
+      "title": "Plan",
+      "currentPlan": "Current Plan",
+      "usage": "Usage & Limits",
+      "products": "Products",
+      "members": "Members",
+      "of": "of",
+      "unlimited": "Unlimited",
+      "upgrade": "Upgrade Plan",
+      "upgradeTitle": "Need more?",
+      "billingNote": "Billing integration coming soon.",
+      "features": {
+        "title": "Plan Features",
+        "teamCollaboration": "Team collaboration"
+      }
+    },
+    "products": {
+      "title": "Products",
+      "count": "{{current}} of {{max}} products",
+      "empty": "No products yet. Create your first product to get started."
+    }
   }
 }

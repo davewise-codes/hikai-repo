@@ -21,8 +21,10 @@ import {
   Settings,
   LogOut,
   Building2,
+  Trash2,
 } from "@hikai/ui";
 import { LeaveProductDialog } from "./leave-product-dialog";
+import { DeleteProductDialog } from "./delete-product-dialog";
 
 interface ProductCardProps {
   product: {
@@ -41,18 +43,22 @@ interface ProductCardProps {
       slug: string;
     };
   };
+  /** Show delete action in dropdown (for admin users in org products page) */
+  showDeleteAction?: boolean;
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
   const { t } = useTranslation("products");
   const navigate = useNavigate();
 
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Support both role (from getUserProducts) and userRole (from listProducts)
   const userRole = product.role ?? product.userRole;
   const isAdmin = userRole === "admin";
   const hasOrganization = !!product.organization;
+  const canDelete = showDeleteAction && isAdmin;
 
   const handleCardClick = () => {
     navigate({ to: "/products/$slug", params: { slug: product.slug } });
@@ -120,6 +126,18 @@ export function ProductCard({ product }: ProductCardProps) {
                     <LogOut className="mr-2 h-4 w-4" />
                     {t("actions.leave")}
                   </DropdownMenuItem>
+                  {canDelete && (
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteDialog(true);
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t("actions.delete")}
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -160,6 +178,14 @@ export function ProductCard({ product }: ProductCardProps) {
         productName={product.name}
         open={showLeaveDialog}
         onOpenChange={setShowLeaveDialog}
+      />
+
+      <DeleteProductDialog
+        productId={product._id}
+        productName={product.name}
+        onDeleted={() => setShowDeleteDialog(false)}
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
       />
     </>
   );
