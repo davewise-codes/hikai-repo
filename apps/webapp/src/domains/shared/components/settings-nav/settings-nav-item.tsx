@@ -24,11 +24,11 @@ export function SettingsNavItem({
 }: SettingsNavItemProps) {
   if (disabled) {
     return (
-      <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground/60 cursor-not-allowed">
+      <div className="flex items-center gap-2 px-2 py-1.5 text-fontSize-sm text-muted-foreground/60 cursor-not-allowed">
         {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
         <span className="flex-1 truncate">{label}</span>
         {badge && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+          <Badge variant="outline" className="text-fontSize-xs px-1.5 py-0">
             {badge}
           </Badge>
         )}
@@ -40,7 +40,7 @@ export function SettingsNavItem({
     <Link
       to={href}
       className={cn(
-        "flex items-center gap-2 px-2 py-1.5 rounded-md text-sm transition-colors",
+        "flex items-center gap-2 px-2 py-1.5 rounded-md text-fontSize-sm transition-colors",
         isActive
           ? "bg-accent text-accent-foreground font-medium"
           : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -49,7 +49,7 @@ export function SettingsNavItem({
       {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
       <span className="flex-1 truncate">{label}</span>
       {badge && (
-        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+        <Badge variant="outline" className="text-fontSize-xs px-1.5 py-0">
           {badge}
         </Badge>
       )}

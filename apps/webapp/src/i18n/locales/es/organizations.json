@@ -4,6 +4,30 @@
     "cancel": "Cancelar",
     "unknown": "Desconocido"
   },
+  "personal": "Personal",
+  "member": "miembro",
+  "members": "miembros",
+  "myOrganizations": {
+    "title": "Mis Organizaciones",
+    "subtitle": "Gestiona tus membresías de organización",
+    "empty": "Aún no perteneces a ninguna organización."
+  },
+  "actions": {
+    "menu": "Abrir menú",
+    "view": "Ver",
+    "settings": "Configuración",
+    "leave": "Abandonar",
+    "transfer": "Transferir propiedad",
+    "delete": "Eliminar"
+  },
+  "leave": {
+    "title": "Abandonar Organización",
+    "description": "¿Estás seguro de que quieres abandonar {{name}}?",
+    "warning": "Perderás acceso a todos los productos y datos de esta organización.",
+    "confirm": "Abandonar Organización",
+    "leaving": "Abandonando...",
+    "success": "Has abandonado {{name}}"
+  },
   "switcher": {
     "title": "Cambiar organización",
     "createNew": "Crear organización",

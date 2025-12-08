@@ -11,16 +11,27 @@ export function useUserOrganizations() {
   return useQuery(api.organizations.organizations.getUserOrganizations, {});
 }
 
+// Hook para obtener las organizaciones del usuario con detalles (memberCount, etc.)
+export function useUserOrganizationsWithDetails() {
+  return useQuery(api.organizations.organizations.getUserOrganizationsWithDetails, {});
+}
+
+// Hook para obtener las organizaciones recientes del usuario
+export function useRecentOrganizations() {
+  return useQuery(api.organizations.organizations.getRecentOrganizations, {});
+}
+
 // Hook para obtener una organización específica por slug
 export function useOrganizationBySlug(slug: string) {
   return useQuery(api.organizations.organizations.getOrganizationBySlug, { slug });
 }
 
 // Hook para obtener los miembros de una organización
-export function useOrganizationMembers(organizationId: string) {
-  return useQuery(api.organizations.organizations.getOrganizationMembers, {
-    organizationId: organizationId as any,
-  });
+export function useOrganizationMembers(organizationId: string | undefined) {
+  return useQuery(
+    api.organizations.organizations.getOrganizationMembers,
+    organizationId ? { organizationId: organizationId as any } : "skip"
+  );
 }
 
 // Hook para crear una organización

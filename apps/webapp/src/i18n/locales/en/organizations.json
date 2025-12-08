@@ -4,6 +4,30 @@
     "cancel": "Cancel",
     "unknown": "Unknown"
   },
+  "personal": "Personal",
+  "member": "member",
+  "members": "members",
+  "myOrganizations": {
+    "title": "My Organizations",
+    "subtitle": "Manage your organization memberships",
+    "empty": "You don't belong to any organization yet."
+  },
+  "actions": {
+    "menu": "Open menu",
+    "view": "View",
+    "settings": "Settings",
+    "leave": "Leave",
+    "transfer": "Transfer ownership",
+    "delete": "Delete"
+  },
+  "leave": {
+    "title": "Leave Organization",
+    "description": "Are you sure you want to leave {{name}}?",
+    "warning": "You will lose access to all products and data in this organization.",
+    "confirm": "Leave Organization",
+    "leaving": "Leaving...",
+    "success": "You have left {{name}}"
+  },
   "switcher": {
     "title": "Switch organization",
     "createNew": "Create organization",

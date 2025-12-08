@@ -5,6 +5,26 @@
     "delete": "Eliminar",
     "unknown": "Desconocido"
   },
+  "myProducts": {
+    "title": "Mis Productos",
+    "subtitle": "Gestiona tus membresías de producto",
+    "empty": "Aún no perteneces a ningún producto."
+  },
+  "actions": {
+    "menu": "Abrir menú",
+    "view": "Ver",
+    "settings": "Configuración",
+    "leave": "Abandonar"
+  },
+  "leave": {
+    "title": "Abandonar Producto",
+    "description": "¿Estás seguro de que quieres abandonar {{name}}?",
+    "warning": "Perderás acceso a todos los datos de este producto.",
+    "confirm": "Abandonar Producto",
+    "leaving": "Abandonando...",
+    "success": "Has abandonado {{name}}",
+    "lastAdminError": "No puedes abandonar el producto porque eres el último administrador."
+  },
   "switcher": {
     "title": "Producto",
     "select": "Seleccionar producto",

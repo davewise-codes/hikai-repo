@@ -14,7 +14,7 @@ export function SettingsNavSection({
 }: SettingsNavSectionProps) {
   return (
     <div className="space-y-1">
-      <h3 className="px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+      <h3 className="px-2 text-fontSize-xs font-medium text-muted-foreground uppercase tracking-wider">
         {title}
       </h3>
       <div className="space-y-0.5">{children}</div>

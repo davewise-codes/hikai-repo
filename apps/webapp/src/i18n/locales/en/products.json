@@ -5,6 +5,26 @@
     "delete": "Delete",
     "unknown": "Unknown"
   },
+  "myProducts": {
+    "title": "My Products",
+    "subtitle": "Manage your product memberships",
+    "empty": "You don't belong to any product yet."
+  },
+  "actions": {
+    "menu": "Open menu",
+    "view": "View",
+    "settings": "Settings",
+    "leave": "Leave"
+  },
+  "leave": {
+    "title": "Leave Product",
+    "description": "Are you sure you want to leave {{name}}?",
+    "warning": "You will lose access to all data in this product.",
+    "confirm": "Leave Product",
+    "leaving": "Leaving...",
+    "success": "You have left {{name}}",
+    "lastAdminError": "You cannot leave as you are the last admin of this product."
+  },
   "switcher": {
     "title": "Product",
     "select": "Select product",

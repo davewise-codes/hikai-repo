@@ -235,4 +235,7 @@ export {
   CreditCard,
   Receipt,
   Link2,
+  // Card actions
+  ExternalLink,
+  ArrowRightLeft,
 } from "lucide-react";
