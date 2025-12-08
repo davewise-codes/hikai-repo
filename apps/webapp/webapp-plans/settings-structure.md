@@ -91,7 +91,7 @@ product - (current product, forAdmins)
 | Fase | Descripción | Estado |
 |------|-------------|--------|
 | F0: SettingsNav Component | Componente de navegación lateral reutilizable | ✅ Completado |
-| F1: Restructura de Rutas | Separar tabs en rutas independientes con layout compartido | ⏳ Pendiente |
+| F1: Restructura de Rutas | Separar tabs en rutas independientes con layout compartido | ✅ Completado |
 | F2: User Settings Pages | Profile, Preferences, My Organizations, My Products | ⏳ Pendiente |
 | F3: Organization Settings Pages | General, Plan, Products | ⏳ Pendiente |
 | F4: Product Settings Pages | General, Team | ⏳ Pendiente |
