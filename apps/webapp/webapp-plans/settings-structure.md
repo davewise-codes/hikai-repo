@@ -88,15 +88,15 @@ product - (current product, forAdmins)
 
 ## Progreso
 
-| Fase | Descripción | Estado |
-|------|-------------|--------|
-| F0: SettingsNav Component | Componente de navegación lateral reutilizable | ✅ Completado |
-| F1: Restructura de Rutas | Separar tabs en rutas independientes con layout compartido | ✅ Completado |
-| F2: User Settings Pages | Profile, Preferences, My Organizations, My Products | ⏳ Pendiente |
-| F3: Organization Settings Pages | General, Plan, Products | ⏳ Pendiente |
-| F4: Product Settings Pages | General, Team | ⏳ Pendiente |
-| F5: Width Variants & Polish | Anchos específicos por página, resize handle | ⏳ Pendiente |
-| F6: Cleanup & Documentation | Eliminar tabs, código muerto, documentar | ⏳ Pendiente |
+| Fase                            | Descripción                                                | Estado        |
+| ------------------------------- | ---------------------------------------------------------- | ------------- |
+| F0: SettingsNav Component       | Componente de navegación lateral reutilizable              | ✅ Completado |
+| F1: Restructura de Rutas        | Separar tabs en rutas independientes con layout compartido | ✅ Completado |
+| F2: User Settings Pages         | Profile, Preferences, My Organizations, My Products        | ✅ Completado |
+| F3: Organization Settings Pages | General, Plan, Products                                    | ⏳ Pendiente  |
+| F4: Product Settings Pages      | General, Team                                              | ⏳ Pendiente  |
+| F5: Width Variants & Polish     | Anchos específicos por página, resize handle               | ⏳ Pendiente  |
+| F6: Cleanup & Documentation     | Eliminar tabs, código muerto, documentar                   | ⏳ Pendiente  |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -109,6 +109,8 @@ product - (current product, forAdmins)
 - Vamos a proceder con la fase siguiente pendiente de ejecutar
 - Analiza el documento y el plan y toma el prompt de esa fase como instrucción para implementarla
 - Cuando tengas un plan para ello compártelo conmigo para validarlo
+- No hagas commit inmediatamente tras finalizar la implementación
+- Indícame las pruebas a realizar y cuando yo te confirme que están ok, haces el commit y actualizas el progreso
 - No hagas asunciones, compárteme dudas y las debatimos
 - Máxima capacidad de ultrathink
 ```
@@ -175,36 +177,38 @@ product - (current product, forAdmins)
 ### Componente SettingsNav
 
 **Props:**
+
 ```typescript
 interface SettingsNavSection {
-  id: string;
-  title: string;           // Título de la sección
-  condition?: boolean;     // Si se muestra (ej: isAdmin)
+	id: string;
+	title: string; // Título de la sección
+	condition?: boolean; // Si se muestra (ej: isAdmin)
 }
 
 interface SettingsNavItem {
-  id: string;
-  sectionId: string;
-  label: string;
-  icon?: LucideIcon;
-  href: string;
-  isActive?: boolean;
-  badge?: string;          // Ej: "Coming soon"
-  disabled?: boolean;
+	id: string;
+	sectionId: string;
+	label: string;
+	icon?: LucideIcon;
+	href: string;
+	isActive?: boolean;
+	badge?: string; // Ej: "Coming soon"
+	disabled?: boolean;
 }
 
 interface SettingsNavProps {
-  sections: SettingsNavSection[];
-  items: SettingsNavItem[];
-  currentPath: string;
-  defaultWidth?: number;   // Default: 256 (16rem)
-  minWidth?: number;       // Default: 200
-  maxWidth?: number;       // Default: 320
-  onWidthChange?: (width: number) => void;
+	sections: SettingsNavSection[];
+	items: SettingsNavItem[];
+	currentPath: string;
+	defaultWidth?: number; // Default: 256 (16rem)
+	minWidth?: number; // Default: 200
+	maxWidth?: number; // Default: 320
+	onWidthChange?: (width: number) => void;
 }
 ```
 
 **Características:**
+
 - Estilo Linear: fondo sutil, items con hover/active states
 - Agrupación por secciones con títulos pequeños
 - Resize handle en el borde derecho
@@ -1243,28 +1247,28 @@ VALIDACIÓN FINAL:
 
 ## Resumen de Cambios por Fase
 
-| Fase | Archivos Nuevos | Archivos Modificados | Archivos Eliminados |
-|------|-----------------|---------------------|---------------------|
-| F0 | 5 (SettingsNav) | 1 (index.ts) | 0 |
-| F1 | 8+ (rutas) | 2 (settings.tsx, traducciones) | 0 |
-| F2 | 5 (páginas user) | 0 | 0 |
-| F3 | 5 (páginas org) | 0 | 0 |
-| F4 | 4 (páginas product) | 0 | 0 |
-| F5 | 0 | 5+ (polish) | 0 |
-| F6 | 1 (doc) | 3 (cleanup) | 2-3 (obsoletos) |
+| Fase | Archivos Nuevos     | Archivos Modificados           | Archivos Eliminados |
+| ---- | ------------------- | ------------------------------ | ------------------- |
+| F0   | 5 (SettingsNav)     | 1 (index.ts)                   | 0                   |
+| F1   | 8+ (rutas)          | 2 (settings.tsx, traducciones) | 0                   |
+| F2   | 5 (páginas user)    | 0                              | 0                   |
+| F3   | 5 (páginas org)     | 0                              | 0                   |
+| F4   | 4 (páginas product) | 0                              | 0                   |
+| F5   | 0                   | 5+ (polish)                    | 0                   |
+| F6   | 1 (doc)             | 3 (cleanup)                    | 2-3 (obsoletos)     |
 
 ---
 
 ## Archivos Críticos a Modificar
 
-| Archivo | Fase | Cambio |
-|---------|------|--------|
-| `routes/settings.tsx` | F1 | Convertir en layout con SettingsNav |
-| `routes/organizations/$slug.tsx` | F6 | Eliminar tabs, dejar overview |
-| `routes/products/$slug.tsx` | F6 | Eliminar tabs, dejar overview |
-| `core/components/user-menu.tsx` | F5 | Actualizar links a settings |
-| `organizations/components/org-switcher.tsx` | F5 | Actualizar link a settings |
-| `products/components/product-switcher.tsx` | F5 | Actualizar link a settings |
+| Archivo                                     | Fase | Cambio                              |
+| ------------------------------------------- | ---- | ----------------------------------- |
+| `routes/settings.tsx`                       | F1   | Convertir en layout con SettingsNav |
+| `routes/organizations/$slug.tsx`            | F6   | Eliminar tabs, dejar overview       |
+| `routes/products/$slug.tsx`                 | F6   | Eliminar tabs, dejar overview       |
+| `core/components/user-menu.tsx`             | F5   | Actualizar links a settings         |
+| `organizations/components/org-switcher.tsx` | F5   | Actualizar link a settings          |
+| `products/components/product-switcher.tsx`  | F5   | Actualizar link a settings          |
 
 ---
 
