@@ -36,7 +36,7 @@ function SettingsLayout() {
 
   return (
     <AppShell>
-      <div className="flex h-[calc(100vh-var(--header-height))]">
+      <div className="flex h-[calc(100vh-3.5rem)]">
         <SettingsNav>
           {/* User Section */}
           <SettingsNavSection title={t("settingsNav.user")}>
