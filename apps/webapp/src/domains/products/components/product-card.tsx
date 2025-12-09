@@ -174,26 +174,26 @@ export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {isMember && (
+                {isMember && isAdmin && (
                   <>
                     <DropdownMenuItem onClick={handleViewOrSettings}>
                       <ExternalLink className="mr-2 h-4 w-4" />
                       {t("actions.view")}
                     </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem onClick={handleViewOrSettings}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        {t("actions.settings")}
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setShowLeaveDialog(true)}
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      {t("actions.leave")}
+                    <DropdownMenuItem onClick={handleViewOrSettings}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      {t("actions.settings")}
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                   </>
+                )}
+                {isMember && (
+                  <DropdownMenuItem
+                    onClick={() => setShowLeaveDialog(true)}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {t("actions.leave")}
+                  </DropdownMenuItem>
                 )}
                 {!isMember && (
                   <DropdownMenuItem disabled>
@@ -202,7 +202,7 @@ export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
                 )}
                 {canDelete && (
                   <>
-                    {isMember && <DropdownMenuSeparator />}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem
                       className="text-destructive focus:text-destructive"
                       onClick={() => setShowDeleteDialog(true)}
