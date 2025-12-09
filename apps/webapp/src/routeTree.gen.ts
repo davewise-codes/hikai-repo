@@ -21,14 +21,17 @@ import { Route as SettingsPreferencesRouteImport } from './routes/settings/prefe
 import { Route as SettingsOrganizationsRouteImport } from './routes/settings/organizations'
 import { Route as SettingsProductSlugRouteImport } from './routes/settings/product/$slug'
 import { Route as SettingsOrgSlugRouteImport } from './routes/settings/org/$slug'
+import { Route as AppOrgSlugProductSlugRouteImport } from './routes/app/$orgSlug/$productSlug'
 import { Route as SettingsProductSlugIndexRouteImport } from './routes/settings/product/$slug/index'
 import { Route as SettingsOrgSlugIndexRouteImport } from './routes/settings/org/$slug/index'
+import { Route as AppOrgSlugProductSlugIndexRouteImport } from './routes/app/$orgSlug/$productSlug/index'
 import { Route as SettingsProductSlugTeamRouteImport } from './routes/settings/product/$slug/team'
 import { Route as SettingsProductSlugGeneralRouteImport } from './routes/settings/product/$slug/general'
 import { Route as SettingsOrgSlugSeatsRouteImport } from './routes/settings/org/$slug/seats'
 import { Route as SettingsOrgSlugProductsRouteImport } from './routes/settings/org/$slug/products'
 import { Route as SettingsOrgSlugPlanRouteImport } from './routes/settings/org/$slug/plan'
 import { Route as SettingsOrgSlugGeneralRouteImport } from './routes/settings/org/$slug/general'
+import { Route as AppOrgSlugProductSlugTimelineRouteImport } from './routes/app/$orgSlug/$productSlug/timeline'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -90,6 +93,11 @@ const SettingsOrgSlugRoute = SettingsOrgSlugRouteImport.update({
   path: '/org/$slug',
   getParentRoute: () => SettingsRoute,
 } as any)
+const AppOrgSlugProductSlugRoute = AppOrgSlugProductSlugRouteImport.update({
+  id: '/app/$orgSlug/$productSlug',
+  path: '/app/$orgSlug/$productSlug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsProductSlugIndexRoute =
   SettingsProductSlugIndexRouteImport.update({
     id: '/',
@@ -101,6 +109,12 @@ const SettingsOrgSlugIndexRoute = SettingsOrgSlugIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SettingsOrgSlugRoute,
 } as any)
+const AppOrgSlugProductSlugIndexRoute =
+  AppOrgSlugProductSlugIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppOrgSlugProductSlugRoute,
+  } as any)
 const SettingsProductSlugTeamRoute = SettingsProductSlugTeamRouteImport.update({
   id: '/team',
   path: '/team',
@@ -132,6 +146,12 @@ const SettingsOrgSlugGeneralRoute = SettingsOrgSlugGeneralRouteImport.update({
   path: '/general',
   getParentRoute: () => SettingsOrgSlugRoute,
 } as any)
+const AppOrgSlugProductSlugTimelineRoute =
+  AppOrgSlugProductSlugTimelineRouteImport.update({
+    id: '/timeline',
+    path: '/timeline',
+    getParentRoute: () => AppOrgSlugProductSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -144,14 +164,17 @@ export interface FileRoutesByFullPath {
   '/organizations': typeof OrganizationsIndexRoute
   '/products': typeof ProductsIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/app/$orgSlug/$productSlug': typeof AppOrgSlugProductSlugRouteWithChildren
   '/settings/org/$slug': typeof SettingsOrgSlugRouteWithChildren
   '/settings/product/$slug': typeof SettingsProductSlugRouteWithChildren
+  '/app/$orgSlug/$productSlug/timeline': typeof AppOrgSlugProductSlugTimelineRoute
   '/settings/org/$slug/general': typeof SettingsOrgSlugGeneralRoute
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
   '/settings/org/$slug/products': typeof SettingsOrgSlugProductsRoute
   '/settings/org/$slug/seats': typeof SettingsOrgSlugSeatsRoute
   '/settings/product/$slug/general': typeof SettingsProductSlugGeneralRoute
   '/settings/product/$slug/team': typeof SettingsProductSlugTeamRoute
+  '/app/$orgSlug/$productSlug/': typeof AppOrgSlugProductSlugIndexRoute
   '/settings/org/$slug/': typeof SettingsOrgSlugIndexRoute
   '/settings/product/$slug/': typeof SettingsProductSlugIndexRoute
 }
@@ -165,12 +188,14 @@ export interface FileRoutesByTo {
   '/organizations': typeof OrganizationsIndexRoute
   '/products': typeof ProductsIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/app/$orgSlug/$productSlug/timeline': typeof AppOrgSlugProductSlugTimelineRoute
   '/settings/org/$slug/general': typeof SettingsOrgSlugGeneralRoute
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
   '/settings/org/$slug/products': typeof SettingsOrgSlugProductsRoute
   '/settings/org/$slug/seats': typeof SettingsOrgSlugSeatsRoute
   '/settings/product/$slug/general': typeof SettingsProductSlugGeneralRoute
   '/settings/product/$slug/team': typeof SettingsProductSlugTeamRoute
+  '/app/$orgSlug/$productSlug': typeof AppOrgSlugProductSlugIndexRoute
   '/settings/org/$slug': typeof SettingsOrgSlugIndexRoute
   '/settings/product/$slug': typeof SettingsProductSlugIndexRoute
 }
@@ -186,14 +211,17 @@ export interface FileRoutesById {
   '/organizations/': typeof OrganizationsIndexRoute
   '/products/': typeof ProductsIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/app/$orgSlug/$productSlug': typeof AppOrgSlugProductSlugRouteWithChildren
   '/settings/org/$slug': typeof SettingsOrgSlugRouteWithChildren
   '/settings/product/$slug': typeof SettingsProductSlugRouteWithChildren
+  '/app/$orgSlug/$productSlug/timeline': typeof AppOrgSlugProductSlugTimelineRoute
   '/settings/org/$slug/general': typeof SettingsOrgSlugGeneralRoute
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
   '/settings/org/$slug/products': typeof SettingsOrgSlugProductsRoute
   '/settings/org/$slug/seats': typeof SettingsOrgSlugSeatsRoute
   '/settings/product/$slug/general': typeof SettingsProductSlugGeneralRoute
   '/settings/product/$slug/team': typeof SettingsProductSlugTeamRoute
+  '/app/$orgSlug/$productSlug/': typeof AppOrgSlugProductSlugIndexRoute
   '/settings/org/$slug/': typeof SettingsOrgSlugIndexRoute
   '/settings/product/$slug/': typeof SettingsProductSlugIndexRoute
 }
@@ -210,14 +238,17 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/products'
     | '/settings/'
+    | '/app/$orgSlug/$productSlug'
     | '/settings/org/$slug'
     | '/settings/product/$slug'
+    | '/app/$orgSlug/$productSlug/timeline'
     | '/settings/org/$slug/general'
     | '/settings/org/$slug/plan'
     | '/settings/org/$slug/products'
     | '/settings/org/$slug/seats'
     | '/settings/product/$slug/general'
     | '/settings/product/$slug/team'
+    | '/app/$orgSlug/$productSlug/'
     | '/settings/org/$slug/'
     | '/settings/product/$slug/'
   fileRoutesByTo: FileRoutesByTo
@@ -231,12 +262,14 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/products'
     | '/settings'
+    | '/app/$orgSlug/$productSlug/timeline'
     | '/settings/org/$slug/general'
     | '/settings/org/$slug/plan'
     | '/settings/org/$slug/products'
     | '/settings/org/$slug/seats'
     | '/settings/product/$slug/general'
     | '/settings/product/$slug/team'
+    | '/app/$orgSlug/$productSlug'
     | '/settings/org/$slug'
     | '/settings/product/$slug'
   id:
@@ -251,14 +284,17 @@ export interface FileRouteTypes {
     | '/organizations/'
     | '/products/'
     | '/settings/'
+    | '/app/$orgSlug/$productSlug'
     | '/settings/org/$slug'
     | '/settings/product/$slug'
+    | '/app/$orgSlug/$productSlug/timeline'
     | '/settings/org/$slug/general'
     | '/settings/org/$slug/plan'
     | '/settings/org/$slug/products'
     | '/settings/org/$slug/seats'
     | '/settings/product/$slug/general'
     | '/settings/product/$slug/team'
+    | '/app/$orgSlug/$productSlug/'
     | '/settings/org/$slug/'
     | '/settings/product/$slug/'
   fileRoutesById: FileRoutesById
@@ -269,6 +305,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRouteWithChildren
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
+  AppOrgSlugProductSlugRoute: typeof AppOrgSlugProductSlugRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -357,6 +394,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsOrgSlugRouteImport
       parentRoute: typeof SettingsRoute
     }
+    '/app/$orgSlug/$productSlug': {
+      id: '/app/$orgSlug/$productSlug'
+      path: '/app/$orgSlug/$productSlug'
+      fullPath: '/app/$orgSlug/$productSlug'
+      preLoaderRoute: typeof AppOrgSlugProductSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/product/$slug/': {
       id: '/settings/product/$slug/'
       path: '/'
@@ -370,6 +414,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/org/$slug/'
       preLoaderRoute: typeof SettingsOrgSlugIndexRouteImport
       parentRoute: typeof SettingsOrgSlugRoute
+    }
+    '/app/$orgSlug/$productSlug/': {
+      id: '/app/$orgSlug/$productSlug/'
+      path: '/'
+      fullPath: '/app/$orgSlug/$productSlug/'
+      preLoaderRoute: typeof AppOrgSlugProductSlugIndexRouteImport
+      parentRoute: typeof AppOrgSlugProductSlugRoute
     }
     '/settings/product/$slug/team': {
       id: '/settings/product/$slug/team'
@@ -412,6 +463,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/org/$slug/general'
       preLoaderRoute: typeof SettingsOrgSlugGeneralRouteImport
       parentRoute: typeof SettingsOrgSlugRoute
+    }
+    '/app/$orgSlug/$productSlug/timeline': {
+      id: '/app/$orgSlug/$productSlug/timeline'
+      path: '/timeline'
+      fullPath: '/app/$orgSlug/$productSlug/timeline'
+      preLoaderRoute: typeof AppOrgSlugProductSlugTimelineRouteImport
+      parentRoute: typeof AppOrgSlugProductSlugRoute
     }
   }
 }
@@ -475,12 +533,28 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
   SettingsRouteChildren,
 )
 
+interface AppOrgSlugProductSlugRouteChildren {
+  AppOrgSlugProductSlugTimelineRoute: typeof AppOrgSlugProductSlugTimelineRoute
+  AppOrgSlugProductSlugIndexRoute: typeof AppOrgSlugProductSlugIndexRoute
+}
+
+const AppOrgSlugProductSlugRouteChildren: AppOrgSlugProductSlugRouteChildren = {
+  AppOrgSlugProductSlugTimelineRoute: AppOrgSlugProductSlugTimelineRoute,
+  AppOrgSlugProductSlugIndexRoute: AppOrgSlugProductSlugIndexRoute,
+}
+
+const AppOrgSlugProductSlugRouteWithChildren =
+  AppOrgSlugProductSlugRoute._addFileChildren(
+    AppOrgSlugProductSlugRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRouteWithChildren,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
+  AppOrgSlugProductSlugRoute: AppOrgSlugProductSlugRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

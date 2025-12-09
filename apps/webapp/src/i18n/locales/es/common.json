@@ -117,7 +117,9 @@
     "seats": "Licencias",
     "billing": "Facturación",
     "products": "Productos",
-    "team": "Equipo"
+    "team": "Equipo",
+    "backToProduct": "Volver al producto",
+    "selectProduct": "Selecciona un producto"
   },
   "settingsPages": {
     "organizationsSubtitle": "Gestiona tus membresías de organización",

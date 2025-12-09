@@ -1,8 +1,7 @@
 import { ReactNode } from "react";
 import { Toaster } from "@hikai/ui";
-import { AppHeader } from "./app-header";
-import { Sidebar } from "./sidebar";
 import { useTheme } from "../hooks/use-theme";
+import { AppHeader } from "./app-header";
 
 interface AppShellProps {
   children: ReactNode;
@@ -23,7 +22,6 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <Sidebar />
       <main className="pt-14">
         {children}
       </main>

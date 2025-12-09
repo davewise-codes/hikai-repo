@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { AppShell } from "@/domains/core/components/app-shell";
 import {
@@ -18,6 +18,7 @@ import {
   CreditCard,
   Users,
   Receipt,
+  ArrowLeft,
 } from "@hikai/ui";
 
 export const Route = createFileRoute("/settings")({
@@ -27,17 +28,47 @@ export const Route = createFileRoute("/settings")({
 function SettingsLayout() {
   const { t } = useTranslation("common");
   const location = useLocation();
+  const navigate = useNavigate();
   const { currentOrg } = useCurrentOrg();
   const { currentProduct } = useCurrentProduct();
 
   const isOrgAdmin =
     currentOrg?.role === "owner" || currentOrg?.role === "admin";
   const isProductAdmin = currentProduct?.userRole === "admin";
+  const canGoToProduct = Boolean(currentOrg && currentProduct);
+  const backLabel = canGoToProduct
+    ? t("settingsNav.backToProduct")
+    : t("settingsNav.selectProduct");
+
+  const handleBackToProduct = () => {
+    if (!currentOrg || !currentProduct) return;
+
+    navigate({
+      to: "/app/$orgSlug/$productSlug/timeline",
+      params: { orgSlug: currentOrg.slug, productSlug: currentProduct.slug },
+    });
+  };
 
   return (
     <AppShell>
       <div className="flex h-[calc(100vh-3.5rem)]">
         <SettingsNav>
+          {canGoToProduct ? (
+            <Link
+              to="/app/$orgSlug/$productSlug/timeline"
+              params={{ orgSlug: currentOrg!.slug, productSlug: currentProduct!.slug }}
+              className="flex items-center gap-2 px-2 h-7 rounded-md text-fontSize-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 flex-shrink-0" />
+              <span className="flex-1 truncate">{backLabel}</span>
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2 px-2 h-7 text-fontSize-sm text-muted-foreground/60 cursor-not-allowed">
+              <ArrowLeft className="h-4 w-4 flex-shrink-0" />
+              <span className="flex-1 truncate">{backLabel}</span>
+            </div>
+          )}
+
           {/* User Section */}
           <SettingsNavSection title={t("settingsNav.user")}>
             <SettingsNavItem

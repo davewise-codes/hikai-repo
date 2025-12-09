@@ -117,7 +117,9 @@
     "seats": "Seats",
     "billing": "Billing",
     "products": "Products",
-    "team": "Team"
+    "team": "Team",
+    "backToProduct": "Back to product",
+    "selectProduct": "Select a product"
   },
   "settingsPages": {
     "organizationsSubtitle": "Manage your organization memberships",
