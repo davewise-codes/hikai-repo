@@ -182,7 +182,7 @@ export function OrgCard({ organization }: OrgCardProps) {
                     </DropdownMenuItem>
                   </>
                 )}
-              {(canLeave || canTransfer || canDelete) && <DropdownMenuSeparator />}
+              {isAdmin && (canLeave || canTransfer || canDelete) && <DropdownMenuSeparator />}
               {canLeave && (
                 <DropdownMenuItem
                   onClick={(e) => {
