@@ -5,39 +5,66 @@
  * Los tokens están definidos en tokens/tokens.css
  */
 
-@import '../fonts/fonts.css';
-@import '../tokens/tokens.css';
-@import '../tokens/density.css';
+@import "../fonts/fonts.css";
+@import "../tokens/tokens.css";
+@import "../tokens/density.css";
 
 /* Color themes - each theme defines colors wrapped in .theme-* class */
-@import '../themes/default.css';
-@import '../themes/amber-minimal.css';
-@import '../themes/dark-matter.css';
-@import '../themes/neo-brutalism.css';
+@import "../themes/default.css";
+@import "../themes/amber-minimal.css";
+@import "../themes/hikai-dual.css";
+@import "../themes/dark-matter.css";
+@import "../themes/neo-brutalism.css";
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+	* {
+		@apply border-border;
+	}
 
-  body {
-    @apply bg-background text-foreground font-sans;
-  }
+	body {
+		@apply bg-background text-foreground font-sans;
+	}
 }
 
-/* Font size preference utility classes */
+/* Typography utility classes */
 @layer utilities {
-  .text-fontSize-xs {
-    font-size: var(--fontSize-xs);
-  }
-  .text-fontSize-sm {
-    font-size: var(--fontSize-sm);
-  }
-  .text-fontSize-base {
-    font-size: var(--fontSize-base);
-  }
+	/* Font sizes (respond to density preference) */
+	.text-fontSize-xs {
+		font-size: var(--fontSize-xs);
+	}
+	.text-fontSize-sm {
+		font-size: var(--fontSize-sm);
+	}
+	.text-fontSize-base {
+		font-size: var(--fontSize-base);
+	}
+	.text-fontSize-lg {
+		font-size: var(--fontSize-lg);
+	}
+	.text-fontSize-title {
+		font-size: var(--fontSize-title);
+	}
+
+	/* Font weights */
+	.font-weight-normal {
+		font-weight: var(--fontWeight-normal);
+	}
+	.font-weight-medium {
+		font-weight: var(--fontWeight-medium);
+	}
+	.font-weight-semibold {
+		font-weight: var(--fontWeight-semibold);
+	}
+
+	/* Line heights (UI-optimized) */
+	.leading-ui-tight {
+		line-height: var(--lineHeight-tight);
+	}
+	.leading-ui-normal {
+		line-height: var(--lineHeight-normal);
+	}
 }

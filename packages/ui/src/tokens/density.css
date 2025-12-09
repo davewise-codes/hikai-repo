@@ -1,18 +1,36 @@
 /* ============================================
- * FONT SIZE SYSTEM
+ * TYPOGRAPHY SYSTEM
  * ============================================
- * Permite ajustar el tamaño de fuente de textos específicos.
+ * Sistema de tipografía basado en Linear.
  * Solo los elementos con clases text-fontSize-* responden.
  * Los layouts (heights, paddings, margins) permanecen constantes.
  *
  * Se aplica via clase en <html>: font-size-compact, font-size-normal, font-size-comfortable
+ *
+ * Escala Linear (referencia):
+ * --font-size-mini: 0.75rem (12px)
+ * --font-size-small: 0.8125rem (13px)
+ * --font-size-regular: 0.9375rem (15px)
+ * --font-size-large: 1.125rem (18px)
+ * --font-size-title2: 1.5rem (24px)
  */
 
 :root {
-  /* Font size variables - Normal = Linear regular */
-  --fontSize-xs: 0.6875rem;    /* 11px - captions, hints */
-  --fontSize-sm: 0.8125rem;    /* 13px - UI controls, labels */
-  --fontSize-base: 0.9375rem;  /* 15px - body text */
+  /* === TYPOGRAPHY SCALE - Normal (Linear-like) === */
+  --fontSize-xs: 0.75rem;      /* 12px - hints, badges, captions */
+  --fontSize-sm: 0.8125rem;    /* 13px - UI estándar: labels, menus, botones */
+  --fontSize-base: 0.9375rem;  /* 15px - body text, párrafos */
+  --fontSize-lg: 1.125rem;     /* 18px - subtítulos */
+  --fontSize-title: 1.5rem;    /* 24px - headers de página */
+
+  /* === FONT WEIGHTS === */
+  --fontWeight-normal: 400;
+  --fontWeight-medium: 500;
+  --fontWeight-semibold: 600;
+
+  /* === LINE HEIGHTS (tight for UI density) === */
+  --lineHeight-tight: 1.25;
+  --lineHeight-normal: 1.5;
 }
 
 /* Compact: Smaller fonts for power users */
@@ -20,6 +38,8 @@
   --fontSize-xs: 0.625rem;     /* 10px */
   --fontSize-sm: 0.6875rem;    /* 11px */
   --fontSize-base: 0.8125rem;  /* 13px */
+  --fontSize-lg: 1rem;         /* 16px */
+  --fontSize-title: 1.25rem;   /* 20px */
 }
 
 /* Normal: Default - uses :root values */
@@ -29,7 +49,9 @@
 
 /* Comfortable: Larger fonts for accessibility */
 .font-size-comfortable {
-  --fontSize-xs: 0.75rem;      /* 12px */
+  --fontSize-xs: 0.8125rem;    /* 13px */
   --fontSize-sm: 0.875rem;     /* 14px */
   --fontSize-base: 1rem;       /* 16px */
+  --fontSize-lg: 1.25rem;      /* 20px */
+  --fontSize-title: 1.75rem;   /* 28px */
 }

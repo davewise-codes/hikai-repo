@@ -151,36 +151,64 @@ Escala estándar de Tailwind. Fuentes definidas en `fonts.css`.
 
 ---
 
-## Sistema de Tamaño de Fuente
+## Sistema de Tipografía
 
-El sistema permite ajustar el tamaño de fuente de componentes UI específicos sin afectar el layout (heights, paddings, avatares permanecen constantes).
+Sistema de tipografía basado en Linear. Permite ajustar el tamaño de fuente de componentes UI específicos sin afectar el layout (heights, paddings, avatares permanecen constantes).
 
 **Cómo funciona**: Se aplica una clase al `<html>` (`font-size-compact`, `font-size-normal`, `font-size-comfortable`) que define las variables CSS. Solo los elementos con clases `text-fontSize-*` escalan.
 
-### Niveles
+### Escala Tipográfica
 
-| Nivel | XS | SM | Base | Descripción |
-|-------|-----|-----|------|-------------|
-| Compact | 10px | 11px | 13px | Para power users |
-| Normal | 11px | 13px | 15px | Equivalente a Linear |
-| Comfortable | 12px | 14px | 16px | Mayor accesibilidad |
+Definida en `src/tokens/density.css`:
 
-### Variables CSS
+| Token | Compact | Normal | Comfortable | Uso |
+|-------|---------|--------|-------------|-----|
+| `--fontSize-xs` | 10px | **12px** | 13px | Hints, badges, captions |
+| `--fontSize-sm` | 11px | **13px** | 14px | **UI estándar**: labels, menus, botones |
+| `--fontSize-base` | 13px | **15px** | 16px | Body text, párrafos |
+| `--fontSize-lg` | 16px | **18px** | 20px | Subtítulos |
+| `--fontSize-title` | 20px | **24px** | 28px | Headers de página |
 
-Definidas en `src/tokens/density.css`:
+**Referencia Linear**:
+- `--font-size-mini`: 12px → nuestro `--fontSize-xs`
+- `--font-size-small`: 13px → nuestro `--fontSize-sm`
+- `--font-size-regular`: 15px → nuestro `--fontSize-base`
+- `--font-size-large`: 18px → nuestro `--fontSize-lg`
+- `--font-size-title2`: 24px → nuestro `--fontSize-title`
 
-| Variable | Compact | Normal | Comfortable |
-|----------|---------|--------|-------------|
-| `--fontSize-xs` | 10px | 11px | 12px |
-| `--fontSize-sm` | 11px | 13px | 14px |
-| `--fontSize-base` | 13px | 15px | 16px |
+### Font Weights
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--fontWeight-normal` | 400 | Texto regular |
+| `--fontWeight-medium` | 500 | Labels, énfasis suave |
+| `--fontWeight-semibold` | 600 | Títulos, CTAs |
+
+### Line Heights
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--lineHeight-tight` | 1.25 | UI compacta, nav items |
+| `--lineHeight-normal` | 1.5 | Body text, párrafos |
 
 ### Clases Utility
 
 ```css
-.text-fontSize-xs   /* Captions, hints, shortcuts */
-.text-fontSize-sm   /* UI controls, labels, menu items */
-.text-fontSize-base /* Body text en controles */
+/* Font sizes (responden a preferencia de density) */
+.text-fontSize-xs     /* Hints, badges, captions */
+.text-fontSize-sm     /* UI estándar: labels, menus, botones */
+.text-fontSize-base   /* Body text */
+.text-fontSize-lg     /* Subtítulos */
+.text-fontSize-title  /* Headers de página */
+
+/* Font weights */
+.font-weight-normal
+.font-weight-medium
+.font-weight-semibold
+
+/* Line heights */
+.leading-ui-tight     /* Para UI densa */
+.leading-ui-normal    /* Para body text */
 ```
 
 ### Uso en Componentes
@@ -188,9 +216,13 @@ Definidas en `src/tokens/density.css`:
 Los componentes de UI (`Button`, `Input`, `DropdownMenu`) ya usan estas clases internamente. El texto responde a la preferencia del usuario, pero heights/paddings permanecen constantes.
 
 ```tsx
-// Button usa text-fontSize-sm
-// Input usa text-fontSize-sm
-// DropdownMenuItem usa text-fontSize-sm
+// ✅ Correcto: usar clases de tokens
+<span className="text-fontSize-sm">Label</span>
+<p className="text-fontSize-base">Body text</p>
+<h1 className="text-fontSize-title font-weight-semibold">Header</h1>
+
+// ❌ Incorrecto: clases hardcodeadas de Tailwind
+<span className="text-sm">Label</span>
 ```
 
 ### Aplicar Preferencia
