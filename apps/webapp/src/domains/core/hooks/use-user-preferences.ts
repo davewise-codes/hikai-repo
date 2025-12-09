@@ -1,4 +1,13 @@
 import { useCallback, useSyncExternalStore } from 'react';
+import {
+	defaultColorTheme,
+	defaultFontSize,
+	defaultTheme,
+	type ColorThemeId,
+	type FontSize,
+	type Theme,
+} from '@hikai/ui';
+import { defaultLocale, type Locale } from '../store/core-slice';
 import { useAuth } from '@/domains/auth/hooks/use-auth';
 
 /**
@@ -7,21 +16,29 @@ import { useAuth } from '@/domains/auth/hooks/use-auth';
  * in different tabs without conflicts.
  */
 interface UserPreferences {
-  currentOrgId: string | null;
-  currentProductId: string | null;
+	currentOrgId: string | null;
+	currentProductId: string | null;
+	theme: Theme;
+	colorTheme: ColorThemeId;
+	fontSize: FontSize;
+	locale: Locale;
 }
 
 const defaultPrefs: UserPreferences = {
-  currentOrgId: null,
-  currentProductId: null,
+	currentOrgId: null,
+	currentProductId: null,
+	theme: defaultTheme,
+	colorTheme: defaultColorTheme,
+	fontSize: defaultFontSize,
+	locale: defaultLocale,
 };
 
-function getStorageKey(userId: string) {
-  return `hikai-user-${userId}-prefs`;
+function getStorageKey(userKey: string) {
+	return `hikai-user-${userKey}-prefs`;
 }
 
 // In-memory cache to track which users have been loaded
-const loadedUsers = new Set<string>();
+const loadedUsers = new Set<string>(); // keyed by userKey (userId or "anonymous")
 
 // Cache for preferences per user (to avoid creating new objects on each getSnapshot)
 const prefsCache = new Map<string, UserPreferences>();
@@ -39,30 +56,31 @@ function subscribe(listener: () => void) {
 }
 
 function getPrefsFromStorage(userId: string | undefined): UserPreferences {
-  if (!userId) return defaultPrefs;
+	const key = userId ?? "anonymous";
 
-  // Return cached value if available
-  const cached = prefsCache.get(userId);
-  if (cached) return cached;
+	// Return cached value if available
+	const cached = prefsCache.get(key);
+	if (cached) return cached;
 
-  const stored = localStorage.getItem(getStorageKey(userId));
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      prefsCache.set(userId, parsed);
-      return parsed;
-    } catch {
-      return defaultPrefs;
-    }
-  }
-  return defaultPrefs;
+	const stored = localStorage.getItem(getStorageKey(key));
+	if (stored) {
+		try {
+			const parsed = JSON.parse(stored);
+			const merged = { ...defaultPrefs, ...parsed };
+			prefsCache.set(key, merged);
+			return merged;
+		} catch {
+			return defaultPrefs;
+		}
+	}
+	return defaultPrefs;
 }
 
 function setPrefsToStorage(userId: string, prefs: UserPreferences) {
-  localStorage.setItem(getStorageKey(userId), JSON.stringify(prefs));
-  prefsCache.set(userId, prefs); // Update cache
-  loadedUsers.add(userId);
-  emitChange();
+	localStorage.setItem(getStorageKey(userId), JSON.stringify(prefs));
+	prefsCache.set(userId, prefs); // Update cache
+	loadedUsers.add(userId);
+	emitChange();
 }
 
 /**
@@ -78,44 +96,88 @@ function setPrefsToStorage(userId: string, prefs: UserPreferences) {
  * in the Zustand store as they are device-level, not user-level.
  */
 export function useUserPreferences() {
-  const { user } = useAuth();
-  const userId = user?._id;
+	const { user } = useAuth();
+	const userKey = user?._id ?? "anonymous";
 
-  // Mark user as loaded on first access
-  if (userId && !loadedUsers.has(userId)) {
-    // Check if there's stored data
-    const stored = localStorage.getItem(getStorageKey(userId));
-    if (stored) {
-      loadedUsers.add(userId);
-    }
-  }
+	// Mark user as loaded on first access
+	if (!loadedUsers.has(userKey)) {
+		const stored = localStorage.getItem(getStorageKey(userKey));
+		if (stored) {
+			loadedUsers.add(userKey);
+		}
+	}
 
-  const prefs = useSyncExternalStore(
-    subscribe,
-    () => getPrefsFromStorage(userId),
-    () => defaultPrefs // Server snapshot
-  );
+	const prefs = useSyncExternalStore(
+		subscribe,
+		() => getPrefsFromStorage(userKey),
+		() => defaultPrefs // Server snapshot
+	);
 
-  const setCurrentOrgId = useCallback((id: string | null) => {
-    if (!userId) return;
-    const currentPrefs = getPrefsFromStorage(userId);
-    setPrefsToStorage(userId, { ...currentPrefs, currentOrgId: id });
-  }, [userId]);
+	const setCurrentOrgId = useCallback(
+		(id: string | null) => {
+			const currentPrefs = getPrefsFromStorage(userKey);
+			setPrefsToStorage(userKey, { ...currentPrefs, currentOrgId: id });
+		},
+		[userKey]
+	);
 
-  const setCurrentProductId = useCallback((id: string | null) => {
-    if (!userId) return;
-    const currentPrefs = getPrefsFromStorage(userId);
-    setPrefsToStorage(userId, { ...currentPrefs, currentProductId: id });
-  }, [userId]);
+	const setCurrentProductId = useCallback(
+		(id: string | null) => {
+			const currentPrefs = getPrefsFromStorage(userKey);
+			setPrefsToStorage(userKey, { ...currentPrefs, currentProductId: id });
+		},
+		[userKey]
+	);
 
-  // isReady: user exists AND we've either loaded from storage or storage is empty
-  const isReady = !!userId && (loadedUsers.has(userId) || !localStorage.getItem(getStorageKey(userId)));
+	const setTheme = useCallback(
+		(newTheme: Theme) => {
+			const currentPrefs = getPrefsFromStorage(userKey);
+			setPrefsToStorage(userKey, { ...currentPrefs, theme: newTheme });
+		},
+		[userKey]
+	);
 
-  return {
-    currentOrgId: prefs.currentOrgId,
-    currentProductId: prefs.currentProductId,
-    setCurrentOrgId,
-    setCurrentProductId,
-    isReady,
-  };
+	const setColorTheme = useCallback(
+		(newColorTheme: ColorThemeId) => {
+			const currentPrefs = getPrefsFromStorage(userKey);
+			setPrefsToStorage(userKey, { ...currentPrefs, colorTheme: newColorTheme });
+		},
+		[userKey]
+	);
+
+	const setFontSize = useCallback(
+		(newFontSize: FontSize) => {
+			const currentPrefs = getPrefsFromStorage(userKey);
+			setPrefsToStorage(userKey, { ...currentPrefs, fontSize: newFontSize });
+		},
+		[userKey]
+	);
+
+	const setLocale = useCallback(
+		(newLocale: Locale) => {
+			const currentPrefs = getPrefsFromStorage(userKey);
+			setPrefsToStorage(userKey, { ...currentPrefs, locale: newLocale });
+		},
+		[userKey]
+	);
+
+	// isReady: we've either loaded from storage or storage is empty for this user key
+	const isReady =
+		loadedUsers.has(userKey) || !localStorage.getItem(getStorageKey(userKey));
+
+	return {
+		currentOrgId: prefs.currentOrgId,
+		currentProductId: prefs.currentProductId,
+		setCurrentOrgId,
+		setCurrentProductId,
+		theme: prefs.theme,
+		setTheme,
+		colorTheme: prefs.colorTheme,
+		setColorTheme,
+		fontSize: prefs.fontSize,
+		setFontSize,
+		locale: prefs.locale,
+		setLocale,
+		isReady,
+	};
 }

@@ -1,11 +1,10 @@
-import { useStore } from '@/store';
+import { useUserPreferences } from './use-user-preferences';
 
 /**
  * Hook para gestionar la internacionalización desde el dominio core
  */
 export function useI18n() {
-  const locale = useStore(state => state.locale);
-  const setLocale = useStore(state => state.setLocale);
+  const { locale, setLocale } = useUserPreferences();
   
   return {
     locale,

@@ -1,11 +1,10 @@
-import { useStore } from '@/store';
+import { useUserPreferences } from './use-user-preferences';
 
 /**
  * Hook para gestionar el tamaño de fuente de la aplicación
  */
 export function useFontSize() {
-  const fontSize = useStore((state) => state.fontSize);
-  const setFontSize = useStore((state) => state.setFontSize);
+  const { fontSize, setFontSize } = useUserPreferences();
 
   return {
     fontSize,
