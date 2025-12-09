@@ -2,7 +2,7 @@ import { useEffect, useCallback } from "react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { useStore } from "@/store";
+import { useUserPreferences } from "@/domains/core/hooks";
 import { useGetProduct } from "./use-products";
 
 /**
@@ -13,9 +13,11 @@ import { useGetProduct } from "./use-products";
  * - NO auto-selecciona (el usuario debe elegir conscientemente)
  */
 export function useCurrentProduct() {
-  const currentProductId = useStore((state) => state.currentProductId);
-  const currentOrgId = useStore((state) => state.currentOrgId);
-  const setCurrentProductId = useStore((state) => state.setCurrentProductId);
+  const {
+    currentProductId,
+    currentOrgId,
+    setCurrentProductId,
+  } = useUserPreferences();
 
   // Mutation para trackear acceso a producto
   const updateLastProductAccess = useMutation(

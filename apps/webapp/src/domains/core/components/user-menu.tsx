@@ -33,7 +33,6 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useRecentProducts, useCurrentProduct } from "@/domains/products/hooks";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
-import { useStore } from "@/store";
 
 export function UserMenu() {
   const { user, signOut } = useAuth();
@@ -46,9 +45,8 @@ export function UserMenu() {
 
   // Hooks para productos recientes
   const recentProducts = useRecentProducts();
-  const { currentOrg } = useCurrentOrg();
+  const { currentOrg, setCurrentOrg } = useCurrentOrg();
   const { setCurrentProduct } = useCurrentProduct();
-  const setCurrentOrgId = useStore((state) => state.setCurrentOrgId);
 
   const handleLogout = async () => {
     try {
@@ -67,7 +65,7 @@ export function UserMenu() {
   const handleProductClick = (product: NonNullable<typeof recentProducts>[number]) => {
     // Si el producto es de otra org, cambiar org primero
     if (product.organization._id !== currentOrg?._id) {
-      setCurrentOrgId(product.organization._id);
+      setCurrentOrg(product.organization._id);
     }
     // Establecer producto actual
     setCurrentProduct(product._id);

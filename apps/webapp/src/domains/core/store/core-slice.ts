@@ -13,6 +13,8 @@ export type Locale = 'en' | 'es';
 export const defaultLocale: Locale = 'en';
 
 // Core slice interface - todo lo transversal y compartido
+// NOTE: currentOrgId/currentProductId are now managed by useUserPreferences
+// hook with user-scoped localStorage keys to support multi-user scenarios
 export interface CoreSlice {
   // Theme settings
   theme: Theme;
@@ -29,14 +31,6 @@ export interface CoreSlice {
   // I18n settings
   locale: Locale;
   setLocale: (newLocale: Locale) => void;
-
-  // Current organization
-  currentOrgId: string | null;
-  setCurrentOrgId: (id: string | null) => void;
-
-  // Current product
-  currentProductId: string | null;
-  setCurrentProductId: (id: string | null) => void;
 
   // Sidebar state (not persisted)
   sidebarOpen: boolean;
@@ -60,14 +54,6 @@ export const createCoreSlice: StateCreator<CoreSlice, [], [], CoreSlice> = (set)
   // I18n management
   locale: defaultLocale,
   setLocale: (newLocale) => set({ locale: newLocale }),
-
-  // Current organization management
-  currentOrgId: null,
-  setCurrentOrgId: (id) => set({ currentOrgId: id }),
-
-  // Current product management
-  currentProductId: null,
-  setCurrentProductId: (id) => set({ currentProductId: id }),
 
   // Sidebar management (not persisted - closes on reload)
   sidebarOpen: false,

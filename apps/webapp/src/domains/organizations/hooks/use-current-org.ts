@@ -2,7 +2,7 @@ import { useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useNavigate, useLocation } from "@tanstack/react-router";
 import { api } from "@hikai/convex";
-import { useStore } from "@/store";
+import { useUserPreferences } from "@/domains/core/hooks";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 
 /**
@@ -14,9 +14,11 @@ import { Id } from "@hikai/convex/convex/_generated/dataModel";
  * - Al cambiar de org en rutas de productos, navega a /products
  */
 export function useCurrentOrg() {
-  const currentOrgId = useStore((state) => state.currentOrgId);
-  const setCurrentOrgId = useStore((state) => state.setCurrentOrgId);
-  const setCurrentProductId = useStore((state) => state.setCurrentProductId);
+  const {
+    currentOrgId,
+    setCurrentOrgId,
+    setCurrentProductId,
+  } = useUserPreferences();
   const navigate = useNavigate();
   const location = useLocation();
 

@@ -16,13 +16,13 @@ export const useStore = create<StoreState>()(
       }),
       {
         name: 'hikai-store',
+        // Only persist device-level preferences, not user-specific data
+        // currentOrgId/currentProductId are now in useUserPreferences with user-scoped keys
         partialize: (state) => ({
           theme: state.theme,
           fontSize: state.fontSize,
           colorTheme: state.colorTheme,
           locale: state.locale,
-          currentOrgId: state.currentOrgId,
-          currentProductId: state.currentProductId,
         }),
         // Merge persisted state with initial state to handle new fields
         merge: (persistedState, currentState) => ({
