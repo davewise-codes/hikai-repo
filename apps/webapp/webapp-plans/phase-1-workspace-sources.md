@@ -26,7 +26,7 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 | F1.1    | WorkspaceShell (layout en core)      | ✅ Completado |
 | F1.2    | WorkspaceSidebar (navegación iconos) | ✅ Completado |
 | F1.3    | Rutas del workspace                  | ✅ Completado |
-| F1.4    | Connectors backend (CRUD)            | ⏳ Pendiente |
+| F1.4    | Connectors backend (CRUD)            | ✅ Completado |
 | F1.5    | Connectors frontend (UI)             | ⏳ Pendiente |
 | F1.6    | GitHub OAuth flow                    | ⏳ Pendiente |
 | F1.7    | Settings > Product > Sources         | ⏳ Pendiente |
