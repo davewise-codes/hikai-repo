@@ -1,0 +1,48 @@
+{
+  "sources": {
+    "title": "Connected Sources",
+    "subtitle": "Manage data sources connected to this product",
+    "addSource": "Add Source",
+    "empty": "No sources connected yet",
+    "emptyDescription": "Connect a source to start tracking product activity",
+    "unknownProvider": "Unknown provider"
+  },
+  "statuses": {
+    "pending": "Pending",
+    "active": "Active",
+    "error": "Error",
+    "disconnected": "Disconnected"
+  },
+  "actions": {
+    "disconnect": "Disconnect",
+    "disconnectSuccess": "Connection disconnected",
+    "remove": "Remove",
+    "removing": "Removing...",
+    "removeSuccess": "Connection removed",
+    "removeConfirmTitle": "Remove connection",
+    "removeConfirmDescription": "This will delete the connection and its settings.",
+    "removeConfirmCTA": "Confirm",
+    "cancel": "Cancel",
+    "menuLabel": "Open actions",
+    "createSuccess": "Connection created"
+  },
+  "add": {
+    "title": "Add Source",
+    "description": "Select a provider and configure the connection.",
+    "selectType": "Source type",
+    "selectTypePlaceholder": "Choose a source",
+    "selectTypeError": "Select a source type",
+    "nameLabel": "Connection name",
+    "namePlaceholder": "e.g. hikai-repo",
+    "defaultName": "New connection",
+    "repoOwner": "Repository owner",
+    "repoOwnerPlaceholder": "org or user",
+    "repoName": "Repository name",
+    "repoNamePlaceholder": "repository",
+    "submit": "Create connection",
+    "creating": "Creating..."
+  },
+  "toast": {
+    "error": "Something went wrong"
+  }
+}

@@ -167,17 +167,25 @@ function SettingsLayout() {
                   `/settings/product/${currentProduct.slug}/general`
                 )}
               />
-              <SettingsNavItem
-                label={t("settingsNav.team")}
-                href={`/settings/product/${currentProduct.slug}/team`}
-                icon={Users}
-                isActive={location.pathname.startsWith(
-                  `/settings/product/${currentProduct.slug}/team`
-                )}
-              />
-            </SettingsNavSection>
-          )}
-        </SettingsNav>
+            <SettingsNavItem
+              label={t("settingsNav.team")}
+              href={`/settings/product/${currentProduct.slug}/team`}
+              icon={Users}
+              isActive={location.pathname.startsWith(
+                `/settings/product/${currentProduct.slug}/team`
+              )}
+            />
+            <SettingsNavItem
+              label={t("settingsNav.sources")}
+              href={`/settings/product/${currentProduct.slug}/sources`}
+              icon={Link2}
+              isActive={location.pathname.startsWith(
+                `/settings/product/${currentProduct.slug}/sources`
+              )}
+            />
+          </SettingsNavSection>
+        )}
+      </SettingsNav>
 
         {/* Content Area */}
         <div className="flex-1 overflow-auto">

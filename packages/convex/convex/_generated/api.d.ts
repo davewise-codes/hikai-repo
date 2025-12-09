@@ -13,6 +13,8 @@ import type * as auth_ResendOTP from "../auth/ResendOTP.js";
 import type * as auth_ResendOTPReset from "../auth/ResendOTPReset.js";
 import type * as auth_emailTemplate from "../auth/emailTemplate.js";
 import type * as auth_passwordResetTemplate from "../auth/passwordResetTemplate.js";
+import type * as connectors_connections from "../connectors/connections.js";
+import type * as connectors_index from "../connectors/index.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_planLimits from "../lib/planLimits.js";
@@ -34,6 +36,8 @@ declare const fullApi: ApiFromModules<{
   "auth/ResendOTPReset": typeof auth_ResendOTPReset;
   "auth/emailTemplate": typeof auth_emailTemplate;
   "auth/passwordResetTemplate": typeof auth_passwordResetTemplate;
+  "connectors/connections": typeof connectors_connections;
+  "connectors/index": typeof connectors_index;
   http: typeof http;
   "lib/access": typeof lib_access;
   "lib/planLimits": typeof lib_planLimits;

@@ -1,0 +1,48 @@
+{
+  "sources": {
+    "title": "Fuentes conectadas",
+    "subtitle": "Gestiona las fuentes de datos conectadas a este producto",
+    "addSource": "Añadir fuente",
+    "empty": "Aún no hay fuentes conectadas",
+    "emptyDescription": "Conecta una fuente para empezar a seguir la actividad del producto",
+    "unknownProvider": "Proveedor desconocido"
+  },
+  "statuses": {
+    "pending": "Pendiente",
+    "active": "Activa",
+    "error": "Error",
+    "disconnected": "Desconectada"
+  },
+  "actions": {
+    "disconnect": "Desconectar",
+    "disconnectSuccess": "Conexión desconectada",
+    "remove": "Eliminar",
+    "removing": "Eliminando...",
+    "removeSuccess": "Conexión eliminada",
+    "removeConfirmTitle": "Eliminar conexión",
+    "removeConfirmDescription": "Esto borrará la conexión y su configuración.",
+    "removeConfirmCTA": "Confirmar",
+    "cancel": "Cancelar",
+    "menuLabel": "Abrir acciones",
+    "createSuccess": "Conexión creada"
+  },
+  "add": {
+    "title": "Añadir fuente",
+    "description": "Selecciona un proveedor y configura la conexión.",
+    "selectType": "Tipo de fuente",
+    "selectTypePlaceholder": "Elige una fuente",
+    "selectTypeError": "Selecciona un tipo de fuente",
+    "nameLabel": "Nombre de la conexión",
+    "namePlaceholder": "ej. hikai-repo",
+    "defaultName": "Nueva conexión",
+    "repoOwner": "Propietario del repo",
+    "repoOwnerPlaceholder": "org o usuario",
+    "repoName": "Nombre del repo",
+    "repoNamePlaceholder": "repositorio",
+    "submit": "Crear conexión",
+    "creating": "Creando..."
+  },
+  "toast": {
+    "error": "Ha ocurrido un error"
+  }
+}

@@ -6,6 +6,30 @@ import { assertProductAccess } from "../lib/access";
 // QUERIES
 // ============================================================================
 
+export const listConnectorTypes = query({
+	args: {
+		productId: v.id("products"),
+		type: v.optional(v.union(v.literal("source"), v.literal("channel"))),
+		onlyEnabled: v.optional(v.boolean()),
+	},
+	handler: async (ctx, { productId, type, onlyEnabled }) => {
+		await assertProductAccess(ctx, productId);
+
+		const baseQuery = type
+			? ctx.db
+					.query("connectorTypes")
+					.withIndex("by_type", (q) => q.eq("type", type))
+			: ctx.db.query("connectorTypes");
+
+		const connectorTypes = await baseQuery.collect();
+		const filterEnabled = onlyEnabled ?? true;
+
+		return filterEnabled
+			? connectorTypes.filter((connectorType) => connectorType.isEnabled)
+			: connectorTypes;
+	},
+});
+
 export const listByProduct = query({
 	args: { productId: v.id("products") },
 	handler: async (ctx, { productId }) => {

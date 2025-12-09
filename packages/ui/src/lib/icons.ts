@@ -40,6 +40,7 @@ export {
   RefreshCw,
   RotateCcw,
   RotateCw,
+  Power,
 } from "lucide-react";
 
 // UI Elements
@@ -240,4 +241,5 @@ export {
   // Card actions
   ExternalLink,
   ArrowRightLeft,
+  Github,
 } from "lucide-react";

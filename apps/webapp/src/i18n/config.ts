@@ -13,6 +13,8 @@ import enProducts from './locales/en/products.json';
 import esProducts from './locales/es/products.json';
 import enProfile from './locales/en/profile.json';
 import esProfile from './locales/es/profile.json';
+import enConnectors from './locales/en/connectors.json';
+import esConnectors from './locales/es/connectors.json';
 
 const resources = {
   en: {
@@ -21,6 +23,7 @@ const resources = {
     organizations: enOrganizations,
     products: enProducts,
     profile: enProfile,
+    connectors: enConnectors,
   },
   es: {
     common: esCommon,
@@ -28,6 +31,7 @@ const resources = {
     organizations: esOrganizations,
     products: esProducts,
     profile: esProfile,
+    connectors: esConnectors,
   },
 };
 
