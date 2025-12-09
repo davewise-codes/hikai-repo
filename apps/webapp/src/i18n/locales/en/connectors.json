@@ -39,8 +39,16 @@
     "repoOwnerPlaceholder": "org or user",
     "repoName": "Repository name",
     "repoNamePlaceholder": "repository",
+    "authUrlError": "Could not start GitHub OAuth",
     "submit": "Create connection",
     "creating": "Creating..."
+  },
+  "oauth": {
+    "success": {
+      "title": "GitHub connected",
+      "description": "You can close this window and return to Hikai.",
+      "close": "Close"
+    }
   },
   "toast": {
     "error": "Something went wrong"

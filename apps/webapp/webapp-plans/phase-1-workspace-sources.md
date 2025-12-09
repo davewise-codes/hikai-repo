@@ -28,7 +28,7 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 | F1.3    | Rutas del workspace                  | ✅ Completado |
 | F1.4    | Connectors backend (CRUD)            | ✅ Completado |
 | F1.5    | Connectors frontend (UI)             | ✅ Completado |
-| F1.6    | GitHub OAuth flow                    | ⏳ Pendiente |
+| F1.6    | GitHub OAuth flow                    | ✅ Completado |
 | F1.7    | Settings > Product > Sources         | ⏳ Pendiente |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado

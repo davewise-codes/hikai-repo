@@ -39,8 +39,16 @@
     "repoOwnerPlaceholder": "org o usuario",
     "repoName": "Nombre del repo",
     "repoNamePlaceholder": "repositorio",
+    "authUrlError": "No se pudo iniciar OAuth con GitHub",
     "submit": "Crear conexión",
     "creating": "Creando..."
+  },
+  "oauth": {
+    "success": {
+      "title": "GitHub conectado",
+      "description": "Puedes cerrar esta ventana y volver a Hikai.",
+      "close": "Cerrar"
+    }
   },
   "toast": {
     "error": "Ha ocurrido un error"

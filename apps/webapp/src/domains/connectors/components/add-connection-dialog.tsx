@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useConvex } from "convex/react";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import {
 	Button,
@@ -18,6 +19,7 @@ import {
 	SelectValue,
 	toast,
 } from "@hikai/ui";
+import { api } from "@hikai/convex";
 import { useConnectionMutations, useConnectorTypes } from "../hooks";
 
 interface AddConnectionDialogProps {
@@ -28,6 +30,7 @@ interface AddConnectionDialogProps {
 
 export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnectionDialogProps) {
 	const { t } = useTranslation("connectors");
+	const convex = useConvex();
 	const { connectorTypes, isLoading } = useConnectorTypes(productId);
 	const { createConnection } = useConnectionMutations();
 
@@ -36,6 +39,7 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 	const [repoOwner, setRepoOwner] = useState("");
 	const [repoName, setRepoName] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [isStartingOAuth, setIsStartingOAuth] = useState(false);
 
 	const availableTypes = connectorTypes ?? [];
 
@@ -67,8 +71,9 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 		}
 
 		setIsSubmitting(true);
+		setIsStartingOAuth(true);
 		try {
-			await createConnection({
+			const connectionId = await createConnection({
 				productId,
 				connectorTypeId: connectorTypeId as Id<"connectorTypes">,
 				name: name || defaultName || t("add.defaultName"),
@@ -77,6 +82,21 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 					repoName: repoName || undefined,
 				},
 			});
+			const authUrl = await convex.query(api.connectors.github.getInstallUrl, {
+				productId,
+				connectionId,
+			});
+
+			if (!authUrl) {
+				throw new Error(t("add.authUrlError"));
+			}
+
+			const opened = window.open(authUrl, "_blank", "width=600,height=750");
+			if (!opened) {
+				// Fallback to full redirect if popup blocked
+				window.location.href = authUrl;
+			}
+
 			toast.success(t("actions.createSuccess"));
 			onOpenChange(false);
 			resetForm();
@@ -84,6 +104,7 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 			toast.error(error instanceof Error ? error.message : t("toast.error"));
 		} finally {
 			setIsSubmitting(false);
+			setIsStartingOAuth(false);
 		}
 	};
 
@@ -151,8 +172,11 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 					</div>
 
 					<DialogFooter>
-						<Button type="submit" disabled={isSubmitting || !connectorTypeId}>
-							{isSubmitting ? t("add.creating") : t("add.submit")}
+						<Button
+							type="submit"
+							disabled={isSubmitting || isStartingOAuth || !connectorTypeId}
+						>
+							{isSubmitting || isStartingOAuth ? t("add.creating") : t("add.submit")}
 						</Button>
 					</DialogFooter>
 				</form>
