@@ -4,6 +4,32 @@ Patrones y convenciones para componentes del design system de Hikai.
 
 ---
 
+## Utilidad `cn()` y tailwind-merge
+
+La función `cn()` combina `clsx` con `tailwind-merge` para manejar clases CSS de forma inteligente:
+
+```tsx
+import { cn } from "../../lib/utils";
+
+// Combina clases y resuelve conflictos
+cn("px-4 py-2", "px-6") // → "py-2 px-6" (px-6 gana)
+cn("text-fontSize-sm", className) // → preserva text-fontSize-* correctamente
+```
+
+### Clases custom soportadas
+
+`tailwind-merge` está extendido para reconocer nuestras clases custom de tipografía:
+
+| Grupo | Clases reconocidas |
+|-------|-------------------|
+| `font-size` | `text-fontSize-{xs,sm,base,lg,title}` |
+
+Esto significa que `cn("text-fontSize-sm", "text-fontSize-lg")` resuelve correctamente a `"text-fontSize-lg"`.
+
+> ⚠️ **Importante**: Si añades nuevas clases custom que necesiten merging inteligente, debes registrarlas en `extendTailwindMerge` en `src/lib/utils.ts`.
+
+---
+
 ## Anatomía de un Componente
 
 Estructura estándar usando `cva`, `cn` y `forwardRef`:

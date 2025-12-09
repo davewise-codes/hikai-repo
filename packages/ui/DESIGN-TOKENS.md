@@ -225,6 +225,23 @@ Los componentes de UI (`Button`, `Input`, `DropdownMenu`) ya usan estas clases i
 <span className="text-sm">Label</span>
 ```
 
+### Compatibilidad con tailwind-merge
+
+Las clases `text-fontSize-*` están configuradas en `tailwind-merge` para que no sean eliminadas al usar `cn()`. La configuración extiende el grupo `font-size` para reconocer nuestras clases custom:
+
+```ts
+// packages/ui/src/lib/utils.ts
+const customTwMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [{ 'text-fontSize': ['xs', 'sm', 'base', 'lg', 'title'] }]
+    }
+  }
+})
+```
+
+Esto permite que `cn("text-fontSize-sm", "text-fontSize-lg")` resuelva correctamente a `"text-fontSize-lg"` (el último gana), igual que las clases nativas de Tailwind.
+
 ### Aplicar Preferencia
 
 La clase se aplica al elemento `<html>`:

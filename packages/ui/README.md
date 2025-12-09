@@ -12,7 +12,7 @@ src/
 │   └── fonts.css        # Importaciones de Google Fonts
 ├── lib/
 │   ├── themes.ts        # Definiciones de themes
-│   ├── utils.ts         # Utilidades (cn helper)
+│   ├── utils.ts         # Utilidades (cn helper con tailwind-merge extendido)
 │   └── icons.ts         # Iconos centralizados (lucide-react)
 ├── styles/
 │   ├── globals.css      # Estilos base + imports
@@ -183,3 +183,34 @@ Para añadir nuevos iconos:
 - [Lucide React](https://lucide.dev/) - Sistema de iconos
 - [Tailwind CSS](https://tailwindcss.com/) - Framework CSS
 - [CVA](https://cva.style/) - Class Variance Authority
+- [tailwind-merge](https://github.com/dcastil/tailwind-merge) - Merge Tailwind classes inteligentemente
+
+## 🔧 Utilidades
+
+### `cn()` - Class Name Helper
+
+Combina `clsx` y `tailwind-merge` para manejar clases CSS:
+
+```tsx
+import { cn } from "@hikai/ui";
+
+// Combina clases
+cn("px-4", "py-2") // → "px-4 py-2"
+
+// Resuelve conflictos (el último gana)
+cn("px-4", "px-6") // → "px-6"
+
+// Clases condicionales
+cn("base-class", isActive && "active-class")
+```
+
+### Clases custom soportadas
+
+`tailwind-merge` está extendido para reconocer clases custom de tipografía:
+
+```tsx
+// Estas clases se resuelven correctamente
+cn("text-fontSize-sm", "text-fontSize-lg") // → "text-fontSize-lg"
+```
+
+Ver [DESIGN-TOKENS.md](./DESIGN-TOKENS.md) para la lista completa de tokens tipográficos.
