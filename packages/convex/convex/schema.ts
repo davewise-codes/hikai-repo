@@ -67,6 +67,47 @@ const schema = defineSchema({
     .index("by_product", ["productId"])
     .index("by_user", ["userId"])
     .index("by_product_user", ["productId", "userId"]),
+
+  // Catálogo de tipos de conector disponibles
+  connectorTypes: defineTable({
+    type: v.union(v.literal("source"), v.literal("channel")),
+    provider: v.string(), // "github", "twitter", "linkedin"
+    name: v.string(),
+    description: v.optional(v.string()),
+    iconUrl: v.optional(v.string()),
+    isEnabled: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_type", ["type"])
+    .index("by_provider", ["provider"]),
+
+  // Conexiones de un producto a sources/channels
+  connections: defineTable({
+    productId: v.id("products"),
+    connectorTypeId: v.id("connectorTypes"),
+    name: v.string(), // Nombre dado por el usuario (ej: "hikai-repo")
+    config: v.any(), // Configuración específica del provider (repo, owner, etc.)
+    status: v.union(
+      v.literal("pending"), // Esperando OAuth
+      v.literal("active"), // Conectado y funcionando
+      v.literal("error"), // Error de conexión
+      v.literal("disconnected") // Desconectado manualmente
+    ),
+    credentials: v.optional(
+      v.object({
+        accessToken: v.optional(v.string()),
+        refreshToken: v.optional(v.string()),
+        expiresAt: v.optional(v.number()),
+      })
+    ),
+    lastSyncAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_product", ["productId"])
+    .index("by_product_type", ["productId", "connectorTypeId"])
+    .index("by_status", ["status"]),
 });
 
 export default schema;
