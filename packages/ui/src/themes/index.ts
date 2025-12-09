@@ -11,17 +11,17 @@
  */
 
 // Import theme CSS files (side-effect imports)
-import './default.css';
-import './amber-minimal.css';
-import './dark-matter.css';
+import "./default.css";
+import "./amber-minimal.css";
+import "./dark-matter.css";
 
 // Re-export color theme utilities
 export {
-  type ColorThemeId,
-  type ColorTheme,
-  colorThemes,
-  defaultColorTheme,
-  getColorThemeClass,
-  getColorThemeIds,
-  isValidColorThemeId,
-} from '../lib/color-themes';
+	type ColorThemeId,
+	type ColorTheme,
+	colorThemes,
+	defaultColorTheme,
+	getColorThemeClass,
+	getColorThemeIds,
+	isValidColorThemeId,
+} from "../lib/color-themes";

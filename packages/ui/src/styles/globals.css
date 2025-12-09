@@ -13,7 +13,6 @@
 /* Color themes - each theme defines colors wrapped in .theme-* class */
 @import "../themes/default.css";
 @import "../themes/amber-minimal.css";
-@import "../themes/hikai-dual.css";
 @import "../themes/dark-matter.css";
 @import "../themes/neo-brutalism.css";
 
