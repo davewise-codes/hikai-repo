@@ -190,7 +190,7 @@ export function AuthForm({
 					/>
 				</div>
 
-				<div className="text-center mt-6 text-sm text-muted-foreground">
+				<div className="text-center mt-6 text-fontSize-sm text-muted-foreground">
 					{t("common.termsText")}
 				</div>
 			</Card>

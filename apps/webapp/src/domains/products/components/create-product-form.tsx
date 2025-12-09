@@ -77,7 +77,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
             <p>{canCreateResult.reason}</p>
-            <p className="text-sm mt-2">
+            <p className="text-fontSize-sm mt-2">
               {t("limitInfo", {
                 current: canCreateResult.currentCount,
                 max: canCreateResult.maxAllowed,

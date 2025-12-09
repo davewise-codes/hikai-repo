@@ -66,7 +66,7 @@ export function ProductList() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-fontSize-sm">
             {t("subtitle", { org: currentOrg.name })}
           </p>
         </div>
@@ -77,7 +77,7 @@ export function ProductList() {
       {/* Recent products section (cross-org) */}
       {recentProducts && recentProducts.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground">
+          <h2 className="text-fontSize-sm font-medium text-muted-foreground">
             {t("list.recent")}
           </h2>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -102,7 +102,7 @@ export function ProductList() {
                   </CardHeader>
                   <CardContent className="pt-0">
                     {product.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                      <p className="text-fontSize-sm text-muted-foreground line-clamp-2 mb-2">
                         {product.description}
                       </p>
                     )}
@@ -121,7 +121,7 @@ export function ProductList() {
 
       {/* Products in current organization (excluding recent) */}
       <div className="space-y-3">
-        <h2 className="text-sm font-medium text-muted-foreground">
+        <h2 className="text-fontSize-sm font-medium text-muted-foreground">
           {t("list.allInOrg", { org: currentOrg.name })}
         </h2>
         {nonRecentProducts.length === 0 && (!recentProducts || recentProducts.length === 0) ? (
@@ -133,7 +133,7 @@ export function ProductList() {
         ) : nonRecentProducts.length === 0 ? (
           <Card>
             <CardContent className="text-center py-4">
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-fontSize-sm">
                 {t("empty")}
               </p>
             </CardContent>

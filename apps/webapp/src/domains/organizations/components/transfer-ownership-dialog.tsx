@@ -149,12 +149,12 @@ export function TransferOwnershipDialog({
           )}
 
           {eligibleMembers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-fontSize-sm text-muted-foreground">
               {t("transfer.noEligibleMembers")}
             </p>
           ) : (
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-fontSize-sm font-medium">
                 {t("transfer.selectMember")}
               </label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
@@ -188,7 +188,7 @@ export function TransferOwnershipDialog({
 
           {selectedMember && (
             <div className="rounded-lg border bg-muted/30 p-3">
-              <p className="text-sm">
+              <p className="text-fontSize-sm">
                 {t("transfer.confirmMessage", {
                   name:
                     selectedMember.user?.name ||

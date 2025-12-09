@@ -100,7 +100,7 @@ export function UserMenu() {
         >
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.image || undefined} alt={user?.name || t("userMenu.user")} referrerPolicy="no-referrer" />
-            <AvatarFallback className="text-xs">{getInitials()}</AvatarFallback>
+            <AvatarFallback className="text-fontSize-xs">{getInitials()}</AvatarFallback>
           </Avatar>
         </button>
       </DropdownMenuTrigger>
@@ -110,11 +110,11 @@ export function UserMenu() {
           <div className="flex items-start gap-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={user?.image || undefined} alt={user?.name || t("userMenu.user")} referrerPolicy="no-referrer" />
-              <AvatarFallback className="text-sm">{getInitials()}</AvatarFallback>
+              <AvatarFallback className="text-fontSize-sm">{getInitials()}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col space-y-1 flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium leading-none truncate flex-1">
+                <p className="text-fontSize-sm font-medium leading-none truncate flex-1">
                   {user?.name || t("userMenu.user")}
                 </p>
                 <button
@@ -129,7 +129,7 @@ export function UserMenu() {
                   <Settings className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                 </button>
               </div>
-              <p className="text-xs leading-none text-muted-foreground truncate">
+              <p className="text-fontSize-xs leading-none text-muted-foreground truncate">
                 {user?.email}
               </p>
             </div>
@@ -138,7 +138,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         {/* Appearance Section */}
-        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+        <DropdownMenuLabel className="text-fontSize-sm text-muted-foreground font-normal">
           {t("userMenu.appearance")}
         </DropdownMenuLabel>
 
@@ -227,7 +227,7 @@ export function UserMenu() {
                   <DropdownMenuRadioItem key={fs.name} value={fs.name} className="cursor-pointer">
                     <div className="flex flex-col">
                       <span>{t(`settings.fontSize${fs.name.charAt(0).toUpperCase() + fs.name.slice(1)}`)}</span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-fontSize-xs text-muted-foreground">
                         {t(`settings.fontSize${fs.name.charAt(0).toUpperCase() + fs.name.slice(1)}Desc`)}
                       </span>
                     </div>
@@ -241,7 +241,7 @@ export function UserMenu() {
         <DropdownMenuSeparator />
 
         {/* Recent Products */}
-        <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+        <DropdownMenuLabel className="text-fontSize-sm text-muted-foreground font-normal">
           {t("userMenu.recentProducts")}
         </DropdownMenuLabel>
         {recentProducts && recentProducts.length > 0 ? (
@@ -255,9 +255,9 @@ export function UserMenu() {
                 <div className="flex items-center gap-2 min-w-0">
                   <Folder className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                   <div className="flex flex-col min-w-0">
-                    <span className="truncate text-sm">{product.name}</span>
+                    <span className="truncate text-fontSize-sm">{product.name}</span>
                     {product.organization._id !== currentOrg?._id && (
-                      <span className="text-xs text-muted-foreground truncate">
+                      <span className="text-fontSize-xs text-muted-foreground truncate">
                         {product.organization.name}
                       </span>
                     )}
@@ -275,7 +275,7 @@ export function UserMenu() {
         <DropdownMenuItem asChild className="cursor-pointer">
           <Link
             to="/settings/products"
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="text-fontSize-sm text-muted-foreground hover:text-foreground"
           >
             {t("userMenu.myProducts")}
           </Link>

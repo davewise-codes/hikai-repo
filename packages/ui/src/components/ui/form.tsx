@@ -35,7 +35,7 @@ const FormField = React.forwardRef<HTMLDivElement, FormFieldProps>(
       >
         {children}
         {error && (
-          <p className="text-sm text-destructive">{error}</p>
+          <p className="text-fontSize-sm text-destructive">{error}</p>
         )}
       </div>
     )

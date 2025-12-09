@@ -234,7 +234,7 @@ export function MembersTable({
       <div className="overflow-x-auto">
         {/* Table header */}
         <div
-          className={`grid ${GRID_COLS} gap-4 px-4 py-2 text-fontSize-xs font-medium text-muted-foreground border-b`}
+          className={`grid ${GRID_COLS} gap-4 px-4 py-2 text-fontSize-sm font-medium text-muted-foreground border-b`}
         >
           <div>{translations.columnName}</div>
           <div>{translations.columnEmail}</div>

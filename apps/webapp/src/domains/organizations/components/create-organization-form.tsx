@@ -124,10 +124,10 @@ export function CreateOrganizationForm() {
                 <span className="font-semibold">{t("plans.pro")}</span>
                 <Badge variant="secondary">{t("plans.recommended")}</Badge>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">
+              <p className="text-fontSize-sm text-muted-foreground mb-3">
                 {t("plans.proDescription")}
               </p>
-              <ul className="text-sm space-y-1">
+              <ul className="text-fontSize-sm space-y-1">
                 <li>
                   {t("plans.features.products", {
                     count: PLAN_FEATURES.pro.products,
@@ -162,10 +162,10 @@ export function CreateOrganizationForm() {
                 <Building2 className="h-5 w-5 text-primary" />
                 <span className="font-semibold">{t("plans.enterprise")}</span>
               </div>
-              <p className="text-sm text-muted-foreground mb-3">
+              <p className="text-fontSize-sm text-muted-foreground mb-3">
                 {t("plans.enterpriseDescription")}
               </p>
-              <ul className="text-sm space-y-1">
+              <ul className="text-fontSize-sm space-y-1">
                 <li>{t("plans.features.productsUnlimited")}</li>
                 <li>{t("plans.features.membersUnlimited")}</li>
                 <li>{t("plans.features.sso")}</li>

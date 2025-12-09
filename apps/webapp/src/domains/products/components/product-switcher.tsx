@@ -114,10 +114,10 @@ export function ProductSwitcher() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium truncate flex-1">
+                  <span className="text-fontSize-sm font-medium truncate flex-1">
                     {currentProduct.name}
                   </span>
-                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                  <Badge variant="secondary" className="flex-shrink-0">
                     {t(`roles.${currentProduct.userRole}`)}
                   </Badge>
                   {isAdmin && (
@@ -133,11 +133,11 @@ export function ProductSwitcher() {
                   )}
                 </div>
                 {currentProduct.description && (
-                  <span className="text-xs text-muted-foreground truncate">
+                  <span className="text-fontSize-xs text-muted-foreground truncate">
                     {currentProduct.description}
                   </span>
                 )}
-                <span className="text-xs text-muted-foreground">
+                <span className="text-fontSize-xs text-muted-foreground">
                   {currentProduct.memberCount}{" "}
                   {currentProduct.memberCount === 1
                     ? t("memberSingular")
@@ -152,7 +152,7 @@ export function ProductSwitcher() {
         {/* Other products section */}
         {hasOtherProducts && (
           <>
-            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+            <DropdownMenuLabel className="text-fontSize-sm text-muted-foreground font-normal">
               {t("switcher.other")}
             </DropdownMenuLabel>
             {otherProducts.map((product) => (
@@ -166,7 +166,7 @@ export function ProductSwitcher() {
                     <Folder className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                     <span className="truncate">{product.name}</span>
                     {product.userRole && (
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                      <Badge variant="outline" className="flex-shrink-0">
                         {t(`roles.${product.userRole}`)}
                       </Badge>
                     )}
@@ -185,7 +185,7 @@ export function ProductSwitcher() {
           <DropdownMenuItem asChild className="cursor-pointer">
             <Link
               to="/settings/products"
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-fontSize-sm text-muted-foreground hover:text-foreground"
             >
               {t("switcher.myProducts")}
             </Link>
@@ -195,7 +195,7 @@ export function ProductSwitcher() {
         {/* Empty state */}
         {!hasProducts && (
           <>
-            <DropdownMenuItem disabled className="text-muted-foreground text-xs">
+            <DropdownMenuItem disabled className="text-muted-foreground text-fontSize-sm">
               {t("switcher.empty")}
             </DropdownMenuItem>
           </>

@@ -67,7 +67,7 @@ export function VerificationCodeForm({
         <h2 className="text-xl font-semibold mb-2">
           {t('verification.title')}
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-fontSize-sm text-muted-foreground">
           {t('verification.description', { email })}
         </p>
       </div>
@@ -100,7 +100,7 @@ export function VerificationCodeForm({
             {isLoading ? t('verification.verifyButtonLoading') : t('verification.verifyButton')}
           </Button>
           
-          <div className="flex justify-between text-sm">
+          <div className="flex justify-between text-fontSize-sm">
             <Button
               type="button"
               variant="ghost"

@@ -25,12 +25,12 @@ export function SettingsSection({
   return (
     <div className={cn("space-y-1", className)}>
       {title && (
-        <h2 className="text-sm font-medium text-muted-foreground px-1">
+        <h2 className="text-fontSize-sm font-medium text-muted-foreground px-1">
           {title}
         </h2>
       )}
       {description && (
-        <p className="text-sm text-muted-foreground px-1 pb-1">{description}</p>
+        <p className="text-fontSize-sm text-muted-foreground px-1 pb-1">{description}</p>
       )}
       <div className="divide-y divide-border rounded-lg border bg-card">
         {children}

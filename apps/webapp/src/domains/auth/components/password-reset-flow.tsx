@@ -131,7 +131,7 @@ export function PasswordResetFlow({
 			<div className="space-y-4">
 				<div className="text-center mb-4">
 					<h2 className="text-lg font-semibold">{t("passwordReset.title")}</h2>
-					<p className="text-sm text-muted-foreground mt-1">
+					<p className="text-fontSize-sm text-muted-foreground mt-1">
 						{t("passwordReset.subtitle")}
 					</p>
 				</div>
@@ -189,10 +189,10 @@ export function PasswordResetFlow({
 					<h2 className="text-xl font-semibold mb-2">
 						{t("passwordReset.verifyCodeTitle")}
 					</h2>
-					<p className="text-sm text-muted-foreground">
+					<p className="text-fontSize-sm text-muted-foreground">
 						{t("passwordReset.verifyCodeSubtitle")}
 					</p>
-					<p className="text-sm text-muted-foreground mt-1">
+					<p className="text-fontSize-sm text-muted-foreground mt-1">
 						{email}
 					</p>
 				</div>
@@ -225,7 +225,7 @@ export function PasswordResetFlow({
 							{isLoading ? t("verification.verifyButtonLoading") : t("verification.verifyButton")}
 						</Button>
 
-						<div className="flex justify-between text-sm">
+						<div className="flex justify-between text-fontSize-sm">
 							<Button
 								type="button"
 								variant="ghost"
@@ -281,7 +281,7 @@ export function PasswordResetFlow({
 		<div className="space-y-4">
 			<div className="text-center mb-4">
 				<h2 className="text-lg font-semibold">{t("passwordReset.enterNewPassword")}</h2>
-				<p className="text-sm text-muted-foreground mt-1">
+				<p className="text-fontSize-sm text-muted-foreground mt-1">
 					{t("passwordReset.setPasswordSubtitle")}
 				</p>
 			</div>

@@ -101,7 +101,7 @@ export function OrgSwitcher() {
           {/* Avatar */}
           <div className="w-5 h-5 bg-primary rounded flex items-center justify-center flex-shrink-0">
             {currentOrg ? (
-              <span className="text-primary-foreground text-[10px] font-bold">
+              <span className="text-primary-foreground text-fontSize-xs font-bold">
                 {getOrgInitials(currentOrg.name)}
               </span>
             ) : (
@@ -123,11 +123,11 @@ export function OrgSwitcher() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium truncate flex-1">
+                  <span className="text-fontSize-sm font-medium truncate flex-1">
                     {currentOrg.name}
                   </span>
                   {currentOrg.isPersonal && (
-                    <Badge variant="secondary" className="text-xs flex-shrink-0">
+                    <Badge variant="secondary" className="flex-shrink-0">
                       {t("switcher.personal")}
                     </Badge>
                   )}
@@ -149,7 +149,7 @@ export function OrgSwitcher() {
                     </button>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-fontSize-xs text-muted-foreground">
                   {currentOrg.memberCount}{" "}
                   {currentOrg.memberCount === 1
                     ? t("detail.members").replace(/s$/, "")
@@ -164,7 +164,7 @@ export function OrgSwitcher() {
         {/* Recent organizations section */}
         {hasRecentOrgs && (
           <>
-            <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+            <DropdownMenuLabel className="text-fontSize-sm text-muted-foreground font-normal">
               {t("switcher.recent")}
             </DropdownMenuLabel>
             {recentOrgs.map((org) => (
@@ -176,18 +176,18 @@ export function OrgSwitcher() {
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-6 h-6 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium">
+                      <span className="text-fontSize-xs font-medium">
                         {getOrgInitials(org.name)}
                       </span>
                     </div>
                     <span className="truncate">{org.name}</span>
                     {org.isPersonal && (
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                      <Badge variant="outline" className="flex-shrink-0">
                         {t("switcher.personal")}
                       </Badge>
                     )}
                     {!org.isPersonal && org.plan !== "free" && (
-                      <Badge variant="default" className="text-xs flex-shrink-0">
+                      <Badge variant="default" className="flex-shrink-0">
                         {t(`plans.${org.plan}`)}
                       </Badge>
                     )}
@@ -203,7 +203,7 @@ export function OrgSwitcher() {
             <DropdownMenuItem asChild className="cursor-pointer">
               <Link
                 to="/settings/organizations"
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className="text-fontSize-sm text-muted-foreground hover:text-foreground"
               >
                 {t("switcher.myOrganizations")}
               </Link>
@@ -217,7 +217,7 @@ export function OrgSwitcher() {
             {hasRecentOrgs && <DropdownMenuSeparator />}
             {/* Only show label if there are recent orgs above */}
             {hasRecentOrgs && (
-              <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">
+              <DropdownMenuLabel className="text-fontSize-sm text-muted-foreground font-normal">
                 {t("switcher.all")}
               </DropdownMenuLabel>
             )}
@@ -230,18 +230,18 @@ export function OrgSwitcher() {
                 <div className="flex items-center justify-between w-full">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-6 h-6 bg-muted rounded flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-medium">
+                      <span className="text-fontSize-xs font-medium">
                         {getOrgInitials(org.name)}
                       </span>
                     </div>
                     <span className="truncate">{org.name}</span>
                     {org.isPersonal && (
-                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                      <Badge variant="outline" className="flex-shrink-0">
                         {t("switcher.personal")}
                       </Badge>
                     )}
                     {!org.isPersonal && org.plan !== "free" && (
-                      <Badge variant="default" className="text-xs flex-shrink-0">
+                      <Badge variant="default" className="flex-shrink-0">
                         {t(`plans.${org.plan}`)}
                       </Badge>
                     )}
@@ -257,7 +257,7 @@ export function OrgSwitcher() {
               <DropdownMenuItem asChild className="cursor-pointer">
                 <Link
                   to="/settings/organizations"
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  className="text-fontSize-sm text-muted-foreground hover:text-foreground"
                 >
                   {t("switcher.myOrganizations")}
                 </Link>

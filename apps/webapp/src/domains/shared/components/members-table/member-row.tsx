@@ -80,7 +80,7 @@ export function MemberRow({
       </div>
 
       {/* Email */}
-      <div className="text-fontSize-xs text-muted-foreground truncate">
+      <div className="text-fontSize-sm text-muted-foreground truncate">
         {member.user?.email}
       </div>
 
@@ -91,7 +91,7 @@ export function MemberRow({
             value={member.role}
             onValueChange={(v) => onRoleChange(member.userId, v)}
           >
-            <SelectTrigger className="w-full h-7 text-fontSize-xs">
+            <SelectTrigger className="w-full h-7 text-fontSize-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
