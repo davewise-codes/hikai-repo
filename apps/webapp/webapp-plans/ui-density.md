@@ -105,7 +105,7 @@ Hikai es una app saas B2B orientada a facilitar el marketing de productos digita
 | Fase | Descripción | Estado |
 |------|-------------|--------|
 | F0: Análisis y Definición de Tokens | Definir escala tipográfica y tokens de spacing | ✅ Completado |
-| F1: Sistema de Typography Tokens | Crear variables CSS y clases utility para tipografía | ⏳ Pendiente |
+| F1: Sistema de Typography Tokens | Crear variables CSS y clases utility para tipografía | ✅ Completado |
 | F2: Sistema de Spacing Tokens | Crear tokens centralizados para nav items y botones | ⏳ Pendiente |
 | F3: Migración de Componentes UI | Aplicar tokens a Button, Badge, inputs en packages/ui | ⏳ Pendiente |
 | F4: Migración Settings Navigation | Aplicar tokens a settings-nav y componentes relacionados | ⏳ Pendiente |
