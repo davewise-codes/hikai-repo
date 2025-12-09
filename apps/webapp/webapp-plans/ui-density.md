@@ -110,6 +110,7 @@ Hikai es una app saas B2B orientada a facilitar el marketing de productos digita
 | F3: Migración de Componentes UI | Aplicar tokens a Button, Badge, inputs en packages/ui | ✅ Completado |
 | F4: Migración Settings Navigation | Aplicar tokens a settings-nav y componentes relacionados | ✅ Completado |
 | F5: Migración Menus y Dropdowns | Aplicar tokens a user-menu, org-switcher, product-switcher | ✅ Completado |
+| F5.1: Fix tailwind-merge | Extender tailwind-merge para clases text-fontSize-* | ✅ Completado |
 | F6: Migración de Cards y Forms | Aplicar tokens a cards, formularios y resto de webapp | ⏳ Pendiente |
 | F7: Cleanup y Documentación | Eliminar código obsoleto, documentar sistema | ⏳ Pendiente |
 
@@ -1102,3 +1103,45 @@ packages/ui/src/styles/
 2. **Nav/Menu items**: `h-7` + `py-0` + `px-2` → altura fija 28px para consistencia en listas
 3. **Tipografía**: `text-fontSize-sm` como estándar universal de UI
 4. **Preparación futuro**: Token `--spacing-btn-x-compact` (8px) listo para website
+
+---
+
+## F5.1: Fix tailwind-merge (Post-F5)
+
+### Problema Detectado
+
+Después de completar F5, las clases `text-fontSize-*` no se aplicaban correctamente porque `tailwind-merge` las eliminaba al no reconocerlas como clases válidas de font-size.
+
+### Root Cause
+
+`tailwind-merge` en `cn()` elimina clases que no reconoce. Nuestras clases custom `text-fontSize-{xs,sm,base,lg,title}` no estaban registradas.
+
+### Solución Implementada
+
+Extender `tailwind-merge` en `packages/ui/src/lib/utils.ts`:
+
+```ts
+import { extendTailwindMerge } from "tailwind-merge"
+
+const customTwMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [{ 'text-fontSize': ['xs', 'sm', 'base', 'lg', 'title'] }]
+    }
+  }
+})
+
+export function cn(...inputs: ClassValue[]) {
+  return customTwMerge(clsx(inputs))
+}
+```
+
+### Documentación Actualizada
+
+- `packages/ui/DESIGN-TOKENS.md` - Sección "Compatibilidad con tailwind-merge"
+- `packages/ui/COMPONENT-GUIDELINES.md` - Sección "Utilidad cn() y tailwind-merge"
+- `packages/ui/README.md` - Sección "Utilidades"
+
+### Lección Aprendida
+
+Al crear clases CSS custom que puedan colisionar o necesiten merge inteligente, siempre registrarlas en `extendTailwindMerge` en `utils.ts`.
