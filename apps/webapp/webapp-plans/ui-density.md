@@ -112,7 +112,7 @@ Hikai es una app saas B2B orientada a facilitar el marketing de productos digita
 | F5: Migración Menus y Dropdowns | Aplicar tokens a user-menu, org-switcher, product-switcher | ✅ Completado |
 | F5.1: Fix tailwind-merge | Extender tailwind-merge para clases text-fontSize-* | ✅ Completado |
 | F6: Migración de Cards y Forms | Aplicar tokens a cards, formularios y resto de webapp | ✅ Completado |
-| F7: Cleanup y Documentación | Eliminar código obsoleto, documentar sistema | ⏳ Pendiente |
+| F7: Cleanup y Documentación | Eliminar código obsoleto, documentar sistema | ✅ Completado |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -981,29 +981,29 @@ VALIDACIÓN FINAL:
 ## Checklist Final de Migración
 
 ### Typography (text-fontSize-*)
-- [ ] Button - text-fontSize-sm
-- [ ] Input - text-fontSize-sm
-- [ ] Badge - text-fontSize-xs
-- [ ] DropdownMenuItem - text-fontSize-sm
-- [ ] settings-nav-item - text-fontSize-sm
-- [ ] user-menu - text-fontSize-sm/xs
-- [ ] org-switcher - text-fontSize-sm/xs
-- [ ] product-switcher - text-fontSize-sm/xs
-- [ ] product-card - text-fontSize-sm/xs
-- [ ] org-card - text-fontSize-sm/xs
-- [ ] create-organization-form - text-fontSize-sm/xs
-- [ ] create-product-form - text-fontSize-sm/xs
-- [ ] signin-form - text-fontSize-sm/xs
-- [ ] settings-section - text-fontSize-sm/xs
-- [ ] settings-header - text-fontSize-sm
+- [x] Button - text-fontSize-sm
+- [x] Input - text-fontSize-sm
+- [x] Badge - text-fontSize-xs
+- [x] DropdownMenuItem - text-fontSize-sm
+- [x] settings-nav-item - text-fontSize-sm
+- [x] user-menu - text-fontSize-sm/xs
+- [x] org-switcher - text-fontSize-sm/xs
+- [x] product-switcher - text-fontSize-sm/xs
+- [x] product-card - text-fontSize-sm/xs
+- [x] org-card - text-fontSize-sm/xs
+- [x] create-organization-form - text-fontSize-sm/xs
+- [x] create-product-form - text-fontSize-sm/xs
+- [x] signin-form - text-fontSize-sm/xs
+- [x] settings-section - text-fontSize-sm/xs
+- [x] settings-header - text-fontSize-sm
 
 ### Spacing
-- [ ] Button default - py-0 px-3.5 (altura NATURAL, sin h-*)
-- [ ] Button sm - py-0 px-3 (altura NATURAL, sin h-*)
-- [ ] Button icon - size-7 (28x28, único con tamaño fijo)
-- [ ] settings-nav-item - h-7 (altura FIJA 28px)
-- [ ] DropdownMenuItem - h-7 (altura FIJA 28px)
-- [ ] Menu items - h-7 (altura FIJA 28px)
+- [x] Button default - min-h-btn min-w-btn px-btn py-0 (altura natural con mínimos)
+- [x] Button sm - min-h-btn min-w-btn px-3 py-0 (altura natural con mínimos)
+- [x] Button icon - size-8 (32x32, único con tamaño fijo)
+- [x] settings-nav-item - h-7 (altura FIJA 28px)
+- [x] DropdownMenuItem - h-8 (altura FIJA 32px para contenido rico)
+- [x] Menu items - h-8 (altura FIJA 32px)
 
 ---
 
