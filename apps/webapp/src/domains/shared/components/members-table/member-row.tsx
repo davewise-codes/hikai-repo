@@ -1,4 +1,13 @@
+import { useState } from "react";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -40,6 +49,10 @@ export interface MemberRowProps {
   gridCols: string;
   translations: {
     neverSeen: string;
+    confirmRemoveTitle: string;
+    confirmRemove: string;
+    confirmLabel: string;
+    cancelLabel: string;
   };
 }
 
@@ -55,7 +68,17 @@ export function MemberRow({
   gridCols,
   translations,
 }: MemberRowProps) {
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const showHighlight = highlightRoles.includes(member.role);
+
+  const handleRemoveClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmRemove = () => {
+    onRemove(member.userId);
+    setShowConfirmDialog(false);
+  };
 
   return (
     <div
@@ -129,12 +152,33 @@ export function MemberRow({
             variant="ghost-destructive"
             size="icon"
             className="h-7 w-7"
-            onClick={() => onRemove(member.userId)}
+            onClick={handleRemoveClick}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{translations.confirmRemoveTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {translations.confirmRemove}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{translations.cancelLabel}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmRemove}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {translations.confirmLabel}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

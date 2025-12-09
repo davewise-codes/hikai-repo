@@ -139,6 +139,8 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
         cancelLabel: t("common.cancel"),
         confirmLabel: t("members.addButton"),
         noAvailable: t("members.noAvailable"),
+        confirmRemoveTitle: t("members.confirmRemoveTitle"),
+        confirmRemove: t("members.confirmRemove"),
       }}
     />
   );

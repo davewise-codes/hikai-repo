@@ -111,7 +111,9 @@
     "columnRole": "Rol",
     "columnJoined": "Unido",
     "columnLastSeen": "Último acceso",
-    "neverSeen": "Nunca"
+    "neverSeen": "Nunca",
+    "confirmRemoveTitle": "Eliminar miembro",
+    "confirmRemove": "¿Estás seguro de que quieres eliminar a este miembro del producto?"
   },
   "settings": {
     "title": "Configuración del Producto",

@@ -423,6 +423,26 @@ export const removeMember = mutation({
       }
     }
 
+    // CASCADE DELETE: Eliminar membresías de productos de esta org
+    // Modelo de seguridad: membresía a producto REQUIERE membresía a org padre
+    const products = await ctx.db
+      .query("products")
+      .withIndex("by_organization", (q) => q.eq("organizationId", organizationId))
+      .collect();
+
+    for (const product of products) {
+      const productMembership = await ctx.db
+        .query("productMembers")
+        .withIndex("by_product_user", (q) =>
+          q.eq("productId", product._id).eq("userId", userId)
+        )
+        .first();
+
+      if (productMembership) {
+        await ctx.db.delete(productMembership._id);
+      }
+    }
+
     await ctx.db.delete(membership._id);
     return membership._id;
   },

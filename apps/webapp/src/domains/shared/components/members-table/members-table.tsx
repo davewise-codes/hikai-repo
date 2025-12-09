@@ -40,6 +40,9 @@ export interface MembersTableTranslations {
   cancelLabel: string;
   confirmLabel: string;
   noAvailable?: string;
+  // Remove confirmation dialog
+  confirmRemoveTitle: string;
+  confirmRemove: string;
 }
 
 export interface MembersTableProps {
@@ -259,6 +262,10 @@ export function MembersTable({
             gridCols={GRID_COLS}
             translations={{
               neverSeen: translations.neverSeen,
+              confirmRemoveTitle: translations.confirmRemoveTitle,
+              confirmRemove: translations.confirmRemove,
+              confirmLabel: translations.confirmLabel,
+              cancelLabel: translations.cancelLabel,
             }}
           />
         ))}

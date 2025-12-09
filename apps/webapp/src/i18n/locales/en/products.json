@@ -111,7 +111,9 @@
     "columnRole": "Role",
     "columnJoined": "Joined",
     "columnLastSeen": "Last seen",
-    "neverSeen": "Never"
+    "neverSeen": "Never",
+    "confirmRemoveTitle": "Remove member",
+    "confirmRemove": "Are you sure you want to remove this member from the product?"
   },
   "settings": {
     "title": "Product Settings",

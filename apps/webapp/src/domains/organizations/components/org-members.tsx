@@ -147,6 +147,8 @@ export function OrgMembers({ organizationId, userRole }: OrgMembersProps) {
         roleLabel: t("members.selectRole"),
         cancelLabel: t("common.cancel"),
         confirmLabel: t("members.addButton"),
+        confirmRemoveTitle: t("members.confirmRemoveTitle"),
+        confirmRemove: t("members.confirmRemove"),
       }}
     />
   );
