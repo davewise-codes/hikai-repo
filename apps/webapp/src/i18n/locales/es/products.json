@@ -115,7 +115,8 @@
     "columnLastSeen": "Último acceso",
     "neverSeen": "Nunca",
     "confirmRemoveTitle": "Eliminar miembro",
-    "confirmRemove": "¿Estás seguro de que quieres eliminar a este miembro del producto?"
+    "confirmRemove": "¿Estás seguro de que quieres eliminar a este miembro del producto?",
+    "confirmRemoveButton": "Eliminar"
   },
   "settings": {
     "title": "Configuración del Producto",

@@ -141,6 +141,7 @@ export function ProductMembers({ productId, userRole }: ProductMembersProps) {
         noAvailable: t("members.noAvailable"),
         confirmRemoveTitle: t("members.confirmRemoveTitle"),
         confirmRemove: t("members.confirmRemove"),
+        confirmRemoveButton: t("members.confirmRemoveButton"),
       }}
     />
   );

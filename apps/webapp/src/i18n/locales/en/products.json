@@ -115,7 +115,8 @@
     "columnLastSeen": "Last seen",
     "neverSeen": "Never",
     "confirmRemoveTitle": "Remove member",
-    "confirmRemove": "Are you sure you want to remove this member from the product?"
+    "confirmRemove": "Are you sure you want to remove this member from the product?",
+    "confirmRemoveButton": "Remove"
   },
   "settings": {
     "title": "Product Settings",

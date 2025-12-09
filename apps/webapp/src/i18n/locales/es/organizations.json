@@ -122,7 +122,8 @@
     "columnLastSeen": "Último acceso",
     "neverSeen": "Nunca",
     "confirmRemoveTitle": "Eliminar miembro",
-    "confirmRemove": "¿Estás seguro de que quieres eliminar a este miembro de la organización?"
+    "confirmRemove": "¿Estás seguro de que quieres eliminar a este miembro de la organización?",
+    "confirmRemoveButton": "Eliminar"
   },
   "roles": {
     "owner": "Owner",

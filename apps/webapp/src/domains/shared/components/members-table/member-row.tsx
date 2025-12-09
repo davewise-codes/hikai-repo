@@ -51,7 +51,7 @@ export interface MemberRowProps {
     neverSeen: string;
     confirmRemoveTitle: string;
     confirmRemove: string;
-    confirmLabel: string;
+    confirmRemoveButton: string;
     cancelLabel: string;
   };
 }
@@ -174,7 +174,7 @@ export function MemberRow({
               onClick={handleConfirmRemove}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {translations.confirmLabel}
+              {translations.confirmRemoveButton}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

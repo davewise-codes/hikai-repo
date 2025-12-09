@@ -43,6 +43,7 @@ export interface MembersTableTranslations {
   // Remove confirmation dialog
   confirmRemoveTitle: string;
   confirmRemove: string;
+  confirmRemoveButton: string;
 }
 
 export interface MembersTableProps {
@@ -264,7 +265,7 @@ export function MembersTable({
               neverSeen: translations.neverSeen,
               confirmRemoveTitle: translations.confirmRemoveTitle,
               confirmRemove: translations.confirmRemove,
-              confirmLabel: translations.confirmLabel,
+              confirmRemoveButton: translations.confirmRemoveButton,
               cancelLabel: translations.cancelLabel,
             }}
           />
