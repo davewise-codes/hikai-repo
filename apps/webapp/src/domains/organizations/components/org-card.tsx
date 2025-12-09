@@ -170,15 +170,17 @@ export function OrgCard({ organization }: OrgCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleViewOrSettings}>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  {t("actions.view")}
-                </DropdownMenuItem>
                 {isAdmin && (
-                  <DropdownMenuItem onClick={handleViewOrSettings}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    {t("actions.settings")}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={handleViewOrSettings}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      {t("actions.view")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleViewOrSettings}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      {t("actions.settings")}
+                    </DropdownMenuItem>
+                  </>
                 )}
               {(canLeave || canTransfer || canDelete) && <DropdownMenuSeparator />}
               {canLeave && (
