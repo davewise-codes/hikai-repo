@@ -71,12 +71,18 @@
 
 	/* === SPACING UTILITIES === */
 
-	/* Component heights (solo nav/menu, NO botones) */
+	/* Component heights */
 	.h-nav-item {
 		height: var(--height-nav-item);
 	}
 	.h-menu-item {
 		height: var(--height-menu-item);
+	}
+	.min-h-btn {
+		min-height: var(--height-btn-min);
+	}
+	.min-w-btn {
+		min-width: var(--width-btn-min);
 	}
 
 	/* Horizontal padding */
