@@ -1,0 +1,33 @@
+/* ============================================
+ * UI COMPONENT SPACING TOKENS
+ * ============================================
+ *
+ * Tokens para spacing de componentes UI (nav items, botones, menús).
+ * Basado en Linear para alta densidad de información.
+ *
+ * PRINCIPIOS (decisiones F0):
+ * - Nav/Menu items: altura FIJA (28px) para consistencia en listas
+ * - Botones: altura NATURAL (py-0 + line-height), NO altura fija
+ * - Sin padding vertical en ningún caso
+ *
+ * NOTA: Los gaps NO varían con density preference.
+ * Solo la tipografía (density.css) responde a compact/normal/comfortable.
+ * Los layouts permanecen constantes para estabilidad visual.
+ */
+
+:root {
+  /* === COMPONENT HEIGHTS (solo nav/menu, NO botones) === */
+  --height-nav-item: 1.75rem;    /* 28px - Linear standard */
+  --height-menu-item: 1.75rem;   /* 28px */
+
+  /* === HORIZONTAL PADDING === */
+  --spacing-btn-x: 0.875rem;     /* 14px - Linear settings buttons (webapp) */
+  --spacing-btn-x-compact: 0.5rem; /* 8px - futuro website/acciones densas */
+  --spacing-nav-x: 0.5rem;       /* 8px - navigation items */
+  --spacing-menu-x: 0.5rem;      /* 8px - menu items */
+
+  /* === GAPS (Between items) === */
+  --gap-nav-items: 0.125rem;     /* 2px - very tight */
+  --gap-section: 1.5rem;         /* 24px - between sections */
+  --gap-content: 0.5rem;         /* 8px - between content elements */
+}

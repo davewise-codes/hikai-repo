@@ -237,6 +237,85 @@ Los valores válidos son: `font-size-compact`, `font-size-normal`, `font-size-co
 
 ---
 
+## Sistema de Spacing (UI Components)
+
+Tokens para spacing de componentes UI (nav items, botones, menús). Basado en Linear para alta densidad de información.
+
+Definido en `src/tokens/spacing.css`.
+
+### Principios
+
+- **Nav/Menu items**: altura FIJA (28px) para consistencia en listas
+- **Botones**: altura NATURAL (py-0 + line-height), NO altura fija
+- **Sin padding vertical** en nav/menu items
+- **Los gaps NO varían** con density preference (solo tipografía escala)
+
+### Component Heights
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--height-nav-item` | 28px (1.75rem) | Navigation items |
+| `--height-menu-item` | 28px (1.75rem) | Menu/dropdown items |
+
+> ⚠️ **Botones NO usan altura fija**. Usan `py-0` + `line-height` para altura natural.
+
+### Horizontal Padding
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--spacing-btn-x` | 14px (0.875rem) | Botones (webapp/settings) |
+| `--spacing-btn-x-compact` | 8px (0.5rem) | Futuro: website, acciones densas |
+| `--spacing-nav-x` | 8px (0.5rem) | Navigation items |
+| `--spacing-menu-x` | 8px (0.5rem) | Menu items |
+
+### Gaps
+
+| Token | Valor | Uso |
+|-------|-------|-----|
+| `--gap-nav-items` | 2px (0.125rem) | Entre items de navegación |
+| `--gap-section` | 24px (1.5rem) | Entre secciones |
+| `--gap-content` | 8px (0.5rem) | Entre elementos de contenido |
+
+### Clases Utility
+
+```css
+/* Component heights (solo nav/menu, NO botones) */
+.h-nav-item      /* 28px - para nav items */
+.h-menu-item     /* 28px - para menu items */
+
+/* Horizontal padding */
+.px-btn          /* 14px - para botones */
+.px-nav          /* 8px - para nav items */
+.px-menu         /* 8px - para menu items */
+
+/* Gaps */
+.gap-nav         /* 2px - entre items de nav */
+.gap-section     /* 24px - entre secciones */
+.gap-content     /* 8px - entre elementos de contenido */
+```
+
+### Uso en Componentes
+
+```tsx
+// ✅ Nav item con altura fija
+<div className="h-nav-item px-nav flex items-center">
+  <span className="text-fontSize-sm">Menu Item</span>
+</div>
+
+// ✅ Botón con altura natural (sin h-*)
+<button className="px-btn py-0 text-fontSize-sm">
+  Action
+</button>
+
+// ❌ Incorrecto: padding vertical en nav items
+<div className="px-2 py-1.5">Nav item</div>
+
+// ❌ Incorrecto: altura fija en botones
+<button className="h-9 px-4">Button</button>
+```
+
+---
+
 ## Importar Temas de tweakcn.com
 
 1. Ir a [tweakcn.com](https://tweakcn.com)

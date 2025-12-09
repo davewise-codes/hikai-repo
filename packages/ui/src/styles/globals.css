@@ -8,6 +8,7 @@
 @import "../fonts/fonts.css";
 @import "../tokens/tokens.css";
 @import "../tokens/density.css";
+@import "../tokens/spacing.css";
 
 /* Color themes - each theme defines colors wrapped in .theme-* class */
 @import "../themes/default.css";
@@ -66,5 +67,40 @@
 	}
 	.leading-ui-normal {
 		line-height: var(--lineHeight-normal);
+	}
+
+	/* === SPACING UTILITIES === */
+
+	/* Component heights (solo nav/menu, NO botones) */
+	.h-nav-item {
+		height: var(--height-nav-item);
+	}
+	.h-menu-item {
+		height: var(--height-menu-item);
+	}
+
+	/* Horizontal padding */
+	.px-btn {
+		padding-left: var(--spacing-btn-x);
+		padding-right: var(--spacing-btn-x);
+	}
+	.px-nav {
+		padding-left: var(--spacing-nav-x);
+		padding-right: var(--spacing-nav-x);
+	}
+	.px-menu {
+		padding-left: var(--spacing-menu-x);
+		padding-right: var(--spacing-menu-x);
+	}
+
+	/* Gaps */
+	.gap-nav {
+		gap: var(--gap-nav-items);
+	}
+	.gap-section {
+		gap: var(--gap-section);
+	}
+	.gap-content {
+		gap: var(--gap-content);
 	}
 }
