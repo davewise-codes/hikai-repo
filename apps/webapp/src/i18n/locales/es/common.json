@@ -16,6 +16,17 @@
     "comingSoon": "Próximamente",
     "selectProduct": "Seleccionar producto"
   },
+  "workspace": {
+    "nav": {
+      "timeline": "Timeline",
+      "marketing": "Marketing",
+      "customerSuccess": "Customer Success",
+      "productTeam": "Equipo de Producto",
+      "content": "Contenido",
+      "publishing": "Publicación",
+      "settings": "Configuración"
+    }
+  },
   "userMenu": {
     "title": "Menú de usuario",
     "user": "Usuario",

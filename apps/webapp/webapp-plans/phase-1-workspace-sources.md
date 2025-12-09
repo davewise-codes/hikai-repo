@@ -24,7 +24,7 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 | ------- | ------------------------------------ | ------------ |
 | F1.0    | Schema: connectorTypes, connections  | ✅ Completado |
 | F1.1    | WorkspaceShell (layout en core)      | ✅ Completado |
-| F1.2    | WorkspaceSidebar (navegación iconos) | ⏳ Pendiente |
+| F1.2    | WorkspaceSidebar (navegación iconos) | ✅ Completado |
 | F1.3    | Rutas del workspace                  | ⏳ Pendiente |
 | F1.4    | Connectors backend (CRUD)            | ⏳ Pendiente |
 | F1.5    | Connectors frontend (UI)             | ⏳ Pendiente |

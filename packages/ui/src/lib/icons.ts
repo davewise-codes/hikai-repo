@@ -65,6 +65,7 @@ export {
   Mail,
   Phone,
   MessageCircle,
+  Megaphone,
   Send,
   Bell,
   BellOff,
@@ -193,6 +194,7 @@ export type { LucideIcon, LucideProps } from "lucide-react";
 // Additional icons that might be needed - add as required
 export {
   Home,
+  Package,
   Building,
   Building2,
   Globe,
