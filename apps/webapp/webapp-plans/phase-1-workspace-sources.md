@@ -5,11 +5,13 @@
 Esta fase establece los **fundamentos del Product Workspace** y la capacidad de **conectar sources** (inicialmente solo GitHub).
 
 **Objetivos**:
+
 1. Crear el layout del workspace de producto (zona funcional principal de Hikai)
 2. Implementar el dominio `connectors` (backend + frontend)
 3. Permitir conectar repositorios GitHub a un producto
 
 **Documentación de referencia**:
+
 - `apps/webapp/webapp-plans/hikai-architecture.md` - Arquitectura técnica
 - `apps/webapp/webapp-plans/Hikai_resumen_arquitectura.md` - Visión de negocio (sección 4: Arquitectura de Navegación)
 - `CLAUDE.md` - Reglas del repositorio
@@ -18,16 +20,16 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 
 ## Progreso
 
-| Subfase | Descripción | Estado |
-|---------|-------------|--------|
-| F1.0 | Schema: connectorTypes, connections | ⏳ Pendiente |
-| F1.1 | WorkspaceShell (layout en core) | ⏳ Pendiente |
-| F1.2 | WorkspaceSidebar (navegación iconos) | ⏳ Pendiente |
-| F1.3 | Rutas del workspace | ⏳ Pendiente |
-| F1.4 | Connectors backend (CRUD) | ⏳ Pendiente |
-| F1.5 | Connectors frontend (UI) | ⏳ Pendiente |
-| F1.6 | GitHub OAuth flow | ⏳ Pendiente |
-| F1.7 | Settings > Product > Sources | ⏳ Pendiente |
+| Subfase | Descripción                          | Estado       |
+| ------- | ------------------------------------ | ------------ |
+| F1.0    | Schema: connectorTypes, connections  | ✅ Completado |
+| F1.1    | WorkspaceShell (layout en core)      | ✅ Completado |
+| F1.2    | WorkspaceSidebar (navegación iconos) | ⏳ Pendiente |
+| F1.3    | Rutas del workspace                  | ⏳ Pendiente |
+| F1.4    | Connectors backend (CRUD)            | ⏳ Pendiente |
+| F1.5    | Connectors frontend (UI)             | ⏳ Pendiente |
+| F1.6    | GitHub OAuth flow                    | ⏳ Pendiente |
+| F1.7    | Settings > Product > Sources         | ⏳ Pendiente |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -41,6 +43,7 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 - Analiza el documento y toma el prompt de esa subfase como instrucción
 - Comparte el plan de implementación antes de comenzar
 - No hagas commit hasta que yo confirme las pruebas OK
+- Una vez validado haz commit y actualiza el progreso en el documento apps/webapp/webapp-plans/phase-1-workspace-sources.md
 - No hagas asunciones, compárteme dudas y las debatimos
 - Máxima capacidad de ultrathink
 ```
@@ -50,6 +53,7 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 ## Instrucciones Generales
 
 ### Reglas del Repo
+
 - Seguir `CLAUDE.md` estrictamente
 - Componentes UI de `@hikai/ui` (Button, Badge, etc.)
 - Iconos de `@hikai/ui` (no lucide-react directo en apps/)
@@ -57,18 +61,21 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 - Clases `text-fontSize-sm` para texto estándar
 
 ### Backend (Convex)
+
 - Validar acceso: `await assertProductAccess(ctx, productId)`
 - Seguir patrones de `packages/convex/convex/organizations/` y `products/`
 - Índices para queries frecuentes
 - Manejar errores con mensajes traducibles
 
 ### Frontend (Webapp)
+
 - Hooks en `domains/[dominio]/hooks/`
 - Componentes en `domains/[dominio]/components/`
 - Exportar API pública en `domains/[dominio]/index.ts`
 - i18n: usar `useTranslation` con namespaces
 
 ### Commits
+
 - Un commit por subfase completada
 - Formato: `feat(scope): [F1.X] descripción breve`
 - NO commit hasta pruebas confirmadas OK
@@ -82,6 +89,7 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 **Objetivo**: Crear las tablas `connectorTypes` y `connections` en Convex.
 
 **Archivos**:
+
 - `packages/convex/convex/schema.ts` - Añadir tablas
 
 **Prompt**:
@@ -145,6 +153,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] `connectorTypes` table creada con índices
 - [ ] `connections` table creada con índices
 - [ ] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
@@ -157,6 +166,7 @@ VALIDACIÓN:
 **Objetivo**: Crear el layout principal del Product Workspace en el dominio `core`.
 
 **Archivos**:
+
 - `apps/webapp/src/domains/core/components/workspace-shell.tsx` - Crear
 - `apps/webapp/src/domains/core/components/index.ts` - Exportar
 
@@ -233,6 +243,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] `WorkspaceShell` creado y exportado
 - [ ] `WorkspaceSidebar` placeholder creado
 - [ ] Sin errores de TypeScript
@@ -244,6 +255,7 @@ VALIDACIÓN:
 **Objetivo**: Implementar la navegación del workspace (sidebar minimalista con iconos).
 
 **Archivos**:
+
 - `apps/webapp/src/domains/core/components/workspace-sidebar.tsx` - Implementar
 - `apps/webapp/src/i18n/locales/en/common.json` - Traducciones
 - `apps/webapp/src/i18n/locales/es/common.json` - Traducciones
@@ -384,6 +396,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] Sidebar con 7 iconos (6 nav + settings)
 - [ ] Tooltips con traducciones en/es
 - [ ] Active state funciona
@@ -396,6 +409,7 @@ VALIDACIÓN:
 **Objetivo**: Crear la estructura de rutas para el Product Workspace.
 
 **Archivos**:
+
 - `apps/webapp/src/routes/app/$orgSlug/$productSlug.tsx` - Layout padre
 - `apps/webapp/src/routes/app/$orgSlug/$productSlug/index.tsx` - Redirect a timeline
 - `apps/webapp/src/routes/app/$orgSlug/$productSlug/timeline.tsx` - Placeholder
@@ -499,6 +513,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] Ruta `/app/$orgSlug/$productSlug` funciona
 - [ ] Redirect a `/timeline` automático
 - [ ] WorkspaceShell renderiza correctamente
@@ -511,6 +526,7 @@ VALIDACIÓN:
 **Objetivo**: Implementar queries y mutations para gestionar connections.
 
 **Archivos**:
+
 - `packages/convex/convex/connectors/connections.ts` - Crear
 - `packages/convex/convex/connectors/index.ts` - Crear
 - `packages/convex/convex/lib/access.ts` - Verificar helpers
@@ -710,6 +726,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] CRUD de connections implementado
 - [ ] Access control con `assertProductAccess`
 - [ ] Credentials nunca expuestos en queries
@@ -722,6 +739,7 @@ VALIDACIÓN:
 **Objetivo**: Crear el dominio `connectors` en webapp con componentes UI.
 
 **Archivos**:
+
 - `apps/webapp/src/domains/connectors/hooks/use-connections.ts` - Crear
 - `apps/webapp/src/domains/connectors/hooks/index.ts` - Crear
 - `apps/webapp/src/domains/connectors/components/connection-list.tsx` - Crear
@@ -793,6 +811,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] Hook `useConnections` funciona
 - [ ] Componentes creados y exportados
 - [ ] Traducciones configuradas
@@ -805,6 +824,7 @@ VALIDACIÓN:
 **Objetivo**: Implementar el flujo de autenticación OAuth con GitHub.
 
 **Archivos**:
+
 - `packages/convex/convex/connectors/github.ts` - Crear
 - `packages/convex/convex/http.ts` - Añadir callback
 - `apps/webapp/src/domains/connectors/components/add-connection-dialog.tsx` - Actualizar
@@ -895,6 +915,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] Endpoint OAuth funciona
 - [ ] Callback handler implementado
 - [ ] UI conecta el flujo
@@ -907,6 +928,7 @@ VALIDACIÓN:
 **Objetivo**: Crear la página de configuración de sources en settings.
 
 **Archivos**:
+
 - `apps/webapp/src/routes/settings/product/$slug/sources.tsx` - Crear
 - `apps/webapp/src/routes/settings.tsx` - Añadir nav item
 - `apps/webapp/src/i18n/locales/en/common.json` - Traducción nav
@@ -1005,6 +1027,7 @@ VALIDACIÓN:
 ```
 
 **Validación**:
+
 - [ ] Página de sources funciona
 - [ ] Navegación desde settings
 - [ ] Lista de conexiones visible
@@ -1032,18 +1055,21 @@ F1.1 (Shell) ──► F1.2 (Sidebar) ──► F1.3 (Routes)
 ## Checklist Final de Fase 1
 
 ### Backend
+
 - [ ] Schema con connectorTypes y connections
 - [ ] CRUD mutations con access control
 - [ ] GitHub OAuth endpoints
 - [ ] Seed de connectorTypes inicial
 
 ### Frontend
+
 - [ ] WorkspaceShell y WorkspaceSidebar
 - [ ] Rutas del workspace configuradas
 - [ ] Dominio connectors con hooks y componentes
 - [ ] Página Settings > Sources
 
 ### Testing
+
 - [ ] Navegación al workspace funciona
 - [ ] Sidebar muestra iconos con tooltips
 - [ ] Lista de conexiones carga
@@ -1055,7 +1081,9 @@ F1.1 (Shell) ──► F1.2 (Sidebar) ──► F1.3 (Routes)
 ## Notas de Implementación
 
 ### GitHub App
+
 Para el OAuth flow completo necesitas:
+
 1. Crear GitHub App en github.com/settings/apps
 2. Configurar OAuth callback URL
 3. Añadir environment variables:
@@ -1063,7 +1091,9 @@ Para el OAuth flow completo necesitas:
    - `GITHUB_CLIENT_SECRET`
 
 ### Estado Mínimo Viable
+
 Si el OAuth no está listo, la fase se considera completa cuando:
+
 - El schema existe
 - El workspace shell funciona
 - La UI de settings muestra la lista de conexiones
