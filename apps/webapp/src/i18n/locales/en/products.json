@@ -14,6 +14,8 @@
     "menu": "Open menu",
     "select": "Select",
     "selected": "Selected",
+    "noAccess": "No access",
+    "notMember": "You are not a member",
     "view": "View",
     "settings": "Settings",
     "leave": "Leave",

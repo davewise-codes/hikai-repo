@@ -4,6 +4,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import { routeTree } from "./routeTree.gen";
+import { hybridStorage } from "./lib/hybrid-storage";
 import "./styles/globals.css";
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL;
@@ -27,7 +28,7 @@ declare module "@tanstack/react-router" {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
 	<StrictMode>
-		<ConvexAuthProvider client={convex}>
+		<ConvexAuthProvider client={convex} storage={hybridStorage}>
 			<RouterProvider router={router} />
 		</ConvexAuthProvider>
 	</StrictMode>,

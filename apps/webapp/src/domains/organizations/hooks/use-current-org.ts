@@ -18,6 +18,7 @@ export function useCurrentOrg() {
     currentOrgId,
     setCurrentOrgId,
     setCurrentProductId,
+    isReady: isPrefsReady,
   } = useUserPreferences();
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,13 +33,15 @@ export function useCurrentOrg() {
   );
 
   // Auto-seleccionar primera org si ninguna está seleccionada
+  // IMPORTANTE: Solo ejecutar cuando isPrefsReady=true para evitar sobrescribir
+  // valores que aún no se han cargado de localStorage
   useEffect(() => {
-    if (!currentOrgId && organizations && organizations.length > 0) {
+    if (isPrefsReady && !currentOrgId && organizations && organizations.length > 0) {
       // Preferir org personal si existe (debería ser la primera por el sort)
       const personal = organizations.find((o) => o.isPersonal);
       setCurrentOrgId(personal?._id ?? organizations[0]._id);
     }
-  }, [currentOrgId, organizations, setCurrentOrgId]);
+  }, [isPrefsReady, currentOrgId, organizations, setCurrentOrgId]);
 
   // Encontrar la org actual basándose en el ID
   const currentOrg =
@@ -70,7 +73,7 @@ export function useCurrentOrg() {
   return {
     currentOrg,
     organizations: organizations ?? [],
-    isLoading: organizations === undefined,
+    isLoading: !isPrefsReady || organizations === undefined,
     setCurrentOrg,
   };
 }

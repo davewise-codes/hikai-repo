@@ -59,6 +59,7 @@ export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
   // Support both role (from getUserProducts) and userRole (from listProducts)
   const userRole = product.role ?? product.userRole;
   const isAdmin = userRole === "admin";
+  const isMember = userRole !== null && userRole !== undefined;
   const canDelete = showDeleteAction && isAdmin;
 
   const isCurrentProduct = currentProduct?._id === product._id;
@@ -140,19 +141,22 @@ export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
             </span>
           </div>
           <div className="flex items-center gap-1">
-            {/* Select button */}
+            {/* Select button - disabled if not a member */}
             <Button
               variant={isCurrentProduct ? "secondary" : "outline"}
               size="sm"
               className="h-7 text-fontSize-xs"
               onClick={handleSelectProduct}
-              disabled={isCurrentProduct}
+              disabled={isCurrentProduct || !isMember}
+              title={!isMember ? t("actions.noAccess") : undefined}
             >
               {isCurrentProduct ? (
                 <>
                   <Check className="h-3 w-3 mr-1" />
                   {t("actions.selected")}
                 </>
+              ) : !isMember ? (
+                t("actions.noAccess")
               ) : (
                 t("actions.select")
               )}
@@ -170,31 +174,43 @@ export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleViewOrSettings}>
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                  {t("actions.view")}
-                </DropdownMenuItem>
-                {isAdmin && (
-                  <DropdownMenuItem onClick={handleViewOrSettings}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    {t("actions.settings")}
+                {isMember && (
+                  <>
+                    <DropdownMenuItem onClick={handleViewOrSettings}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      {t("actions.view")}
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={handleViewOrSettings}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        {t("actions.settings")}
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => setShowLeaveDialog(true)}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {t("actions.leave")}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {!isMember && (
+                  <DropdownMenuItem disabled>
+                    {t("actions.notMember")}
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setShowLeaveDialog(true)}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  {t("actions.leave")}
-                </DropdownMenuItem>
                 {canDelete && (
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {t("actions.delete")}
-                  </DropdownMenuItem>
+                  <>
+                    {isMember && <DropdownMenuSeparator />}
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => setShowDeleteDialog(true)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {t("actions.delete")}
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>

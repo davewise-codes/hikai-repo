@@ -26,13 +26,19 @@ import { checkLimit, type Plan } from "../lib/planLimits";
 /**
  * Lista productos de una organización.
  * Requiere ser miembro de la org.
- * Incluye userRole para cada producto donde el usuario es miembro (null si no).
+ * Incluye userRole para cada producto:
+ * - Rol directo si es miembro del producto
+ * - "admin" implícito si es owner/admin de la org
+ * - null si es solo miembro de la org sin acceso al producto
  */
 export const listProducts = query({
   args: { organizationId: v.id("organizations") },
   handler: async (ctx, { organizationId }) => {
     // Validar acceso a la org
-    const { userId } = await assertOrgAccess(ctx, organizationId);
+    const { userId, membership: orgMembership } = await assertOrgAccess(ctx, organizationId);
+
+    // Check if user is org owner/admin (gets implicit admin access to all products)
+    const isOrgAdmin = orgMembership.role === "owner" || orgMembership.role === "admin";
 
     // Obtener productos de la org
     const products = await ctx.db
@@ -48,13 +54,21 @@ export const listProducts = query({
           .withIndex("by_product", (q) => q.eq("productId", product._id))
           .collect();
 
-        // Buscar membresía del usuario actual en este producto
+        // Buscar membresía directa del usuario en este producto
         const userMembership = members.find((m) => m.userId === userId);
+
+        // userRole: direct membership > implicit org admin > null
+        let userRole: "admin" | "member" | null = null;
+        if (userMembership) {
+          userRole = userMembership.role;
+        } else if (isOrgAdmin) {
+          userRole = "admin"; // Implicit admin access for org owners/admins
+        }
 
         return {
           ...product,
           memberCount: members.length,
-          userRole: userMembership?.role ?? null,
+          userRole,
         };
       })
     );
