@@ -144,7 +144,7 @@ export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
             <Button
               variant={isCurrentProduct ? "secondary" : "outline"}
               size="sm"
-              className="h-7 text-xs"
+              className="h-7 text-fontSize-xs"
               onClick={handleSelectProduct}
               disabled={isCurrentProduct}
             >

@@ -169,7 +169,7 @@ export function TransferOwnershipDialog({
                       <div className="flex items-center gap-2">
                         <Avatar className="h-6 w-6">
                           <AvatarImage src={member.user?.image || undefined} />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-fontSize-xs">
                             {getInitials(member.user?.name, member.user?.email)}
                           </AvatarFallback>
                         </Avatar>

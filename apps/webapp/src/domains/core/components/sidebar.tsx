@@ -62,7 +62,7 @@ export function Sidebar() {
                 >
                   {item.icon}
                   <span>{label}</span>
-                  <span className="ml-auto text-xs">({t("nav.comingSoon")})</span>
+                  <span className="ml-auto text-fontSize-xs">({t("nav.comingSoon")})</span>
                 </div>
               );
             }

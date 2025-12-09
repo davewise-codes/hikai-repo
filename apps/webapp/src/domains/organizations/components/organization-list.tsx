@@ -53,7 +53,7 @@ export function OrganizationList() {
                 {org.description && (
                   <p className="text-fontSize-sm text-muted-foreground mb-4">{org.description}</p>
                 )}
-                <div className="text-xs text-muted-foreground">
+                <div className="text-fontSize-xs text-muted-foreground">
                   Unido el {new Date(org.joinedAt).toLocaleDateString("es-ES")}
                 </div>
               </CardContent>

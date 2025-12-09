@@ -173,7 +173,7 @@ export function CreateOrganizationForm() {
               </ul>
             </button>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-fontSize-xs text-muted-foreground">
             {t("create.billingNote")}
           </p>
         </div>

@@ -124,7 +124,7 @@ export function VerificationCodeForm({
         </div>
       </Form>
 
-      <div className="mt-4 text-xs text-center text-muted-foreground">
+      <div className="mt-4 text-fontSize-xs text-center text-muted-foreground">
         {t('verification.codeExpiry')}
       </div>
     </div>

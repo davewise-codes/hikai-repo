@@ -92,11 +92,11 @@ export function ProductList() {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-center justify-between">
                       <span className="truncate">{product.name}</span>
-                      <Badge variant="secondary" className="text-xs flex-shrink-0">
+                      <Badge variant="secondary" className="text-fontSize-xs flex-shrink-0">
                         {t(`roles.${product.role}`)}
                       </Badge>
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground font-mono">
+                    <p className="text-fontSize-xs text-muted-foreground font-mono">
                       /{product.slug}
                     </p>
                   </CardHeader>
@@ -107,7 +107,7 @@ export function ProductList() {
                       </p>
                     )}
                     {isOtherOrg && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-fontSize-xs text-muted-foreground">
                         {t("list.inOrg", { org: product.organization.name })}
                       </p>
                     )}

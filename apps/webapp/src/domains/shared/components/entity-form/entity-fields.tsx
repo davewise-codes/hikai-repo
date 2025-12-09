@@ -93,7 +93,7 @@ export function EntityFields({
           pattern="^[a-z0-9-]+$"
           title={labels.slugHint}
         />
-        <p className="text-xs text-muted-foreground mt-1">{labels.slugHint}</p>
+        <p className="text-fontSize-xs text-muted-foreground mt-1">{labels.slugHint}</p>
       </div>
 
       <div>

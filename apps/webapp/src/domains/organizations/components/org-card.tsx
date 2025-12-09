@@ -144,7 +144,7 @@ export function OrgCard({ organization }: OrgCardProps) {
             <Button
               variant={isCurrentOrg ? "secondary" : "outline"}
               size="sm"
-              className="h-7 text-xs"
+              className="h-7 text-fontSize-xs"
               onClick={handleSelectOrg}
               disabled={isCurrentOrg}
             >
