@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "../_generated/server";
 import { assertProductAccess } from "../lib/access";
 
 // ============================================================================
@@ -168,6 +168,64 @@ export const updateCredentials = mutation({
 			status: "active",
 			updatedAt: Date.now(),
 		});
+	},
+});
+
+// INTERNAL HELPERS (para acciones servidoras)
+
+export const getConnectionWithType = internalQuery({
+	args: { connectionId: v.id("connections") },
+	handler: async (ctx, { connectionId }) => {
+		const connection = await ctx.db.get(connectionId);
+		if (!connection) return null;
+
+		const connectorType = await ctx.db.get(connection.connectorTypeId);
+		return { ...connection, connectorType };
+	},
+});
+
+export const getLastSyncAtForProduct = internalQuery({
+	args: { productId: v.id("products") },
+	handler: async (ctx, { productId }) => {
+		const connections = await ctx.db
+			.query("connections")
+			.withIndex("by_product", (q) => q.eq("productId", productId))
+			.collect();
+
+		const timestamps = connections
+			.map((connection) => connection.lastSyncAt ?? null)
+			.filter((value): value is number => typeof value === "number");
+
+		if (!timestamps.length) return null;
+		return Math.max(...timestamps);
+	},
+});
+
+export const updateSyncState = internalMutation({
+	args: {
+		connectionId: v.id("connections"),
+		lastSyncAt: v.optional(v.number()),
+		lastError: v.optional(v.string()),
+		credentials: v.optional(
+			v.object({
+				accessToken: v.optional(v.string()),
+				refreshToken: v.optional(v.string()),
+				expiresAt: v.optional(v.number()),
+			})
+		),
+	},
+	handler: async (ctx, { connectionId, lastSyncAt, lastError, credentials }) => {
+		const connection = await ctx.db.get(connectionId);
+		if (!connection) return "not_found";
+
+		await ctx.db.patch(connectionId, {
+			...(typeof lastSyncAt === "number" ? { lastSyncAt } : {}),
+			...(lastError !== undefined ? { lastError } : {}),
+			...(credentials ? { credentials } : {}),
+			updatedAt: Date.now(),
+		});
+
+		return "ok";
 	},
 });
 

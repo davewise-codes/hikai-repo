@@ -105,6 +105,36 @@ export function canAccessFeature(plan: Plan, feature: string): boolean {
 }
 
 /**
+ * Intervalos de sync manual por plan (ms).
+ * `null` significa sin límite.
+ */
+export const MANUAL_SYNC_INTERVAL_MS: Record<Plan, number | null> = {
+  free: 7 * 24 * 60 * 60 * 1000, // 1 semana
+  pro: null,
+  enterprise: null,
+};
+
+/**
+ * Verifica si se puede lanzar un sync manual según plan y último sync.
+ */
+export function canTriggerManualSync(
+  plan: Plan,
+  lastSyncAt: number | null | undefined
+): { allowed: boolean; nextAllowedAt: number | null } {
+  const interval = MANUAL_SYNC_INTERVAL_MS[plan];
+  if (!interval) {
+    return { allowed: true, nextAllowedAt: null };
+  }
+
+  if (!lastSyncAt) {
+    return { allowed: true, nextAllowedAt: null };
+  }
+
+  const nextAllowedAt = lastSyncAt + interval;
+  return { allowed: Date.now() >= nextAllowedAt, nextAllowedAt };
+}
+
+/**
  * Obtiene todas las features disponibles para un plan
  */
 export function getAvailableFeatures(plan: Plan): string[] {

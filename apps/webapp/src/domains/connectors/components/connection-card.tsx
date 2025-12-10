@@ -5,6 +5,7 @@ import {
 	Badge,
 	Card,
 	CardContent,
+	CardFooter,
 	CardDescription,
 	CardHeader,
 	CardTitle,
@@ -21,6 +22,11 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 	Button,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+	RefreshCw,
 	MoreHorizontal,
 	Power,
 	Trash2,
@@ -37,18 +43,22 @@ interface ConnectionCardProps {
 		_id: Id<"connections">;
 		name: string;
 		status: ConnectionStatus;
+		lastSyncAt?: number | null;
 		config?: Record<string, unknown>;
-	connectorType?: {
-		name: string;
-		provider: string;
-		description?: string;
-		iconUrl?: string;
-	} | null;
-	productId?: Id<"products">;
+		connectorType?: {
+			name: string;
+			provider: string;
+			description?: string;
+			iconUrl?: string;
+		} | null;
+		productId?: Id<"products">;
 	};
 	onDisconnect: (connectionId: Id<"connections">) => Promise<unknown>;
 	onRemove: (connectionId: Id<"connections">) => Promise<unknown>;
 	onConnect?: (connection: ConnectionCardProps["connection"]) => Promise<unknown>;
+	onSync?: (connectionId: Id<"connections">) => Promise<unknown>;
+	isSyncing?: boolean;
+	isDisconnecting?: boolean;
 }
 
 const statusVariant: Record<ConnectionStatus, "default" | "secondary" | "destructive" | "outline"> =
@@ -63,11 +73,14 @@ const providerIconMap: Record<string, ComponentType<{ className?: string }>> = {
 	github: Github,
 };
 
-	export function ConnectionCard({
+export function ConnectionCard({
 	connection,
 	onDisconnect,
 	onRemove,
 	onConnect,
+	onSync,
+	isSyncing,
+	isDisconnecting: externalDisconnecting,
 }: ConnectionCardProps) {
 	const { t } = useTranslation("connectors");
 	const [isDisconnecting, setIsDisconnecting] = useState(false);
@@ -99,6 +112,12 @@ const providerIconMap: Record<string, ComponentType<{ className?: string }>> = {
 	const configureUrl = installationId
 		? `https://github.com/settings/installations/${installationId}`
 		: undefined;
+	const canSync = connection.status === "active" && Boolean(onSync);
+	const lastSyncLabel =
+		typeof connection.lastSyncAt === "number"
+			? new Date(connection.lastSyncAt).toLocaleString()
+			: t("meta.neverSynced");
+	const effectiveDisconnecting = externalDisconnecting || isDisconnecting;
 
 	const handleDisconnect = async () => {
 		setIsDisconnecting(true);
@@ -126,6 +145,15 @@ const providerIconMap: Record<string, ComponentType<{ className?: string }>> = {
 		}
 	};
 
+	const handleSync = async () => {
+		if (!onSync) return;
+		try {
+			await onSync(connection._id);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : t("toast.error"));
+		}
+	};
+
 	const handleRemove = async () => {
 		setIsRemoving(true);
 		try {
@@ -140,8 +168,8 @@ const providerIconMap: Record<string, ComponentType<{ className?: string }>> = {
 	};
 
 	return (
-		<Card className="h-full">
-			<CardHeader className="flex-row items-start gap-3">
+		<Card className="h-full flex flex-col">
+			<CardHeader className="flex-row items-start gap-3 pb-3">
 				<div className="mt-0.5">
 					<div className="h-9 w-9 rounded-md bg-muted flex items-center justify-center">
 						<ProviderIcon className="h-4 w-4" />
@@ -153,22 +181,94 @@ const providerIconMap: Record<string, ComponentType<{ className?: string }>> = {
 						{connection.connectorType?.name ?? t("sources.unknownProvider")}
 					</CardDescription>
 				</div>
-				<div className="flex items-center gap-2">
-					{canConnect && (
-						<Button
-							variant="outline"
-							size="sm"
-							className="h-8"
-							disabled={isConnecting}
-							onClick={handleConnect}
-						>
-							<Link2 className="h-4 w-4 mr-2" />
-							{isConnecting ? t("actions.connecting") : t("actions.connect")}
-						</Button>
-					)}
+				<div className="flex items-center gap-2 text-fontSize-sm text-muted-foreground">
+					<span>{t("meta.lastSync", { date: lastSyncLabel })}</span>
 					<Badge variant={statusVariant[connection.status]}>
 						{t(`statuses.${connection.status}`)}
 					</Badge>
+				</div>
+			</CardHeader>
+			<CardContent className="space-y-2">
+				{connection.connectorType?.description && (
+					<p className="text-fontSize-sm text-muted-foreground">
+						{connection.connectorType.description}
+					</p>
+				)}
+				{configLabel && (
+					<div className="text-fontSize-sm text-muted-foreground font-mono inline-flex items-center gap-2 px-2 py-1 rounded-md bg-muted">
+						{configLabel}
+					</div>
+				)}
+			</CardContent>
+			<CardFooter className="mt-auto pt-0">
+				<TooltipProvider>
+					<div className="flex items-center justify-between w-full gap-2">
+					<div className="flex items-center gap-2">
+						{canSync && (
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="ghost"
+										size="icon"
+										className="h-8 w-8"
+										disabled={isSyncing}
+										onClick={handleSync}
+									>
+										<RefreshCw className="h-4 w-4" />
+										<span className="sr-only">{t("actions.sync")}</span>
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent side="top">
+									{isSyncing ? t("actions.syncing") : t("actions.sync")}
+								</TooltipContent>
+							</Tooltip>
+						)}
+						{canConnect ? (
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="outline"
+										size="icon"
+										className="h-8 w-8"
+										disabled={isConnecting}
+										onClick={handleConnect}
+									>
+										<Link2 className="h-4 w-4" />
+										<span className="sr-only">
+											{isConnecting ? t("actions.connecting") : t("actions.connect")}
+										</span>
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent side="top">
+									{isConnecting ? t("actions.connecting") : t("actions.connect")}
+								</TooltipContent>
+							</Tooltip>
+						) : (
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Button
+										variant="outline"
+										size="icon"
+										className="h-8 w-8"
+										disabled={effectiveDisconnecting || connection.status === "disconnected"}
+										onClick={handleDisconnect}
+									>
+										<Power className="h-4 w-4" />
+										<span className="sr-only">
+											{effectiveDisconnecting
+												? t("actions.disconnecting")
+												: t("actions.disconnect")}
+										</span>
+									</Button>
+								</TooltipTrigger>
+								<TooltipContent side="top">
+									{effectiveDisconnecting
+										? t("actions.disconnecting")
+										: t("actions.disconnect")}
+								</TooltipContent>
+							</Tooltip>
+						)}
+					</div>
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="ghost" size="icon" className="h-8 w-8">
@@ -185,33 +285,15 @@ const providerIconMap: Record<string, ComponentType<{ className?: string }>> = {
 									{t("actions.configureInGithub")}
 								</DropdownMenuItem>
 							)}
-							<DropdownMenuItem
-								onClick={handleDisconnect}
-								disabled={isDisconnecting || connection.status === "disconnected"}
-							>
-								<Power className="h-4 w-4 mr-2" />
-								{t("actions.disconnect")}
-							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => setConfirmOpen(true)} disabled={isRemoving}>
 								<Trash2 className="h-4 w-4 mr-2" />
 								{t("actions.remove")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
-					</DropdownMenu>
-				</div>
-			</CardHeader>
-			<CardContent className="space-y-2">
-				{connection.connectorType?.description && (
-					<p className="text-fontSize-sm text-muted-foreground">
-						{connection.connectorType.description}
-					</p>
-				)}
-				{configLabel && (
-					<div className="text-fontSize-sm text-muted-foreground font-mono inline-flex items-center gap-2 px-2 py-1 rounded-md bg-muted">
-						{configLabel}
+							</DropdownMenu>
 					</div>
-				)}
-			</CardContent>
+				</TooltipProvider>
+			</CardFooter>
 
 			<AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
 				<AlertDialogContent>

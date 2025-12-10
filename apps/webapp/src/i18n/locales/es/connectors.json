@@ -28,7 +28,15 @@
     "connect": "Conectar",
     "connecting": "Conectando...",
     "connectSuccess": "Conexión lista",
-    "configureInGithub": "Configurar en GitHub"
+    "configureInGithub": "Configurar en GitHub",
+    "sync": "Sincronizar",
+    "syncing": "Sincronizando...",
+    "syncSuccess": "{{ingested}} eventos ingestados ({{skipped}} omitidos)",
+    "disconnecting": "Desconectando..."
+  },
+  "meta": {
+    "lastSync": "Última sync: {{date}}",
+    "neverSynced": "Nunca sincronizado"
   },
   "add": {
     "title": "Añadir fuente",

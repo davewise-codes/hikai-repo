@@ -14,6 +14,7 @@ import type * as auth_ResendOTPReset from "../auth/ResendOTPReset.js";
 import type * as auth_emailTemplate from "../auth/emailTemplate.js";
 import type * as auth_passwordResetTemplate from "../auth/passwordResetTemplate.js";
 import type * as connectors_connections from "../connectors/connections.js";
+import type * as connectors_github from "../connectors/github.js";
 import type * as connectors_index from "../connectors/index.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   "auth/emailTemplate": typeof auth_emailTemplate;
   "auth/passwordResetTemplate": typeof auth_passwordResetTemplate;
   "connectors/connections": typeof connectors_connections;
+  "connectors/github": typeof connectors_github;
   "connectors/index": typeof connectors_index;
   http: typeof http;
   "lib/access": typeof lib_access;

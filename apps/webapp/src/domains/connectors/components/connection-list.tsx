@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useConvex } from "convex/react";
+import { useAction, useConvex } from "convex/react";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import {
 	Card,
 	CardContent,
 	Button,
+	toast,
 } from "@hikai/ui";
 import { api } from "@hikai/convex";
 import { useConnectionMutations, useConnections } from "../hooks";
@@ -29,6 +31,8 @@ export function ConnectionList({ productId, onAddClick }: ConnectionListProps) {
 	const convex = useConvex();
 	const { connections, isLoading } = useConnections(productId);
 	const { updateStatus, removeConnection } = useConnectionMutations();
+	const triggerSync = useAction(api.connectors.github.syncGithubConnection);
+	const [syncingIds, setSyncingIds] = useState<Set<string>>(new Set());
 
 	if (isLoading) {
 		return (
@@ -65,11 +69,32 @@ export function ConnectionList({ productId, onAddClick }: ConnectionListProps) {
 		);
 	}
 
-	const handleDisconnect = (connectionId: Id<"connections">) =>
+const handleDisconnect = (connectionId: Id<"connections">) =>
 		updateStatus({ connectionId, status: "disconnected" });
 
-	const handleRemove = (connectionId: Id<"connections">) =>
+const handleRemove = (connectionId: Id<"connections">) =>
 		removeConnection({ connectionId });
+
+	const handleSync = async (connectionId: Id<"connections">) => {
+		setSyncingIds((prev) => new Set(prev).add(connectionId));
+		try {
+			const result = await triggerSync({ productId, connectionId });
+			toast.success(
+				t("actions.syncSuccess", {
+					ingested: result.ingested,
+					skipped: result.skipped,
+				})
+			);
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : t("toast.error"));
+		} finally {
+			setSyncingIds((prev) => {
+				const next = new Set(prev);
+				next.delete(connectionId);
+				return next;
+			});
+		}
+	};
 
 	const handleConnect = async (connection: ConnectionItem) => {
 		try {
@@ -112,6 +137,8 @@ export function ConnectionList({ productId, onAddClick }: ConnectionListProps) {
 					onDisconnect={handleDisconnect}
 					onRemove={handleRemove}
 					onConnect={() => handleConnect(connection as ConnectionItem)}
+					onSync={handleSync}
+					isSyncing={syncingIds.has(connection._id)}
 				/>
 			))}
 		</div>

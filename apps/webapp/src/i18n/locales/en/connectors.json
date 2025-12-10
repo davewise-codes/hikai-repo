@@ -28,7 +28,15 @@
     "connect": "Connect",
     "connecting": "Connecting...",
     "connectSuccess": "Connection ready",
-    "configureInGithub": "Configure in GitHub"
+    "configureInGithub": "Configure in GitHub",
+    "sync": "Sync now",
+    "syncing": "Syncing...",
+    "syncSuccess": "{{ingested}} events ingested ({{skipped}} skipped)",
+    "disconnecting": "Disconnecting..."
+  },
+  "meta": {
+    "lastSync": "Last sync: {{date}}",
+    "neverSynced": "Never synced"
   },
   "add": {
     "title": "Add Source",

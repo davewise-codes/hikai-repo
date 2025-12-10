@@ -19,7 +19,7 @@ La Fase 2 habilita la ingesta de eventos desde GitHub y su visualización en un 
 | Subfase | Descripción                              | Estado        |
 | ------- | ---------------------------------------- | ------------- |
 | F2.0    | Schema timeline (rawEvents, interpreted) | ✅ Completado |
-| F2.1    | Ingesta GitHub → rawEvents               | ⏳ Pendiente  |
+| F2.1    | Ingesta GitHub → rawEvents               | ✅ Completado |
 | F2.2    | Interpretación básica → interpreted      | ⏳ Pendiente  |
 | F2.3    | Queries/mutations timeline (Convex)      | ⏳ Pendiente  |
 | F2.4    | Hooks timeline en webapp                 | ⏳ Pendiente  |
