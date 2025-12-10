@@ -108,6 +108,47 @@ const schema = defineSchema({
     .index("by_product", ["productId"])
     .index("by_product_type", ["productId", "connectorTypeId"])
     .index("by_status", ["status"]),
+
+  rawEvents: defineTable({
+    productId: v.id("products"),
+    connectionId: v.id("connections"),
+    provider: v.literal("github"),
+    sourceType: v.union(
+      v.literal("commit"),
+      v.literal("pull_request"),
+      v.literal("release")
+    ),
+    payload: v.any(),
+    occurredAt: v.number(),
+    ingestedAt: v.number(),
+    processedAt: v.optional(v.number()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("processed"),
+      v.literal("error")
+    ),
+    lastError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_product_time", ["productId", "ingestedAt"])
+    .index("by_connection_time", ["connectionId", "ingestedAt"])
+    .index("by_status", ["status"]),
+
+  interpretedEvents: defineTable({
+    productId: v.id("products"),
+    rawEventId: v.id("rawEvents"),
+    kind: v.string(),
+    title: v.string(),
+    summary: v.optional(v.string()),
+    occurredAt: v.number(),
+    relevance: v.optional(v.number()),
+    tags: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_product_time", ["productId", "occurredAt"])
+    .index("by_raw_event", ["rawEventId"]),
 });
 
 export default schema;

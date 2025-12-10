@@ -35,6 +35,12 @@ Esta fase establece los **fundamentos del Product Workspace** y la capacidad de 
 
 ---
 
+## Seguimiento adicional
+
+- Fase 2 — F2.0 Schema timeline: ✅ Completado
+
+---
+
 ## Prompt para arrancar subfases
 
 ```
