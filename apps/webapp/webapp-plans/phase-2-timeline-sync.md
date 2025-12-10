@@ -20,7 +20,7 @@ La Fase 2 habilita la ingesta de eventos desde GitHub y su visualización en un 
 | ------- | ---------------------------------------- | ------------- |
 | F2.0    | Schema timeline (rawEvents, interpreted) | ✅ Completado |
 | F2.1    | Ingesta GitHub → rawEvents               | ✅ Completado |
-| F2.2    | Interpretación básica → interpreted      | ⏳ Pendiente  |
+| F2.2    | Interpretación básica → interpreted      | ✅ Completado |
 | F2.3    | Queries/mutations timeline (Convex)      | ⏳ Pendiente  |
 | F2.4    | Hooks timeline en webapp                 | ⏳ Pendiente  |
 | F2.5    | UI timeline + botón de sync              | ⏳ Pendiente  |
@@ -173,6 +173,15 @@ PARTE 5: VALIDACIÓN
 ### F2.2: Interpretación básica → interpretedEvents
 
 **Objetivo**: Procesar `rawEvents` pendientes y generar `interpretedEvents` con heurísticas simples (sin IA).
+
+**Nota de evolución a IA**: Mantener la interpretación como capa intercambiable. Implementar `interpretEvent(raw)` como punto único de heurística para que pueda sustituirse por IA sin romper el pipeline. Asegurar que el `payload` de `rawEvents` conserva texto/título/body/labels suficientes para modelos. Preparar un modo de reprocess (`rawEventIds`) para reescribir interpretedEvents cuando se active IA y permitir shadow/fallback (heurística como respaldo si IA falla).
+
+**Notas de modelado para facilitar IA y reporting**:
+
+- Agregación temporal: siempre guardar `occurredAt` y derivar `bucketAt` (p. ej. semanal) para reporting homogéneo. Planes básicos pueden consumir bucketed; planes superiores permiten vista continua. Reprocess debe recalcular bucket si cambian políticas.
+- Catálogo opinado de tipos: usar taxonomía estable y extensible (feature, bugfix, chore, refactor, docs, release, perf, security, design, discovery, ui_improvement, data, infra, ops, product_line, experiment). Mapear `sourceType` y labels a este catálogo; versionar el clasificador.
+- Contexto de producto: incluir campos opcionales `productAreaId`/`initiativeId`/`audience` y `impact` (ej. latency, conversion, compliance). Extraer `contextHints` (paths, labels, branch, linked issues) para IA futura y mejor clasificación.
+- Detalle sin depender de raw: en interpreted guardar `title`, `summary`, `details?`, `url`, `occurredAt`, `bucketAt`, `kind`, `relevance`, `tags`, `actors?`, `components?`, `rawEventId`, `rawPurged`, `sourceType`. Raw se puede purgar por SLA pero dejar `rawPurged` y `classifierVersion` para trazabilidad y migraciones.
 
 **Archivos**:
 
