@@ -26,12 +26,12 @@ connectors/
 ## Componentes
 
 - `ConnectionList` — muestra conexiones, skeleton, empty state con CTA.
-- `ConnectionCard` — estado (`active/pending/error/disconnected`), acciones desconectar/eliminar.
+- `ConnectionCard` — estado (`active/pending/error/disconnected`), acciones desconectar/reconectar/eliminar.
 - `AddConnectionDialog` — selecciona tipo (GitHub), crea conexión en `pending` y abre instalación del GitHub App.
 
 ## Flujo GitHub App (UI)
 
-1. Usuario abre `AddConnectionDialog`, elige “GitHub” y completa datos opcionales (owner/repo).
+1. Usuario abre `AddConnectionDialog`, elige “GitHub” (se autocompleta el nombre).
 2. Al crear, se llama a Convex para crear la conexión y obtener `installUrl`.
 3. Se abre la instalación del GitHub App (`https://github.com/apps/<slug>/installations/new?...`); el usuario elige repos.
 4. GitHub redirige a `SITE_URL/oauth/success?provider=github` (pantalla incluida en rutas) y la conexión pasa a `active` si el backend obtuvo el `installation access token`.

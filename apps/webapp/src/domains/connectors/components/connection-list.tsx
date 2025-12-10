@@ -1,12 +1,23 @@
 import { useTranslation } from "react-i18next";
+import { useConvex } from "convex/react";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import {
 	Card,
 	CardContent,
 	Button,
 } from "@hikai/ui";
+import { api } from "@hikai/convex";
 import { useConnectionMutations, useConnections } from "../hooks";
 import { ConnectionCard } from "./connection-card";
+
+type ConnectionItem = {
+	_id: Id<"connections">;
+	config?: {
+		installationId?: string;
+		[k: string]: unknown;
+	};
+	status?: string;
+};
 
 interface ConnectionListProps {
 	productId: Id<"products">;
@@ -15,6 +26,7 @@ interface ConnectionListProps {
 
 export function ConnectionList({ productId, onAddClick }: ConnectionListProps) {
 	const { t } = useTranslation("connectors");
+	const convex = useConvex();
 	const { connections, isLoading } = useConnections(productId);
 	const { updateStatus, removeConnection } = useConnectionMutations();
 
@@ -59,6 +71,38 @@ export function ConnectionList({ productId, onAddClick }: ConnectionListProps) {
 	const handleRemove = (connectionId: Id<"connections">) =>
 		removeConnection({ connectionId });
 
+	const handleConnect = async (connection: ConnectionItem) => {
+		try {
+			const installationId =
+				typeof connection?.config?.installationId === "string"
+					? (connection.config.installationId as string)
+					: undefined;
+
+			if (installationId) {
+				await updateStatus({ connectionId: connection._id, status: "active" });
+				return;
+			}
+
+			const authUrl = await convex.query(api.connectors.github.getInstallUrl, {
+				productId,
+				connectionId: connection._id,
+			});
+
+			if (!authUrl) {
+				throw new Error(t("add.authUrlError"));
+			}
+
+			await updateStatus({ connectionId: connection._id, status: "pending" });
+
+			const opened = window.open(authUrl, "_blank", "width=600,height=750");
+			if (!opened) {
+				window.location.href = authUrl;
+			}
+		} catch (error) {
+			throw error instanceof Error ? error : new Error(t("toast.error"));
+		}
+	};
+
 	return (
 		<div className="grid gap-4 md:grid-cols-2">
 			{connections.map((connection) => (
@@ -67,6 +111,7 @@ export function ConnectionList({ productId, onAddClick }: ConnectionListProps) {
 					connection={connection as any}
 					onDisconnect={handleDisconnect}
 					onRemove={handleRemove}
+					onConnect={() => handleConnect(connection as ConnectionItem)}
 				/>
 			))}
 		</div>

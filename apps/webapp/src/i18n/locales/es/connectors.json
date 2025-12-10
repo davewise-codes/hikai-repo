@@ -24,24 +24,27 @@
     "removeConfirmCTA": "Confirmar",
     "cancel": "Cancelar",
     "menuLabel": "Abrir acciones",
-    "createSuccess": "Conexión creada"
+    "createSuccess": "Conexión creada",
+    "connect": "Conectar",
+    "connecting": "Conectando...",
+    "connectSuccess": "Conexión lista",
+    "configureInGithub": "Configurar en GitHub"
   },
   "add": {
     "title": "Añadir fuente",
-    "description": "Selecciona un proveedor y configura la conexión.",
+    "description": "Selecciona un proveedor para iniciar el flujo de conexión.",
     "selectType": "Tipo de fuente",
     "selectTypePlaceholder": "Elige una fuente",
     "selectTypeError": "Selecciona un tipo de fuente",
     "nameLabel": "Nombre de la conexión",
-    "namePlaceholder": "ej. hikai-repo",
+    "namePlaceholder": "Nombre de la conexión (opcional)",
     "defaultName": "Nueva conexión",
-    "repoOwner": "Propietario del repo",
-    "repoOwnerPlaceholder": "org o usuario",
-    "repoName": "Nombre del repo",
-    "repoNamePlaceholder": "repositorio",
     "authUrlError": "No se pudo iniciar OAuth con GitHub",
     "submit": "Crear conexión",
-    "creating": "Creando..."
+    "creating": "Creando...",
+    "howItWorksTitle": "Cómo funciona",
+    "orgAdminHint": "Necesitas permisos de admin en la organización de GitHub para instalar la app.",
+    "repoConfigHint": "Podrás ajustar los repos seleccionados después desde “Configurar en GitHub”."
   },
   "oauth": {
     "success": {

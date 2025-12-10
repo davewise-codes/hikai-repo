@@ -36,8 +36,6 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 
 	const [connectorTypeId, setConnectorTypeId] = useState<string | null>(null);
 	const [name, setName] = useState("");
-	const [repoOwner, setRepoOwner] = useState("");
-	const [repoName, setRepoName] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isStartingOAuth, setIsStartingOAuth] = useState(false);
 
@@ -52,8 +50,6 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 	const resetForm = () => {
 		setConnectorTypeId(null);
 		setName("");
-		setRepoOwner("");
-		setRepoName("");
 		setIsSubmitting(false);
 	};
 
@@ -62,6 +58,14 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 			resetForm();
 		}
 	}, [open]);
+
+	useEffect(() => {
+		if (!connectorTypeId || name.trim()) return;
+		const selected = availableTypes.find((type) => type._id === connectorTypeId);
+		if (selected) {
+			setName(selected.name);
+		}
+	}, [availableTypes, connectorTypeId, name]);
 
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault();
@@ -77,10 +81,7 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 				productId,
 				connectorTypeId: connectorTypeId as Id<"connectorTypes">,
 				name: name || defaultName || t("add.defaultName"),
-				config: {
-					repoOwner: repoOwner || undefined,
-					repoName: repoName || undefined,
-				},
+				config: {},
 			});
 			const authUrl = await convex.query(api.connectors.github.getInstallUrl, {
 				productId,
@@ -127,11 +128,11 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 							<SelectTrigger>
 								<SelectValue placeholder={t("add.selectTypePlaceholder")} />
 							</SelectTrigger>
-							<SelectContent>
-								{availableTypes.map((type) => (
-									<SelectItem key={type._id} value={type._id}>
-										{type.name}
-									</SelectItem>
+					<SelectContent>
+						{availableTypes.map((type) => (
+							<SelectItem key={type._id} value={type._id}>
+								{type.name}
+							</SelectItem>
 								))}
 							</SelectContent>
 						</Select>
@@ -148,27 +149,10 @@ export function AddConnectionDialog({ productId, open, onOpenChange }: AddConnec
 						/>
 					</div>
 
-					<div className="grid gap-3 md:grid-cols-2">
-						<div className="space-y-2">
-							<Label htmlFor="repo-owner">{t("add.repoOwner")}</Label>
-							<Input
-								id="repo-owner"
-								value={repoOwner}
-								onChange={(event) => setRepoOwner(event.target.value)}
-								placeholder={t("add.repoOwnerPlaceholder")}
-								disabled={isSubmitting}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="repo-name">{t("add.repoName")}</Label>
-							<Input
-								id="repo-name"
-								value={repoName}
-								onChange={(event) => setRepoName(event.target.value)}
-								placeholder={t("add.repoNamePlaceholder")}
-								disabled={isSubmitting}
-							/>
-						</div>
+					<div className="rounded-md bg-muted px-3 py-2 text-fontSize-sm text-muted-foreground space-y-1">
+						<p className="font-medium text-foreground">{t("add.howItWorksTitle")}</p>
+						<p>{t("add.orgAdminHint")}</p>
+						<p>{t("add.repoConfigHint")}</p>
 					</div>
 
 					<DialogFooter>

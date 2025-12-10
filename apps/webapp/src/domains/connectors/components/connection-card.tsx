@@ -26,6 +26,7 @@ import {
 	Trash2,
 	Github,
 	Link2,
+	ExternalLink,
 	toast,
 } from "@hikai/ui";
 
@@ -37,15 +38,17 @@ interface ConnectionCardProps {
 		name: string;
 		status: ConnectionStatus;
 		config?: Record<string, unknown>;
-		connectorType?: {
-			name: string;
-			provider: string;
-			description?: string;
-			iconUrl?: string;
-		} | null;
+	connectorType?: {
+		name: string;
+		provider: string;
+		description?: string;
+		iconUrl?: string;
+	} | null;
+	productId?: Id<"products">;
 	};
 	onDisconnect: (connectionId: Id<"connections">) => Promise<unknown>;
 	onRemove: (connectionId: Id<"connections">) => Promise<unknown>;
+	onConnect?: (connection: ConnectionCardProps["connection"]) => Promise<unknown>;
 }
 
 const statusVariant: Record<ConnectionStatus, "default" | "secondary" | "destructive" | "outline"> =
@@ -60,10 +63,16 @@ const providerIconMap: Record<string, ComponentType<{ className?: string }>> = {
 	github: Github,
 };
 
-export function ConnectionCard({ connection, onDisconnect, onRemove }: ConnectionCardProps) {
+	export function ConnectionCard({
+	connection,
+	onDisconnect,
+	onRemove,
+	onConnect,
+}: ConnectionCardProps) {
 	const { t } = useTranslation("connectors");
 	const [isDisconnecting, setIsDisconnecting] = useState(false);
 	const [isRemoving, setIsRemoving] = useState(false);
+	const [isConnecting, setIsConnecting] = useState(false);
 	const [confirmOpen, setConfirmOpen] = useState(false);
 
 	const ProviderIcon =
@@ -77,8 +86,19 @@ export function ConnectionCard({ connection, onDisconnect, onRemove }: Connectio
 		typeof connection.config?.repoName === "string"
 			? (connection.config.repoName as string)
 			: undefined;
+	const installationId =
+		typeof connection.config?.installationId === "string"
+			? (connection.config.installationId as string)
+			: undefined;
 
 	const configLabel = repoOwner && repoName ? `${repoOwner}/${repoName}` : undefined;
+
+	const canConnect =
+		(connection.status === "disconnected" || connection.status === "error") &&
+		Boolean(onConnect);
+	const configureUrl = installationId
+		? `https://github.com/settings/installations/${installationId}`
+		: undefined;
 
 	const handleDisconnect = async () => {
 		setIsDisconnecting(true);
@@ -89,6 +109,20 @@ export function ConnectionCard({ connection, onDisconnect, onRemove }: Connectio
 			toast.error(error instanceof Error ? error.message : t("toast.error"));
 		} finally {
 			setIsDisconnecting(false);
+		}
+	};
+
+	const handleConnect = async () => {
+		if (!onConnect) return;
+
+		setIsConnecting(true);
+		try {
+			await onConnect(connection);
+			toast.success(t("actions.connectSuccess"));
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : t("toast.error"));
+		} finally {
+			setIsConnecting(false);
 		}
 	};
 
@@ -120,6 +154,18 @@ export function ConnectionCard({ connection, onDisconnect, onRemove }: Connectio
 					</CardDescription>
 				</div>
 				<div className="flex items-center gap-2">
+					{canConnect && (
+						<Button
+							variant="outline"
+							size="sm"
+							className="h-8"
+							disabled={isConnecting}
+							onClick={handleConnect}
+						>
+							<Link2 className="h-4 w-4 mr-2" />
+							{isConnecting ? t("actions.connecting") : t("actions.connect")}
+						</Button>
+					)}
 					<Badge variant={statusVariant[connection.status]}>
 						{t(`statuses.${connection.status}`)}
 					</Badge>
@@ -131,6 +177,14 @@ export function ConnectionCard({ connection, onDisconnect, onRemove }: Connectio
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
+							{configureUrl && (
+								<DropdownMenuItem
+									onClick={() => window.open(configureUrl, "_blank", "noopener,noreferrer")}
+								>
+									<ExternalLink className="h-4 w-4 mr-2" />
+									{t("actions.configureInGithub")}
+								</DropdownMenuItem>
+							)}
 							<DropdownMenuItem
 								onClick={handleDisconnect}
 								disabled={isDisconnecting || connection.status === "disconnected"}

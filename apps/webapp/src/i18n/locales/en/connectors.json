@@ -24,24 +24,27 @@
     "removeConfirmCTA": "Confirm",
     "cancel": "Cancel",
     "menuLabel": "Open actions",
-    "createSuccess": "Connection created"
+    "createSuccess": "Connection created",
+    "connect": "Connect",
+    "connecting": "Connecting...",
+    "connectSuccess": "Connection ready",
+    "configureInGithub": "Configure in GitHub"
   },
   "add": {
     "title": "Add Source",
-    "description": "Select a provider and configure the connection.",
+    "description": "Select a provider to start the connection flow.",
     "selectType": "Source type",
     "selectTypePlaceholder": "Choose a source",
     "selectTypeError": "Select a source type",
     "nameLabel": "Connection name",
-    "namePlaceholder": "e.g. hikai-repo",
+    "namePlaceholder": "Connection name (optional)",
     "defaultName": "New connection",
-    "repoOwner": "Repository owner",
-    "repoOwnerPlaceholder": "org or user",
-    "repoName": "Repository name",
-    "repoNamePlaceholder": "repository",
     "authUrlError": "Could not start GitHub OAuth",
     "submit": "Create connection",
-    "creating": "Creating..."
+    "creating": "Creating...",
+    "howItWorksTitle": "How it works",
+    "orgAdminHint": "You need admin permissions in the GitHub organization to install the app.",
+    "repoConfigHint": "You can adjust selected repositories later via “Configure in GitHub”."
   },
   "oauth": {
     "success": {
