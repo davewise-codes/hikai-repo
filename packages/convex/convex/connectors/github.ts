@@ -295,7 +295,7 @@ type SyncGithubResult = {
 	productId: Id<"products">;
 };
 
-async function syncGithubConnectionHandler(
+export async function syncGithubConnectionHandler(
 	ctx: ActionCtx,
 	{ productId, connectionId }: SyncGithubArgs
 ): Promise<SyncGithubResult> {
