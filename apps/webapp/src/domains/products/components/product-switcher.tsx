@@ -35,7 +35,7 @@ export function ProductSwitcher() {
   const { t } = useTranslation("products");
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentOrg } = useCurrentOrg();
+  const { currentOrg, setCurrentOrg } = useCurrentOrg();
   const { currentProduct, setCurrentProduct, isLoading: isProductLoading } = useCurrentProduct();
 
   // Lista de productos de la org actual
@@ -65,6 +65,16 @@ export function ProductSwitcher() {
     if (productSettingsMatch) {
       const subPage = productSettingsMatch[2]; // e.g., "general", "team"
       navigate({ to: `/settings/product/${productSlug}/${subPage}` });
+      return;
+    }
+
+    // If we're inside an app route, switch org context (if needed) and go to the new product timeline
+    if (currentOrg?._id) {
+      setCurrentOrg(currentOrg._id);
+      navigate({
+        to: "/app/$orgSlug/$productSlug/timeline",
+        params: { orgSlug: currentOrg.slug, productSlug },
+      });
     }
   };
 

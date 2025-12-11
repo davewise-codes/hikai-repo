@@ -19,6 +19,7 @@ import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as SettingsProductsRouteImport } from './routes/settings/products'
 import { Route as SettingsPreferencesRouteImport } from './routes/settings/preferences'
 import { Route as SettingsOrganizationsRouteImport } from './routes/settings/organizations'
+import { Route as OauthSuccessRouteImport } from './routes/oauth/success'
 import { Route as SettingsProductSlugRouteImport } from './routes/settings/product/$slug'
 import { Route as SettingsOrgSlugRouteImport } from './routes/settings/org/$slug'
 import { Route as AppOrgSlugProductSlugRouteImport } from './routes/app/$orgSlug/$productSlug'
@@ -83,6 +84,11 @@ const SettingsOrganizationsRoute = SettingsOrganizationsRouteImport.update({
   id: '/organizations',
   path: '/organizations',
   getParentRoute: () => SettingsRoute,
+} as any)
+const OauthSuccessRoute = OauthSuccessRouteImport.update({
+  id: '/oauth/success',
+  path: '/oauth/success',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsProductSlugRoute = SettingsProductSlugRouteImport.update({
   id: '/product/$slug',
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/oauth/success': typeof OauthSuccessRoute
   '/settings/organizations': typeof SettingsOrganizationsRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/products': typeof SettingsProductsRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/oauth/success': typeof OauthSuccessRoute
   '/settings/organizations': typeof SettingsOrganizationsRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/products': typeof SettingsProductsRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/oauth/success': typeof OauthSuccessRoute
   '/settings/organizations': typeof SettingsOrganizationsRoute
   '/settings/preferences': typeof SettingsPreferencesRoute
   '/settings/products': typeof SettingsProductsRoute
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/settings'
+    | '/oauth/success'
     | '/settings/organizations'
     | '/settings/preferences'
     | '/settings/products'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/oauth/success'
     | '/settings/organizations'
     | '/settings/preferences'
     | '/settings/products'
@@ -289,6 +300,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/settings'
+    | '/oauth/success'
     | '/settings/organizations'
     | '/settings/preferences'
     | '/settings/products'
@@ -316,6 +328,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  OauthSuccessRoute: typeof OauthSuccessRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
   AppOrgSlugProductSlugRoute: typeof AppOrgSlugProductSlugRouteWithChildren
@@ -392,6 +405,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings/organizations'
       preLoaderRoute: typeof SettingsOrganizationsRouteImport
       parentRoute: typeof SettingsRoute
+    }
+    '/oauth/success': {
+      id: '/oauth/success'
+      path: '/oauth/success'
+      fullPath: '/oauth/success'
+      preLoaderRoute: typeof OauthSuccessRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/settings/product/$slug': {
       id: '/settings/product/$slug'
@@ -574,6 +594,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  OauthSuccessRoute: OauthSuccessRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
   AppOrgSlugProductSlugRoute: AppOrgSlugProductSlugRouteWithChildren,

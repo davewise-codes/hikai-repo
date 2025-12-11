@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useEffect, useState } from "react";
-import { Theme, getColorThemeClass, getColorThemeIds, ColorThemeId } from "@hikai/ui";
+import { Theme, getColorThemeClass, getColorThemeIds } from "@hikai/ui";
 import { useTheme, useColorTheme } from "@/domains/core";
 
 export interface ThemeContextValue {

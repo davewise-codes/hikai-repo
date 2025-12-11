@@ -61,7 +61,7 @@ export function UserMenu() {
     i18n.changeLanguage(newLocale);
   };
 
-  // Seleccionar producto reciente (solo cambia contexto, no navega)
+  // Seleccionar producto reciente: cambia contexto y navega al timeline del producto
   const handleProductClick = (product: NonNullable<typeof recentProducts>[number]) => {
     // Si el producto es de otra org, cambiar org primero
     if (product.organization._id !== currentOrg?._id) {
@@ -69,6 +69,11 @@ export function UserMenu() {
     }
     // Establecer producto actual
     setCurrentProduct(product._id);
+    // Navegar al timeline del producto seleccionado
+    navigate({
+      to: "/app/$orgSlug/$productSlug/timeline",
+      params: { orgSlug: product.organization.slug, productSlug: product.slug },
+    });
     // Toast de confirmación
     toast.success(t("products:switcher.switched", { name: product.name }));
   };
@@ -93,7 +98,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-accent transition-colors cursor-pointer"
+          className="h-8 w-8 flex items-center justify-center rounded-full p-0 hover:bg-accent/50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           title={user?.name || user?.email || t("userMenu.title")}
         >
           <Avatar className="h-8 w-8">

@@ -41,8 +41,6 @@ export function TimelineList({
 		element.scrollIntoView({ behavior: "smooth", block: "center" });
 	}, [selectedId]);
 
-	const kinds = useMemo(() => Array.from(new Set(events.map((event) => event.kind))), [events]);
-
 	if (isLoading) {
 		return (
 			<div className="space-y-10">

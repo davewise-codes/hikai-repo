@@ -1,0 +1,57 @@
+{
+  "title": "Timeline",
+  "subtitleLoading": "Cargando producto...",
+  "subtitleMissing": "Producto no encontrado",
+  "subtitleError": "Timeline no disponible",
+  "subtitleReady": "Revisa incrementos, lanza sync y navega",
+  "breadcrumbs": "{{org}} / {{product}}",
+  "controls": {
+    "prev": "Anterior",
+    "next": "Siguiente",
+    "kind": "Tipo",
+    "allKinds": "Todos los tipos",
+    "filter": "Filtros",
+    "date": "Fecha",
+    "last7": "Últimos 7 días",
+    "last30": "Últimos 30 días",
+    "lastMonth": "Mes pasado",
+    "allDates": "Todas las fechas"
+  },
+  "sync": {
+    "label": "Sync ahora",
+    "loading": "Haciendo sync...",
+    "success": "Sync completado: {{ingested}} ingestados, {{skipped}} ignorados",
+    "error": "No se pudo sincronizar",
+    "noConnection": "Conecta una fuente para sincronizar eventos"
+  },
+  "navigator": {
+    "title": "Navegador",
+    "today": "Más reciente",
+    "loading": "Cargando densidad..."
+  },
+  "empty": {
+    "title": "Sin eventos en este rango",
+    "description": "Lanza un sync o ajusta los filtros.",
+    "connectSource": "Conectar una fuente"
+  },
+  "list": {
+    "rawStatus": {
+      "pending": "Pendiente",
+      "processed": "Procesado",
+      "error": "Error"
+    },
+    "relevance": "Relevancia {{value}}"
+  },
+  "detail": {
+    "title": "Detalle",
+    "emptyTitle": "Sin evento seleccionado",
+    "emptyDescription": "Selecciona un incremento en el timeline para ver sus detalles.",
+    "tabs": {
+      "overview": "Overview",
+      "activity": "Actividad"
+    },
+    "noSummary": "No hay resumen disponible aún.",
+    "activityHint": "Aquí aparecerá la actividad e inputs raw.",
+    "activityPlaceholder": "Mostraremos eventos interpretados y raw por incremento."
+  }
+}

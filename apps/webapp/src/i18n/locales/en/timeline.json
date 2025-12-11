@@ -1,0 +1,57 @@
+{
+  "title": "Timeline",
+  "subtitleLoading": "Loading product...",
+  "subtitleMissing": "Product not found",
+  "subtitleError": "Timeline unavailable",
+  "subtitleReady": "Review increments, sync, and navigate",
+  "breadcrumbs": "{{org}} / {{product}}",
+  "controls": {
+    "prev": "Previous",
+    "next": "Next",
+    "kind": "Type",
+    "allKinds": "All types",
+    "filter": "Filters",
+    "date": "Date",
+    "last7": "Last 7 days",
+    "last30": "Last 30 days",
+    "lastMonth": "Last month",
+    "allDates": "All dates"
+  },
+  "sync": {
+    "label": "Sync now",
+    "loading": "Syncing...",
+    "success": "Sync completed: {{ingested}} ingested, {{skipped}} skipped",
+    "error": "Could not sync events",
+    "noConnection": "Connect a source to sync events"
+  },
+  "navigator": {
+    "title": "Navigator",
+    "today": "Most recent",
+    "loading": "Loading density..."
+  },
+  "empty": {
+    "title": "No events in this range",
+    "description": "Try syncing data or adjusting filters.",
+    "connectSource": "Connect a source"
+  },
+  "list": {
+    "rawStatus": {
+      "pending": "Pending",
+      "processed": "Processed",
+      "error": "Error"
+    },
+    "relevance": "Relevance {{value}}"
+  },
+  "detail": {
+    "title": "Detail",
+    "emptyTitle": "No event selected",
+    "emptyDescription": "Pick an increment in the timeline to see its details.",
+    "tabs": {
+      "overview": "Overview",
+      "activity": "Activity"
+    },
+    "noSummary": "No summary available yet.",
+    "activityHint": "Activity and raw events will appear here.",
+    "activityPlaceholder": "We will surface interpreted and raw events per increment."
+  }
+}

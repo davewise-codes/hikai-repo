@@ -56,6 +56,8 @@ const buttonVariants = cva(
         default: "min-h-btn min-w-btn px-btn py-0",
         sm: "min-h-btn min-w-btn px-3 py-0 rounded-md text-fontSize-sm",
         lg: "min-h-btn min-w-btn px-btn py-0 rounded-md",
+        compact: "min-h-btn-compact min-w-btn-compact px-btn-compact py-0 rounded-md text-fontSize-sm",
+        ultra: "min-h-btn-ultra min-w-btn-ultra px-btn-ultra py-0 rounded-md text-fontSize-sm gap-1.5",
         icon: "size-8",
       },
     },
@@ -118,7 +120,9 @@ export { Button, buttonVariants };
 
 | Nombre | Uso |
 |--------|-----|
-| `sm` | Compacto, espacios reducidos |
+| `ultra` | Ultra compacto (24px), barras densas |
+| `compact` | Controles densos (28px) |
+| `sm` | Compacto estándar (32px) |
 | `default` | Tamaño estándar |
 | `lg` | Destacado, CTAs principales |
 | `icon` | Solo icono, cuadrado |

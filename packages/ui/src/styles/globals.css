@@ -80,14 +80,34 @@
 	.min-h-btn {
 		min-height: var(--height-btn-min);
 	}
+	.min-h-btn-compact {
+		min-height: var(--height-btn-compact);
+	}
+	.min-h-btn-ultra {
+		min-height: var(--height-btn-ultra);
+	}
 	.min-w-btn {
 		min-width: var(--width-btn-min);
+	}
+	.min-w-btn-compact {
+		min-width: var(--width-btn-compact);
+	}
+	.min-w-btn-ultra {
+		min-width: var(--width-btn-ultra);
 	}
 
 	/* Horizontal padding */
 	.px-btn {
 		padding-left: var(--spacing-btn-x);
 		padding-right: var(--spacing-btn-x);
+	}
+	.px-btn-compact {
+		padding-left: var(--spacing-btn-x-compact);
+		padding-right: var(--spacing-btn-x-compact);
+	}
+	.px-btn-ultra {
+		padding-left: var(--spacing-btn-x-compact);
+		padding-right: var(--spacing-btn-x-compact);
 	}
 	.px-nav {
 		padding-left: var(--spacing-nav-x);

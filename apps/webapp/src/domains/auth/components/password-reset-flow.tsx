@@ -50,7 +50,7 @@ export function PasswordResetFlow({
 			await onRequestReset({ email });
 			setStep("verify");
 			setErrors({});
-		} catch (error) {
+		} catch {
 			// Error handling is done by parent component
 		}
 	};
@@ -72,7 +72,7 @@ export function PasswordResetFlow({
 			await onVerifyCode({ email, code: verificationCode });
 			setStep("reset");
 			setErrors({});
-		} catch (error) {
+		} catch {
 			// Error handling is done by parent component
 		}
 	};
@@ -105,7 +105,7 @@ export function PasswordResetFlow({
 				password: passwordData.password
 			});
 			onSuccess();
-		} catch (error) {
+		} catch {
 			// Error handling is done by parent component
 		}
 	};
@@ -245,10 +245,10 @@ export function PasswordResetFlow({
 											await onRequestReset({ email });
 											setVerificationCode("");
 											setErrors({});
-										} catch (error) {
-											// Error will be handled by parent
-										}
-									}}
+											} catch {
+												// Error will be handled by parent
+											}
+										}}
 									disabled={isLoading}
 									className="text-muted-foreground hover:text-foreground"
 								>

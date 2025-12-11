@@ -32,6 +32,7 @@ import {
 	ArrowUp,
 	Clock,
 	Refresh,
+	ArrowUpToLine,
 	Filter as FilterIcon,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
@@ -47,24 +48,17 @@ import {
 } from "@/domains/timeline";
 import { formatRelativeDate, formatShortDate } from "@/domains/shared/utils";
 
-type DensitySegment = {
-	heightPercent: number;
-	intensity: number;
-};
-
-type TimeTick = { label: string; positionPercent: number };
-
 export const Route = createFileRoute("/app/$orgSlug/$productSlug/timeline")({
 	component: TimelinePage,
 });
 
 function TimelinePage() {
 	const { t, i18n } = useTranslation("timeline");
-	const { orgSlug, productSlug } = Route.useParams();
+	const { productSlug } = Route.useParams();
 	const { currentOrg } = useCurrentOrg();
 	const product = useGetProductBySlug(currentOrg?._id, productSlug);
 	const productId = product?._id;
-	const { timeline, isLoading, error } = useTimeline({ productId });
+	const { timeline, isLoading } = useTimeline({ productId });
 	const isTimelineLoading = isLoading || product === undefined;
 	const { connections, isLoading: isConnectionsLoading } =
 		useConnections(productId);
@@ -258,13 +252,6 @@ function TimelinePage() {
 		[filteredEvents, selectedId],
 	);
 
-	const timelineSubtitle = useMemo(() => {
-		if (product === undefined) return t("subtitleLoading");
-		if (!product) return t("subtitleMissing");
-		if (error) return t("subtitleError");
-		return t("subtitleReady");
-	}, [error, product, t]);
-
 	const showConnectCta = !isConnectionsLoading && !activeConnection;
 	const handleKindChange = useCallback(
 		(value: string) => setFilters((prev) => ({ ...prev, kind: value })),
@@ -277,24 +264,25 @@ function TimelinePage() {
 
 	return (
 		<div className="flex h-[calc(100vh-64px)] flex-col gap-4 overflow-hidden p-5">
-			<div className="grid flex-1 grid-rows-[auto_1fr] gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_480px]">
+			<div className="grid flex-1 grid-rows-[auto_1fr] gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_560px]">
 				<div className="col-start-1 row-start-1 flex flex-col justify-center">
 					<h1 className="text-2xl font-semibold">{t("title")}</h1>
 				</div>
 				<div className="col-start-2 row-start-1 flex items-start justify-end">
-					<div className="flex h-8 flex-wrap items-center gap-2 rounded-md border bg-background px-3 shadow-sm">
+					<div className="flex h-8 flex-wrap items-center gap-2">
 						<Button
-							variant="ghost"
-							size="icon"
+							variant="outline"
+							size="ultra"
 							onClick={selectPrev}
 							disabled={!filteredEvents.length || !selectedId}
 							aria-label={t("controls.prev")}
 						>
 							<ArrowUp className="h-4 w-4" />
+							<span className="text-fontSize-sm">{t("controls.prev")}</span>
 						</Button>
 						<Button
-							variant="ghost"
-							size="icon"
+							variant="outline"
+							size="ultra"
 							onClick={selectNext}
 							disabled={
 								!filteredEvents.length ||
@@ -304,10 +292,11 @@ function TimelinePage() {
 							aria-label={t("controls.next")}
 						>
 							<ArrowDown className="h-4 w-4" />
+							<span className="text-fontSize-sm">{t("controls.next")}</span>
 						</Button>
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="sm" className="h-7 px-2 gap-1">
+								<Button variant="outline" size="ultra">
 									<FilterIcon className="h-4 w-4" />
 									<span className="text-fontSize-sm">
 										{t("controls.filter")}
@@ -373,8 +362,8 @@ function TimelinePage() {
 							</DropdownMenuContent>
 						</DropdownMenu>
 						<Button
-							variant="ghost"
-							size="icon"
+							variant="outline"
+							size="ultra"
 							onClick={handleSync}
 							disabled={
 								!productId ||
@@ -384,17 +373,17 @@ function TimelinePage() {
 								!activeConnection
 							}
 							aria-label={t("sync.label")}
-							className="h-7 w-7"
 						>
 							<Refresh className="h-4 w-4" />
+							<span className="text-fontSize-sm">{t("sync.label")}</span>
 						</Button>
 						<Button
-							variant="ghost"
-							size="sm"
-							className="h-7 px-2"
+							variant="outline"
+							size="ultra"
 							onClick={handleToday}
 						>
-							{t("navigator.today")}
+							<ArrowUpToLine className="h-4 w-4" />
+							<span className="text-fontSize-sm">{t("navigator.today")}</span>
 						</Button>
 					</div>
 				</div>

@@ -20,7 +20,11 @@
   --height-nav-item: 1.75rem;    /* 28px - Linear standard, para nav simple */
   --height-menu-item: 2rem;      /* 32px - dropdowns con contenido rico */
   --height-btn-min: 2rem;        /* 32px - altura mínima de botones */
+  --height-btn-compact: 1.75rem; /* 28px - botones compactos/icon-only */
+  --height-btn-ultra: 1.5rem;    /* 24px - botones ultra compactos */
   --width-btn-min: 2rem;         /* 32px - ancho mínimo de botones */
+  --width-btn-compact: 1.75rem;  /* 28px - ancho mínimo compacto */
+  --width-btn-ultra: 1.5rem;     /* 24px - ancho mínimo ultra compacto */
 
   /* === HORIZONTAL PADDING === */
   --spacing-btn-x: 0.875rem;     /* 14px - Linear settings buttons (webapp) */

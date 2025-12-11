@@ -13,7 +13,7 @@ import { UserMenu } from "./user-menu";
 export function AppHeader() {
   return (
     <header className="fixed top-0 left-0 right-0 h-14 z-sticky bg-background border-b border-border">
-      <div className="h-full px-4 flex items-center justify-between">
+      <div className="h-full px-2 flex items-center justify-between">
         {/* Left section */}
         <div className="flex items-center gap-3">
           {/* Organization switcher */}

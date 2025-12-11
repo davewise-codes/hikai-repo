@@ -23,6 +23,7 @@ export {
   ArrowDownRight,
   ArrowUpLeft,
   ArrowDownLeft,
+  ArrowUpToLine,
 } from "lucide-react";
 
 // Actions & States

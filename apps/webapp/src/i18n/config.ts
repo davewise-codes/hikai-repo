@@ -15,6 +15,8 @@ import enProfile from './locales/en/profile.json';
 import esProfile from './locales/es/profile.json';
 import enConnectors from './locales/en/connectors.json';
 import esConnectors from './locales/es/connectors.json';
+import enTimeline from './locales/en/timeline.json';
+import esTimeline from './locales/es/timeline.json';
 
 const resources = {
   en: {
@@ -24,6 +26,7 @@ const resources = {
     products: enProducts,
     profile: enProfile,
     connectors: enConnectors,
+    timeline: enTimeline,
   },
   es: {
     common: esCommon,
@@ -32,6 +35,7 @@ const resources = {
     products: esProducts,
     profile: esProfile,
     connectors: esConnectors,
+    timeline: esTimeline,
   },
 };
 

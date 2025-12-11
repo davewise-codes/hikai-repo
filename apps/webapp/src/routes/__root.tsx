@@ -8,7 +8,6 @@ import { ReactNode, useEffect } from "react";
 
 function GlobalAuthGuard({ children }: { children: ReactNode }) {
 	const location = useLocation();
-	const navigate = useNavigate();
 	const isPublicRoute = ['/login'].includes(location.pathname);
 
 	// Allow public routes

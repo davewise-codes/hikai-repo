@@ -22,6 +22,9 @@ import type * as lib_planLimits from "../lib/planLimits.js";
 import type * as organizations_organizations from "../organizations/organizations.js";
 import type * as products_index from "../products/index.js";
 import type * as products_products from "../products/products.js";
+import type * as timeline_events from "../timeline/events.js";
+import type * as timeline_index from "../timeline/index.js";
+import type * as timeline_interpret from "../timeline/interpret.js";
 import type * as userPreferences from "../userPreferences.js";
 import type * as users from "../users.js";
 
@@ -46,6 +49,9 @@ declare const fullApi: ApiFromModules<{
   "organizations/organizations": typeof organizations_organizations;
   "products/index": typeof products_index;
   "products/products": typeof products_products;
+  "timeline/events": typeof timeline_events;
+  "timeline/index": typeof timeline_index;
+  "timeline/interpret": typeof timeline_interpret;
   userPreferences: typeof userPreferences;
   users: typeof users;
 }>;

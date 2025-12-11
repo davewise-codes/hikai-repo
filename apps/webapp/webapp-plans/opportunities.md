@@ -22,6 +22,7 @@
   - cada tabla permite:
     explorar usuarios, organizaciones, productos viendo: - cuando se creó - cuando se actualizó por última vez - ultima vez que accedió o fue accedido - quién es el owner de una org - quiénes son los admin de una org / producto - filtrar org / prod por tiempo en desuso - filtrar orgs y prods huérfanos - filtrar users por tiempo inactivos - filtrar users que no han activado su cuenta
     y borrar (acción en el row correspondiente, con modal de confirmación) de manera segura y aplicando reglas de negocio de estas entidades: - si borro un usuario: - sus org personales se borran - y se borran sus productos - y las membresías del producto y de la organización - las orgs pro de las que es owner - se transfieren al primer admin - se transfieren al primer usuario - o se borran - y se borran sus productos - y las membresías del producto y de la organización - se eliminan sus membresías de org y de producto - se limpian tablas de auth - si borro un producto - se borran sus membresías - si borro una org - se borran sus productos - se eliminan sus membresías de org y productos
+    - eliminar prooductos también elimina rawEvents e interpretedEvents
   - en términos de implementación, el órden que yo propondría es:
     - crear app, estructura de carpetas, etc
     - crear ui básica y queries, mutations
@@ -59,3 +60,13 @@
 - se conciso y trata de no profundizar demasiado aún para poder mantener una iteración fluida con un contexto manejable
 - No hagas asunciones, compárteme dudas y las debatimos
 - maxima capacidad de ultrathink
+
+- antyes quiero probar las nuevas rutas y los componentes de product workspace. sugiero lo siguiente:
+- en apps/webapp/src/domains/core/components/app-header.tsx tenemos el menú hamburguesa que nos valió para acceder a algunas secciones iniciales para montar la app
+- ese menú y las secciones que accede deben desaparecer
+- en su lugar propongo situar una cebcera al settings-nav con un botón que tenga back to product, habilitado siempre que haya producto y que lleve a una de las páginas navegables del productSlug en la que podamos ver el shell
+- qué te parece? qué habría que hacer exactamente?
+
+openssl pkcs8 -topk8 -inform PEM -in /Users/dperez/Downloads/hikai-connections-app.2025-12-09.private-key.pem -outform PEM -nocrypt -out github-app-pkcs8.pem
+
+pnpm --filter @hikai/convex exec npx convex run connectors/github:syncGithubConnection --productId kd7ajcjwa9nyykv9nt3fxv1aj17wwya2 --connectionId kn7d4jgtyr3k3x1s1b4yzqjqr97wymty

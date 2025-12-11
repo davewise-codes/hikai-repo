@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { AppShell } from "@/domains/core/components/app-shell";
 import {
@@ -28,7 +28,6 @@ export const Route = createFileRoute("/settings")({
 function SettingsLayout() {
   const { t } = useTranslation("common");
   const location = useLocation();
-  const navigate = useNavigate();
   const { currentOrg } = useCurrentOrg();
   const { currentProduct } = useCurrentProduct();
 
@@ -39,15 +38,6 @@ function SettingsLayout() {
   const backLabel = canGoToProduct
     ? t("settingsNav.backToProduct")
     : t("settingsNav.selectProduct");
-
-  const handleBackToProduct = () => {
-    if (!currentOrg || !currentProduct) return;
-
-    navigate({
-      to: "/app/$orgSlug/$productSlug/timeline",
-      params: { orgSlug: currentOrg.slug, productSlug: currentProduct.slug },
-    });
-  };
 
   return (
     <AppShell>
