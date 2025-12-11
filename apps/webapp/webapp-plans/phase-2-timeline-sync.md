@@ -23,7 +23,7 @@ La Fase 2 habilita la ingesta de eventos desde GitHub y su visualización en un 
 | F2.2    | Interpretación básica → interpreted      | ✅ Completado |
 | F2.3    | Queries/mutations timeline (Convex)      | ✅ Completado |
 | F2.4    | Hooks timeline en webapp                 | ✅ Completado |
-| F2.5    | UI timeline + botón de sync              | ⏳ Pendiente  |
+| F2.5    | UI timeline + botón de sync              | ✅ Completado |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -34,6 +34,7 @@ La Fase 2 habilita la ingesta de eventos desde GitHub y su visualización en un 
 ```
 - En apps/webapp/webapp-plans/phase-2-timeline-sync.md puedes ver el plan de la Fase 2
 - Vamos a proceder con la siguiente subfase pendiente
+- Asegurate de considerar la especificación en: ## Especificación UI Timeline (acuerdos previos a F2.5)
 - Usa el prompt de esa subfase como instrucción completa
 - Comparte el plan de implementación antes de ejecutar cambios
 - No hagas asunciones, compárteme dudas y las debatimos antes de empezar el desarrollo
@@ -55,6 +56,19 @@ La Fase 2 habilita la ingesta de eventos desde GitHub y su visualización en un 
 - Timeline y sync deben registrar estados sin exponer credenciales; limpiar tokens en respuestas.
 - Commit por subfase con formato `feat(scope): [F2.X] descripción`; sin commit hasta validar tests.
 - Pruebas mínimas: `pnpm --filter @hikai/convex exec tsc --noEmit` y `pnpm --filter @hikai/webapp exec tsc --noEmit`; añadir lint si hay cambios en webapp.
+
+---
+
+## Especificación UI Timeline (acuerdos previos a F2.5)
+
+- Layout 3 columnas: Navigator+Timeline ≈55–60%, Detail Card ≈40–45% fijo; Timeline scroll vertical. Navigator ocupa en altura 35% del espacio asignado y crece +15% por cada año de timeline (ej. 3 años = 65%); si supera, sigue ampliando en +15% por año.
+- Timeline con cards alternando izquierda/derecha también en mobile, línea central visible; Detail Card con tabs y scroll interno por tab; sin acciones de envío/assign por ahora.
+- Controles flotantes pegados a la línea central, sticky al scroll, con flechas arriba/abajo para moverse entre eventos; filtros se definirán más adelante.
+- Loading/empty: skeletons y mensajes de estado tanto en Timeline como en Detail Card y Navigator.
+- Navegación por teclado: mantener scroll natural; flechas ↑/↓ mueven la selección al evento previo/siguiente y lo hacen scroll-into-view, con foco/roving focus.
+- Mobile: mismo patrón de alternancia y línea central; Detail Card sigue como modal fullscreen; Navigator fino en lateral.
+- Visual: usar tokens/componentes existentes para badges/estados; sombras suaves y gradientes de fade top/bottom; animaciones ligeras (~120ms).
+- Optimización: sin virtualización por ahora; priorizar claridad y navegación.
 
 ---
 
