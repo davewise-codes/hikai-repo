@@ -94,7 +94,7 @@ packages/convex/
 | Subfase | Descripción                                    | Estado        |
 | ------- | ---------------------------------------------- | ------------- |
 | F0.1    | Instalar dependencias y configurar convex.config.ts | ✅ Completado |
-| F0.2    | Crear agente "hello world" con OpenAI          | ⏳ Pendiente |
+| F0.2    | Crear agente "hello world" con OpenAI          | ✅ Completado |
 | F0.3    | Exponer action para invocar el agente          | ⏳ Pendiente |
 | F0.4    | UI mínima en webapp para probar                | ⏳ Pendiente |
 | F0.5    | Validar streaming y threads                    | ⏳ Pendiente |
