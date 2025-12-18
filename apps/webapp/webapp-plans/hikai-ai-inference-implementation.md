@@ -101,7 +101,7 @@ packages/convex/
 | F1.1    | Schema aiUsage con índices                     | ✅ Completado |
 | F1.2    | Puerto abstracto LLM (llmPort.ts)              | ✅ Completado |
 | F1.3    | Adaptador OpenAI                               | ✅ Completado |
-| F1.4    | Adaptador Anthropic                            | ⏳ Pendiente |
+| F1.4    | Adaptador Anthropic                            | ✅ Completado |
 | F1.5    | Config selector de proveedor                   | ⏳ Pendiente |
 | F1.6    | Helpers de telemetría con flag debug           | ⏳ Pendiente |
 | F1.7    | Queries de uso de IA (por org/producto/caso)   | ⏳ Pendiente |
