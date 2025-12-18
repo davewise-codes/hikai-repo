@@ -13,8 +13,12 @@
     "fix-types": "sed -i '' '1s|^|// @ts-nocheck\\n|' convex/_generated/api.d.ts 2>/dev/null || true"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "latest",
+    "@ai-sdk/openai": "latest",
     "@auth/core": "^0.37.0",
+    "@convex-dev/agent": "latest",
     "@convex-dev/auth": "^0.0.90",
+    "ai": "latest",
     "convex": "^1.30.0",
     "jose": "^6.0.13",
     "oslo": "^1.2.1",
