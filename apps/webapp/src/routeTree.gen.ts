@@ -34,6 +34,7 @@ import { Route as SettingsOrgSlugProductsRouteImport } from './routes/settings/o
 import { Route as SettingsOrgSlugPlanRouteImport } from './routes/settings/org/$slug/plan'
 import { Route as SettingsOrgSlugGeneralRouteImport } from './routes/settings/org/$slug/general'
 import { Route as AppOrgSlugProductSlugTimelineRouteImport } from './routes/app/$orgSlug/$productSlug/timeline'
+import { Route as AppOrgSlugProductSlugAiTestRouteImport } from './routes/app/$orgSlug/$productSlug/ai-test'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -165,6 +166,12 @@ const AppOrgSlugProductSlugTimelineRoute =
     path: '/timeline',
     getParentRoute: () => AppOrgSlugProductSlugRoute,
   } as any)
+const AppOrgSlugProductSlugAiTestRoute =
+  AppOrgSlugProductSlugAiTestRouteImport.update({
+    id: '/ai-test',
+    path: '/ai-test',
+    getParentRoute: () => AppOrgSlugProductSlugRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/app/$orgSlug/$productSlug': typeof AppOrgSlugProductSlugRouteWithChildren
   '/settings/org/$slug': typeof SettingsOrgSlugRouteWithChildren
   '/settings/product/$slug': typeof SettingsProductSlugRouteWithChildren
+  '/app/$orgSlug/$productSlug/ai-test': typeof AppOrgSlugProductSlugAiTestRoute
   '/app/$orgSlug/$productSlug/timeline': typeof AppOrgSlugProductSlugTimelineRoute
   '/settings/org/$slug/general': typeof SettingsOrgSlugGeneralRoute
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
@@ -204,6 +212,7 @@ export interface FileRoutesByTo {
   '/organizations': typeof OrganizationsIndexRoute
   '/products': typeof ProductsIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/app/$orgSlug/$productSlug/ai-test': typeof AppOrgSlugProductSlugAiTestRoute
   '/app/$orgSlug/$productSlug/timeline': typeof AppOrgSlugProductSlugTimelineRoute
   '/settings/org/$slug/general': typeof SettingsOrgSlugGeneralRoute
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
@@ -232,6 +241,7 @@ export interface FileRoutesById {
   '/app/$orgSlug/$productSlug': typeof AppOrgSlugProductSlugRouteWithChildren
   '/settings/org/$slug': typeof SettingsOrgSlugRouteWithChildren
   '/settings/product/$slug': typeof SettingsProductSlugRouteWithChildren
+  '/app/$orgSlug/$productSlug/ai-test': typeof AppOrgSlugProductSlugAiTestRoute
   '/app/$orgSlug/$productSlug/timeline': typeof AppOrgSlugProductSlugTimelineRoute
   '/settings/org/$slug/general': typeof SettingsOrgSlugGeneralRoute
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
@@ -261,6 +271,7 @@ export interface FileRouteTypes {
     | '/app/$orgSlug/$productSlug'
     | '/settings/org/$slug'
     | '/settings/product/$slug'
+    | '/app/$orgSlug/$productSlug/ai-test'
     | '/app/$orgSlug/$productSlug/timeline'
     | '/settings/org/$slug/general'
     | '/settings/org/$slug/plan'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/products'
     | '/settings'
+    | '/app/$orgSlug/$productSlug/ai-test'
     | '/app/$orgSlug/$productSlug/timeline'
     | '/settings/org/$slug/general'
     | '/settings/org/$slug/plan'
@@ -311,6 +323,7 @@ export interface FileRouteTypes {
     | '/app/$orgSlug/$productSlug'
     | '/settings/org/$slug'
     | '/settings/product/$slug'
+    | '/app/$orgSlug/$productSlug/ai-test'
     | '/app/$orgSlug/$productSlug/timeline'
     | '/settings/org/$slug/general'
     | '/settings/org/$slug/plan'
@@ -511,6 +524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrgSlugProductSlugTimelineRouteImport
       parentRoute: typeof AppOrgSlugProductSlugRoute
     }
+    '/app/$orgSlug/$productSlug/ai-test': {
+      id: '/app/$orgSlug/$productSlug/ai-test'
+      path: '/ai-test'
+      fullPath: '/app/$orgSlug/$productSlug/ai-test'
+      preLoaderRoute: typeof AppOrgSlugProductSlugAiTestRouteImport
+      parentRoute: typeof AppOrgSlugProductSlugRoute
+    }
   }
 }
 
@@ -576,11 +596,13 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
 )
 
 interface AppOrgSlugProductSlugRouteChildren {
+  AppOrgSlugProductSlugAiTestRoute: typeof AppOrgSlugProductSlugAiTestRoute
   AppOrgSlugProductSlugTimelineRoute: typeof AppOrgSlugProductSlugTimelineRoute
   AppOrgSlugProductSlugIndexRoute: typeof AppOrgSlugProductSlugIndexRoute
 }
 
 const AppOrgSlugProductSlugRouteChildren: AppOrgSlugProductSlugRouteChildren = {
+  AppOrgSlugProductSlugAiTestRoute: AppOrgSlugProductSlugAiTestRoute,
   AppOrgSlugProductSlugTimelineRoute: AppOrgSlugProductSlugTimelineRoute,
   AppOrgSlugProductSlugIndexRoute: AppOrgSlugProductSlugIndexRoute,
 }

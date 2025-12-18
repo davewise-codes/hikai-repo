@@ -8,6 +8,7 @@ import {
 	FileText,
 	Send,
 	Settings,
+	Sparkles,
 	Button,
 	cn,
 	Tooltip,
@@ -138,6 +139,31 @@ export function WorkspaceSidebar({ productSlug, orgSlug }: WorkspaceSidebarProps
 						</Tooltip>
 					);
 				})}
+			</div>
+
+			<div className="w-9 h-px bg-border rounded-full my-3" aria-hidden />
+
+			<div className="flex flex-col items-center gap-2">
+				<Tooltip delayDuration={0}>
+					<TooltipTrigger asChild>
+						<Button
+							asChild
+							size="compact"
+							variant="ghost"
+							className="w-10 h-10 shrink-0 px-0 text-muted-foreground"
+						>
+							<Link
+								to="/app/$orgSlug/$productSlug/ai-test"
+								params={{ orgSlug, productSlug }}
+							>
+								<Sparkles />
+							</Link>
+						</Button>
+					</TooltipTrigger>
+					<TooltipContent side="right">
+						{t("workspace.nav.aiTest")}
+					</TooltipContent>
+				</Tooltip>
 			</div>
 
 			<div className="flex-1" />

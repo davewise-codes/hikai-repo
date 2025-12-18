@@ -96,7 +96,7 @@ packages/convex/
 | F0.1    | Instalar dependencias y configurar convex.config.ts | ✅ Completado |
 | F0.2    | Crear agente "hello world" con OpenAI          | ✅ Completado |
 | F0.3    | Exponer action para invocar el agente          | ✅ Completado |
-| F0.4    | UI mínima en webapp para probar                | ⏳ Pendiente |
+| F0.4    | UI mínima en webapp para probar                | ✅ Completado |
 | F0.5    | Validar streaming y threads                    | ⏳ Pendiente |
 | F1.1    | Schema aiUsage con índices                     | ⏳ Pendiente |
 | F1.2    | Puerto abstracto LLM (llmPort.ts)              | ⏳ Pendiente |
