@@ -99,7 +99,7 @@ packages/convex/
 | F0.4    | UI mínima en webapp para probar                | ✅ Completado |
 | F0.5    | Validar streaming y threads                    | ✅ Completado |
 | F1.1    | Schema aiUsage con índices                     | ✅ Completado |
-| F1.2    | Puerto abstracto LLM (llmPort.ts)              | ⏳ Pendiente |
+| F1.2    | Puerto abstracto LLM (llmPort.ts)              | ✅ Completado |
 | F1.3    | Adaptador OpenAI                               | ⏳ Pendiente |
 | F1.4    | Adaptador Anthropic                            | ⏳ Pendiente |
 | F1.5    | Config selector de proveedor                   | ⏳ Pendiente |
