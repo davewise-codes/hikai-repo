@@ -149,6 +149,36 @@ const schema = defineSchema({
   })
     .index("by_product_time", ["productId", "occurredAt"])
     .index("by_raw_event", ["rawEventId"]),
+
+  // Telemetría de uso de IA
+  aiUsage: defineTable({
+    organizationId: v.id("organizations"),
+    productId: v.optional(v.id("products")), // Opcional para casos org-level
+    userId: v.id("users"),
+    useCase: v.string(), // "echo", "timeline_interpretation", etc.
+    agentName: v.string(),
+    threadId: v.optional(v.string()),
+    provider: v.string(), // "openai", "anthropic"
+    model: v.string(), // "gpt-4o-mini", "claude-3-haiku"
+    tokensIn: v.number(),
+    tokensOut: v.number(),
+    totalTokens: v.number(),
+    latencyMs: v.number(),
+    estimatedCostUsd: v.number(),
+    status: v.union(v.literal("success"), v.literal("error")),
+    errorMessage: v.optional(v.string()),
+    promptSnapshot: v.optional(v.string()),
+    responseSnapshot: v.optional(v.string()),
+    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+  })
+    .index("by_org", ["organizationId"])
+    .index("by_org_month", ["organizationId", "createdAt"])
+    .index("by_product", ["productId"])
+    .index("by_product_month", ["productId", "createdAt"])
+    .index("by_usecase", ["useCase", "createdAt"])
+    .index("by_org_product_usecase", ["organizationId", "productId", "useCase"])
+    .index("by_user", ["userId", "createdAt"]),
 });
 
 export default schema;
