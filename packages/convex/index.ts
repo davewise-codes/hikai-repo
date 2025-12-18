@@ -1,5 +1,6 @@
 // Export Convex API for use in apps
 export { api, internal } from './convex/_generated/api';
+export { components } from './convex/_generated/api';
 
 // Export plan limits and helpers for use in frontend
 export {

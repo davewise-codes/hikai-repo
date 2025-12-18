@@ -11,6 +11,7 @@
 import type * as agents_actions from "../agents/actions.js";
 import type * as agents_helloWorldAgent from "../agents/helloWorldAgent.js";
 import type * as agents_index from "../agents/index.js";
+import type * as agents_messages from "../agents/messages.js";
 import type * as auth from "../auth.js";
 import type * as auth_ResendOTP from "../auth/ResendOTP.js";
 import type * as auth_ResendOTPReset from "../auth/ResendOTPReset.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   "agents/actions": typeof agents_actions;
   "agents/helloWorldAgent": typeof agents_helloWorldAgent;
   "agents/index": typeof agents_index;
+  "agents/messages": typeof agents_messages;
   auth: typeof auth;
   "auth/ResendOTP": typeof auth_ResendOTP;
   "auth/ResendOTPReset": typeof auth_ResendOTPReset;
