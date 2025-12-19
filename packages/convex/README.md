@@ -105,6 +105,13 @@ pnpm deploy     # Deploy a producción
 pnpm codegen    # Regenera tipos de TypeScript
 ```
 
+## 📄 IA inference (Convex Agents + telemetría)
+
+- Guía backend y telemetría: `doc/ai-inference.md`
+- Agente de prueba: `convex/agents/helloWorldAgent.ts` con `usageHandler`
+- Actions de prueba: `convex/agents/actions.ts` (requieren org/product)
+- Consultas de uso: `convex/lib/aiUsage.ts`
+
 ## 🔗 Uso desde la webapp
 
 ```tsx

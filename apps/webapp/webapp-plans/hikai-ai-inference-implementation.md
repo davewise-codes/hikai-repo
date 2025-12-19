@@ -107,7 +107,7 @@ packages/convex/
 | F1.7    | Queries de uso de IA (por org/producto/caso)        | ✅ Completado  |
 | F2.1    | Telemetría E2E con agente actual (chat ai-test)     | ✅ Completado  |
 | F2.2    | UI ai-test mostrando thread/usage y flujos de error | ✅ Completado  |
-| F2.3    | Validación y documentación de consultas de uso      | ⏳ Pendiente  |
+| F2.3    | Validación y documentación de consultas de uso      | ✅ Completado  |
 | F3.1    | Prompt + schema de contexto de producto             | ⏳ Pendiente  |
 | F3.2    | Agent/action de enriquecimiento de contexto         | ⏳ Pendiente  |
 | F3.3    | UI de producto consumiendo contexto enriquecido     | ⏳ Pendiente  |

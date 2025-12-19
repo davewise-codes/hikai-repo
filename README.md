@@ -36,6 +36,9 @@ apps/ (aplicaciones)
 - [Vite](https://vitejs.dev/) - Build tool para apps
 - [TanStack Router](https://tanstack.com/router) - Router para webapp
 - [Zustand](https://zustand-demo.pmnd.rs/) - State management en webapp
+- IA inference con Convex Agents + telemetría: ver
+  - Backend: `packages/convex/doc/ai-inference.md`
+  - Front (panel ai-test): `apps/webapp/doc/ai-inference.md`
 - ESLint + Prettier - Linting y formateo
 - [Vitest](https://vitest.dev) - Testing
 
