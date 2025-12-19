@@ -90,6 +90,8 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	const history = product.productContext?.history ?? [];
 	const threadId = current?.threadId;
 	const hasContext = !!current;
+	const hasSources = (current?.sourcesUsed ?? []).filter((s) => s !== "baseline")
+		.length > 0;
 
 	const lastUpdated = current?.createdAt
 		? new Date(current.createdAt).toLocaleString()
@@ -174,6 +176,11 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 			<CardContent className="space-y-4">
 				{error && (
 					<p className="text-sm text-destructive">{error}</p>
+				)}
+				{!hasSources && (
+					<p className="text-fontSize-sm text-muted-foreground">
+						{t("context.noSources")}
+					</p>
 				)}
 
 				{hasContext ? (

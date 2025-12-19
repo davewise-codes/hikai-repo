@@ -176,7 +176,8 @@
     "viewRaw": "Ver JSON crudo",
     "rawTitle": "JSON crudo del contexto",
     "empty": "Aún no se ha generado el contexto.",
-    "version": "Versión {{version}}"
+    "version": "Versión {{version}}",
+    "noSources": "Aún no hay fuentes externas conectadas. Conecta una fuente (p.ej. GitHub) para enriquecer el contexto."
   },
   "orgSettings": {
     "products": {

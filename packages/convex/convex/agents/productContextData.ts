@@ -67,11 +67,17 @@ export const saveProductContext = internalMutation({
 
 function summarizePayload(payload: unknown): string {
 	try {
-		const asString =
+		const rawString =
 			typeof payload === "string"
 				? payload
-				: JSON.stringify(payload ?? {});
-		return asString.length > 500 ? `${asString.slice(0, 500)}...` : asString;
+				: JSON.stringify(
+						payload ?? {},
+						(_key, value) => (typeof value === "bigint" ? value.toString() : value),
+				  ) ?? "";
+		const sanitized = rawString
+			.replace(/\\x[0-9A-Fa-f]{0,2}/g, "")
+			.replace(/[\u0000-\u001f]+/g, " ");
+		return sanitized.length > 500 ? `${sanitized.slice(0, 500)}...` : sanitized;
 	} catch {
 		return "unserializable payload";
 	}

@@ -176,7 +176,8 @@
     "viewRaw": "View raw JSON",
     "rawTitle": "Raw context JSON",
     "empty": "No context generated yet.",
-    "version": "Version {{version}}"
+    "version": "Version {{version}}",
+    "noSources": "No external sources connected yet. Connect a source (e.g. GitHub) to enrich the context."
   },
   "orgSettings": {
     "products": {
