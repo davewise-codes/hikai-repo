@@ -8,7 +8,8 @@
 
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { Id } from "../_generated/dataModel";
-import { QueryCtx, MutationCtx } from "../_generated/server";
+import { QueryCtx, MutationCtx, internalQuery } from "../_generated/server";
+import { v } from "convex/values";
 
 type Ctx = QueryCtx | MutationCtx;
 
@@ -197,3 +198,30 @@ export async function getProductMembership(
 
   return null;
 }
+
+export const assertOrgAccessInternal = internalQuery({
+  args: {
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, { organizationId }) => {
+    const { organization, userId } = await assertOrgAccess(ctx, organizationId);
+    return {
+      organizationId: organization._id,
+      userId,
+    };
+  },
+});
+
+export const assertProductAccessInternal = internalQuery({
+  args: {
+    productId: v.id("products"),
+  },
+  handler: async (ctx, { productId }) => {
+    const { organization, userId } = await assertProductAccess(ctx, productId);
+    return {
+      organizationId: organization._id,
+      productId,
+      userId,
+    };
+  },
+});

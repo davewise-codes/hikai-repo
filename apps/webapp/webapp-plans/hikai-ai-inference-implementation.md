@@ -105,11 +105,15 @@ packages/convex/
 | F1.5    | Config selector de proveedor                        | ✅ Completado |
 | F1.6    | Helpers de telemetría con flag debug                | ✅ Completado |
 | F1.7    | Queries de uso de IA (por org/producto/caso)        | ✅ Completado  |
-| F2.1    | Prompt template para echo/resumen                   | ⏳ Pendiente  |
-| F2.2    | Agente echo con Convex Agent                        | ⏳ Pendiente  |
-| F2.3    | Action expuesta con telemetría                      | ⏳ Pendiente  |
-| F2.4    | Validación de acceso y límites por plan             | ⏳ Pendiente  |
-| F2.5    | UI de prueba en settings (feature flag)             | ⏳ Pendiente  |
+| F2.1    | Telemetría E2E con agente actual (chat ai-test)     | ✅ Completado  |
+| F2.2    | UI ai-test mostrando thread/usage y flujos de error | ⏳ Pendiente  |
+| F2.3    | Validación y documentación de consultas de uso      | ⏳ Pendiente  |
+| F3.1    | Prompt + schema de contexto de producto             | ⏳ Pendiente  |
+| F3.2    | Agent/action de enriquecimiento de contexto         | ⏳ Pendiente  |
+| F3.3    | UI de producto consumiendo contexto enriquecido     | ⏳ Pendiente  |
+| F4.1    | Prompt + schema del intérprete de timeline          | ⏳ Pendiente  |
+| F4.2    | Agent/action de interpretación de eventos           | ⏳ Pendiente  |
+| F4.3    | Validaciones de plan, fallback y UI de timeline     | ⏳ Pendiente  |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -1157,16 +1161,212 @@ PARTE 2: VALIDACIÓN
 
 ---
 
-## Fase 2: Agente Echo Funcional
+## Fase 2: Telemetría End-to-End (agente actual)
 
-**Objetivo**: Primer agente productivo: resumir texto con tracking completo.
+**Objetivo**: Validar el circuito de telemetría usando el agente/chat de prueba existente (`ai-test`) sin crear más agentes de ejemplo.
 
-(Subfases F2.1 - F2.5 a detallar tras completar Fase 0 y Fase 1)
+### F2.1: Instrumentar actions con telemetría
+
+**Objetivo**: Grabar uso y errores en `aiUsage` al invocar el chat actual.
+
+**Archivos**:
+
+- `packages/convex/convex/agents/actions.ts` — Añadir `recordAIUsage/recordAIError`, assert de acceso y metadata.
+- `packages/convex/convex/ai/telemetry.ts` — (si hace falta) utilidades de metadata.
+
+**Prompt**:
+
+```
+F2.1: Instrumentar actions con telemetría
+
+- Añadir assert de acceso (product/org) antes de invocar el agente (puede ser productId opcional para ai-test; documenta decisión).
+- En las actions de chat/chatStream, envolver la invocación con recordAIUsage/recordAIError:
+  - useCase: "ai_test"
+  - agentName: "Hello World Agent" (o el nombre real del agente actual)
+  - threadId: el que se use/cree
+  - metadata: incluir source="ai-test"
+- Asegurar que los errores registran provider/model y mensaje.
+- No tocar UI aún.
+
+Validación:
+- `pnpm --filter @hikai/convex exec tsc --noEmit`
+- Ejecutar 1 llamada manual desde ai-test o dashboard y verificar que aparece en aiUsage.
+```
+
+### F2.2: UI ai-test mostrando thread/usage y flujos de error
+
+**Objetivo**: Visualizar threadId y última respuesta de uso en la UI de prueba, y gestionar errores.
+
+**Archivos**:
+
+- `apps/webapp/src/domains/core/components/ai-test-panel.tsx`
+- `apps/webapp/src/routes/ai-test.tsx` (si hace falta)
+
+**Prompt**:
+
+```
+F2.2: UI ai-test con telemetría visible
+
+- Mostrar threadId activo y permitir reset.
+- Mostrar estado de la última invocación: provider/model, tokens in/out/total, latencyMs, status (success/error).
+- En caso de error, mostrar mensaje amigable y no perder el threadId si existe.
+- Usa solo componentes @hikai/ui.
+- No exponer datos sensibles (prompt/response snapshots solo si debug está activo).
+
+Validación:
+- `pnpm --filter @hikai/webapp exec tsc --noEmit`
+- Flujo manual: enviar prompt, ver threadId y métricas, provocar error (por ej. prompt vacío si se valida) y ver manejo.
+```
+
+### F2.3: Validación y documentación de consultas de uso
+
+**Objetivo**: Verificar y documentar cómo leer métricas desde el frontend o dashboard.
+
+**Archivos**:
+
+- `packages/convex/convex/lib/aiUsage.ts` (solo si ajustes menores).
+- `apps/webapp/webapp-plans/hikai-ai-inference-implementation.md` — sección de notas de validación.
+- (Opcional) `apps/webapp/src/domains/core/components/ai-test-panel.tsx` para mostrar agregados simples.
+
+**Prompt**:
+
+```
+F2.3: Validar consultas de uso
+
+- Ejecutar queries getOrgUsage/getProductUsage/getUsageByUseCase con datos reales de ai-test y documentar resultados esperados.
+- Añadir en el doc (esta página) un mini "How to validate" con filtros y ejemplos de retorno.
+- (Opcional) Mostrar en ai-test un agregado mínimo (p.ej. totalTokens del último día para la org/product del usuario).
+
+Validación:
+- `pnpm --filter @hikai/convex exec tsc --noEmit`
+- Salidas de ejemplo documentadas en el plan.
+```
 
 ---
 
-## Fase 3: Agente de Interpretación de Timeline (Futuro)
+## Fase 3: Agente de Enriquecimiento de Contexto de Producto
 
-**Objetivo**: Reemplazar heurística por IA para clasificar eventos.
+**Objetivo**: Generar un contexto/taxonomía de producto a partir de las fuentes conectadas (starting point: GitHub).
 
-(Subfases F3.1 - F3.6 a detallar tras completar Fases anteriores)
+### F3.1: Prompt + schema de contexto
+
+**Objetivo**: Definir el contrato de salida y el prompt del agente.
+
+**Archivos**:
+
+- `packages/convex/convex/ai/prompts/productContext.ts` (nuevo)
+- `packages/convex/convex/ai/prompts/index.ts` (registro)
+- `packages/convex/convex/schema.ts` (si se necesita tabla de contexto de producto)
+
+**Prompt**:
+
+```
+F3.1: Prompt + schema de contexto
+
+- Definir un schema JSON de salida (ej: platforms, languages, key_features, release_cadence, maturity, risks, summary).
+- Redactar prompt del agente con instrucciones, formato de salida y límites (tokens).
+- Decidir almacenamiento: nueva tabla productContext con índices por productId/createdAt o campo embebido; documentar elección.
+- No implementar agent/action aún.
+
+Validación:
+- `pnpm --filter @hikai/convex exec tsc --noEmit`
+- Prompt revisado en el doc (copiar en este plan o en archivo).
+```
+
+### F3.2: Agent/action de enriquecimiento de contexto
+
+**Objetivo**: Implementar el agente y action protegida para generar/actualizar contexto.
+
+**Archivos**:
+
+- `packages/convex/convex/agents/productContextAgent.ts` (nuevo)
+- `packages/convex/convex/agents/actions.ts` (nueva action)
+- `packages/convex/convex/lib/planLimits.ts` (si aplica control)
+- `packages/convex/convex/ai/telemetry.ts` (uso de recordAIUsage/Error)
+
+**Prompt**:
+
+```
+F3.2: Agent/action de contexto
+
+- Agent usa createLLMAdapter y prompt de productContext; nombre p.ej. "Product Context Agent".
+- Action con assertProductAccess, inputs { productId, forceRefresh?, threadId? }, soporta reuse de thread.
+- Recolectar datos de fuentes disponibles (de momento GitHub: eventos/prs/releases) como contexto textual o herramienta dedicada.
+- Telemetría: useCase "product_context_enrichment".
+- Control de plan: validar tokens/llamadas si hay límites definidos (añadir o referenciar planLimits).
+
+Validación:
+- `pnpm --filter @hikai/convex exec tsc --noEmit`
+- Probar con un producto de ejemplo y revisar aiUsage + contexto generado almacenado.
+```
+
+### F3.3: UI de producto consumiendo contexto enriquecido
+
+**Objetivo**: Mostrar el contexto generado en la webapp.
+
+**Archivos**:
+
+- `apps/webapp/src/domains/products/...` (componente/ruta que mejor encaje)
+- `apps/webapp/src/locales/*` (textos)
+
+**Prompt**:
+
+```
+F3.3: UI de contexto de producto
+
+- Mostrar resumen/taxonomía generada (plataformas, stack, features, cadencia).
+- Indicar timestamp y modelo/proveedor usados.
+- Botón para regenerar (llama a action con forceRefresh) respetando límites de plan.
+- Manejar estado loading/error y caso "aún no generado".
+
+Validación:
+- `pnpm --filter @hikai/webapp exec tsc --noEmit`
+- Flujo manual: generar y visualizar contexto; ver aiUsage reflejado.
+```
+
+---
+
+## Fase 4: Intérprete de Timeline (IA)
+
+**Objetivo**: Sustituir la heurística por un agente que normalice eventos raw en interpretedEvents con más valor funcional.
+
+### F4.1: Prompt + schema del intérprete de timeline
+
+**Objetivo**: Definir formato de salida y prompt del agente.
+
+**Archivos**:
+
+- `packages/convex/convex/ai/prompts/timelineInterpreter.ts` (nuevo)
+- `packages/convex/convex/ai/prompts/index.ts` (registro)
+- `packages/convex/convex/schema.ts` (si se requieren campos extra en interpretedEvents)
+
+### F4.2: Agent/action de interpretación de eventos
+
+**Objetivo**: Implementar agente que lee rawEvents por ventana temporal y escribe interpretedEvents.
+
+**Archivos**:
+
+- `packages/convex/convex/agents/timelineInterpreterAgent.ts` (nuevo)
+- `packages/convex/convex/agents/actions.ts` (nueva action)
+- `packages/convex/convex/timeline/*` o tools para fetch de rawEvents
+
+**Puntos clave**:
+
+- assertProductAccess, límites de plan.
+- Telemetría useCase "timeline_interpretation".
+- Fallback: si falla IA, mantener heurística actual (no borrar).
+
+### F4.3: Validaciones de plan, fallback y UI
+
+**Objetivo**: Integrar el resultado en la UI de timeline y asegurar degradación.
+
+**Archivos**:
+
+- `apps/webapp/src/domains/timeline/...`
+- `packages/convex/convex/timeline/*` (si hay merges de heurística/IA)
+
+**Puntos clave**:
+
+- Switch/feature flag para usar IA vs heurística.
+- Mostrar fuente (IA/heurística), modelo, timestamp.
+- Tests manuales/validación de aiUsage + interpretedEvents.

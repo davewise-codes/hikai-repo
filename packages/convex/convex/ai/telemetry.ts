@@ -1,7 +1,8 @@
-import { MutationCtx } from "../_generated/server";
+import { internalMutation, MutationCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
 import { LLMGenerateResult, estimateCost } from "./ports/llmPort";
 import { getAIConfig } from "./config";
+import { v } from "convex/values";
 
 export interface TelemetryParams {
 	ctx: MutationCtx;
@@ -61,7 +62,7 @@ export async function recordAIUsage(
  */
 export async function recordAIError(
 	params: Omit<TelemetryParams, "result"> & {
-		error: Error;
+		errorMessage: string;
 		provider: string;
 		model: string;
 	}
@@ -83,7 +84,7 @@ export async function recordAIError(
 		latencyMs: 0,
 		estimatedCostUsd: 0,
 		status: "error",
-		errorMessage: params.error.message,
+		errorMessage: params.errorMessage,
 		promptSnapshot: config.debugLogContent
 			? truncate(params.prompt, 5000)
 			: undefined,
@@ -91,6 +92,76 @@ export async function recordAIError(
 		createdAt: Date.now(),
 	});
 }
+
+export const recordUsage = internalMutation({
+	args: {
+		organizationId: v.id("organizations"),
+		productId: v.optional(v.id("products")),
+		userId: v.id("users"),
+		useCase: v.string(),
+		agentName: v.string(),
+		threadId: v.optional(v.string()),
+		result: v.object({
+			text: v.string(),
+			tokensIn: v.number(),
+			tokensOut: v.number(),
+			totalTokens: v.number(),
+			model: v.string(),
+			provider: v.string(),
+			latencyMs: v.number(),
+		}),
+		prompt: v.optional(v.string()),
+		response: v.optional(v.string()),
+		metadata: v.optional(v.any()),
+	},
+	handler: async (ctx, args) => {
+		return recordAIUsage({
+			ctx,
+			organizationId: args.organizationId,
+			productId: args.productId,
+			userId: args.userId,
+			useCase: args.useCase,
+			agentName: args.agentName,
+			threadId: args.threadId,
+			result: args.result,
+			prompt: args.prompt,
+			response: args.response,
+			metadata: args.metadata ?? undefined,
+		});
+	},
+});
+
+export const recordError = internalMutation({
+	args: {
+		organizationId: v.id("organizations"),
+		productId: v.optional(v.id("products")),
+		userId: v.id("users"),
+		useCase: v.string(),
+		agentName: v.string(),
+		threadId: v.optional(v.string()),
+		provider: v.string(),
+		model: v.string(),
+		errorMessage: v.string(),
+		prompt: v.optional(v.string()),
+		metadata: v.optional(v.any()),
+	},
+	handler: async (ctx, args) => {
+		return recordAIError({
+			ctx,
+			organizationId: args.organizationId,
+			productId: args.productId,
+			userId: args.userId,
+			useCase: args.useCase,
+			agentName: args.agentName,
+			threadId: args.threadId,
+			provider: args.provider,
+			model: args.model,
+			errorMessage: args.errorMessage,
+			prompt: args.prompt,
+			metadata: args.metadata ?? undefined,
+		});
+	},
+});
 
 function truncate(text: string | undefined, maxLength: number): string | undefined {
 	if (!text) return undefined;
