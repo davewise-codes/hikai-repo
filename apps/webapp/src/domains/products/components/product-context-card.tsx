@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAction } from "convex/react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
+import { useConnections } from "@/domains/connectors/hooks";
 import {
 	Badge,
 	Button,
@@ -85,13 +86,15 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [openSheet, setOpenSheet] = useState(false);
+	const { connections, isLoading } = useConnections(product._id);
 
 	const current = product.productContext?.current;
 	const history = product.productContext?.history ?? [];
 	const threadId = current?.threadId;
 	const hasContext = !!current;
-	const hasSources = (current?.sourcesUsed ?? []).filter((s) => s !== "baseline")
-		.length > 0;
+	const hasSources =
+		(current?.sourcesUsed ?? []).filter((s) => s !== "baseline").length > 0 ||
+		(!hasContext && (connections?.length ?? 0) > 0);
 
 	const lastUpdated = current?.createdAt
 		? new Date(current.createdAt).toLocaleString()
@@ -177,7 +180,7 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 				{error && (
 					<p className="text-sm text-destructive">{error}</p>
 				)}
-				{!hasSources && (
+				{!hasSources && !isLoading && (
 					<p className="text-fontSize-sm text-muted-foreground">
 						{t("context.noSources")}
 					</p>
