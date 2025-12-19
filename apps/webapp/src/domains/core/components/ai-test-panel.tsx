@@ -14,6 +14,8 @@ import {
 	Switch,
 } from "@hikai/ui";
 import { api } from "@hikai/convex";
+import { useCurrentOrg } from "@/domains/organizations/hooks/use-current-org";
+import { useCurrentProduct } from "@/domains/products/hooks/use-current-product";
 
 export function AiTestPanel() {
 	const chat = useAction(api.agents.actions.chat);
@@ -24,6 +26,18 @@ export function AiTestPanel() {
 	const [isStreaming, setIsStreaming] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [lastUsage, setLastUsage] = useState<{
+		provider: string;
+		model: string;
+		tokensIn: number;
+		tokensOut: number;
+		totalTokens: number;
+		latencyMs: number;
+		status: "success" | "error";
+	} | null>(null);
+
+	const { currentOrg, isLoading: isOrgLoading } = useCurrentOrg();
+	const { currentProduct } = useCurrentProduct();
 
 	const messages = useQuery(
 		api.agents.messages.listThreadMessages,
@@ -33,19 +47,35 @@ export function AiTestPanel() {
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (!prompt.trim()) return;
+		if (!currentOrg?._id) {
+			setError("Selecciona una organización antes de enviar un prompt.");
+			return;
+		}
 
 		setIsLoading(true);
 		setError(null);
 
 		try {
 			if (isStreaming) {
-				const result = await chatStream({ prompt, threadId });
+				const result = await chatStream({
+					prompt,
+					threadId,
+					organizationId: currentOrg._id,
+					productId: currentProduct?._id,
+				});
 				setThreadId(result.threadId);
 				setResponse("");
+				setLastUsage(result.usage ?? null);
 			} else {
-				const result = await chat({ prompt, threadId });
+				const result = await chat({
+					prompt,
+					threadId,
+					organizationId: currentOrg._id,
+					productId: currentProduct?._id,
+				});
 				setResponse(result.text);
 				setThreadId(result.threadId);
+				setLastUsage(result.usage ?? null);
 			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Unexpected error");
@@ -115,6 +145,33 @@ export function AiTestPanel() {
 					<div className="text-sm text-muted-foreground">
 						<strong>Thread:</strong> {threadId ?? "Sin thread (se crea en el primer envío)"}
 					</div>
+					<div className="flex items-center gap-2">
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={() => {
+								setThreadId(undefined);
+								setResponse("");
+								setLastUsage(null);
+								setError(null);
+							}}
+							disabled={isLoading}
+						>
+							Reset thread
+						</Button>
+					</div>
+					<div className="text-sm text-muted-foreground">
+						<strong>Organización:</strong>{" "}
+						{currentOrg?._id ?? (isOrgLoading ? "Cargando..." : "No seleccionada")}
+						{currentProduct?._id ? (
+							<>
+								{" "}
+								| <strong>Producto:</strong> {currentProduct._id}
+							</>
+						) : (
+							" | Sin producto"
+						)}
+					</div>
 					{conversation.length > 0 && (
 						<div className="rounded-md border bg-muted/30 p-3 space-y-3">
 							{conversation.map((message) => (
@@ -139,6 +196,24 @@ export function AiTestPanel() {
 							placeholder="Aquí verás la respuesta del agente"
 							className="min-h-[140px]"
 						/>
+					)}
+					{lastUsage && (
+						<div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+							<div>
+								<strong>Estado:</strong> {lastUsage.status}
+							</div>
+							<div>
+								<strong>Proveedor/Modelo:</strong>{" "}
+								{lastUsage.provider} / {lastUsage.model}
+							</div>
+							<div>
+								<strong>Tokens:</strong> in {lastUsage.tokensIn} · out{" "}
+								{lastUsage.tokensOut} · total {lastUsage.totalTokens}
+							</div>
+							<div>
+								<strong>Latencia:</strong> {lastUsage.latencyMs} ms
+							</div>
+						</div>
 					)}
 					{error && (
 						<p className="text-sm text-destructive">

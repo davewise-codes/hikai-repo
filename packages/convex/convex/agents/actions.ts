@@ -65,6 +65,15 @@ export const chat = action({
 			return {
 				text: result.text,
 				threadId: tid,
+				usage: {
+					provider: DEFAULT_PROVIDER,
+					model: DEFAULT_MODEL,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					latencyMs,
+					status: "success" as const,
+				},
 			};
 		} catch (error) {
 			await ctx.runMutation(internal.ai.telemetry.recordError, {
@@ -154,6 +163,15 @@ export const chatStream = action({
 
 		return {
 			threadId: tid,
+			usage: {
+				provider: DEFAULT_PROVIDER,
+				model: DEFAULT_MODEL,
+				tokensIn: 0,
+				tokensOut: 0,
+				totalTokens: 0,
+				latencyMs: Date.now() - start,
+				status: "success" as const,
+			},
 		};
 	},
 });
