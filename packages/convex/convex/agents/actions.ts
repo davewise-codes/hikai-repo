@@ -19,48 +19,44 @@ export const chat = action({
 		organizationId: v.optional(v.id("organizations")),
 		productId: v.optional(v.id("products")),
 	},
-	handler: async (ctx, { prompt, threadId, organizationId, productId }) => {
+	handler: async (ctx, { prompt, threadId, organizationId, productId }): Promise<{
+		text: string;
+		threadId: string;
+		usage: {
+			provider: string;
+			model: string;
+			tokensIn: number;
+			tokensOut: number;
+			totalTokens: number;
+			latencyMs: number;
+			status: "success";
+		};
+	}> => {
 		const { resolvedOrgId, resolvedProductId, userId } = await resolveAccess(
 			ctx,
 			organizationId,
 			productId,
 		);
 
-		const start = Date.now();
 		const tid = threadId ?? (await createThread(ctx, agentComponent));
+		const start = Date.now();
 
 		try {
-			const result = await helloWorldAgent.generateText(ctx, { threadId: tid }, { prompt });
-			const latencyMs = Date.now() - start;
-			const tokensIn =
-				(result as any)?.tokensIn ?? (result as any)?.usage?.inputTokens ?? 0;
-			const tokensOut =
-				(result as any)?.tokensOut ?? (result as any)?.usage?.outputTokens ?? 0;
-			const totalTokens =
-				(result as any)?.totalTokens ??
-				(result as any)?.usage?.totalTokens ??
-				tokensIn + tokensOut;
-
-			await ctx.runMutation(internal.ai.telemetry.recordUsage, {
+			const agentCtx = {
+				...ctx,
 				organizationId: resolvedOrgId,
 				productId: resolvedProductId,
 				userId,
-				useCase: USE_CASE,
-				agentName: AGENT_NAME,
-				threadId: tid,
-				result: {
-					text: result.text,
-					tokensIn,
-					tokensOut,
-					totalTokens,
-					model: DEFAULT_MODEL,
-					provider: DEFAULT_PROVIDER,
-					latencyMs,
-				},
-				prompt,
-				response: result.text,
-				metadata: SOURCE_METADATA,
-			});
+				aiPrompt: prompt,
+				aiStartMs: start,
+			};
+
+			const result = await helloWorldAgent.generateText(
+				agentCtx,
+				{ threadId: tid },
+				{ prompt },
+			);
+			const latencyMs = Date.now() - start;
 
 			return {
 				text: result.text,
@@ -68,9 +64,9 @@ export const chat = action({
 				usage: {
 					provider: DEFAULT_PROVIDER,
 					model: DEFAULT_MODEL,
-					tokensIn,
-					tokensOut,
-					totalTokens,
+					tokensIn: 0,
+					tokensOut: 0,
+					totalTokens: 0,
 					latencyMs,
 					status: "success" as const,
 				},
@@ -103,7 +99,21 @@ export const chatStream = action({
 		organizationId: v.optional(v.id("organizations")),
 		productId: v.optional(v.id("products")),
 	},
-	handler: async (ctx, { prompt, threadId, organizationId, productId }) => {
+	handler: async (
+		ctx,
+		{ prompt, threadId, organizationId, productId },
+	): Promise<{
+		threadId: string;
+		usage: {
+			provider: string;
+			model: string;
+			tokensIn: number;
+			tokensOut: number;
+			totalTokens: number;
+			latencyMs: number;
+			status: "success";
+		};
+	}> => {
 		const { resolvedOrgId, resolvedProductId, userId } = await resolveAccess(
 			ctx,
 			organizationId,
@@ -113,35 +123,22 @@ export const chatStream = action({
 		const start = Date.now();
 
 		try {
+			const agentCtx = {
+				...ctx,
+				organizationId: resolvedOrgId,
+				productId: resolvedProductId,
+				userId,
+				aiPrompt: prompt,
+				aiStartMs: start,
+			};
+
 			await helloWorldAgent.streamText(
-				ctx,
+				agentCtx,
 				{ threadId: tid },
 				{ prompt },
 				{ saveStreamDeltas: true },
 			);
 
-			const latencyMs = Date.now() - start;
-
-			await ctx.runMutation(internal.ai.telemetry.recordUsage, {
-				organizationId: resolvedOrgId,
-				productId: resolvedProductId,
-				userId,
-				useCase: USE_CASE,
-				agentName: AGENT_NAME,
-				threadId: tid,
-				result: {
-					text: "",
-					tokensIn: 0,
-					tokensOut: 0,
-					totalTokens: 0,
-					model: DEFAULT_MODEL,
-					provider: DEFAULT_PROVIDER,
-					latencyMs,
-				},
-				prompt,
-				response: undefined,
-				metadata: SOURCE_METADATA,
-			});
 		} catch (error) {
 			await ctx.runMutation(internal.ai.telemetry.recordError, {
 				organizationId: resolvedOrgId,
@@ -180,7 +177,11 @@ async function resolveAccess(
 	ctx: any,
 	organizationId?: Id<"organizations">,
 	productId?: Id<"products">,
-) {
+): Promise<{
+	resolvedOrgId: Id<"organizations">;
+	resolvedProductId?: Id<"products">;
+	userId: Id<"users">;
+}> {
 	if (productId) {
 		const access = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
