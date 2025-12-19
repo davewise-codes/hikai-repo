@@ -217,11 +217,15 @@ export const assertProductAccessInternal = internalQuery({
     productId: v.id("products"),
   },
   handler: async (ctx, { productId }) => {
-    const { organization, userId } = await assertProductAccess(ctx, productId);
+    const { organization, userId, product } = await assertProductAccess(
+      ctx,
+      productId
+    );
     return {
       organizationId: organization._id,
       productId,
       userId,
+      product,
     };
   },
 });

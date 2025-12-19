@@ -111,7 +111,7 @@ packages/convex/
 | F2.2    | UI ai-test mostrando thread/usage y flujos de error | ✅ Completado  |
 | F2.3    | Validación y documentación de consultas de uso      | ✅ Completado  |
 | F3.1    | Prompt + schema de contexto de producto             | ✅ Completado  |
-| F3.2    | Agent/action de enriquecimiento de contexto         | ⏳ Pendiente  |
+| F3.2    | Agent/action de enriquecimiento de contexto         | ✅ Completado  |
 | F3.3    | UI de producto consumiendo contexto enriquecido     | ⏳ Pendiente  |
 | F4.1    | Prompt + schema del intérprete de timeline          | ⏳ Pendiente  |
 | F4.2    | Agent/action de interpretación de eventos           | ⏳ Pendiente  |
@@ -1296,6 +1296,22 @@ Validación:
 - `packages/convex/convex/agents/actions.ts` (nueva action)
 - `packages/convex/convex/lib/planLimits.ts` (si aplica control)
 - `packages/convex/convex/ai/telemetry.ts` (uso de recordAIUsage/Error)
+
+**Detalle de implementación acordado (base)**:
+
+- El contexto vive en `products.productContext` con `{ current, history[] }`, usando el prompt de `ai/prompts/productContext.ts`.
+- `languagePreference` es setting de producto (default `en`); el agente produce `language` respetando esa preferencia.
+- Versionar cada generación en `history`, actualizando `current` y metadatos (`provider`, `model`, `threadId?`, `aiDebug?`, `sourcesUsed`, `createdBy/At`, `version`).
+- Fuentes iniciales: baseline del usuario + evidencias de GitHub (rawEvents) y preparado para más fuentes.
+- `notableEvents` deben enlazar `rawEvents` cuando aplique.
+- Telemetría/useCase: `product_context_enrichment`.
+
+**Implementación F3.2 realizada**
+
+- Agente `productContextAgent` (Convex Agent Component) con instrucciones de `ai/prompts/productContext.ts`, selecciona modelo vía `AI_PROVIDER/AI_MODEL` (OpenAI o Anthropic) y telemetría en `usageHandler` (`useCase: product_context_enrichment`).
+- Acción `generateProductContext` (action) con `assertProductAccess`, reuse de `threadId`, inputs `{ productId, forceRefresh?, threadId? }`, y payload con baseline + `languagePreference` + evidencias GitHub (últimos 50 `rawEvents` resumidos).
+- Persistencia en `products.productContext` usando internal mutation (`saveProductContext`) y versionado (`current` + `history`), guardando metadatos (`provider`, `model`, `threadId`, `aiDebug`, `sourcesUsed`, `language`, `languagePreference`, `createdBy/At`, `version`).
+- Manejo de errores: `recordError` con metadata `{ source: "product-context" }`; salida devuelve `{ threadId, productContext }`.
 
 **Prompt**:
 
