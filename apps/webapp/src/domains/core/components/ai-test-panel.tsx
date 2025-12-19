@@ -44,18 +44,19 @@ export function AiTestPanel() {
 		api.agents.messages.listThreadMessages,
 		threadId ? { threadId } : "skip",
 	);
-	const lastUsageEntry = useQuery(
-		api.lib.aiUsage.getUsageByUseCase,
-		currentOrg?._id
-			? {
-					organizationId: currentOrg._id,
-					productId: currentProduct?._id,
-					useCase: "ai_test",
-					startDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
-					endDate: Date.now(),
-			  }
-			: "skip",
-	);
+	const usageArgs = useMemo(() => {
+		if (!currentOrg?._id) return "skip" as const;
+		const now = Date.now();
+		return {
+			organizationId: currentOrg._id,
+			productId: currentProduct?._id,
+			useCase: "ai_test",
+			startDate: now - 7 * 24 * 60 * 60 * 1000,
+			endDate: now,
+		};
+	}, [currentOrg?._id, currentProduct?._id]);
+
+	const lastUsageEntry = useQuery(api.lib.aiUsage.getUsageByUseCase, usageArgs);
 
 	const latestByThread = useMemo(() => {
 		if (!lastUsageEntry?.byUseCase?.ai_test) return null;
