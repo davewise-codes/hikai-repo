@@ -38,6 +38,8 @@ Este documento define el plan de implementación para la infraestructura de infe
 - `apps/webapp/webapp-plans/Hikai_resumen_arquitectura.md` — Visión de negocio
 - `apps/webapp/webapp-plans/phase-2-timeline-sync.md` — Formato de plan (ejemplo)
 - `CLAUDE.md` — Reglas del repositorio
+- `packages/convex/doc/ai-inference.md` — Guía backend (agentes, telemetría)
+- `apps/webapp/doc/ai-inference.md` — Guía frontend (ai-test y uso de actions)
 - [Convex Agents Docs](https://docs.convex.dev/agents)
 - [Getting Started](https://docs.convex.dev/agents/getting-started)
 - [GitHub Repo](https://github.com/get-convex/agent)
