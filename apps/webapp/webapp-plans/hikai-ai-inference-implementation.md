@@ -103,7 +103,7 @@ packages/convex/
 | F1.3    | Adaptador OpenAI                               | ✅ Completado |
 | F1.4    | Adaptador Anthropic                            | ✅ Completado |
 | F1.5    | Config selector de proveedor                   | ✅ Completado |
-| F1.6    | Helpers de telemetría con flag debug           | ⏳ Pendiente |
+| F1.6    | Helpers de telemetría con flag debug           | ✅ Completado |
 | F1.7    | Queries de uso de IA (por org/producto/caso)   | ⏳ Pendiente |
 | F2.1    | Prompt template para echo/resumen              | ⏳ Pendiente |
 | F2.2    | Agente echo con Convex Agent                   | ⏳ Pendiente |
