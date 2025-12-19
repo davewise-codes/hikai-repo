@@ -91,25 +91,25 @@ packages/convex/
 
 ## Progreso
 
-| Subfase | Descripción                                    | Estado        |
-| ------- | ---------------------------------------------- | ------------- |
+| Subfase | Descripción                                         | Estado        |
+| ------- | --------------------------------------------------- | ------------- |
 | F0.1    | Instalar dependencias y configurar convex.config.ts | ✅ Completado |
-| F0.2    | Crear agente "hello world" con OpenAI          | ✅ Completado |
-| F0.3    | Exponer action para invocar el agente          | ✅ Completado |
-| F0.4    | UI mínima en webapp para probar                | ✅ Completado |
-| F0.5    | Validar streaming y threads                    | ✅ Completado |
-| F1.1    | Schema aiUsage con índices                     | ✅ Completado |
-| F1.2    | Puerto abstracto LLM (llmPort.ts)              | ✅ Completado |
-| F1.3    | Adaptador OpenAI                               | ✅ Completado |
-| F1.4    | Adaptador Anthropic                            | ✅ Completado |
-| F1.5    | Config selector de proveedor                   | ✅ Completado |
-| F1.6    | Helpers de telemetría con flag debug           | ✅ Completado |
-| F1.7    | Queries de uso de IA (por org/producto/caso)   | ⏳ Pendiente |
-| F2.1    | Prompt template para echo/resumen              | ⏳ Pendiente |
-| F2.2    | Agente echo con Convex Agent                   | ⏳ Pendiente |
-| F2.3    | Action expuesta con telemetría                 | ⏳ Pendiente |
-| F2.4    | Validación de acceso y límites por plan        | ⏳ Pendiente |
-| F2.5    | UI de prueba en settings (feature flag)        | ⏳ Pendiente |
+| F0.2    | Crear agente "hello world" con OpenAI               | ✅ Completado |
+| F0.3    | Exponer action para invocar el agente               | ✅ Completado |
+| F0.4    | UI mínima en webapp para probar                     | ✅ Completado |
+| F0.5    | Validar streaming y threads                         | ✅ Completado |
+| F1.1    | Schema aiUsage con índices                          | ✅ Completado |
+| F1.2    | Puerto abstracto LLM (llmPort.ts)                   | ✅ Completado |
+| F1.3    | Adaptador OpenAI                                    | ✅ Completado |
+| F1.4    | Adaptador Anthropic                                 | ✅ Completado |
+| F1.5    | Config selector de proveedor                        | ✅ Completado |
+| F1.6    | Helpers de telemetría con flag debug                | ✅ Completado |
+| F1.7    | Queries de uso de IA (por org/producto/caso)        | ✅ Completado  |
+| F2.1    | Prompt template para echo/resumen                   | ⏳ Pendiente  |
+| F2.2    | Agente echo con Convex Agent                        | ⏳ Pendiente  |
+| F2.3    | Action expuesta con telemetría                      | ⏳ Pendiente  |
+| F2.4    | Validación de acceso y límites por plan             | ⏳ Pendiente  |
+| F2.5    | UI de prueba en settings (feature flag)             | ⏳ Pendiente  |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
