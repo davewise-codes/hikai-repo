@@ -16,6 +16,7 @@ import {
 import { api } from "@hikai/convex";
 import { useCurrentOrg } from "@/domains/organizations/hooks/use-current-org";
 import { useCurrentProduct } from "@/domains/products/hooks/use-current-product";
+import { useMemo } from "react";
 
 export function AiTestPanel() {
 	const chat = useAction(api.agents.actions.chat);
@@ -43,6 +44,24 @@ export function AiTestPanel() {
 		api.agents.messages.listThreadMessages,
 		threadId ? { threadId } : "skip",
 	);
+	const lastUsageEntry = useQuery(
+		api.lib.aiUsage.getUsageByUseCase,
+		currentOrg?._id
+			? {
+					organizationId: currentOrg._id,
+					productId: currentProduct?._id,
+					useCase: "ai_test",
+					startDate: Date.now() - 7 * 24 * 60 * 60 * 1000,
+					endDate: Date.now(),
+			  }
+			: "skip",
+	);
+
+	const latestByThread = useMemo(() => {
+		if (!lastUsageEntry?.byUseCase?.ai_test) return null;
+		// No tenemos el último por thread en la query; mostramos el agregado rápido
+		return lastUsageEntry.byUseCase.ai_test;
+	}, [lastUsageEntry]);
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -212,6 +231,28 @@ export function AiTestPanel() {
 							</div>
 							<div>
 								<strong>Latencia:</strong> {lastUsage.latencyMs} ms
+							</div>
+						</div>
+					)}
+					{latestByThread && (
+						<div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
+							<div className="font-medium">Uso reciente (ai_test, últimos 7 días)</div>
+							<div>
+								<strong>Llamadas:</strong> {latestByThread.calls}
+							</div>
+							<div>
+								<strong>Tokens:</strong> in {latestByThread.tokensIn} · out{" "}
+								{latestByThread.tokensOut} · total {latestByThread.totalTokens}
+							</div>
+							<div>
+								<strong>Coste estimado:</strong>{" "}
+								{latestByThread.estimatedCostUsd.toFixed(6)} USD
+							</div>
+							<div>
+								<strong>Avg latencia:</strong> {Math.round(latestByThread.avgLatencyMs)} ms
+							</div>
+							<div>
+								<strong>Errores:</strong> {latestByThread.errors}
 							</div>
 						</div>
 					)}
