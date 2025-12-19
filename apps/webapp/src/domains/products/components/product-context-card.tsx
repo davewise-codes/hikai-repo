@@ -24,6 +24,7 @@ import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
+	TooltipProvider,
 } from "@hikai/ui";
 
 type ProductContextEntry = {
@@ -210,16 +211,18 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 							{threadId && (
 								<>
 									<Separator orientation="vertical" className="h-4" />
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<span className="underline decoration-dotted cursor-help">
-												{t("context.threadId")}
-											</span>
-										</TooltipTrigger>
-										<TooltipContent className="max-w-xs break-words">
-											{threadId}
-										</TooltipContent>
-									</Tooltip>
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<span className="underline decoration-dotted cursor-help">
+													{t("context.threadId")}
+												</span>
+											</TooltipTrigger>
+											<TooltipContent className="max-w-xs break-words">
+												{threadId}
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
 								</>
 							)}
 						</div>
