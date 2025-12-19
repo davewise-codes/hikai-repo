@@ -112,7 +112,7 @@ packages/convex/
 | F2.3    | Validación y documentación de consultas de uso      | ✅ Completado  |
 | F3.1    | Prompt + schema de contexto de producto             | ✅ Completado  |
 | F3.2    | Agent/action de enriquecimiento de contexto         | ✅ Completado  |
-| F3.3    | UI de producto consumiendo contexto enriquecido     | ⏳ Pendiente  |
+| F3.3    | UI de producto consumiendo contexto enriquecido     | ✅ Completado  |
 | F4.1    | Prompt + schema del intérprete de timeline          | ⏳ Pendiente  |
 | F4.2    | Agent/action de interpretación de eventos           | ⏳ Pendiente  |
 | F4.3    | Validaciones de plan, fallback y UI de timeline     | ⏳ Pendiente  |
@@ -1352,6 +1352,13 @@ Validación:
 - `pnpm --filter @hikai/webapp exec tsc --noEmit`
 - Flujo manual: generar y visualizar contexto; ver aiUsage reflejado.
 ```
+
+**Implementación F3.3 realizada**
+
+- UI en `settings/product/$slug/general` con tarjeta de contexto (`ProductContextCard`), CTA de generar/regenerar usando `api.agents.actions.generateProductContext` y reutilización de `threadId`.
+- Sección muestra timestamp, modelo/proveedor, idioma y fuentes usadas; visor de JSON crudo en sheet; pestañas para resumen e historial (versionado desde `productContext`).
+- Textos i18n añadidos (`products.json` en `en/es`) para contexto, acciones y estados.
+- Validado con `pnpm --filter @hikai/webapp exec tsc --noEmit`.
 
 ---
 

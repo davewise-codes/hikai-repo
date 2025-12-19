@@ -141,6 +141,43 @@
       "description": "Irreversible actions"
     }
   },
+  "context": {
+    "sectionTitle": "Product context",
+    "sectionDescription": "Generate and review the AI-enriched context for this product.",
+    "title": "Context summary",
+    "subtitleExisting": "Last generated {{date}}",
+    "subtitleEmpty": "Generate the initial context using your sources and baseline.",
+    "generate": "Generate context",
+    "regenerate": "Regenerate context",
+    "generating": "Generating...",
+    "sources": "Sources",
+    "lastGenerated": "Last generated: {{date}}",
+    "modelInfo": "Model: {{provider}} / {{model}}",
+    "language": "Language: {{lang}}",
+    "threadId": "Agent thread",
+    "tabs": {
+      "summary": "Summary",
+      "history": "History"
+    },
+    "identity": "Identity",
+    "valueProposition": "Value proposition",
+    "targetMarket": "Target market",
+    "productCategory": "Category",
+    "productType": "Type",
+    "businessModel": "Business model",
+    "stage": "Stage",
+    "releaseCadence": "Release cadence",
+    "maturity": "Maturity",
+    "keyFeatures": "Key features",
+    "recommendedFocus": "Recommended focus",
+    "risks": "Risks",
+    "notableEvents": "Notable events",
+    "historyEmpty": "No previous versions yet.",
+    "viewRaw": "View raw JSON",
+    "rawTitle": "Raw context JSON",
+    "empty": "No context generated yet.",
+    "version": "Version {{version}}"
+  },
   "orgSettings": {
     "products": {
       "title": "Products",

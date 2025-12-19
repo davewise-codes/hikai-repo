@@ -141,6 +141,43 @@
       "description": "Acciones irreversibles"
     }
   },
+  "context": {
+    "sectionTitle": "Contexto del producto",
+    "sectionDescription": "Genera y revisa el contexto enriquecido por IA para este producto.",
+    "title": "Resumen de contexto",
+    "subtitleExisting": "Generado por última vez {{date}}",
+    "subtitleEmpty": "Genera el contexto inicial usando tus fuentes y baseline.",
+    "generate": "Generar contexto",
+    "regenerate": "Regenerar contexto",
+    "generating": "Generando...",
+    "sources": "Fuentes",
+    "lastGenerated": "Última generación: {{date}}",
+    "modelInfo": "Modelo: {{provider}} / {{model}}",
+    "language": "Idioma: {{lang}}",
+    "threadId": "Thread del agente",
+    "tabs": {
+      "summary": "Resumen",
+      "history": "Historial"
+    },
+    "identity": "Identidad",
+    "valueProposition": "Propuesta de valor",
+    "targetMarket": "Mercado objetivo",
+    "productCategory": "Categoría",
+    "productType": "Tipo",
+    "businessModel": "Modelo de negocio",
+    "stage": "Etapa",
+    "releaseCadence": "Cadencia de releases",
+    "maturity": "Madurez",
+    "keyFeatures": "Funcionalidades clave",
+    "recommendedFocus": "Enfoques recomendados",
+    "risks": "Riesgos",
+    "notableEvents": "Eventos destacados",
+    "historyEmpty": "Aún no hay versiones previas.",
+    "viewRaw": "Ver JSON crudo",
+    "rawTitle": "JSON crudo del contexto",
+    "empty": "Aún no se ha generado el contexto.",
+    "version": "Versión {{version}}"
+  },
   "orgSettings": {
     "products": {
       "title": "Productos",

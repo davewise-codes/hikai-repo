@@ -22,6 +22,7 @@ import {
   useUpdateProduct,
   useCurrentProduct,
   DeleteProductDialog,
+  ProductContextCard,
 } from "@/domains/products";
 
 export const Route = createFileRoute("/settings/product/$slug/general")({
@@ -144,6 +145,14 @@ function ProductGeneralPage() {
             />
           </div>
         </SettingsRowContent>
+      </SettingsSection>
+
+      {/* Product Context */}
+      <SettingsSection
+        title={t("context.sectionTitle")}
+        description={t("context.sectionDescription")}
+      >
+        <ProductContextCard product={product} />
       </SettingsSection>
 
       {/* Save Button */}
