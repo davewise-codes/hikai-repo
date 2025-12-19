@@ -2,9 +2,114 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+const productContextEntry = v.object({
+	version: v.number(),
+	createdAt: v.number(),
+	createdBy: v.id("users"),
+	provider: v.string(),
+	model: v.string(),
+	threadId: v.optional(v.string()),
+	aiDebug: v.optional(v.boolean()),
+	language: v.string(),
+	languagePreference: v.optional(v.string()),
+	sourcesUsed: v.array(v.string()),
+
+	productName: v.optional(v.string()),
+	description: v.optional(v.string()),
+	valueProposition: v.optional(v.string()),
+	targetMarket: v.optional(v.string()),
+	productCategory: v.optional(v.string()),
+	productType: v.optional(v.string()),
+	businessModel: v.optional(v.string()),
+	stage: v.optional(v.string()),
+
+	personas: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	platforms: v.optional(v.array(v.string())),
+	integrationEcosystem: v.optional(v.array(v.string())),
+	technicalStack: v.optional(v.array(v.string())),
+	audienceSegments: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	toneGuidelines: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+
+	keyFeatures: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	competition: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	strategicPillars: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	releaseCadence: v.optional(v.string()),
+	maturity: v.optional(v.string()),
+	risks: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	recommendedFocus: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	notableEvents: v.optional(
+		v.array(
+			v.object({
+				source: v.string(),
+				rawEventId: v.optional(v.id("rawEvents")),
+				type: v.optional(v.string()),
+				summary: v.string(),
+				occurredAt: v.optional(v.number()),
+			}),
+		),
+	),
+	confidence: v.optional(v.number()),
+});
+
 // Schema principal que incluye las tablas de auth
 const schema = defineSchema({
-  ...authTables,
+	...authTables,
 
   // Preferencias de usuario (separado de authTables para no modificar users)
   userPreferences: defineTable({
@@ -46,16 +151,23 @@ const schema = defineSchema({
     .index("by_organization_user", ["organizationId", "userId"]),
 
   // Tablas de productos
-  products: defineTable({
-    organizationId: v.id("organizations"),
-    name: v.string(),
-    slug: v.string(),
-    description: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_organization", ["organizationId"])
-    .index("by_organization_slug", ["organizationId", "slug"]),
+	products: defineTable({
+		organizationId: v.id("organizations"),
+		name: v.string(),
+		slug: v.string(),
+		description: v.optional(v.string()),
+		languagePreference: v.optional(v.string()),
+		productContext: v.optional(
+			v.object({
+				current: v.optional(productContextEntry),
+				history: v.optional(v.array(productContextEntry)),
+			}),
+		),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_organization", ["organizationId"])
+		.index("by_organization_slug", ["organizationId", "slug"]),
 
   productMembers: defineTable({
     productId: v.id("products"),

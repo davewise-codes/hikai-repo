@@ -110,7 +110,7 @@ packages/convex/
 | F2.1    | Telemetría E2E con agente actual (chat ai-test)     | ✅ Completado  |
 | F2.2    | UI ai-test mostrando thread/usage y flujos de error | ✅ Completado  |
 | F2.3    | Validación y documentación de consultas de uso      | ✅ Completado  |
-| F3.1    | Prompt + schema de contexto de producto             | ⏳ Pendiente  |
+| F3.1    | Prompt + schema de contexto de producto             | ✅ Completado  |
 | F3.2    | Agent/action de enriquecimiento de contexto         | ⏳ Pendiente  |
 | F3.3    | UI de producto consumiendo contexto enriquecido     | ⏳ Pendiente  |
 | F4.1    | Prompt + schema del intérprete de timeline          | ⏳ Pendiente  |
@@ -1274,6 +1274,17 @@ Validación:
 - `pnpm --filter @hikai/convex exec tsc --noEmit`
 - Prompt revisado en el doc (copiar en este plan o en archivo).
 ```
+
+**Decisiones F3.1 (productContext)**
+
+- **Almacenamiento**: campo `productContext` dentro de `products` con `{ current, history[] }`. Cada versión incluye `version`, `createdAt`, `createdBy`, `provider`, `model`, `threadId?`, `aiDebug?`, `sourcesUsed`, `language` y `languagePreference`, además del payload de contexto.
+- **Setting de idioma**: `languagePreference` a nivel producto (default `en` si no se especifica); el agente debe generar `language` del contexto usando esa preferencia.
+- **Taxonomía segmentada**:
+  - Identidad (usuario): `productName`, `description`, `valueProposition`, `targetMarket`, `productCategory`, `productType`, `businessModel`, `stage`, `personas[]`, `platforms[]`, `languagePreference`.
+  - Entrega/mercado (usuario opcional / IA completa): `integrationEcosystem[]`, `technicalStack[]`, `audienceSegments[]`, `toneGuidelines[]`.
+  - Inferido por IA: `keyFeatures[]`, `competition[]`, `strategicPillars[]`, `releaseCadence`, `maturity`, `risks[]`, `recommendedFocus[]`, `notableEvents[] (vinculado a rawEvents si aplica)`, `confidence`, `sourcesUsed`.
+- **Prompt**: `packages/convex/convex/ai/prompts/productContext.ts` define tipos y prompt. Instrucciones clave: respetar baseline del usuario, no inventar sin evidencia, notableEvents solo con evidencias (rawEvents), respuestas concisas (<=200 chars) y salida solo JSON.
+- **Exports**: registro en `packages/convex/convex/ai/prompts/index.ts` y re-export en `packages/convex/convex/ai/index.ts`.
 
 ### F3.2: Agent/action de enriquecimiento de contexto
 
