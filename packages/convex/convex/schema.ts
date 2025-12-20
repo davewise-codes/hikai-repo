@@ -10,6 +10,7 @@ const productContextEntry = v.object({
 	model: v.string(),
 	threadId: v.optional(v.string()),
 	aiDebug: v.optional(v.boolean()),
+	promptUsed: v.optional(v.string()),
 	language: v.string(),
 	languagePreference: v.optional(v.string()),
 	sourcesUsed: v.array(v.string()),

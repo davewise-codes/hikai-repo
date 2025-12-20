@@ -5,6 +5,7 @@ import { components, internal } from "../_generated/api";
 import { helloWorldAgent } from "./helloWorldAgent";
 import { Id } from "../_generated/dataModel";
 import { productContextAgent } from "./productContextAgent";
+import { productContextPrompt } from "../ai/prompts";
 import { getAIConfig } from "../ai";
 
 const agentComponent = (components as { agent: AgentComponent }).agent;
@@ -101,10 +102,11 @@ export const generateProductContext = action({
 		productId: v.id("products"),
 		forceRefresh: v.optional(v.boolean()),
 		threadId: v.optional(v.string()),
+		debugUi: v.optional(v.boolean()),
 	},
 	handler: async (
 		ctx,
-		{ productId, forceRefresh, threadId },
+		{ productId, forceRefresh, threadId, debugUi },
 	): Promise<{
 		threadId: string;
 		productContext: Record<string, unknown>;
@@ -182,13 +184,19 @@ export const generateProductContext = action({
 			languagePreference,
 			forceRefresh: forceRefresh ?? false,
 			baseline,
-			existingContext: fetchedProduct.productContext?.current ?? null,
+			existingContext: forceRefresh
+				? null
+				: fetchedProduct.productContext?.current ?? null,
 			sources: {
 				github: eventSummaries,
 			},
 		};
 
 		const promptPayload = JSON.stringify(input);
+		const shouldLogPrompt = aiConfig.debugLogContent || debugUi === true;
+		const promptUsed = shouldLogPrompt
+			? `Instructions:\n${productContextPrompt}\n\nInput:\n${promptPayload}`
+			: undefined;
 		const start = Date.now();
 
 		try {
@@ -222,7 +230,8 @@ export const generateProductContext = action({
 				provider: aiConfig.provider,
 				model: aiConfig.model,
 				threadId: tid,
-				aiDebug: aiConfig.debugLogContent,
+				aiDebug: aiConfig.debugLogContent || debugUi === true,
+				promptUsed,
 				language: parsed.language ?? languagePreference,
 				languagePreference,
 				sourcesUsed: Array.from(sourcesUsed),

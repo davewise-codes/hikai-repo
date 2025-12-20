@@ -11,12 +11,14 @@ import {
 	CardContent,
 	CardHeader,
 	CardTitle,
+	Label,
 	Separator,
 	Sheet,
 	SheetContent,
 	SheetHeader,
 	SheetTitle,
 	SheetTrigger,
+	Switch,
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -35,6 +37,7 @@ type ProductContextEntry = {
 	model?: string;
 	threadId?: string;
 	aiDebug?: boolean;
+	promptUsed?: string;
 	language?: string;
 	languagePreference?: string;
 	sourcesUsed?: string[];
@@ -87,6 +90,7 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [openSheet, setOpenSheet] = useState(false);
+	const [debugUi, setDebugUi] = useState(false);
 	const { connections, isLoading } = useConnections(product._id);
 
 	const current = product.productContext?.current;
@@ -125,6 +129,7 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 				productId: product._id,
 				threadId: threadId ?? undefined,
 				forceRefresh: !!current,
+				debugUi,
 			});
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.unknown"));
@@ -159,6 +164,29 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 							</div>
 						</div>
 					)}
+					<div className="flex items-center gap-2 rounded-md border border-border px-2 py-1">
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<Label
+										htmlFor="debug-prompt"
+										className="text-fontSize-xs text-muted-foreground cursor-help"
+									>
+										{t("context.debugPrompt")}
+									</Label>
+								</TooltipTrigger>
+								<TooltipContent className="max-w-xs">
+									{t("context.debugPromptHelp")}
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+						<Switch
+							id="debug-prompt"
+							checked={debugUi}
+							onCheckedChange={setDebugUi}
+							disabled={isGenerating}
+						/>
+					</div>
 					<Button
 						variant={hasContext ? "secondary" : "default"}
 						onClick={handleGenerate}

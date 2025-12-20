@@ -157,6 +157,8 @@
     "modelInfo": "Model: {{provider}} / {{model}}",
     "language": "Language: {{lang}}",
     "threadId": "Agent thread",
+    "debugPrompt": "Debug prompt",
+    "debugPromptHelp": "Store the prompt + instructions in the raw JSON for troubleshooting.",
     "tabs": {
       "identity": "Identity",
       "market": "Market",
