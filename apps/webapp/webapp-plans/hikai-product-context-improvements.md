@@ -27,7 +27,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | Subfase | Descripción                                    | Estado        |
 | ------- | ---------------------------------------------- | ------------- |
 | F1.0    | Mejoras al prompt (few-shot, coherencia)       | ✅ Completado |
-| F1.1    | Mutation updateBaseline + regeneración auto    | ⏳ Pendiente  |
+| F1.1    | Mutation updateBaseline + regeneración auto    | ✅ Completado |
 | F1.2    | BaselineEditor en settings de producto         | ⏳ Pendiente  |
 | F1.3    | BaselineWizard en creación de producto         | ⏳ Pendiente  |
 | F1.4    | Detección automática de stack (package.json)   | ⏳ Pendiente  |

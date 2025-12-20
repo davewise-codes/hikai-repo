@@ -11,6 +11,7 @@
 
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { query, mutation } from "../_generated/server";
+import { api } from "../_generated/api";
 import { v } from "convex/values";
 import {
   assertOrgAccess,
@@ -529,6 +530,72 @@ export const updateProduct = mutation({
 
     await ctx.db.patch(productId, updates);
     return productId;
+  },
+});
+
+/**
+ * Actualiza baseline de producto y dispara regeneración de contexto.
+ * Solo admin del producto puede actualizar baseline.
+ */
+export const updateBaseline = mutation({
+  args: {
+    productId: v.id("products"),
+    baseline: v.object({
+      valueProposition: v.optional(v.string()),
+      targetMarket: v.optional(v.string()),
+      productCategory: v.optional(v.string()),
+      productType: v.optional(v.string()),
+      businessModel: v.optional(v.string()),
+      stage: v.optional(v.string()),
+      personas: v.optional(
+        v.array(
+          v.object({
+            name: v.string(),
+            description: v.optional(v.string()),
+          })
+        )
+      ),
+      platforms: v.optional(v.array(v.string())),
+      integrationEcosystem: v.optional(v.array(v.string())),
+      technicalStack: v.optional(v.array(v.string())),
+      audienceSegments: v.optional(
+        v.array(
+          v.object({
+            name: v.string(),
+            description: v.optional(v.string()),
+          })
+        )
+      ),
+      toneGuidelines: v.optional(
+        v.array(
+          v.object({
+            name: v.string(),
+            description: v.optional(v.string()),
+          })
+        )
+      ),
+    }),
+  },
+  handler: async (ctx, { productId, baseline }) => {
+    const { membership } = await assertProductAccess(ctx, productId);
+
+    // Solo admin puede modificar baseline
+    if (membership.role !== "admin") {
+      throw new Error("Only admins can update product baseline");
+    }
+
+    await ctx.db.patch(productId, {
+      productBaseline: baseline,
+      updatedAt: Date.now(),
+    });
+
+    // Disparar regeneración de contexto en background
+    await ctx.scheduler.runAfter(0, api.agents.actions.generateProductContext, {
+      productId,
+      forceRefresh: true,
+    });
+
+    return { success: true };
   },
 });
 
