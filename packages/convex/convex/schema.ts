@@ -107,6 +107,42 @@ const productContextEntry = v.object({
 	confidence: v.optional(v.number()),
 });
 
+const productBaseline = v.object({
+	valueProposition: v.optional(v.string()),
+	targetMarket: v.optional(v.string()),
+	productCategory: v.optional(v.string()),
+	productType: v.optional(v.string()),
+	businessModel: v.optional(v.string()),
+	stage: v.optional(v.string()),
+	personas: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	platforms: v.optional(v.array(v.string())),
+	integrationEcosystem: v.optional(v.array(v.string())),
+	technicalStack: v.optional(v.array(v.string())),
+	audienceSegments: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	toneGuidelines: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+});
+
 // Schema principal que incluye las tablas de auth
 const schema = defineSchema({
 	...authTables,
@@ -157,6 +193,7 @@ const schema = defineSchema({
 		slug: v.string(),
 		description: v.optional(v.string()),
 		languagePreference: v.optional(v.string()),
+		productBaseline: v.optional(productBaseline),
 		productContext: v.optional(
 			v.object({
 				current: v.optional(productContextEntry),

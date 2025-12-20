@@ -19,6 +19,7 @@ import {
   Users,
   Receipt,
   ArrowLeft,
+  FileText,
 } from "@hikai/ui";
 
 export const Route = createFileRoute("/settings")({
@@ -149,14 +150,22 @@ function SettingsLayout() {
           {/* Product Section (if product selected and user is admin) */}
           {currentProduct && isProductAdmin && (
             <SettingsNavSection title={currentProduct.name}>
-              <SettingsNavItem
-                label={t("settingsNav.general")}
-                href={`/settings/product/${currentProduct.slug}/general`}
-                icon={Settings}
-                isActive={location.pathname.startsWith(
-                  `/settings/product/${currentProduct.slug}/general`
-                )}
-              />
+            <SettingsNavItem
+              label={t("settingsNav.general")}
+              href={`/settings/product/${currentProduct.slug}/general`}
+              icon={Settings}
+              isActive={location.pathname.startsWith(
+                `/settings/product/${currentProduct.slug}/general`
+              )}
+            />
+            <SettingsNavItem
+              label={t("settingsNav.context")}
+              href={`/settings/product/${currentProduct.slug}/context`}
+              icon={FileText}
+              isActive={location.pathname.startsWith(
+                `/settings/product/${currentProduct.slug}/context`
+              )}
+            />
             <SettingsNavItem
               label={t("settingsNav.team")}
               href={`/settings/product/${currentProduct.slug}/team`}

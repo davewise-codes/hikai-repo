@@ -29,6 +29,7 @@ import { Route as AppOrgSlugProductSlugIndexRouteImport } from './routes/app/$or
 import { Route as SettingsProductSlugTeamRouteImport } from './routes/settings/product/$slug/team'
 import { Route as SettingsProductSlugSourcesRouteImport } from './routes/settings/product/$slug/sources'
 import { Route as SettingsProductSlugGeneralRouteImport } from './routes/settings/product/$slug/general'
+import { Route as SettingsProductSlugContextRouteImport } from './routes/settings/product/$slug/context'
 import { Route as SettingsOrgSlugSeatsRouteImport } from './routes/settings/org/$slug/seats'
 import { Route as SettingsOrgSlugProductsRouteImport } from './routes/settings/org/$slug/products'
 import { Route as SettingsOrgSlugPlanRouteImport } from './routes/settings/org/$slug/plan'
@@ -140,6 +141,12 @@ const SettingsProductSlugGeneralRoute =
     path: '/general',
     getParentRoute: () => SettingsProductSlugRoute,
   } as any)
+const SettingsProductSlugContextRoute =
+  SettingsProductSlugContextRouteImport.update({
+    id: '/context',
+    path: '/context',
+    getParentRoute: () => SettingsProductSlugRoute,
+  } as any)
 const SettingsOrgSlugSeatsRoute = SettingsOrgSlugSeatsRouteImport.update({
   id: '/seats',
   path: '/seats',
@@ -194,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
   '/settings/org/$slug/products': typeof SettingsOrgSlugProductsRoute
   '/settings/org/$slug/seats': typeof SettingsOrgSlugSeatsRoute
+  '/settings/product/$slug/context': typeof SettingsProductSlugContextRoute
   '/settings/product/$slug/general': typeof SettingsProductSlugGeneralRoute
   '/settings/product/$slug/sources': typeof SettingsProductSlugSourcesRoute
   '/settings/product/$slug/team': typeof SettingsProductSlugTeamRoute
@@ -218,6 +226,7 @@ export interface FileRoutesByTo {
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
   '/settings/org/$slug/products': typeof SettingsOrgSlugProductsRoute
   '/settings/org/$slug/seats': typeof SettingsOrgSlugSeatsRoute
+  '/settings/product/$slug/context': typeof SettingsProductSlugContextRoute
   '/settings/product/$slug/general': typeof SettingsProductSlugGeneralRoute
   '/settings/product/$slug/sources': typeof SettingsProductSlugSourcesRoute
   '/settings/product/$slug/team': typeof SettingsProductSlugTeamRoute
@@ -247,6 +256,7 @@ export interface FileRoutesById {
   '/settings/org/$slug/plan': typeof SettingsOrgSlugPlanRoute
   '/settings/org/$slug/products': typeof SettingsOrgSlugProductsRoute
   '/settings/org/$slug/seats': typeof SettingsOrgSlugSeatsRoute
+  '/settings/product/$slug/context': typeof SettingsProductSlugContextRoute
   '/settings/product/$slug/general': typeof SettingsProductSlugGeneralRoute
   '/settings/product/$slug/sources': typeof SettingsProductSlugSourcesRoute
   '/settings/product/$slug/team': typeof SettingsProductSlugTeamRoute
@@ -277,6 +287,7 @@ export interface FileRouteTypes {
     | '/settings/org/$slug/plan'
     | '/settings/org/$slug/products'
     | '/settings/org/$slug/seats'
+    | '/settings/product/$slug/context'
     | '/settings/product/$slug/general'
     | '/settings/product/$slug/sources'
     | '/settings/product/$slug/team'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/settings/org/$slug/plan'
     | '/settings/org/$slug/products'
     | '/settings/org/$slug/seats'
+    | '/settings/product/$slug/context'
     | '/settings/product/$slug/general'
     | '/settings/product/$slug/sources'
     | '/settings/product/$slug/team'
@@ -329,6 +341,7 @@ export interface FileRouteTypes {
     | '/settings/org/$slug/plan'
     | '/settings/org/$slug/products'
     | '/settings/org/$slug/seats'
+    | '/settings/product/$slug/context'
     | '/settings/product/$slug/general'
     | '/settings/product/$slug/sources'
     | '/settings/product/$slug/team'
@@ -489,6 +502,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsProductSlugGeneralRouteImport
       parentRoute: typeof SettingsProductSlugRoute
     }
+    '/settings/product/$slug/context': {
+      id: '/settings/product/$slug/context'
+      path: '/context'
+      fullPath: '/settings/product/$slug/context'
+      preLoaderRoute: typeof SettingsProductSlugContextRouteImport
+      parentRoute: typeof SettingsProductSlugRoute
+    }
     '/settings/org/$slug/seats': {
       id: '/settings/org/$slug/seats'
       path: '/seats'
@@ -555,6 +575,7 @@ const SettingsOrgSlugRouteWithChildren = SettingsOrgSlugRoute._addFileChildren(
 )
 
 interface SettingsProductSlugRouteChildren {
+  SettingsProductSlugContextRoute: typeof SettingsProductSlugContextRoute
   SettingsProductSlugGeneralRoute: typeof SettingsProductSlugGeneralRoute
   SettingsProductSlugSourcesRoute: typeof SettingsProductSlugSourcesRoute
   SettingsProductSlugTeamRoute: typeof SettingsProductSlugTeamRoute
@@ -562,6 +583,7 @@ interface SettingsProductSlugRouteChildren {
 }
 
 const SettingsProductSlugRouteChildren: SettingsProductSlugRouteChildren = {
+  SettingsProductSlugContextRoute: SettingsProductSlugContextRoute,
   SettingsProductSlugGeneralRoute: SettingsProductSlugGeneralRoute,
   SettingsProductSlugSourcesRoute: SettingsProductSlugSourcesRoute,
   SettingsProductSlugTeamRoute: SettingsProductSlugTeamRoute,

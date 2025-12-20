@@ -469,8 +469,49 @@ export const updateProduct = mutation({
     productId: v.id("products"),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
+    languagePreference: v.optional(v.string()),
+    productBaseline: v.optional(
+      v.object({
+        valueProposition: v.optional(v.string()),
+        targetMarket: v.optional(v.string()),
+        productCategory: v.optional(v.string()),
+        productType: v.optional(v.string()),
+        businessModel: v.optional(v.string()),
+        stage: v.optional(v.string()),
+        personas: v.optional(
+          v.array(
+            v.object({
+              name: v.string(),
+              description: v.optional(v.string()),
+            })
+          )
+        ),
+        platforms: v.optional(v.array(v.string())),
+        integrationEcosystem: v.optional(v.array(v.string())),
+        technicalStack: v.optional(v.array(v.string())),
+        audienceSegments: v.optional(
+          v.array(
+            v.object({
+              name: v.string(),
+              description: v.optional(v.string()),
+            })
+          )
+        ),
+        toneGuidelines: v.optional(
+          v.array(
+            v.object({
+              name: v.string(),
+              description: v.optional(v.string()),
+            })
+          )
+        ),
+      })
+    ),
   },
-  handler: async (ctx, { productId, name, description }) => {
+  handler: async (
+    ctx,
+    { productId, name, description, productBaseline, languagePreference }
+  ) => {
     const { membership } = await assertProductAccess(ctx, productId);
 
     if (membership.role !== "admin") {
@@ -483,6 +524,8 @@ export const updateProduct = mutation({
 
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
+    if (languagePreference !== undefined) updates.languagePreference = languagePreference;
+    if (productBaseline !== undefined) updates.productBaseline = productBaseline;
 
     await ctx.db.patch(productId, updates);
     return productId;

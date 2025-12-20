@@ -2,27 +2,26 @@ import { useState, useEffect } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import {
-  Button,
-  Input,
-  Textarea,
-  Alert,
-  AlertDescription,
-  CheckCircle,
+	Button,
+	Input,
+	Textarea,
+	Alert,
+	AlertDescription,
+	CheckCircle,
 } from "@hikai/ui";
 import {
-  SettingsLayout,
-  SettingsHeader,
-  SettingsSection,
-  SettingsRow,
-  SettingsRowContent,
+	SettingsLayout,
+	SettingsHeader,
+	SettingsSection,
+	SettingsRow,
+	SettingsRowContent,
 } from "@/domains/shared";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import {
-  useGetProductBySlug,
-  useUpdateProduct,
-  useCurrentProduct,
-  DeleteProductDialog,
-  ProductContextCard,
+	useGetProductBySlug,
+	useUpdateProduct,
+	useCurrentProduct,
+	DeleteProductDialog,
 } from "@/domains/products";
 
 export const Route = createFileRoute("/settings/product/$slug/general")({
@@ -44,22 +43,22 @@ function ProductGeneralPage() {
   const { setCurrentProduct } = useCurrentProduct();
 
   // Form state
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState(false);
+	const [name, setName] = useState("");
+	const [description, setDescription] = useState("");
+	const [isSaving, setIsSaving] = useState(false);
+	const [saveError, setSaveError] = useState<string | null>(null);
+	const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Initialize form when product loads
-  useEffect(() => {
-    if (product) {
-      setName(product.name);
-      setDescription(product.description || "");
-    }
-  }, [product]);
+	useEffect(() => {
+		if (product) {
+			setName(product.name);
+			setDescription(product.description || "");
+		}
+	}, [product]);
 
   // Clear success message after timeout
   useEffect(() => {
@@ -69,29 +68,29 @@ function ProductGeneralPage() {
     }
   }, [saveSuccess]);
 
-  if (!product) {
-    return null; // Layout handles loading/not found
-  }
+	if (!product) {
+		return null; // Layout handles loading/not found
+	}
 
-  const hasChanges =
-    name !== product.name ||
-    description !== (product.description || "");
+	const hasChanges =
+		name !== product.name ||
+		description !== (product.description || "");
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveError(null);
-    setSaveSuccess(false);
+	const handleSave = async () => {
+		setIsSaving(true);
+		setSaveError(null);
+		setSaveSuccess(false);
 
-    try {
-      await updateProduct({
-        productId: product._id,
-        name: name.trim(),
-        description: description.trim() || undefined,
-      });
-      setSaveSuccess(true);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : t("errors.unknown"));
-    } finally {
+		try {
+			await updateProduct({
+				productId: product._id,
+				name: name.trim(),
+				description: description.trim() || undefined,
+			});
+			setSaveSuccess(true);
+		} catch (err) {
+			setSaveError(err instanceof Error ? err.message : t("errors.unknown"));
+		} finally {
       setIsSaving(false);
     }
   };
@@ -102,11 +101,11 @@ function ProductGeneralPage() {
   };
 
   return (
-    <SettingsLayout>
-      <SettingsHeader
-        title={t("settings.general.title")}
-        subtitle={t("settings.general.subtitle", { name: product.name })}
-      />
+	<SettingsLayout>
+		<SettingsHeader
+			title={t("settings.general.title")}
+			subtitle={t("settings.general.subtitle", { name: product.name })}
+		/>
 
       {/* General Information */}
       <SettingsSection title={t("settings.info")}>
@@ -143,22 +142,14 @@ function ProductGeneralPage() {
               disabled={isSaving}
               rows={3}
             />
-          </div>
-        </SettingsRowContent>
-      </SettingsSection>
+			</div>
+		</SettingsRowContent>
+	</SettingsSection>
 
-      {/* Product Context */}
-      <SettingsSection
-        title={t("context.sectionTitle")}
-        description={t("context.sectionDescription")}
-      >
-        <ProductContextCard product={product} />
-      </SettingsSection>
-
-      {/* Save Button */}
-      <div className="flex items-center justify-end gap-4">
-        {saveError && (
-          <Alert variant="destructive" className="flex-1">
+	{/* Save Button */}
+	<div className="flex items-center justify-end gap-4">
+		{saveError && (
+			<Alert variant="destructive" className="flex-1">
             <AlertDescription>{saveError}</AlertDescription>
           </Alert>
         )}
@@ -167,11 +158,11 @@ function ProductGeneralPage() {
             <CheckCircle className="w-4 h-4" />
             {t("settings.saveSuccess")}
           </div>
-        )}
-        <Button onClick={handleSave} disabled={!hasChanges || isSaving}>
-          {isSaving ? t("common.loading") : t("settings.save")}
-        </Button>
-      </div>
+		)}
+		<Button onClick={handleSave} disabled={!hasChanges || isSaving}>
+			{isSaving ? t("common.loading") : t("settings.save")}
+		</Button>
+	</div>
 
       {/* Danger Zone */}
       <SettingsSection title={t("settings.dangerZone.title")}>

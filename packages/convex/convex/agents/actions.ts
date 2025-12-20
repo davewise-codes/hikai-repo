@@ -137,22 +137,45 @@ export const generateProductContext = action({
 		);
 
 		const currentVersion = fetchedProduct.productContext?.current?.version ?? 0;
+		const baselineSource = fetchedProduct.productBaseline ?? {};
 		const baseline = {
 			productName: fetchedProduct.name,
 			description: fetchedProduct.description ?? "",
-			valueProposition: fetchedProduct.productContext?.current?.valueProposition,
-			targetMarket: fetchedProduct.productContext?.current?.targetMarket,
-			productCategory: fetchedProduct.productContext?.current?.productCategory,
-			productType: fetchedProduct.productContext?.current?.productType,
-			businessModel: fetchedProduct.productContext?.current?.businessModel,
-			stage: fetchedProduct.productContext?.current?.stage,
-			personas: fetchedProduct.productContext?.current?.personas,
-			platforms: fetchedProduct.productContext?.current?.platforms,
+			valueProposition:
+				baselineSource.valueProposition ??
+				fetchedProduct.productContext?.current?.valueProposition,
+			targetMarket:
+				baselineSource.targetMarket ??
+				fetchedProduct.productContext?.current?.targetMarket,
+			productCategory:
+				baselineSource.productCategory ??
+				fetchedProduct.productContext?.current?.productCategory,
+			productType:
+				baselineSource.productType ??
+				fetchedProduct.productContext?.current?.productType,
+			businessModel:
+				baselineSource.businessModel ??
+				fetchedProduct.productContext?.current?.businessModel,
+			stage:
+				baselineSource.stage ?? fetchedProduct.productContext?.current?.stage,
+			personas:
+				baselineSource.personas ?? fetchedProduct.productContext?.current?.personas,
+			platforms:
+				baselineSource.platforms ??
+				fetchedProduct.productContext?.current?.platforms,
 			languagePreference,
-			integrationEcosystem: fetchedProduct.productContext?.current?.integrationEcosystem,
-			technicalStack: fetchedProduct.productContext?.current?.technicalStack,
-			audienceSegments: fetchedProduct.productContext?.current?.audienceSegments,
-			toneGuidelines: fetchedProduct.productContext?.current?.toneGuidelines,
+			integrationEcosystem:
+				baselineSource.integrationEcosystem ??
+				fetchedProduct.productContext?.current?.integrationEcosystem,
+			technicalStack:
+				baselineSource.technicalStack ??
+				fetchedProduct.productContext?.current?.technicalStack,
+			audienceSegments:
+				baselineSource.audienceSegments ??
+				fetchedProduct.productContext?.current?.audienceSegments,
+			toneGuidelines:
+				baselineSource.toneGuidelines ??
+				fetchedProduct.productContext?.current?.toneGuidelines,
 		};
 
 		const input = {
