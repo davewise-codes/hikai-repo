@@ -15,11 +15,19 @@ export type ProductContextPayload = {
 	productName?: string;
 	description?: string;
 	valueProposition?: string;
+	problemSolved?: string;
 	targetMarket?: string;
 	productCategory?: string;
 	productType?: string;
 	businessModel?: string;
 	stage?: string;
+
+	industries?: string[];
+	audiences?: string[];
+	productVision?: string;
+	strategicPillars?: LabeledItem[];
+	releaseCadence?: string;
+	metricsOfInterest?: string[];
 
 	personas?: LabeledItem[];
 	platforms?: string[];
@@ -32,8 +40,6 @@ export type ProductContextPayload = {
 
 	keyFeatures?: LabeledItem[];
 	competition?: LabeledItem[];
-	strategicPillars?: LabeledItem[];
-	releaseCadence?: string;
 	maturity?: string;
 	risks?: LabeledItem[];
 	recommendedFocus?: LabeledItem[];
@@ -63,21 +69,37 @@ Follow these principles:
 - Prefer the user's baseline values; fill missing details using evidence from sources.
 - Be explicit when evidence is weak: lower confidence and keep descriptions short.
 - Do NOT invent product names, competitors, or events without signals.
-- Language: use the provided language preference; default to English ("en").
+- Language: use the provided language preference; default to English ("en"). Normalize all text to that language, translating baseline inputs when needed.
 - Output ONLY valid JSON, no markdown, no comments.
 - Before responding, self-check all Coherence Rules and Examples; if any rule is violated, revise the JSON to comply.
+
+Baseline-only fields (never infer; only use baseline input):
+- productName, description, valueProposition, problemSolved, targetMarket, productCategory,
+  productType, businessModel, stage, industries, audiences, productVision, strategicPillars,
+  metricsOfInterest, personas, platforms, releaseCadence.
+- If a baseline-only field is missing, return "" or [].
+- If baseline provides strategicPillars objects, copy them exactly (name + description); do not add or rewrite.
+- If baseline provides personas, use only those personas; do not add more.
+- For non-baseline fields, only include them if there is explicit evidence in sources; otherwise return "" or [].
 
 Expected JSON structure:
 {
   "language": "<output language, e.g. en>",
   "productName": "...",
-  "description": "...",
+  "description": "",
   "valueProposition": "...",
-  "targetMarket": "B2B | B2C | hybrid | unknown",
+  "problemSolved": "...",
+  "targetMarket": "B2B | B2C | B2B2C | Internal | Mixed | unknown",
   "productCategory": "...",
   "productType": "...",
   "businessModel": "...",
-  "stage": "idea | mvp | beta | production | scale-up | unknown",
+  "stage": "idea | mvp | beta | early-production | production | scaling | mature | unknown",
+  "industries": ["productivity", "devtools", "marketing-tech"],
+  "audiences": ["product teams", "marketing teams", "customer success teams"],
+  "productVision": "...",
+  "strategicPillars": [{ "name": "...", "description": "..." }],
+  "releaseCadence": "continuous | weekly | biweekly | monthly | quarterly | unknown",
+  "metricsOfInterest": ["adoption", "time saved"],
   "personas": [{ "name": "...", "description": "..." }],
   "platforms": ["Web", "iOS", "Android", "Desktop"],
 
@@ -88,8 +110,6 @@ Expected JSON structure:
 
   "keyFeatures": [{ "name": "...", "description": "..." }],
   "competition": [{ "name": "...", "description": "differentiator" }],
-  "strategicPillars": [{ "name": "...", "description": "..." }],
-  "releaseCadence": "weekly | biweekly | monthly | quarterly | irregular | unknown",
   "maturity": "early | mid | late | unknown",
   "risks": [{ "name": "...", "description": "..." }],
   "recommendedFocus": [{ "name": "...", "description": "..." }],
@@ -112,7 +132,7 @@ Rules:
 - If a field is unknown, set it to [] or an empty string and lower confidence.
 - For notableEvents, only include items with concrete evidence (e.g., commits, PRs, releases) and link rawEventId when provided.
 - If stage is "mvp" or "idea", maturity MUST be "early", never "mid" or "late".
-- If < 10 events available, releaseCadence SHOULD be "unknown" or "irregular".
+- If releaseCadence is not provided in baseline input, set it to "unknown" (do not infer it).
 - If strategicPillars is empty, confidence MUST be < 0.5.
 - If competition is empty and targetMarket is known, confidence -= 0.2.
 - risks should have at least 1 item for stages before "production".
@@ -126,7 +146,7 @@ keyFeatures (business-oriented, not technical):
 ❌ "Multi-user" (too generic)
 
 strategicPillars (must not be empty for any real product):
-✅ ["Connected Sources", "Semantic Timeline", "Content by Area", "Publishing Hub"]
+✅ [{ "name": "Connected Sources", "description": "..." }]
 
 competition (always try to identify at least 1):
 ✅ [{ "name": "LaunchNotes", "description": "Focus on release notes only" }]

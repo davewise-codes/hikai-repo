@@ -17,6 +17,84 @@ const SOURCE_METADATA = { source: "ai-test" };
 const PRODUCT_CONTEXT_USE_CASE = "product_context_enrichment";
 const PRODUCT_CONTEXT_AGENT_NAME = "Product Context Agent";
 
+const strategicPillarsCatalog = [
+	{
+		id: "product_excellence",
+		label: { en: "Product Excellence", es: "Excelencia de producto" },
+		description: {
+			en: "Build a solid, reliable product with high technical and UX quality.",
+			es: "Construir un producto sólido, fiable, bien ejecutado y con alta calidad técnica y de experiencia.",
+		},
+	},
+	{
+		id: "user_adoption_retention",
+		label: { en: "User Adoption & Retention", es: "Adopción y retención" },
+		description: {
+			en: "Drive fast adoption and recurring usage.",
+			es: "Conseguir que los usuarios adopten el producto rápidamente y lo usen de forma recurrente.",
+		},
+	},
+	{
+		id: "growth_acquisition",
+		label: { en: "Growth & Acquisition", es: "Crecimiento y adquisición" },
+		description: {
+			en: "Increase visibility, users, and growth opportunities.",
+			es: "Incrementar visibilidad, usuarios y oportunidades de negocio a través de adquisición y distribución.",
+		},
+	},
+	{
+		id: "narrative_brand",
+		label: {
+			en: "Narrative & Brand Positioning",
+			es: "Narrativa y posicionamiento de marca",
+		},
+		description: {
+			en: "Communicate clearly what the product is and why it matters.",
+			es: "Comunicar de forma clara y diferenciada qué es el producto, por qué importa y cómo se posiciona.",
+		},
+	},
+	{
+		id: "operational_efficiency",
+		label: {
+			en: "Operational & Team Efficiency",
+			es: "Eficiencia operativa y de equipo",
+		},
+		description: {
+			en: "Improve operational efficiency and team alignment.",
+			es: "Mejorar la eficiencia operativa y la alineación de los equipos reduciendo fricción y trabajo manual.",
+		},
+	},
+	{
+		id: "scalability_business_impact",
+		label: {
+			en: "Scalability & Business Impact",
+			es: "Escalabilidad e impacto en negocio",
+		},
+		description: {
+			en: "Enable sustainable growth and business impact.",
+			es: "Asegurar que el producto y el negocio puedan crecer de forma sostenible y con impacto económico.",
+		},
+	},
+];
+
+const getStrategicPillarsForPrompt = (
+	pillarIds: string[] | undefined,
+	language: "en" | "es",
+) =>
+	(pillarIds ?? [])
+		.map((id) => {
+			if (id === "Other") {
+				return { name: language === "es" ? "Otro" : "Other" };
+			}
+			const entry = strategicPillarsCatalog.find((pillar) => pillar.id === id);
+			if (!entry) return null;
+			return {
+				name: entry.label[language],
+				description: entry.description[language],
+			};
+		})
+		.filter((pillar): pillar is { name: string; description?: string } => Boolean(pillar));
+
 export const chat = action({
 	args: {
 		prompt: v.string(),
@@ -125,6 +203,7 @@ export const generateProductContext = action({
 				{ productId },
 			));
 		const languagePreference = fetchedProduct.languagePreference ?? "en";
+		const language = languagePreference === "es" ? "es" : "en";
 		const sourcesUsed = new Set<string>(["baseline"]);
 
 		const eventSummaries = await ctx.runQuery(
@@ -142,42 +221,26 @@ export const generateProductContext = action({
 		const baselineSource = fetchedProduct.productBaseline ?? {};
 		const baseline = {
 			productName: fetchedProduct.name,
-			description: fetchedProduct.description ?? "",
-			valueProposition:
-				baselineSource.valueProposition ??
-				fetchedProduct.productContext?.current?.valueProposition,
-			targetMarket:
-				baselineSource.targetMarket ??
-				fetchedProduct.productContext?.current?.targetMarket,
-			productCategory:
-				baselineSource.productCategory ??
-				fetchedProduct.productContext?.current?.productCategory,
-			productType:
-				baselineSource.productType ??
-				fetchedProduct.productContext?.current?.productType,
-			businessModel:
-				baselineSource.businessModel ??
-				fetchedProduct.productContext?.current?.businessModel,
-			stage:
-				baselineSource.stage ?? fetchedProduct.productContext?.current?.stage,
-			personas:
-				baselineSource.personas ?? fetchedProduct.productContext?.current?.personas,
-			platforms:
-				baselineSource.platforms ??
-				fetchedProduct.productContext?.current?.platforms,
+			description: "",
+			productCategory: "",
+			valueProposition: baselineSource.valueProposition ?? "",
+			problemSolved: baselineSource.problemSolved ?? "",
+			targetMarket: baselineSource.targetMarket ?? "",
+			productType: baselineSource.productType ?? "",
+			businessModel: baselineSource.businessModel ?? "",
+			stage: baselineSource.stage ?? "",
+			industries: baselineSource.industries ?? [],
+			audiences: baselineSource.audiences ?? [],
+			productVision: baselineSource.productVision ?? "",
+			strategicPillars: getStrategicPillarsForPrompt(
+				baselineSource.strategicPillars ?? [],
+				language,
+			),
+			metricsOfInterest: baselineSource.metricsOfInterest ?? [],
+			personas: baselineSource.personas ?? [],
+			platforms: [],
+			releaseCadence: fetchedProduct.releaseCadence ?? "",
 			languagePreference,
-			integrationEcosystem:
-				baselineSource.integrationEcosystem ??
-				fetchedProduct.productContext?.current?.integrationEcosystem,
-			technicalStack:
-				baselineSource.technicalStack ??
-				fetchedProduct.productContext?.current?.technicalStack,
-			audienceSegments:
-				baselineSource.audienceSegments ??
-				fetchedProduct.productContext?.current?.audienceSegments,
-			toneGuidelines:
-				baselineSource.toneGuidelines ??
-				fetchedProduct.productContext?.current?.toneGuidelines,
 		};
 
 		const input = {

@@ -28,7 +28,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | ------- | ---------------------------------------------- | ------------- |
 | F1.0    | Mejoras al prompt (few-shot, coherencia)       | ✅ Completado |
 | F1.1    | Mutation updateBaseline + regeneración auto    | ✅ Completado |
-| F1.2    | BaselineEditor en settings de producto         | ⏳ Pendiente  |
+| F1.2    | BaselineEditor en settings de producto         | ✅ Completado |
 | F1.3    | BaselineWizard en creación de producto         | ⏳ Pendiente  |
 | F1.4    | Detección automática de stack (package.json)   | ⏳ Pendiente  |
 | F1.5    | Post-procesamiento y quality score             | ⏳ Pendiente  |
@@ -225,32 +225,43 @@ F1.2: BaselineEditor en settings
 PARTE 1: COMPONENTE
 Crear apps/webapp/src/domains/products/components/baseline-editor.tsx:
 - Props: { product, onSave }
-- Form con campos del baseline:
-  - valueProposition: Textarea (obligatorio)
-  - targetMarket: Select (B2B, B2C, hybrid)
-  - productCategory: Input con sugerencias
-  - productType: Select (WebApp, Mobile, API, SDK, CLI, Other)
-  - businessModel: Select (SaaS, Marketplace, Freemium, One-time, Subscription, Other)
-  - stage: Select (idea, mvp, beta, production, scale-up)
-  - platforms: Multi-select chips (Web, iOS, Android, Desktop)
-  - languagePreference: Select (en, es)
-- Sección colapsable "Advanced" para:
-  - personas, audienceSegments, toneGuidelines (lista editable)
-- Botón "Save" que llama a mutation updateBaseline
+- Tabs para estructurar contenido: Basics / Market / Strategy / Personas
+- Campos obligatorios:
+  - valueProposition (Textarea con placeholder guiado)
+  - problemSolved (Textarea con placeholder guiado)
+  - targetMarket (Select: B2B, B2C, B2B2C, Internal, Mixed)
+  - productType (Select con catálogo definido)
+  - businessModel (Select con catálogo definido)
+  - stage (Select con catálogo definido)
+  - industries (Multi-select con opciones predefinidas + Other)
+  - audiences (Multi-select con opciones predefinidas + Other)
+- Campos opcionales:
+  - productVision (Textarea corto)
+  - strategicPillars (Multi-select con opciones predefinidas + Other)
+  - metricsOfInterest (Multi-select con opciones predefinidas + Other)
+  - personas (lista compacta con role/goals/painPoints/preferredTone)
+- General settings:
+  - releaseCadence (Select: continuous, weekly, biweekly, monthly, quarterly)
+  - languagePreference (Select: en, es)
+- Personas: tarjetas compactas con resumen + expand/collapse
+- Botón "Save" que llama a updateBaseline y updateProduct (languagePreference)
 - Loading state mientras guarda
 - Success toast al guardar
-- Usa componentes de @hikai/ui: Card, Input, Textarea, Select, Button, Label, Badge
+- Usa componentes de @hikai/ui: Card, Textarea, Select, Button, Label, Badge, Tabs
 
 PARTE 2: INTEGRACIÓN
 En apps/webapp/src/routes/settings/product/$slug/general.tsx:
 - Añadir BaselineEditor debajo del formulario de datos básicos
 - Separar con <Separator /> y título "Product Baseline"
+- En apps/webapp/src/routes/settings/product/$slug/context.tsx:
+  - Eliminar editor de baseline y dejar solo ProductContextCard
 
 PARTE 3: i18n
 Añadir en products.json (en/es):
 - baseline.title, baseline.description
-- baseline.fields.* para cada campo
-- baseline.save, baseline.saving, baseline.saved
+- baseline.fields.*, baseline.placeholders.*, baseline.errors.*
+- baseline.tabs.*, baseline.actions.*, baseline.options.*
+- baseline.persona.* y textos auxiliares
 
 PARTE 4: VALIDACIÓN
 - pnpm --filter @hikai/webapp exec tsc --noEmit
@@ -261,11 +272,12 @@ PARTE 4: VALIDACIÓN
 **Validación**:
 
 - [ ] BaselineEditor renderiza todos los campos
-- [ ] Campos obligatorios validados (valueProposition)
+- [ ] Campos obligatorios validados (valueProposition, problemSolved, targetMarket, productType, businessModel, stage, industries, audiences)
 - [ ] Guardar llama a updateBaseline y muestra feedback
 - [ ] Contexto se regenera automáticamente tras guardar
+- [x] Prompt fuerza baseline-only y normalización de idioma
 - [ ] Solo componentes de @hikai/ui
-- [ ] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
+- [x] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
 
 ---
 
