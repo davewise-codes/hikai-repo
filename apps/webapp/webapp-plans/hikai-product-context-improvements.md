@@ -29,7 +29,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | F1.0    | Mejoras al prompt (few-shot, coherencia)       | ✅ Completado |
 | F1.1    | Mutation updateBaseline + regeneración auto    | ✅ Completado |
 | F1.2    | BaselineEditor en settings de producto         | ✅ Completado |
-| F1.3    | BaselineWizard en creación de producto         | ⏳ Pendiente  |
+| F1.3    | BaselineWizard en creación de producto         | ✅ Completado |
 | F1.4    | Detección automática de stack (package.json)   | ⏳ Pendiente  |
 | F1.5    | Post-procesamiento y quality score             | ⏳ Pendiente  |
 | F1.6    | Modelo por use-case/agente                     | ⏳ Pendiente  |
@@ -336,12 +336,12 @@ PARTE 5: VALIDACIÓN
 
 **Validación**:
 
-- [ ] Wizard de 2 pasos funciona
-- [ ] valueProposition obligatorio validado
-- [ ] Baseline se guarda al crear producto
-- [ ] Navegación back/next funciona
-- [ ] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
-- [ ] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
+- [x] Wizard de 5 pasos funciona
+- [x] Campos obligatorios validados por paso
+- [x] Baseline se guarda al crear producto
+- [x] Navegación back/next funciona
+- [x] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
+- [x] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
 
 ---
 

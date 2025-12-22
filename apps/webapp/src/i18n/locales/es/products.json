@@ -59,7 +59,6 @@
   "limitInfo": "{{current}} de {{max}} productos",
   "memberSingular": "miembro",
   "memberPlural": "miembros",
-  "noDescription": "Sin descripción",
   "roles": {
     "admin": "Admin",
     "member": "Miembro"
@@ -69,13 +68,47 @@
     "namePlaceholder": "Mi Producto",
     "slug": "Identificador (slug)",
     "slugPlaceholder": "mi-producto",
-    "slugHint": "Identificador amigable para URL. Solo letras minúsculas, números y guiones.",
-    "description": "Descripción (opcional)",
-    "descriptionPlaceholder": "Breve descripción de tu producto..."
+    "slugHint": "Identificador amigable para URL. Solo letras minúsculas, números y guiones."
   },
   "errors": {
     "requiredFields": "El nombre y el slug son obligatorios",
     "unknown": "Ocurrió un error desconocido"
+  },
+  "wizard": {
+    "steps": {
+      "details": "Detalles"
+    },
+    "stepDescriptions": {
+      "details": "Define la identidad del producto usada en el workspace y en URLs.",
+      "basics": "Ancla el baseline con la promesa principal y la etapa actual.",
+      "market": "Aclara a quién sirve el producto y dónde compite.",
+      "strategy": "Captura la intención estratégica que guía decisiones.",
+      "personas": "Define para quién escribimos y cómo comunicarle."
+    },
+    "actions": {
+      "next": "Siguiente",
+      "back": "Atrás"
+    },
+    "helpers": {
+      "name": "Usa el nombre con el que el equipo identifica el producto.",
+      "slug": "Se usa en URLs e integraciones. Manténlo corto y estable.",
+      "valueProposition": "Resume el resultado principal que obtiene el usuario.",
+      "problemSolved": "Describe el dolor recurrente que elimina el producto.",
+      "productType": "Aclara cómo se entrega el producto al usuario.",
+      "businessModel": "Indica cómo se captura valor o ingresos.",
+      "stage": "Marca expectativas de madurez y cadencia de releases.",
+      "targetMarket": "Identifica el contexto principal de compra o uso.",
+      "industries": "Selecciona las industrias que mejor describen el mercado.",
+      "audiences": "Elige las audiencias que consumen actualizaciones.",
+      "productVision": "Opcional, norte para narrativa y posicionamiento.",
+      "strategicPillars": "Destaca prioridades que el producto debe reforzar.",
+      "metricsOfInterest": "Elige los resultados que el producto debe impactar.",
+      "personasIntro": "Opcional, pero ayuda a ajustar tono y contenido.",
+      "personaRole": "Define el rol para usar el enfoque correcto.",
+      "personaGoals": "Lo que esta persona quiere lograr con el producto.",
+      "personaPainPoints": "Lo que hoy frustra o bloquea a esta persona.",
+      "personaPreferredTone": "Guía de tono para comunicar a esta persona."
+    }
   },
   "tabs": {
     "overview": "General",
@@ -129,7 +162,21 @@
     "name": "Nombre",
     "slug": "Slug",
     "slugReadonly": "El slug no se puede cambiar",
-    "description": "Descripción",
+    "languagePreference": "Preferencia de idioma",
+    "languagePreferenceHelp": "Idioma por defecto para las respuestas de los agentes.",
+    "releaseCadence": "Cadencia de releases",
+    "releaseCadenceHelp": "Usado por agentes para decidir cuánto historial interpretar.",
+    "languageOptions": {
+      "english": "Inglés",
+      "spanish": "Español"
+    },
+    "releaseCadenceOptions": {
+      "continuous": "Continuo",
+      "weekly": "Semanal",
+      "biweekly": "Quincenal",
+      "monthly": "Mensual",
+      "quarterly": "Trimestral"
+    },
     "members": "Miembros",
     "createdAt": "Creado",
     "yourRole": "Tu rol",
@@ -139,6 +186,212 @@
     "dangerZone": {
       "title": "Zona de Peligro",
       "description": "Acciones irreversibles"
+    }
+  },
+  "baseline": {
+    "title": "Baseline del producto",
+    "description": "Define la información canónica que la IA debe respetar al generar contexto.",
+    "save": "Guardar baseline",
+    "saving": "Guardando...",
+    "saved": "Baseline guardado",
+    "tabs": {
+      "basics": "Básico",
+      "market": "Mercado",
+      "strategy": "Estrategia",
+      "personas": "Personas"
+    },
+    "actions": {
+      "edit": "Editar",
+      "collapse": "Contraer",
+      "remove": "Eliminar",
+      "addPersona": "Añadir persona",
+      "filter": "Filtrar..."
+    },
+    "errors": {
+      "valuePropositionRequired": "La propuesta de valor es obligatoria.",
+      "problemSolvedRequired": "El problema que resuelve es obligatorio.",
+      "targetMarketRequired": "El mercado objetivo es obligatorio.",
+      "productTypeRequired": "El tipo de producto es obligatorio.",
+      "businessModelRequired": "El modelo de negocio es obligatorio.",
+      "stageRequired": "La etapa es obligatoria.",
+      "industriesRequired": "Selecciona al menos una industria.",
+      "audiencesRequired": "Selecciona al menos una audiencia.",
+      "personaIncomplete": "Completa todos los campos de esta persona o elimínala."
+    },
+    "placeholders": {
+      "valueProposition": "Ejemplo: Convierte el progreso real del producto en actualizaciones claras y reutilizables.",
+      "problemSolved": "Ejemplo: Los equipos no comunican el progreso del producto de forma consistente.",
+      "productVision": "Ejemplo: Ser la capa narrativa que conecta desarrollo y comunicación.",
+      "select": "Seleccionar..."
+    },
+    "fields": {
+      "valueProposition": "Propuesta de valor",
+      "problemSolved": "Problema que resuelve",
+      "targetMarket": "Mercado objetivo",
+      "productType": "Tipo de producto",
+      "businessModel": "Modelo de negocio",
+      "stage": "Etapa",
+      "industries": "Industrias",
+      "audiences": "Audiencias",
+      "productVision": "Visión del producto",
+      "strategicPillars": "Pilares estratégicos",
+      "metricsOfInterest": "Métricas clave",
+      "personas": "Personas"
+    },
+    "persona": {
+      "role": "Rol",
+      "goals": "Objetivos",
+      "painPoints": "Puntos de dolor",
+      "preferredTone": "Tono preferido",
+      "untitled": "Persona sin título",
+      "goalsCount": "{{count}} objetivos",
+      "painsCount": "{{count}} puntos de dolor"
+    },
+    "emptyPersonas": "Aún no hay personas añadidas.",
+    "options": {
+      "common": {
+        "other": "Otro"
+      },
+      "targetMarket": {
+        "b2b": "B2B",
+        "b2c": "B2C",
+        "b2b2c": "B2B2C",
+        "internal": "Interno",
+        "mixed": "Mixto"
+      },
+      "productType": {
+        "webApp": "Web app",
+        "mobileApp": "App móvil",
+        "desktopApp": "App de escritorio",
+        "api": "API",
+        "developerTool": "Developer tool",
+        "marketplace": "Marketplace",
+        "internalTool": "Herramienta interna",
+        "dataPlatform": "Plataforma de datos",
+        "contentPlatform": "Plataforma de contenido",
+        "ecommerce": "E-commerce"
+      },
+      "businessModel": {
+        "saas": "SaaS",
+        "freemium": "Freemium",
+        "subscription": "Suscripción",
+        "usageBased": "Pago por uso",
+        "transactional": "Transaccional",
+        "marketplaceFees": "Fees de marketplace",
+        "advertising": "Publicidad",
+        "enterprise": "Licencia enterprise",
+        "openSource": "Open source",
+        "internalCost": "Centro de coste interno"
+      },
+      "stage": {
+        "idea": "Idea",
+        "mvp": "MVP",
+        "beta": "Beta",
+        "earlyProduction": "Producción temprana",
+        "production": "Producción",
+        "scaling": "Escalando",
+        "mature": "Maduro"
+      },
+      "industries": {
+        "productivity": "Productividad",
+        "marketingTech": "Marketing tech",
+        "customerSuccess": "Customer success",
+        "developerTools": "Developer tools",
+        "fintech": "Fintech",
+        "healthtech": "Healthtech",
+        "edtech": "Edtech",
+        "ecommerce": "E-commerce",
+        "ai": "AI / ML",
+        "dataAnalytics": "Data & Analytics",
+        "cybersecurity": "Ciberseguridad",
+        "hrTech": "HR tech",
+        "legalTech": "Legal tech",
+        "proptech": "Proptech",
+        "gaming": "Gaming",
+        "mediaContent": "Media & Content",
+        "iot": "IoT",
+        "enterpriseSoftware": "Software enterprise",
+        "openSource": "Open source"
+      },
+      "audiences": {
+        "productTeams": "Equipos de producto",
+        "engineeringTeams": "Equipos de ingeniería",
+        "marketingTeams": "Equipos de marketing",
+        "customerSuccessTeams": "Equipos de customer success",
+        "salesTeams": "Equipos de ventas",
+        "founders": "Founders",
+        "executives": "Ejecutivos",
+        "stakeholders": "Stakeholders",
+        "market": "Mercado",
+        "endUsers": "Usuarios finales",
+        "developers": "Desarrolladores",
+        "partners": "Partners",
+        "investors": "Inversores"
+      },
+      "strategicPillars": {
+        "productExcellence": "Excelencia de producto",
+        "userAdoptionRetention": "Adopción y retención",
+        "growthAcquisition": "Crecimiento y adquisición",
+        "narrativeBrand": "Narrativa y posicionamiento",
+        "operationalEfficiency": "Eficiencia operativa",
+        "scalabilityImpact": "Escalabilidad e impacto"
+      },
+      "strategicPillarsDescriptions": {
+        "productExcellence": "Construir un producto sólido, fiable y con alta calidad técnica y de experiencia.",
+        "userAdoptionRetention": "Lograr adopción rápida y uso recurrente del producto.",
+        "growthAcquisition": "Aumentar visibilidad, usuarios y oportunidades mediante adquisición.",
+        "narrativeBrand": "Comunicar claramente qué es el producto, por qué importa y cómo se posiciona.",
+        "operationalEfficiency": "Mejorar eficiencia operativa y alineación reduciendo fricción.",
+        "scalabilityImpact": "Asegurar crecimiento sostenible con impacto económico."
+      },
+      "metrics": {
+        "userAdoption": "Adopción de usuarios",
+        "featureUsage": "Uso de funcionalidades",
+        "timeToValue": "Tiempo a valor",
+        "performance": "Mejoras de rendimiento",
+        "reliability": "Fiabilidad / uptime",
+        "satisfaction": "Satisfacción del cliente",
+        "churn": "Reducción de churn",
+        "conversion": "Tasa de conversión",
+        "contentConsistency": "Consistencia de contenido",
+        "timeSaved": "Tiempo ahorrado"
+      },
+      "personaRoles": {
+        "founder": "Founder",
+        "productManager": "Product Manager",
+        "engineer": "Engineer",
+        "marketingManager": "Marketing Manager",
+        "customerSuccess": "Customer Success Manager",
+        "salesManager": "Sales Manager",
+        "executive": "Executive",
+        "developerAdvocate": "Developer Advocate",
+        "operations": "Operations"
+      },
+      "personaGoals": {
+        "visibility": "Aumentar visibilidad del progreso del producto",
+        "alignment": "Alinear equipos internos",
+        "reduceManual": "Reducir reportes manuales",
+        "narrative": "Crear una narrativa de producto convincente",
+        "shipFaster": "Lanzar actualizaciones más rápido",
+        "adoption": "Mejorar adopción del producto",
+        "impact": "Comunicar impacto a stakeholders"
+      },
+      "personaPains": {
+        "scatteredInfo": "Información dispersa en herramientas",
+        "noTime": "Falta de tiempo para documentar avances",
+        "misalignment": "Desalineación entre producto y marketing",
+        "inconsistent": "Mensajes inconsistentes",
+        "proveImpact": "Difícil demostrar impacto",
+        "overreliance": "Dependencia excesiva de ingeniería",
+        "manualUpdates": "Actualizaciones manuales y repetitivas"
+      },
+      "personaTone": {
+        "technical": "Técnico",
+        "professional": "Profesional",
+        "friendly": "Cercano",
+        "enthusiastic": "Entusiasta",
+        "minimal": "Minimal"
+      }
     }
   },
   "context": {

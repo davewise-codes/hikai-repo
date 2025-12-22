@@ -4,17 +4,20 @@ import { generateSlug, shouldAutoUpdateSlug } from "../../utils";
 export interface EntityFieldsValues {
   name: string;
   slug: string;
-  description: string;
+  description?: string;
 }
 
 export interface EntityFieldsLabels {
   name: string;
   namePlaceholder: string;
+  nameHelp?: string;
   slug: string;
   slugPlaceholder: string;
   slugHint: string;
-  description: string;
-  descriptionPlaceholder: string;
+  slugHelp?: string;
+  description?: string;
+  descriptionPlaceholder?: string;
+  descriptionHelp?: string;
 }
 
 interface EntityFieldsProps {
@@ -28,11 +31,13 @@ interface EntityFieldsProps {
   isLoading?: boolean;
   /** Prefix for input IDs (e.g., "org" or "product") */
   idPrefix: string;
+  /** Whether to show description field */
+  showDescription?: boolean;
 }
 
 /**
- * Shared fields for entity creation: name, slug (auto-generated), and description.
- * Handles auto-slug generation when name changes.
+ * Shared fields for entity creation: name + slug (auto-generated),
+ * with optional description support when enabled.
  */
 export function EntityFields({
   values,
@@ -40,7 +45,9 @@ export function EntityFields({
   labels,
   isLoading = false,
   idPrefix,
+  showDescription = true,
 }: EntityFieldsProps) {
+  const placeholderClassName = "placeholder:italic placeholder:text-muted-foreground/70";
   const handleNameChange = (newName: string) => {
     onValuesChange({
       ...values,
@@ -69,6 +76,11 @@ export function EntityFields({
     <div className="space-y-4">
       <div>
         <Label htmlFor={`${idPrefix}-name`}>{labels.name} *</Label>
+        {labels.nameHelp ? (
+          <p className="text-fontSize-xs text-muted-foreground mt-1">
+            {labels.nameHelp}
+          </p>
+        ) : null}
         <Input
           id={`${idPrefix}-name`}
           type="text"
@@ -77,11 +89,20 @@ export function EntityFields({
           placeholder={labels.namePlaceholder}
           required
           disabled={isLoading}
+          className={placeholderClassName}
         />
       </div>
 
       <div>
         <Label htmlFor={`${idPrefix}-slug`}>{labels.slug} *</Label>
+        <p className="text-fontSize-xs text-muted-foreground mt-1">
+          {labels.slugHint}
+        </p>
+        {labels.slugHelp ? (
+          <p className="text-fontSize-xs text-muted-foreground mt-1">
+            {labels.slugHelp}
+          </p>
+        ) : null}
         <Input
           id={`${idPrefix}-slug`}
           type="text"
@@ -92,23 +113,31 @@ export function EntityFields({
           disabled={isLoading}
           pattern="^[a-z0-9-]+$"
           title={labels.slugHint}
+          className={placeholderClassName}
         />
-        <p className="text-fontSize-xs text-muted-foreground mt-1">{labels.slugHint}</p>
       </div>
 
-      <div>
-        <Label htmlFor={`${idPrefix}-description`}>{labels.description}</Label>
-        <Textarea
-          id={`${idPrefix}-description`}
-          value={values.description}
-          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-            handleDescriptionChange(e.target.value)
-          }
-          placeholder={labels.descriptionPlaceholder}
-          rows={3}
-          disabled={isLoading}
-        />
-      </div>
+      {showDescription ? (
+        <div>
+          <Label htmlFor={`${idPrefix}-description`}>{labels.description}</Label>
+          {labels.descriptionHelp ? (
+            <p className="text-fontSize-xs text-muted-foreground mt-1">
+              {labels.descriptionHelp}
+            </p>
+          ) : null}
+          <Textarea
+            id={`${idPrefix}-description`}
+            value={values.description ?? ""}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              handleDescriptionChange(e.target.value)
+            }
+            placeholder={labels.descriptionPlaceholder}
+            rows={3}
+            disabled={isLoading}
+            className={placeholderClassName}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

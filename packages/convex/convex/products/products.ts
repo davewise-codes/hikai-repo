@@ -365,7 +365,6 @@ export const getRecentProducts = query({
           _id: product._id,
           name: product.name,
           slug: product.slug,
-          description: product.description,
           organization: {
             _id: organization._id,
             name: organization.name,
@@ -397,9 +396,33 @@ export const createProduct = mutation({
     organizationId: v.id("organizations"),
     name: v.string(),
     slug: v.string(),
-    description: v.optional(v.string()),
+    baseline: v.optional(
+      v.object({
+        valueProposition: v.optional(v.string()),
+        problemSolved: v.optional(v.string()),
+        targetMarket: v.optional(v.string()),
+        productType: v.optional(v.string()),
+        businessModel: v.optional(v.string()),
+        stage: v.optional(v.string()),
+        industries: v.optional(v.array(v.string())),
+        audiences: v.optional(v.array(v.string())),
+        productVision: v.optional(v.string()),
+        strategicPillars: v.optional(v.array(v.string())),
+        metricsOfInterest: v.optional(v.array(v.string())),
+        personas: v.optional(
+          v.array(
+            v.object({
+              role: v.string(),
+              goals: v.array(v.string()),
+              painPoints: v.array(v.string()),
+              preferredTone: v.string(),
+            })
+          )
+        ),
+      })
+    ),
   },
-  handler: async (ctx, { organizationId, name, slug, description }) => {
+  handler: async (ctx, { organizationId, name, slug, baseline }) => {
     const { membership, organization, userId } = await assertOrgAccess(
       ctx,
       organizationId
@@ -444,7 +467,7 @@ export const createProduct = mutation({
       organizationId,
       name,
       slug,
-      description,
+      productBaseline: baseline,
       createdAt: now,
       updatedAt: now,
     });
@@ -469,40 +492,28 @@ export const updateProduct = mutation({
   args: {
     productId: v.id("products"),
     name: v.optional(v.string()),
-    description: v.optional(v.string()),
     languagePreference: v.optional(v.string()),
+    releaseCadence: v.optional(v.string()),
     productBaseline: v.optional(
       v.object({
         valueProposition: v.optional(v.string()),
+        problemSolved: v.optional(v.string()),
         targetMarket: v.optional(v.string()),
-        productCategory: v.optional(v.string()),
         productType: v.optional(v.string()),
         businessModel: v.optional(v.string()),
         stage: v.optional(v.string()),
+        industries: v.optional(v.array(v.string())),
+        audiences: v.optional(v.array(v.string())),
+        productVision: v.optional(v.string()),
+        strategicPillars: v.optional(v.array(v.string())),
+        metricsOfInterest: v.optional(v.array(v.string())),
         personas: v.optional(
           v.array(
             v.object({
-              name: v.string(),
-              description: v.optional(v.string()),
-            })
-          )
-        ),
-        platforms: v.optional(v.array(v.string())),
-        integrationEcosystem: v.optional(v.array(v.string())),
-        technicalStack: v.optional(v.array(v.string())),
-        audienceSegments: v.optional(
-          v.array(
-            v.object({
-              name: v.string(),
-              description: v.optional(v.string()),
-            })
-          )
-        ),
-        toneGuidelines: v.optional(
-          v.array(
-            v.object({
-              name: v.string(),
-              description: v.optional(v.string()),
+              role: v.string(),
+              goals: v.array(v.string()),
+              painPoints: v.array(v.string()),
+              preferredTone: v.string(),
             })
           )
         ),
@@ -511,7 +522,7 @@ export const updateProduct = mutation({
   },
   handler: async (
     ctx,
-    { productId, name, description, productBaseline, languagePreference }
+    { productId, name, productBaseline, languagePreference, releaseCadence }
   ) => {
     const { membership } = await assertProductAccess(ctx, productId);
 
@@ -524,8 +535,8 @@ export const updateProduct = mutation({
     };
 
     if (name !== undefined) updates.name = name;
-    if (description !== undefined) updates.description = description;
     if (languagePreference !== undefined) updates.languagePreference = languagePreference;
+    if (releaseCadence !== undefined) updates.releaseCadence = releaseCadence;
     if (productBaseline !== undefined) updates.productBaseline = productBaseline;
 
     await ctx.db.patch(productId, updates);
@@ -542,35 +553,23 @@ export const updateBaseline = mutation({
     productId: v.id("products"),
     baseline: v.object({
       valueProposition: v.optional(v.string()),
+      problemSolved: v.optional(v.string()),
       targetMarket: v.optional(v.string()),
-      productCategory: v.optional(v.string()),
       productType: v.optional(v.string()),
       businessModel: v.optional(v.string()),
       stage: v.optional(v.string()),
+      industries: v.optional(v.array(v.string())),
+      audiences: v.optional(v.array(v.string())),
+      productVision: v.optional(v.string()),
+      strategicPillars: v.optional(v.array(v.string())),
+      metricsOfInterest: v.optional(v.array(v.string())),
       personas: v.optional(
         v.array(
           v.object({
-            name: v.string(),
-            description: v.optional(v.string()),
-          })
-        )
-      ),
-      platforms: v.optional(v.array(v.string())),
-      integrationEcosystem: v.optional(v.array(v.string())),
-      technicalStack: v.optional(v.array(v.string())),
-      audienceSegments: v.optional(
-        v.array(
-          v.object({
-            name: v.string(),
-            description: v.optional(v.string()),
-          })
-        )
-      ),
-      toneGuidelines: v.optional(
-        v.array(
-          v.object({
-            name: v.string(),
-            description: v.optional(v.string()),
+            role: v.string(),
+            goals: v.array(v.string()),
+            painPoints: v.array(v.string()),
+            preferredTone: v.string(),
           })
         )
       ),
