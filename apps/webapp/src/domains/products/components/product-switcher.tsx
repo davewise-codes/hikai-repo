@@ -142,11 +142,6 @@ export function ProductSwitcher() {
                     </Link>
                   )}
                 </div>
-                {currentProduct.description && (
-                  <span className="text-fontSize-xs text-muted-foreground truncate">
-                    {currentProduct.description}
-                  </span>
-                )}
                 <span className="text-fontSize-xs text-muted-foreground">
                   {currentProduct.memberCount}{" "}
                   {currentProduct.memberCount === 1

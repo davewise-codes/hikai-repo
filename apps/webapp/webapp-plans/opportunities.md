@@ -70,3 +70,190 @@
 openssl pkcs8 -topk8 -inform PEM -in /Users/dperez/Downloads/hikai-connections-app.2025-12-09.private-key.pem -outform PEM -nocrypt -out github-app-pkcs8.pem
 
 pnpm --filter @hikai/convex exec npx convex run connectors/github:syncGithubConnection --productId kd7ajcjwa9nyykv9nt3fxv1aj17wwya2 --connectionId kn7d4jgtyr3k3x1s1b4yzqjqr97wymty
+
+{
+"toneOfVoice": "professional",
+"strategicPillars": [
+"product-centricity",
+"automation with human oversight",
+"single source of truth",
+"scalability across teams"
+],
+"productVision": "Ser la capa narrativa estándar que conecta el desarrollo de productos digitales con todas las áreas que necesitan comunicar su progreso.",
+"releaseCadence": "continuous",
+"metricsOfInterest": [
+"adoption of timeline",
+"content generated per product",
+"time saved creating content",
+"consistency of product communication"
+]
+}
+
+{
+"productContextOptions": {
+"productType": [
+"Web App",
+"Mobile App",
+"Desktop App",
+"API",
+"Developer Tool",
+"Marketplace",
+"Internal Tool",
+"Data Platform",
+"Content Platform",
+"E-commerce",
+"Other"
+],
+
+    "targetMarket": [
+      "B2B",
+      "B2C",
+      "B2B2C",
+      "Internal",
+      "Mixed"
+    ],
+
+    "businessModel": [
+      "SaaS",
+      "Freemium",
+      "Subscription",
+      "Usage-based",
+      "Transactional",
+      "Marketplace fees",
+      "Advertising",
+      "Enterprise licensing",
+      "Open Source",
+      "Internal cost center",
+      "Other"
+    ],
+
+    "industries": [
+      "Productivity",
+      "Marketing Tech",
+      "Customer Success",
+      "Developer Tools",
+      "Fintech",
+      "Healthtech",
+      "Edtech",
+      "E-commerce",
+      "AI / ML",
+      "Data & Analytics",
+      "Cybersecurity",
+      "HR Tech",
+      "Legal Tech",
+      "Proptech",
+      "Gaming",
+      "Media & Content",
+      "IoT",
+      "Enterprise Software",
+      "Open Source",
+      "Other"
+    ],
+
+    "audiences": [
+      "Product teams",
+      "Engineering teams",
+      "Marketing teams",
+      "Customer success teams",
+      "Sales teams",
+      "Founders",
+      "Executives",
+      "Stakeholders",
+      "Market",
+      "End users",
+      "Developers",
+      "Partners",
+      "Investors"
+    ],
+
+    "stage": [
+      "idea",
+      "mvp",
+      "beta",
+      "early-production",
+      "production",
+      "scaling",
+      "mature"
+    ],
+
+"strategicPillars": [
+{
+"id": "product_excellence",
+"label": "Product Excellence",
+"description": "Construir un producto sólido, fiable, bien ejecutado y con alta calidad técnica y de experiencia."
+},
+{
+"id": "user_adoption_retention",
+"label": "User Adoption & Retention",
+"description": "Conseguir que los usuarios adopten el producto rápidamente y lo usen de forma recurrente."
+},
+{
+"id": "growth_acquisition",
+"label": "Growth & Acquisition",
+"description": "Incrementar visibilidad, usuarios y oportunidades de negocio a través de adquisición y distribución."
+},
+{
+"id": "narrative_brand",
+"label": "Narrative & Brand Positioning",
+"description": "Comunicar de forma clara y diferenciada qué es el producto, por qué importa y cómo se posiciona."
+},
+{
+"id": "operational_efficiency",
+"label": "Operational & Team Efficiency",
+"description": "Mejorar la eficiencia operativa y la alineación de los equipos reduciendo fricción y trabajo manual."
+},
+{
+"id": "scalability_business_impact",
+"label": "Scalability & Business Impact",
+"description": "Asegurar que el producto y el negocio puedan crecer de forma sostenible y con impacto económico."
+}
+],
+
+    "metricsOfInterestSuggestions": [
+      "User adoption",
+      "Feature usage",
+      "Time to value",
+      "Performance improvements",
+      "Reliability / uptime",
+      "Customer satisfaction",
+      "Churn reduction",
+      "Conversion rate",
+      "Content consistency",
+      "Time saved"
+    ],
+
+    "personaRoles": [
+      "Founder",
+      "Product Manager",
+      "Engineer",
+      "Marketing Manager",
+      "Customer Success Manager",
+      "Sales Manager",
+      "Executive",
+      "Developer Advocate",
+      "Operations",
+      "Other"
+    ],
+
+    "toneOfVoice": [
+      "technical",
+      "professional",
+      "friendly",
+      "enthusiastic",
+      "minimal"
+    ]
+
+}
+}
+
+{
+"releaseCadence": [
+"continuous",
+"daily",
+"weekly",
+"biweekly",
+"monthly",
+"quarterly",
+"irregular"
+],
+}

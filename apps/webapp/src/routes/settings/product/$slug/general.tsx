@@ -4,17 +4,21 @@ import { useTranslation } from "react-i18next";
 import {
 	Button,
 	Input,
-	Textarea,
 	Alert,
 	AlertDescription,
 	CheckCircle,
+	Separator,
+	Select,
+	SelectTrigger,
+	SelectContent,
+	SelectItem,
+	SelectValue,
 } from "@hikai/ui";
 import {
 	SettingsLayout,
 	SettingsHeader,
 	SettingsSection,
 	SettingsRow,
-	SettingsRowContent,
 } from "@/domains/shared";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import {
@@ -22,6 +26,7 @@ import {
 	useUpdateProduct,
 	useCurrentProduct,
 	DeleteProductDialog,
+	BaselineEditor,
 } from "@/domains/products";
 
 export const Route = createFileRoute("/settings/product/$slug/general")({
@@ -30,7 +35,7 @@ export const Route = createFileRoute("/settings/product/$slug/general")({
 
 /**
  * Página de configuración general de producto.
- * Permite editar nombre/descripción y acceder a danger zone.
+ * Permite editar nombre y ajustes generales, más acceder a danger zone.
  */
 function ProductGeneralPage() {
   const { t } = useTranslation("products");
@@ -44,10 +49,11 @@ function ProductGeneralPage() {
 
   // Form state
 	const [name, setName] = useState("");
-	const [description, setDescription] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
 	const [saveError, setSaveError] = useState<string | null>(null);
 	const [saveSuccess, setSaveSuccess] = useState(false);
+	const [languagePreference, setLanguagePreference] = useState("en");
+	const [releaseCadence, setReleaseCadence] = useState("");
 
   // Dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -56,7 +62,8 @@ function ProductGeneralPage() {
 	useEffect(() => {
 		if (product) {
 			setName(product.name);
-			setDescription(product.description || "");
+			setLanguagePreference(product.languagePreference ?? "en");
+			setReleaseCadence(product.releaseCadence ?? "");
 		}
 	}, [product]);
 
@@ -74,7 +81,8 @@ function ProductGeneralPage() {
 
 	const hasChanges =
 		name !== product.name ||
-		description !== (product.description || "");
+		languagePreference !== (product.languagePreference ?? "en") ||
+		releaseCadence !== (product.releaseCadence ?? "");
 
 	const handleSave = async () => {
 		setIsSaving(true);
@@ -85,7 +93,8 @@ function ProductGeneralPage() {
 			await updateProduct({
 				productId: product._id,
 				name: name.trim(),
-				description: description.trim() || undefined,
+				languagePreference,
+				releaseCadence: releaseCadence || undefined,
 			});
 			setSaveSuccess(true);
 		} catch (err) {
@@ -95,13 +104,26 @@ function ProductGeneralPage() {
     }
   };
 
-  const handleDelete = () => {
-    setCurrentProduct(null);
-    navigate({ to: "/settings/products" });
-  };
+	const handleDelete = () => {
+		setCurrentProduct(null);
+		navigate({ to: "/settings/products" });
+	};
+
+	const releaseCadenceOptions = [
+		{ value: "continuous", label: t("settings.releaseCadenceOptions.continuous") },
+		{ value: "weekly", label: t("settings.releaseCadenceOptions.weekly") },
+		{ value: "biweekly", label: t("settings.releaseCadenceOptions.biweekly") },
+		{ value: "monthly", label: t("settings.releaseCadenceOptions.monthly") },
+		{ value: "quarterly", label: t("settings.releaseCadenceOptions.quarterly") },
+	];
+
+	const languageOptions = [
+		{ value: "en", label: t("settings.languageOptions.english") },
+		{ value: "es", label: t("settings.languageOptions.spanish") },
+	];
 
   return (
-	<SettingsLayout>
+		<SettingsLayout>
 		<SettingsHeader
 			title={t("settings.general.title")}
 			subtitle={t("settings.general.subtitle", { name: product.name })}
@@ -131,37 +153,82 @@ function ProductGeneralPage() {
             />
           }
         />
-        <SettingsRowContent>
-          <div className="space-y-2">
-            <label className="text-fontSize-sm font-medium">
-              {t("settings.description")}
-            </label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={isSaving}
-              rows={3}
-            />
-			</div>
-		</SettingsRowContent>
+		<SettingsRow
+			label={t("settings.languagePreference")}
+			description={t("settings.languagePreferenceHelp")}
+			control={
+				<Select
+					value={languagePreference}
+					onValueChange={setLanguagePreference}
+					disabled={isSaving}
+				>
+					<SelectTrigger className="w-64">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						{languageOptions.map((option) => (
+							<SelectItem key={option.value} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			}
+		/>
+		<SettingsRow
+			label={t("settings.releaseCadence")}
+			description={t("settings.releaseCadenceHelp")}
+			control={
+				<Select
+					value={releaseCadence || undefined}
+					onValueChange={setReleaseCadence}
+					disabled={isSaving}
+				>
+					<SelectTrigger className="w-64">
+						<SelectValue placeholder={t("common.unknown")} />
+					</SelectTrigger>
+					<SelectContent>
+						{releaseCadenceOptions.map((option) => (
+							<SelectItem key={option.value} value={option.value}>
+								{option.label}
+							</SelectItem>
+						))}
+					</SelectContent>
+				</Select>
+			}
+		/>
 	</SettingsSection>
 
 	{/* Save Button */}
 	<div className="flex items-center justify-end gap-4">
 		{saveError && (
 			<Alert variant="destructive" className="flex-1">
-            <AlertDescription>{saveError}</AlertDescription>
-          </Alert>
-        )}
-        {saveSuccess && (
-          <div className="flex items-center gap-2 text-fontSize-sm text-success">
-            <CheckCircle className="w-4 h-4" />
-            {t("settings.saveSuccess")}
-          </div>
+				<AlertDescription>{saveError}</AlertDescription>
+			</Alert>
+		)}
+		{saveSuccess && (
+			<div className="flex items-center gap-2 text-fontSize-sm text-success">
+				<CheckCircle className="w-4 h-4" />
+				{t("settings.saveSuccess")}
+			</div>
 		)}
 		<Button onClick={handleSave} disabled={!hasChanges || isSaving}>
 			{isSaving ? t("common.loading") : t("settings.save")}
 		</Button>
+	</div>
+
+	<Separator className="my-6" />
+
+	<div className="space-y-3">
+		<div className="space-y-1">
+			<h2 className="text-fontSize-sm font-medium text-muted-foreground">
+				{t("baseline.title")}
+			</h2>
+			<p className="text-fontSize-sm text-muted-foreground">
+				{t("baseline.description")}
+			</p>
+		</div>
+		<BaselineEditor product={product} />
 	</div>
 
       {/* Danger Zone */}

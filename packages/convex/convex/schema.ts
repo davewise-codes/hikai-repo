@@ -18,11 +18,16 @@ const productContextEntry = v.object({
 	productName: v.optional(v.string()),
 	description: v.optional(v.string()),
 	valueProposition: v.optional(v.string()),
+	problemSolved: v.optional(v.string()),
 	targetMarket: v.optional(v.string()),
 	productCategory: v.optional(v.string()),
 	productType: v.optional(v.string()),
 	businessModel: v.optional(v.string()),
 	stage: v.optional(v.string()),
+	industries: v.optional(v.array(v.string())),
+	audiences: v.optional(v.array(v.string())),
+	productVision: v.optional(v.string()),
+	metricsOfInterest: v.optional(v.array(v.string())),
 
 	personas: v.optional(
 		v.array(
@@ -110,35 +115,23 @@ const productContextEntry = v.object({
 
 const productBaseline = v.object({
 	valueProposition: v.optional(v.string()),
+	problemSolved: v.optional(v.string()),
 	targetMarket: v.optional(v.string()),
-	productCategory: v.optional(v.string()),
 	productType: v.optional(v.string()),
 	businessModel: v.optional(v.string()),
 	stage: v.optional(v.string()),
+	industries: v.optional(v.array(v.string())),
+	audiences: v.optional(v.array(v.string())),
+	productVision: v.optional(v.string()),
+	strategicPillars: v.optional(v.array(v.string())),
+	metricsOfInterest: v.optional(v.array(v.string())),
 	personas: v.optional(
 		v.array(
 			v.object({
-				name: v.string(),
-				description: v.optional(v.string()),
-			}),
-		),
-	),
-	platforms: v.optional(v.array(v.string())),
-	integrationEcosystem: v.optional(v.array(v.string())),
-	technicalStack: v.optional(v.array(v.string())),
-	audienceSegments: v.optional(
-		v.array(
-			v.object({
-				name: v.string(),
-				description: v.optional(v.string()),
-			}),
-		),
-	),
-	toneGuidelines: v.optional(
-		v.array(
-			v.object({
-				name: v.string(),
-				description: v.optional(v.string()),
+				role: v.string(),
+				goals: v.array(v.string()),
+				painPoints: v.array(v.string()),
+				preferredTone: v.string(),
 			}),
 		),
 	),
@@ -192,8 +185,8 @@ const schema = defineSchema({
 		organizationId: v.id("organizations"),
 		name: v.string(),
 		slug: v.string(),
-		description: v.optional(v.string()),
 		languagePreference: v.optional(v.string()),
+		releaseCadence: v.optional(v.string()),
 		productBaseline: v.optional(productBaseline),
 		productContext: v.optional(
 			v.object({

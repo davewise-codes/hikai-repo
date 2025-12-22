@@ -107,6 +107,13 @@ export function useUpdateProduct() {
 }
 
 /**
+ * Hook para actualizar baseline de producto.
+ */
+export function useUpdateBaseline() {
+  return useMutation(api.products.products.updateBaseline);
+}
+
+/**
  * Hook para eliminar un producto.
  */
 export function useDeleteProduct() {

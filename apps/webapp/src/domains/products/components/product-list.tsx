@@ -101,11 +101,6 @@ export function ProductList() {
                     </p>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    {product.description && (
-                      <p className="text-fontSize-sm text-muted-foreground line-clamp-2 mb-2">
-                        {product.description}
-                      </p>
-                    )}
                     {isOtherOrg && (
                       <p className="text-fontSize-xs text-muted-foreground">
                         {t("list.inOrg", { org: product.organization.name })}

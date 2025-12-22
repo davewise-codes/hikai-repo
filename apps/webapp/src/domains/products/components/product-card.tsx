@@ -30,7 +30,6 @@ interface ProductCardProps {
     _id: Id<"products">;
     name: string;
     slug: string;
-    description?: string;
     createdAt: number;
     memberCount?: number;
     // Optional: when showing in "My Products" context
@@ -116,19 +115,6 @@ export function ProductCard({ product, showDeleteAction }: ProductCardProps) {
               </Badge>
             )}
           </div>
-        </div>
-
-        {/* Row 2: Description */}
-        <div className="px-4 pt-2 flex-1 min-h-0">
-          {product.description ? (
-            <p className="text-fontSize-sm text-muted-foreground line-clamp-2">
-              {product.description}
-            </p>
-          ) : (
-            <p className="text-fontSize-sm text-muted-foreground/50 italic">
-              {t("noDescription")}
-            </p>
-          )}
         </div>
 
         {/* Row 3: Members + Actions */}

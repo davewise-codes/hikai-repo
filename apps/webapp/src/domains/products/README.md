@@ -94,7 +94,7 @@ Tracking de acceso en `packages/convex/convex/userPreferences.ts`:
 
 ### Mutations
 - `createProduct` - crea producto + membership admin
-- `updateProduct` - editar nombre/descripción
+- `updateProduct` - editar nombre y ajustes generales
 - `deleteProduct` - eliminar producto + memberships
 - `addProductMember` - añadir miembro (validar org membership)
 - `removeProductMember` - eliminar (admin o self, no último admin)

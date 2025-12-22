@@ -65,7 +65,7 @@ export function CreateOrganizationForm() {
     const result = await createOrganizationSafe({
       name: formData.name.trim(),
       slug: formData.slug.trim().toLowerCase(),
-      description: formData.description.trim() || undefined,
+      description: formData.description?.trim() || undefined,
       plan: selectedPlan,
     });
 
