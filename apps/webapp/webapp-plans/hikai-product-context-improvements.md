@@ -30,7 +30,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | F1.1    | Mutation updateBaseline + regeneración auto    | ✅ Completado |
 | F1.2    | BaselineEditor en settings de producto         | ✅ Completado |
 | F1.3    | BaselineWizard en creación de producto         | ✅ Completado |
-| F1.4    | Detección automática de stack (package.json)   | ⏳ Pendiente  |
+| F1.4    | Detección automática de stack (package.json)   | ✅ Completado |
 | F1.5    | Post-procesamiento y quality score             | ⏳ Pendiente  |
 | F1.6    | Modelo por use-case/agente                     | ⏳ Pendiente  |
 | F1.7    | Persistencia extendida de inferencias + rating | ⏳ Pendiente  |
@@ -446,12 +446,12 @@ PARTE 4: VALIDACIÓN
 
 **Validación**:
 
-- [ ] Stack detector identifica frameworks principales
-- [ ] Query obtiene metadata del repo conectado
-- [ ] Action integra detección antes de llamar agente
-- [ ] Stack detectado sobrescribe inferido por LLM
-- [ ] sourcesUsed incluye "package.json"
-- [ ] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
+- [x] Stack detector identifica frameworks principales
+- [x] Query obtiene metadata del repo conectado
+- [x] Action integra detección antes de llamar agente
+- [x] Stack detectado sobrescribe inferido por LLM
+- [x] sourcesUsed incluye "package.json"
+- [x] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
 
 ---
 

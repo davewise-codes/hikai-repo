@@ -412,6 +412,11 @@
     "threadId": "Agent thread",
     "debugPrompt": "Debug prompt",
     "debugPromptHelp": "Store the prompt + instructions in the raw JSON for troubleshooting.",
+    "debugStepsTitle": "Debug steps",
+    "debugStepsCopy": "Copy",
+    "debugStepsCopied": "Debug steps copied to clipboard.",
+    "debugStepsCopyError": "Unable to copy debug steps.",
+    "debugStepsEmpty": "No debug steps yet.",
     "tabs": {
       "identity": "Identity",
       "market": "Market",

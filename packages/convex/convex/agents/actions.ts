@@ -1,12 +1,13 @@
 import { v } from "convex/values";
 import { action } from "../_generated/server";
 import { createThread, type AgentComponent } from "@convex-dev/agent";
-import { components, internal } from "../_generated/api";
+import { api, components, internal } from "../_generated/api";
 import { helloWorldAgent } from "./helloWorldAgent";
 import { Id } from "../_generated/dataModel";
 import { productContextAgent } from "./productContextAgent";
 import { productContextPrompt } from "../ai/prompts";
 import { getAIConfig } from "../ai";
+import { detectStackFromPackageJson } from "./stackDetector";
 
 const agentComponent = (components as { agent: AgentComponent }).agent;
 const DEFAULT_PROVIDER = "openai";
@@ -181,18 +182,79 @@ export const generateProductContext = action({
 		forceRefresh: v.optional(v.boolean()),
 		threadId: v.optional(v.string()),
 		debugUi: v.optional(v.boolean()),
+		agentRunId: v.optional(v.id("agentRuns")),
 	},
 	handler: async (
 		ctx,
-		{ productId, forceRefresh, threadId, debugUi },
+		{ productId, forceRefresh, threadId, debugUi, agentRunId },
 	): Promise<{
 		threadId: string;
 		productContext: Record<string, unknown>;
+		debugSteps: string[];
+		agentRunId?: Id<"agentRuns">;
 	}> => {
+		const debugSteps: string[] = [];
 		const { organizationId, userId, product } = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
 		);
+		let runId = agentRunId;
+		if (!runId) {
+			try {
+				const createdRun = await ctx.runMutation(
+					api.agents.agentRuns.createAgentRun,
+					{
+						productId,
+						useCase: PRODUCT_CONTEXT_USE_CASE,
+						agentName: PRODUCT_CONTEXT_AGENT_NAME,
+					},
+				);
+				runId = createdRun.runId;
+			} catch {
+				debugSteps.push("debug: failed to create agent run");
+			}
+		}
+
+		const recordStep = async (
+			message: string,
+			status: "info" | "success" | "warn" | "error" = "info",
+			metadata?: Record<string, unknown>,
+		) => {
+			debugSteps.push(message);
+			if (!runId) return;
+			try {
+				await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+					productId,
+					runId,
+					step: message,
+					status,
+					timestamp: Date.now(),
+					metadata,
+				});
+			} catch {
+				// Avoid failing the agent if debug logging fails.
+			}
+		};
+
+		const finishRun = async (
+			status: "success" | "error",
+			errorMessage?: string,
+		) => {
+			if (!runId) return;
+			try {
+				await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+					productId,
+					runId,
+					status,
+					errorMessage,
+					finishedAt: Date.now(),
+				});
+			} catch {
+				// Avoid failing the agent if debug logging fails.
+			}
+		};
+
+		await recordStep("Started product context generation");
 		const aiConfig = getAIConfig();
 
 		const tid = threadId ?? (await createThread(ctx, agentComponent));
@@ -205,6 +267,8 @@ export const generateProductContext = action({
 		const languagePreference = fetchedProduct.languagePreference ?? "en";
 		const language = languagePreference === "es" ? "es" : "en";
 		const sourcesUsed = new Set<string>(["baseline"]);
+		const detectedStack = new Set<string>();
+		let foundPackageJson = false;
 
 		const eventSummaries = await ctx.runQuery(
 			internal.agents.productContextData.listRawEventSummaries,
@@ -216,6 +280,113 @@ export const generateProductContext = action({
 		eventSummaries.forEach((event: { source: string }) =>
 			sourcesUsed.add(event.source),
 		);
+
+		const repoMetadata = await ctx.runQuery(
+			internal.agents.productContextData.getRepositoryMetadata,
+			{ productId },
+		);
+		await recordStep(`github: found ${repoMetadata.length} active connections`);
+
+		for (const metadata of repoMetadata) {
+			const { connectionId } = metadata;
+			try {
+				await recordStep(`github: resolving token for ${connectionId}`);
+				const tokenResult = await ctx.runAction(
+					internal.connectors.github.getInstallationTokenForConnection,
+					{ productId, connectionId },
+				);
+				const repositories = await fetchInstallationRepositories(tokenResult.token);
+				await recordStep(
+					`github: connection ${connectionId} has ${repositories.length} repos`,
+				);
+
+				for (const repo of repositories) {
+					const defaultBranch =
+						repo.defaultBranch ??
+						(await fetchRepoDefaultBranch(tokenResult.token, repo));
+					if (!defaultBranch) {
+						await recordStep(
+							`github: ${repo.fullName} missing default branch`,
+							"warn",
+						);
+						continue;
+					}
+
+					const tree = await fetchRepoTree(
+						tokenResult.token,
+						repo,
+						defaultBranch,
+					);
+					if (!tree) {
+						await recordStep(
+							`github: ${repo.fullName} tree not available`,
+							"warn",
+						);
+						continue;
+					}
+
+					const packageJsonEntries = tree.filter(
+						(entry) => entry.path.endsWith("package.json") && entry.type === "blob",
+					);
+					if (!packageJsonEntries.length) {
+						await recordStep(`github: ${repo.fullName} has no package.json`);
+						continue;
+					}
+
+					foundPackageJson = true;
+					await recordStep(
+						`github: ${repo.fullName} has ${packageJsonEntries.length} package.json`,
+					);
+
+					for (const entry of packageJsonEntries) {
+						const content = await fetchRepoBlob(
+							tokenResult.token,
+							repo,
+							entry.sha,
+						);
+						if (!content) {
+							await recordStep(
+								`github: ${repo.fullName} failed to read ${entry.path}`,
+								"warn",
+							);
+							continue;
+						}
+
+						try {
+							const parsed = JSON.parse(content) as {
+								dependencies?: Record<string, string>;
+								devDependencies?: Record<string, string>;
+							};
+							const stack = detectStackFromPackageJson(parsed);
+							stack.forEach((item) => detectedStack.add(item));
+						} catch (error) {
+							await recordStep(
+								`github: ${repo.fullName} invalid package.json at ${entry.path}`,
+								"warn",
+							);
+						}
+					}
+				}
+			} catch (error) {
+				await recordStep(
+					`github: connection ${connectionId} error ${
+						error instanceof Error ? error.message : "unknown error"
+					}`,
+					"error",
+				);
+			}
+		}
+
+		if (detectedStack.size > 0) {
+			await recordStep(
+				`github: detected stack ${Array.from(detectedStack).join(", ")}`,
+				"success",
+			);
+		}
+
+		if (foundPackageJson) {
+			sourcesUsed.add("package.json");
+		}
 
 		const currentVersion = fetchedProduct.productContext?.current?.version ?? 0;
 		const baselineSource = fetchedProduct.productBaseline ?? {};
@@ -247,6 +418,7 @@ export const generateProductContext = action({
 			languagePreference,
 			forceRefresh: forceRefresh ?? false,
 			baseline,
+			detectedTechnicalStack: Array.from(detectedStack),
 			existingContext: forceRefresh
 				? null
 				: fetchedProduct.productContext?.current ?? null,
@@ -283,6 +455,14 @@ export const generateProductContext = action({
 				throw new Error("Invalid JSON response from Product Context Agent");
 			}
 
+			if (parsed.personas) {
+				parsed.personas = normalizePersonas(parsed.personas);
+			}
+
+			if (detectedStack.size > 0) {
+				parsed.technicalStack = Array.from(detectedStack);
+			}
+
 			const version = currentVersion + 1;
 			const timestamp = Date.now();
 			const newEntry = {
@@ -310,11 +490,26 @@ export const generateProductContext = action({
 				},
 			);
 
+			await recordStep("Product context generation completed", "success");
+			await finishRun("success");
+
 			return {
 				threadId: tid,
 				productContext: newEntry,
+				debugSteps,
+				agentRunId: runId,
 			};
 		} catch (error) {
+			await recordStep(
+				`Product context generation failed: ${
+					error instanceof Error ? error.message : "unknown error"
+				}`,
+				"error",
+			);
+			await finishRun(
+				"error",
+				error instanceof Error ? error.message : "Unknown error invoking product context agent",
+			);
 			await ctx.runMutation(internal.ai.telemetry.recordError, {
 				organizationId,
 				productId,
@@ -458,4 +653,197 @@ function parseJsonSafely(text: string): any {
 		? trimmed.replace(/^```[a-zA-Z]*\s*/, "").replace(/```$/, "").trim()
 		: trimmed;
 	return JSON.parse(withoutFences);
+}
+
+function normalizePersonas(value: unknown): Array<{ name: string; description?: string }> {
+	if (!Array.isArray(value)) return [];
+
+	return value
+		.map((item) => {
+			if (!item || typeof item !== "object") return null;
+			const persona = item as Record<string, unknown>;
+			const name =
+				typeof persona.name === "string"
+					? persona.name
+					: typeof persona.role === "string"
+						? persona.role
+						: "";
+			if (!name) return null;
+
+			const description =
+				typeof persona.description === "string"
+					? persona.description
+					: buildPersonaDescription(persona);
+
+			return description ? { name, description } : { name };
+		})
+		.filter(
+			(item): item is { name: string; description?: string } => item !== null,
+		);
+}
+
+function buildPersonaDescription(persona: Record<string, unknown>): string | undefined {
+	const parts: string[] = [];
+
+	if (Array.isArray(persona.goals) && persona.goals.length > 0) {
+		parts.push(`Goals: ${persona.goals.filter(Boolean).join("; ")}`);
+	}
+
+	if (Array.isArray(persona.painPoints) && persona.painPoints.length > 0) {
+		parts.push(`Pain points: ${persona.painPoints.filter(Boolean).join("; ")}`);
+	}
+
+	if (typeof persona.preferredTone === "string" && persona.preferredTone.length > 0) {
+		parts.push(`Preferred tone: ${persona.preferredTone}`);
+	}
+
+	if (!parts.length) return undefined;
+	return parts.join(" ");
+}
+
+type GithubRepo = {
+	id: number;
+	name: string;
+	fullName: string;
+	owner: string;
+	defaultBranch?: string;
+};
+
+type GithubTreeEntry = {
+	path: string;
+	type: "blob" | "tree";
+	sha: string;
+};
+
+async function fetchInstallationRepositories(token: string): Promise<GithubRepo[]> {
+	const repositories: GithubRepo[] = [];
+	let page = 1;
+
+	while (true) {
+		const response = await fetch(
+			`https://api.github.com/installation/repositories?per_page=100&page=${page}`,
+			{
+				headers: githubHeaders(token),
+			},
+		);
+
+		if (!response.ok) {
+			throw new Error("Failed to list installation repositories");
+		}
+
+		const json = (await response.json()) as {
+			repositories: Array<{
+				id: number;
+				name: string;
+				full_name: string;
+				owner: { login: string };
+				default_branch?: string;
+			}>;
+		};
+
+		const batch = json.repositories.map((repo) => ({
+			id: repo.id,
+			name: repo.name,
+			fullName: repo.full_name,
+			owner: repo.owner.login,
+			defaultBranch: repo.default_branch,
+		}));
+		repositories.push(...batch);
+
+		if (batch.length < 100) {
+			break;
+		}
+		page += 1;
+	}
+
+	return repositories;
+}
+
+async function fetchRepoDefaultBranch(
+	token: string,
+	repo: GithubRepo,
+): Promise<string | undefined> {
+	const response = await fetch(
+		`https://api.github.com/repos/${repo.fullName}`,
+		{
+			headers: githubHeaders(token),
+		},
+	);
+
+	if (!response.ok) {
+		return undefined;
+	}
+
+	const json = (await response.json()) as { default_branch?: string };
+	return json.default_branch;
+}
+
+async function fetchRepoTree(
+	token: string,
+	repo: GithubRepo,
+	branch: string,
+): Promise<GithubTreeEntry[] | null> {
+	const response = await fetch(
+		`https://api.github.com/repos/${repo.fullName}/git/trees/${encodeURIComponent(
+			branch,
+		)}?recursive=1`,
+		{
+			headers: githubHeaders(token),
+		},
+	);
+
+	if (!response.ok) {
+		return null;
+	}
+
+	const json = (await response.json()) as {
+		tree?: GithubTreeEntry[];
+		truncated?: boolean;
+	};
+
+	return json.tree ?? null;
+}
+
+async function fetchRepoBlob(
+	token: string,
+	repo: GithubRepo,
+	sha: string,
+): Promise<string | null> {
+	const response = await fetch(
+		`https://api.github.com/repos/${repo.fullName}/git/blobs/${sha}`,
+		{
+			headers: githubHeaders(token),
+		},
+	);
+
+	if (!response.ok) {
+		return null;
+	}
+
+	const json = (await response.json()) as {
+		content?: string;
+		encoding?: string;
+	};
+
+	if (!json.content) return null;
+	if (json.encoding !== "base64") return null;
+	return decodeBase64(json.content);
+}
+
+function githubHeaders(token: string) {
+	return {
+		Accept: "application/vnd.github+json",
+		Authorization: `token ${token}`,
+		"User-Agent": "hikai-connectors",
+	};
+}
+
+function decodeBase64(value: string): string | null {
+	if (typeof globalThis.atob === "function") {
+		const binary = globalThis.atob(value);
+		const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+		return new TextDecoder("utf-8").decode(bytes);
+	}
+
+	return null;
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAction } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { useConnections } from "@/domains/connectors/hooks";
@@ -27,6 +27,9 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 	TooltipProvider,
+	toast,
+	ChevronDown,
+	Copy,
 } from "@hikai/ui";
 
 type ProductContextEntry = {
@@ -76,6 +79,7 @@ type ProductContextCardProps = {
 	product: {
 		_id: Id<"products">;
 		name: string;
+		userRole?: "admin" | "member";
 		productContext?: {
 			current?: ProductContextEntry;
 			history?: ProductContextEntry[];
@@ -84,19 +88,46 @@ type ProductContextCardProps = {
 	};
 };
 
+type AgentRunStep = {
+	step: string;
+	status: "info" | "success" | "warn" | "error";
+	timestamp: number;
+	metadata?: Record<string, unknown>;
+};
+
+type AgentRun = {
+	_id: Id<"agentRuns">;
+	status: "running" | "success" | "error";
+	steps: AgentRunStep[];
+	errorMessage?: string;
+};
+
 export function ProductContextCard({ product }: ProductContextCardProps) {
 	const { t } = useTranslation("products");
 	const generateContext = useAction(api.agents.actions.generateProductContext);
+	const createAgentRun = useMutation(api.agents.agentRuns.createAgentRun);
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [openSheet, setOpenSheet] = useState(false);
 	const [debugUi, setDebugUi] = useState(false);
+	const [debugOpen, setDebugOpen] = useState(true);
+	const [agentRunId, setAgentRunId] = useState<Id<"agentRuns"> | null>(null);
 	const { connections, isLoading } = useConnections(product._id);
+	const agentRun = useQuery(
+		api.agents.agentRuns.getRunById,
+		agentRunId
+			? {
+					productId: product._id,
+					runId: agentRunId,
+				}
+			: "skip",
+	) as AgentRun | null | undefined;
 
 	const current = product.productContext?.current;
 	const history = product.productContext?.history ?? [];
 	const threadId = current?.threadId;
 	const hasContext = !!current;
+	const isAdmin = product.userRole === "admin";
 	const hasSources =
 		(current?.sourcesUsed ?? []).filter((s) => s !== "baseline").length > 0 ||
 		(!hasContext && (connections?.length ?? 0) > 0);
@@ -125,12 +156,29 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 		setIsGenerating(true);
 		setError(null);
 		try {
-			await generateContext({
+			let runId: Id<"agentRuns"> | undefined;
+			try {
+				const run = await createAgentRun({
+					productId: product._id,
+					useCase: "product_context_enrichment",
+					agentName: "Product Context Agent",
+				});
+				runId = run.runId;
+				setAgentRunId(run.runId);
+			} catch {
+				setAgentRunId(null);
+			}
+
+			const result = await generateContext({
 				productId: product._id,
 				threadId: threadId ?? undefined,
 				forceRefresh: !!current,
 				debugUi,
+				agentRunId: runId,
 			});
+			if (result?.agentRunId) {
+				setAgentRunId(result.agentRunId as Id<"agentRuns">);
+			}
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.unknown"));
 		} finally {
@@ -302,6 +350,83 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 				) : (
 					<div className="text-fontSize-sm text-muted-foreground">
 						{t("context.empty")}
+					</div>
+				)}
+
+				{isAdmin && (
+					<div className="rounded-md border border-border">
+						<div className="flex items-center justify-between px-3 py-2">
+							<Button
+								variant="ghost"
+								className="flex items-center gap-2 px-2"
+								onClick={() => setDebugOpen((prev) => !prev)}
+							>
+								<ChevronDown
+									className={`h-4 w-4 transition-transform ${
+										debugOpen ? "rotate-180" : ""
+									}`}
+								/>
+								<span className="text-fontSize-sm">
+									{t("context.debugStepsTitle")}
+								</span>
+								{agentRun?.status && (
+									<Badge variant="secondary">{agentRun.status}</Badge>
+								)}
+							</Button>
+							<Button
+								variant="outline"
+								className="gap-2"
+								onClick={async () => {
+									const steps = agentRun?.steps ?? [];
+									const payload = steps
+										.map((step) => {
+											const time = new Date(step.timestamp).toLocaleTimeString();
+											return `[${time}] ${step.status.toUpperCase()} ${step.step}`;
+										})
+										.join("\n");
+									try {
+										if (!navigator.clipboard) {
+											throw new Error(t("context.debugStepsCopyError"));
+										}
+										await navigator.clipboard.writeText(payload);
+										toast.success(t("context.debugStepsCopied"));
+									} catch (copyError) {
+										toast.error(
+											copyError instanceof Error
+												? copyError.message
+												: t("context.debugStepsCopyError"),
+										);
+									}
+								}}
+								disabled={!agentRun?.steps?.length}
+							>
+								<Copy className="h-4 w-4" />
+								{t("context.debugStepsCopy")}
+							</Button>
+						</div>
+						{debugOpen && (
+							<div className="border-t border-border px-3 py-2">
+								{agentRun?.steps?.length ? (
+									<div className="space-y-2 text-fontSize-xs text-muted-foreground">
+										{agentRun.steps.map((step, index) => (
+											<div key={`${step.timestamp}-${index}`} className="flex gap-2">
+												<span className="text-muted-foreground">
+													{new Date(step.timestamp).toLocaleTimeString()}
+												</span>
+												<span className="font-medium text-foreground">
+													{step.status.toUpperCase()}
+												</span>
+												<span>{step.step}</span>
+											</div>
+										))}
+									</div>
+								) : (
+									<p className="text-fontSize-xs text-muted-foreground">
+										{t("context.debugStepsEmpty")}
+									</p>
+								)}
+							</div>
+						)}
 					</div>
 				)}
 

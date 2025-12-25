@@ -315,13 +315,46 @@ const schema = defineSchema({
     metadata: v.optional(v.any()),
     createdAt: v.number(),
   })
-    .index("by_org", ["organizationId"])
-    .index("by_org_month", ["organizationId", "createdAt"])
-    .index("by_product", ["productId"])
-    .index("by_product_month", ["productId", "createdAt"])
-    .index("by_usecase", ["useCase", "createdAt"])
-    .index("by_org_product_usecase", ["organizationId", "productId", "useCase"])
-    .index("by_user", ["userId", "createdAt"]),
+		.index("by_org", ["organizationId"])
+		.index("by_org_month", ["organizationId", "createdAt"])
+		.index("by_product", ["productId"])
+		.index("by_product_month", ["productId", "createdAt"])
+		.index("by_usecase", ["useCase", "createdAt"])
+		.index("by_org_product_usecase", ["organizationId", "productId", "useCase"])
+		.index("by_user", ["userId", "createdAt"]),
+
+	agentRuns: defineTable({
+		organizationId: v.id("organizations"),
+		productId: v.id("products"),
+		userId: v.id("users"),
+		useCase: v.string(),
+		agentName: v.string(),
+		status: v.union(
+			v.literal("running"),
+			v.literal("success"),
+			v.literal("error"),
+		),
+		startedAt: v.number(),
+		finishedAt: v.optional(v.number()),
+		errorMessage: v.optional(v.string()),
+		steps: v.array(
+			v.object({
+				step: v.string(),
+				status: v.union(
+					v.literal("info"),
+					v.literal("success"),
+					v.literal("warn"),
+					v.literal("error"),
+				),
+				timestamp: v.number(),
+				metadata: v.optional(v.any()),
+			}),
+		),
+	})
+		.index("by_product", ["productId"])
+		.index("by_org", ["organizationId"])
+		.index("by_status", ["status"])
+		.index("by_finished", ["finishedAt"]),
 });
 
 export default schema;

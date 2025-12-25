@@ -1,5 +1,6 @@
 import { internalMutation, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
+import { Id } from "../_generated/dataModel";
 
 export const getProductWithContext = internalQuery({
 	args: {
@@ -33,6 +34,39 @@ export const listRawEventSummaries = internalQuery({
 			summary: buildSummary(event.payload, event.sourceType),
 			occurredAt: event.occurredAt,
 		}));
+	},
+});
+
+export const getRepositoryMetadata = internalQuery({
+	args: { productId: v.id("products") },
+	handler: async (ctx, { productId }) => {
+		const connections = await ctx.db
+			.query("connections")
+			.withIndex("by_product", (q) => q.eq("productId", productId))
+			.collect();
+
+		const metadata = await Promise.all(
+			connections.map(async (connection) => {
+				const connectorType = await ctx.db.get(connection.connectorTypeId);
+				if (connectorType?.provider !== "github") return null;
+				if (connection.status !== "active") return null;
+				const installationId =
+					typeof connection.config?.installationId === "string"
+						? (connection.config.installationId as string)
+						: null;
+				if (!installationId) return null;
+
+				return {
+					connectionId: connection._id,
+					installationId,
+				};
+			}),
+		);
+
+		return metadata.filter(
+			(item): item is { connectionId: Id<"connections">; installationId: string } =>
+				Boolean(item),
+		);
 	},
 });
 

@@ -80,6 +80,7 @@ Baseline-only fields (never infer; only use baseline input):
 - If a baseline-only field is missing, return "" or [].
 - If baseline provides strategicPillars objects, copy them exactly (name + description); do not add or rewrite.
 - If baseline provides personas, use only those personas; do not add more.
+- personas items MUST use { "name": "...", "description": "..." } only. Do not use role/goals/painPoints keys.
 - For non-baseline fields, only include them if there is explicit evidence in sources; otherwise return "" or [].
 
 Expected JSON structure:

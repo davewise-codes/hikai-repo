@@ -9,11 +9,13 @@
  */
 
 import type * as agents_actions from "../agents/actions.js";
+import type * as agents_agentRuns from "../agents/agentRuns.js";
 import type * as agents_helloWorldAgent from "../agents/helloWorldAgent.js";
 import type * as agents_index from "../agents/index.js";
 import type * as agents_messages from "../agents/messages.js";
 import type * as agents_productContextAgent from "../agents/productContextAgent.js";
 import type * as agents_productContextData from "../agents/productContextData.js";
+import type * as agents_stackDetector from "../agents/stackDetector.js";
 import type * as ai_adapters_anthropic from "../ai/adapters/anthropic.js";
 import type * as ai_adapters_index from "../ai/adapters/index.js";
 import type * as ai_adapters_openai from "../ai/adapters/openai.js";
@@ -31,6 +33,7 @@ import type * as auth_passwordResetTemplate from "../auth/passwordResetTemplate.
 import type * as connectors_connections from "../connectors/connections.js";
 import type * as connectors_github from "../connectors/github.js";
 import type * as connectors_index from "../connectors/index.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_aiUsage from "../lib/aiUsage.js";
@@ -52,11 +55,13 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "agents/actions": typeof agents_actions;
+  "agents/agentRuns": typeof agents_agentRuns;
   "agents/helloWorldAgent": typeof agents_helloWorldAgent;
   "agents/index": typeof agents_index;
   "agents/messages": typeof agents_messages;
   "agents/productContextAgent": typeof agents_productContextAgent;
   "agents/productContextData": typeof agents_productContextData;
+  "agents/stackDetector": typeof agents_stackDetector;
   "ai/adapters/anthropic": typeof ai_adapters_anthropic;
   "ai/adapters/index": typeof ai_adapters_index;
   "ai/adapters/openai": typeof ai_adapters_openai;
@@ -74,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   "connectors/connections": typeof connectors_connections;
   "connectors/github": typeof connectors_github;
   "connectors/index": typeof connectors_index;
+  crons: typeof crons;
   http: typeof http;
   "lib/access": typeof lib_access;
   "lib/aiUsage": typeof lib_aiUsage;

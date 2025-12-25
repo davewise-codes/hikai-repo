@@ -412,6 +412,11 @@
     "threadId": "Thread del agente",
     "debugPrompt": "Prompt debug",
     "debugPromptHelp": "Guarda el prompt + instrucciones en el JSON crudo para depurar.",
+    "debugStepsTitle": "Pasos de depuración",
+    "debugStepsCopy": "Copiar",
+    "debugStepsCopied": "Pasos de depuración copiados al portapapeles.",
+    "debugStepsCopyError": "No se pudieron copiar los pasos de depuración.",
+    "debugStepsEmpty": "Aún no hay pasos de depuración.",
     "tabs": {
       "identity": "Identidad",
       "market": "Mercado",

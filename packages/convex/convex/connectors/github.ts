@@ -4,6 +4,7 @@ import {
 	httpAction,
 	internalMutation,
 	internalQuery,
+	internalAction,
 	type ActionCtx,
 } from "../_generated/server";
 import { v } from "convex/values";
@@ -203,6 +204,53 @@ export const assertProductAccessForGithub = internalQuery({
 	handler: async (ctx, { productId }) => {
 		const { organization, membership } = await assertProductAccess(ctx, productId);
 		return { organization, membership };
+	},
+});
+
+export const getInstallationTokenForConnection = internalAction({
+	args: {
+		productId: v.id("products"),
+		connectionId: v.id("connections"),
+	},
+	handler: async (ctx, { productId, connectionId }) => {
+		await ctx.runQuery(internal.connectors.github.assertProductAccessForGithub, {
+			productId,
+		});
+
+		const connection = await ctx.runQuery(
+			internal.connectors.connections.getConnectionWithType,
+			{ connectionId },
+		);
+
+		if (!connection || connection.productId !== productId) {
+			throw new Error("Connection not found");
+		}
+
+		if (connection.connectorType?.provider !== "github") {
+			throw new Error("Connection provider mismatch");
+		}
+
+		if (connection.status !== "active") {
+			throw new Error("Connection is not active");
+		}
+
+		const installationId =
+			typeof connection.config?.installationId === "string"
+				? (connection.config.installationId as string)
+				: null;
+
+		if (!installationId) {
+			throw new Error("Missing installationId in connection config");
+		}
+
+		const token = await ensureValidInstallationToken(
+			ctx,
+			connectionId,
+			installationId,
+			connection.credentials,
+		);
+
+		return { token };
 	},
 });
 
