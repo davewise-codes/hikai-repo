@@ -45,6 +45,7 @@ export type ProductContextPayload = {
 	recommendedFocus?: LabeledItem[];
 	notableEvents?: NotableEvent[];
 	confidence?: number;
+	qualityScore?: number;
 };
 
 export type ProductContextVersion = ProductContextPayload & {
@@ -58,6 +59,7 @@ export type ProductContextVersion = ProductContextPayload & {
 	promptUsed?: string;
 	language: string;
 	sourcesUsed: string[];
+	qualityScore?: number;
 };
 
 export const productContextPrompt = `

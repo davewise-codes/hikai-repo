@@ -456,6 +456,8 @@
     "recommendedFocus": "Recommended focus",
     "risks": "Risks",
     "notableEvents": "Notable events",
+    "qualityScore": "Quality: {{score}}%",
+    "qualityLow": "Low quality - improve baseline",
     "historyEmpty": "No previous versions yet.",
     "viewRaw": "View raw JSON",
     "rawTitle": "Raw context JSON",

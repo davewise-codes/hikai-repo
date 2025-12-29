@@ -111,6 +111,7 @@ const productContextEntry = v.object({
 		),
 	),
 	confidence: v.optional(v.number()),
+	qualityScore: v.optional(v.number()),
 });
 
 const productBaseline = v.object({

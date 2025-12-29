@@ -8,6 +8,7 @@ import { productContextAgent } from "./productContextAgent";
 import { productContextPrompt } from "../ai/prompts";
 import { getAIConfig } from "../ai";
 import { detectStackFromPackageJson } from "./stackDetector";
+import { validateAndEnrichContext } from "./contextValidator";
 
 const agentComponent = (components as { agent: AgentComponent }).agent;
 const DEFAULT_PROVIDER = "openai";
@@ -459,14 +460,15 @@ export const generateProductContext = action({
 				parsed.personas = normalizePersonas(parsed.personas);
 			}
 
-			if (detectedStack.size > 0) {
-				parsed.technicalStack = Array.from(detectedStack);
-			}
+			const enriched = validateAndEnrichContext(
+				parsed,
+				detectedStack.size > 0 ? Array.from(detectedStack) : undefined,
+			);
 
 			const version = currentVersion + 1;
 			const timestamp = Date.now();
 			const newEntry = {
-				...parsed,
+				...enriched,
 				version,
 				createdAt: timestamp,
 				createdBy: userId,

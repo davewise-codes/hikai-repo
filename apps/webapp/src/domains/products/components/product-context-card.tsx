@@ -73,6 +73,7 @@ type ProductContextEntry = {
 		occurredAt?: number;
 	}>;
 	confidence?: number;
+	qualityScore?: number;
 };
 
 type ProductContextCardProps = {
@@ -137,6 +138,20 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 		: null;
 
 	const sources = current?.sourcesUsed ?? [];
+	const qualityScore =
+		typeof current?.qualityScore === "number" ? current.qualityScore : null;
+	const qualityPercent =
+		qualityScore !== null ? Math.round(qualityScore * 100) : null;
+	const qualityVariant =
+		qualityScore !== null && qualityScore < 0.5
+			? "destructive"
+			: qualityScore !== null && qualityScore < 0.75
+				? "secondary"
+				: "default";
+	const qualityLabel =
+		qualityScore !== null && qualityScore < 0.5
+			? t("context.qualityLow")
+			: t("context.qualityScore", { score: qualityPercent });
 
 	const summaryFields = useMemo(
 		() => [
@@ -276,6 +291,12 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 									model: current?.model ?? "-",
 								})}
 							</span>
+							{qualityScore !== null && (
+								<>
+									<Separator orientation="vertical" className="h-4" />
+									<Badge variant={qualityVariant}>{qualityLabel}</Badge>
+								</>
+							)}
 							{current?.language && (
 								<>
 									<Separator orientation="vertical" className="h-4" />

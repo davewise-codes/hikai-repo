@@ -31,7 +31,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | F1.2    | BaselineEditor en settings de producto         | ✅ Completado |
 | F1.3    | BaselineWizard en creación de producto         | ✅ Completado |
 | F1.4    | Detección automática de stack (package.json)   | ✅ Completado |
-| F1.5    | Post-procesamiento y quality score             | ⏳ Pendiente  |
+| F1.5    | Post-procesamiento y quality score             | ✅ Completado |
 | F1.6    | Modelo por use-case/agente                     | ⏳ Pendiente  |
 | F1.7    | Persistencia extendida de inferencias + rating | ⏳ Pendiente  |
 
@@ -539,13 +539,13 @@ PARTE 5: VALIDACIÓN
 
 **Validación**:
 
-- [ ] Coherencia stage/maturity se corrige automáticamente
-- [ ] Stack detectado sobrescribe inferido
-- [ ] qualityScore calculado y guardado
-- [ ] Score refleja completitud del contexto
-- [ ] UI muestra indicador de calidad
-- [ ] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
-- [ ] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
+- [x] Coherencia stage/maturity se corrige automáticamente
+- [x] Stack detectado sobrescribe inferido
+- [x] qualityScore calculado y guardado
+- [x] Score refleja completitud del contexto
+- [x] UI muestra indicador de calidad
+- [x] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
+- [x] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
 
 ---
 
