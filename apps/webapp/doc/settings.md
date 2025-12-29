@@ -62,6 +62,9 @@ La configuración de Hikai se centraliza en `/settings/*` con una navegación la
 | `/settings/product/$slug` | Redirect → `/settings/product/$slug/general` | - |
 | `/settings/product/$slug/general` | Nombre, descripción, danger zone | narrow |
 | `/settings/product/$slug/team` | Miembros del producto (tabla) | wide |
+| `/settings/product/$slug/context` | Product context y baseline | wide |
+
+Ver detalle en `apps/webapp/doc/product-context.md`.
 
 ## Permisos
 

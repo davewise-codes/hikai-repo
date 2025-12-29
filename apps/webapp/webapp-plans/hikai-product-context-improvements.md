@@ -34,6 +34,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | F1.5    | Post-procesamiento y quality score             | ✅ Completado |
 | F1.6    | Modelo por use-case/agente                     | ✅ Completado |
 | F1.7    | Persistencia extendida de inferencias + rating | ✅ Completado |
+| F1.8    | Refinar inferencias + UI contexto              | ⏳ Pendiente  |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -619,6 +620,55 @@ PARTE 3: VALIDACIÓN
 - [x] Registro completo de inferencias guardado
 - [x] Flag por agente habilita/deshabilita persistencia
 - [x] Rating se guarda y se consulta
+
+---
+
+### F1.8: Refinar inferencias + UI contexto
+
+**Objetivo**: Mejorar propiedades inferidas, elevar keyFeatures como eje y reestructurar UI de contexto.
+
+**Archivos**:
+
+- `packages/convex/convex/ai/prompts/productContext.ts` — Añadir productDomains/productEpics y enlaces a keyFeatures
+- `packages/convex/convex/agents/contextValidator.ts` — Normalizar relaciones event → feature
+- `apps/webapp/src/domains/products/components/product-context-card.tsx` — Rediseñar UI de contexto
+- `apps/webapp/src/i18n/locales/en/products.json` — Textos
+- `apps/webapp/src/i18n/locales/es/products.json` — Textos
+
+**Prompt**:
+
+```
+F1.8: Refinar inferencias + UI contexto
+
+PARTE 1: PROPIEDADES INFERIDAS
+- Añadir campos inferidos: productDomains, productEpics.
+- Añadir en notableEvents: relatedKeyFeatures (array de nombres de keyFeatures).
+- Asegurar en prompt: keyFeatures son el eje principal para progreso.
+
+PARTE 2: VALIDACION
+- Si relatedKeyFeatures incluye elementos no existentes en keyFeatures, descartarlos.
+
+PARTE 3: UI CONTEXTO
+- Eliminar resumen/identity del baseline en context UI.
+- Mostrar todas las propiedades inferidas en secciones claras.
+- KeyFeatures como bloque principal y visualmente prioritario.
+- NotableEvents en seccion separada con etiquetas de relatedKeyFeatures.
+- risks, toneGuidelines, recommendedFocus visibles pero colapsados.
+
+PARTE 4: VALIDACION
+- pnpm --filter @hikai/convex exec tsc --noEmit
+- pnpm --filter @hikai/webapp exec tsc --noEmit
+- Verificar UI de contexto con secciones completas y relaciones.
+```
+
+**Validación**:
+
+- [ ] productDomains/productEpics inferidos y persistidos
+- [ ] notableEvents incluye relatedKeyFeatures validado
+- [ ] UI muestra todas las inferidas y destaca keyFeatures
+- [ ] risks/toneGuidelines/recommendedFocus colapsables
+- [ ] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
+- [ ] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
 
 ## Decisiones tomadas
 

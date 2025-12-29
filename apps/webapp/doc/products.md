@@ -58,6 +58,9 @@ Los administradores pueden acceder a `/settings/product/$slug/*`:
 - Desde el **engranaje** en el dropdown del ProductSwitcher
 - Desde el menú de acciones en las cards de producto
 
+### Product Context
+- Ver detalle en `apps/webapp/doc/product-context.md`
+
 ### Configuración General
 - Editar nombre y descripción
 - Ver slug (no editable)
