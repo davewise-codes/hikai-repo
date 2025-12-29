@@ -1,10 +1,18 @@
 import { Agent, type AgentComponent } from "@convex-dev/agent";
 import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
 import { components, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import type { ActionCtx } from "../_generated/server";
+import { getAgentAIConfig } from "../ai";
 
 const agentComponent = (components as { agent: AgentComponent }).agent;
+const AGENT_NAME = "Hello World Agent";
+const aiConfig = getAgentAIConfig(AGENT_NAME);
+const languageModel =
+	aiConfig.provider === "anthropic"
+		? anthropic(aiConfig.model)
+		: openai.chat(aiConfig.model);
 
 type AgentCtx = {
 	organizationId: Id<"organizations">;
@@ -15,8 +23,8 @@ type AgentCtx = {
 };
 
 export const helloWorldAgent = new Agent<AgentCtx>(agentComponent, {
-	name: "Hello World Agent",
-	languageModel: openai.chat("gpt-4o-mini"),
+	name: AGENT_NAME,
+	languageModel,
 	instructions: "You are a helpful assistant. Respond concisely and friendly.",
 	usageHandler: async (ctx, { usage, provider, model, threadId, agentName }) => {
 		const customCtx = ctx as ActionCtx & Partial<AgentCtx>;

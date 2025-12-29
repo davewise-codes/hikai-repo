@@ -32,7 +32,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | F1.3    | BaselineWizard en creación de producto         | ✅ Completado |
 | F1.4    | Detección automática de stack (package.json)   | ✅ Completado |
 | F1.5    | Post-procesamiento y quality score             | ✅ Completado |
-| F1.6    | Modelo por use-case/agente                     | ⏳ Pendiente  |
+| F1.6    | Modelo por use-case/agente                     | ✅ Completado |
 | F1.7    | Persistencia extendida de inferencias + rating | ⏳ Pendiente  |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
@@ -579,9 +579,9 @@ PARTE 3: VALIDACIÓN
 
 **Validación**:
 
-- [ ] Mapping por use-case/agent funciona
-- [ ] Fallback a AI_MODEL global funciona
-- [ ] Telemetría refleja modelo efectivo
+- [x] Mapping por use-case/agent funciona
+- [x] Fallback a AI_MODEL global funciona
+- [x] Telemetría refleja modelo efectivo
 
 ---
 

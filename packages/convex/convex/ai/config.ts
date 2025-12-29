@@ -9,6 +9,16 @@ export interface AIConfig {
 	debugLogContent: boolean;
 }
 
+type AgentModelOverride = {
+	provider: AIProvider;
+	model: string;
+};
+
+const AGENT_MODEL_OVERRIDES: Record<string, AgentModelOverride> = {
+	"Product Context Agent": { provider: "openai", model: "gpt-5-mini" },
+	"Hello World Agent": { provider: "openai", model: "gpt-4o-mini" },
+};
+
 /**
  * Obtiene configuración de IA desde variables de entorno.
  */
@@ -24,6 +34,23 @@ export function getAIConfig(): AIConfig {
 	const model = process.env.AI_MODEL ?? defaultModels[provider];
 
 	return { provider, model, debugLogContent };
+}
+
+/**
+ * Obtiene configuración efectiva de IA por agente.
+ */
+export function getAgentAIConfig(agentName: string): AIConfig {
+	const baseConfig = getAIConfig();
+	const override = AGENT_MODEL_OVERRIDES[agentName];
+	if (!override) {
+		return baseConfig;
+	}
+
+	return {
+		...baseConfig,
+		provider: override.provider,
+		model: override.model,
+	};
 }
 
 /**

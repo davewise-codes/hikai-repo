@@ -4,11 +4,12 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { components, internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
-import { getAIConfig } from "../ai";
+import { getAgentAIConfig } from "../ai";
 import { productContextPrompt } from "../ai/prompts";
 
 const agentComponent = (components as { agent: AgentComponent }).agent;
-const aiConfig = getAIConfig();
+const AGENT_NAME = "Product Context Agent";
+const aiConfig = getAgentAIConfig(AGENT_NAME);
 
 type AgentCtx = {
 	organizationId: Id<"organizations">;
@@ -24,7 +25,7 @@ const languageModel =
 		: openai.chat(aiConfig.model);
 
 export const productContextAgent = new Agent<AgentCtx>(agentComponent, {
-	name: "Product Context Agent",
+	name: AGENT_NAME,
 	languageModel,
 	instructions: productContextPrompt,
 	usageHandler: async (ctx, { usage, provider, model, threadId, agentName }) => {

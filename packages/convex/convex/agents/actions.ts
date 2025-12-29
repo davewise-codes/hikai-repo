@@ -6,13 +6,11 @@ import { helloWorldAgent } from "./helloWorldAgent";
 import { Id } from "../_generated/dataModel";
 import { productContextAgent } from "./productContextAgent";
 import { productContextPrompt } from "../ai/prompts";
-import { getAIConfig } from "../ai";
+import { getAgentAIConfig } from "../ai";
 import { detectStackFromPackageJson } from "./stackDetector";
 import { validateAndEnrichContext } from "./contextValidator";
 
 const agentComponent = (components as { agent: AgentComponent }).agent;
-const DEFAULT_PROVIDER = "openai";
-const DEFAULT_MODEL = "gpt-4o-mini";
 const AGENT_NAME = "Hello World Agent";
 const USE_CASE = "ai_test";
 const SOURCE_METADATA = { source: "ai-test" };
@@ -117,6 +115,7 @@ export const chat = action({
 			status: "success";
 		};
 	}> => {
+		const aiConfig = getAgentAIConfig(AGENT_NAME);
 		const { resolvedOrgId, resolvedProductId, userId } = await resolveAccess(
 			ctx,
 			organizationId,
@@ -147,8 +146,8 @@ export const chat = action({
 				text: result.text,
 				threadId: tid,
 				usage: {
-					provider: DEFAULT_PROVIDER,
-					model: DEFAULT_MODEL,
+					provider: aiConfig.provider,
+					model: aiConfig.model,
 					tokensIn: 0,
 					tokensOut: 0,
 					totalTokens: 0,
@@ -164,8 +163,8 @@ export const chat = action({
 				useCase: USE_CASE,
 				agentName: AGENT_NAME,
 				threadId: tid,
-				provider: DEFAULT_PROVIDER,
-				model: DEFAULT_MODEL,
+				provider: aiConfig.provider,
+				model: aiConfig.model,
 				errorMessage:
 					error instanceof Error ? error.message : "Unknown error invoking agent",
 				prompt,
@@ -194,6 +193,7 @@ export const generateProductContext = action({
 		debugSteps: string[];
 		agentRunId?: Id<"agentRuns">;
 	}> => {
+		const aiConfig = getAgentAIConfig(PRODUCT_CONTEXT_AGENT_NAME);
 		const debugSteps: string[] = [];
 		const { organizationId, userId, product } = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
@@ -256,7 +256,6 @@ export const generateProductContext = action({
 		};
 
 		await recordStep("Started product context generation");
-		const aiConfig = getAIConfig();
 
 		const tid = threadId ?? (await createThread(ctx, agentComponent));
 		const fetchedProduct =
@@ -559,6 +558,7 @@ export const chatStream = action({
 			organizationId,
 			productId,
 		);
+		const aiConfig = getAgentAIConfig(AGENT_NAME);
 		const tid = threadId ?? (await createThread(ctx, agentComponent));
 		const start = Date.now();
 
@@ -587,8 +587,8 @@ export const chatStream = action({
 				useCase: USE_CASE,
 				agentName: AGENT_NAME,
 				threadId: tid,
-				provider: DEFAULT_PROVIDER,
-				model: DEFAULT_MODEL,
+				provider: aiConfig.provider,
+				model: aiConfig.model,
 				errorMessage:
 					error instanceof Error ? error.message : "Unknown error invoking agent",
 				prompt,
@@ -601,8 +601,8 @@ export const chatStream = action({
 		return {
 			threadId: tid,
 			usage: {
-				provider: DEFAULT_PROVIDER,
-				model: DEFAULT_MODEL,
+				provider: aiConfig.provider,
+				model: aiConfig.model,
 				tokensIn: 0,
 				tokensOut: 0,
 				totalTokens: 0,
