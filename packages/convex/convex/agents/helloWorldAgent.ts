@@ -8,6 +8,7 @@ import { getAgentAIConfig } from "../ai";
 
 const agentComponent = (components as { agent: AgentComponent }).agent;
 const AGENT_NAME = "Hello World Agent";
+export const HELLO_WORLD_PROMPT_VERSION = "v1.0";
 const aiConfig = getAgentAIConfig(AGENT_NAME);
 const languageModel =
 	aiConfig.provider === "anthropic"

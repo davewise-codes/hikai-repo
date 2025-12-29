@@ -1,3 +1,5 @@
+export const PRODUCT_CONTEXT_PROMPT_VERSION = "v1.0";
+
 export type LabeledItem = {
 	name: string;
 	description?: string;

@@ -14,9 +14,19 @@ type AgentModelOverride = {
 	model: string;
 };
 
+export type AgentTelemetryConfig = {
+	persistInferenceLogs: boolean;
+	enableRating: boolean;
+};
+
 const AGENT_MODEL_OVERRIDES: Record<string, AgentModelOverride> = {
 	"Product Context Agent": { provider: "openai", model: "gpt-5-mini" },
 	"Hello World Agent": { provider: "openai", model: "gpt-4o-mini" },
+};
+
+const AGENT_TELEMETRY_CONFIG: Record<string, AgentTelemetryConfig> = {
+	"Product Context Agent": { persistInferenceLogs: true, enableRating: true },
+	"Hello World Agent": { persistInferenceLogs: true, enableRating: false },
 };
 
 /**
@@ -51,6 +61,15 @@ export function getAgentAIConfig(agentName: string): AIConfig {
 		provider: override.provider,
 		model: override.model,
 	};
+}
+
+export function getAgentTelemetryConfig(agentName: string): AgentTelemetryConfig {
+	return (
+		AGENT_TELEMETRY_CONFIG[agentName] ?? {
+			persistInferenceLogs: true,
+			enableRating: false,
+		}
+	);
 }
 
 /**

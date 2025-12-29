@@ -1,8 +1,9 @@
+import { v } from "convex/values";
 import { internalMutation, MutationCtx } from "../_generated/server";
 import { Id } from "../_generated/dataModel";
-import { LLMGenerateResult, estimateCost } from "./ports/llmPort";
+import { assertProductAccess } from "../lib/access";
 import { getAIConfig } from "./config";
-import { v } from "convex/values";
+import { LLMGenerateResult, estimateCost } from "./ports/llmPort";
 
 export interface TelemetryParams {
 	ctx: MutationCtx;
@@ -15,6 +16,26 @@ export interface TelemetryParams {
 	result: LLMGenerateResult;
 	prompt?: string;
 	response?: string;
+	metadata?: Record<string, unknown>;
+}
+
+export interface InferenceLogParams {
+	ctx: MutationCtx;
+	organizationId: Id<"organizations">;
+	productId: Id<"products">;
+	userId: Id<"users">;
+	useCase: string;
+	agentName: string;
+	promptVersion: string;
+	prompt?: string;
+	response?: string;
+	provider: string;
+	model: string;
+	tokensIn: number;
+	tokensOut: number;
+	totalTokens: number;
+	latencyMs: number;
+	contextVersion?: number;
 	metadata?: Record<string, unknown>;
 }
 
@@ -52,6 +73,39 @@ export async function recordAIUsage(
 		responseSnapshot: config.debugLogContent
 			? truncate(params.response, 5000)
 			: undefined,
+		metadata: params.metadata,
+		createdAt: Date.now(),
+	});
+}
+
+/**
+ * Registra inferencias completas en aiInferenceLogs.
+ */
+export async function recordAIInferenceLog(
+	params: InferenceLogParams
+): Promise<Id<"aiInferenceLogs">> {
+	const config = getAIConfig();
+	const cost = estimateCost(params.model, params.tokensIn, params.tokensOut);
+
+	return await params.ctx.db.insert("aiInferenceLogs", {
+		organizationId: params.organizationId,
+		productId: params.productId,
+		userId: params.userId,
+		useCase: params.useCase,
+		agentName: params.agentName,
+		promptVersion: params.promptVersion,
+		prompt: config.debugLogContent ? truncate(params.prompt, 5000) : undefined,
+		response: config.debugLogContent
+			? truncate(params.response, 5000)
+			: undefined,
+		provider: params.provider,
+		model: params.model,
+		tokensIn: params.tokensIn,
+		tokensOut: params.tokensOut,
+		totalTokens: params.totalTokens,
+		latencyMs: params.latencyMs,
+		estimatedCostUsd: cost,
+		contextVersion: params.contextVersion,
 		metadata: params.metadata,
 		createdAt: Date.now(),
 	});
@@ -126,6 +180,49 @@ export const recordUsage = internalMutation({
 			result: args.result,
 			prompt: args.prompt,
 			response: args.response,
+			metadata: args.metadata ?? undefined,
+		});
+	},
+});
+
+export const recordInferenceLog = internalMutation({
+	args: {
+		organizationId: v.id("organizations"),
+		productId: v.id("products"),
+		userId: v.id("users"),
+		useCase: v.string(),
+		agentName: v.string(),
+		promptVersion: v.string(),
+		prompt: v.optional(v.string()),
+		response: v.optional(v.string()),
+		provider: v.string(),
+		model: v.string(),
+		tokensIn: v.number(),
+		tokensOut: v.number(),
+		totalTokens: v.number(),
+		latencyMs: v.number(),
+		contextVersion: v.optional(v.number()),
+		metadata: v.optional(v.any()),
+	},
+	handler: async (ctx, args) => {
+		await assertProductAccess(ctx, args.productId);
+		return recordAIInferenceLog({
+			ctx,
+			organizationId: args.organizationId,
+			productId: args.productId,
+			userId: args.userId,
+			useCase: args.useCase,
+			agentName: args.agentName,
+			promptVersion: args.promptVersion,
+			prompt: args.prompt,
+			response: args.response,
+			provider: args.provider,
+			model: args.model,
+			tokensIn: args.tokensIn,
+			tokensOut: args.tokensOut,
+			totalTokens: args.totalTokens,
+			latencyMs: args.latencyMs,
+			contextVersion: args.contextVersion,
 			metadata: args.metadata ?? undefined,
 		});
 	},

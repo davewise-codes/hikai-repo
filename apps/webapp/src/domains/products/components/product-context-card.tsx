@@ -30,6 +30,8 @@ import {
 	toast,
 	ChevronDown,
 	Copy,
+	ThumbsDown,
+	ThumbsUp,
 } from "@hikai/ui";
 
 type ProductContextEntry = {
@@ -107,7 +109,9 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	const { t } = useTranslation("products");
 	const generateContext = useAction(api.agents.actions.generateProductContext);
 	const createAgentRun = useMutation(api.agents.agentRuns.createAgentRun);
+	const rateInference = useMutation(api.ai.inferenceLogs.rateInference);
 	const [isGenerating, setIsGenerating] = useState(false);
+	const [isRating, setIsRating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [openSheet, setOpenSheet] = useState(false);
 	const [debugUi, setDebugUi] = useState(false);
@@ -126,6 +130,7 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 
 	const current = product.productContext?.current;
 	const history = product.productContext?.history ?? [];
+	const agentName = "Product Context Agent";
 	const threadId = current?.threadId;
 	const hasContext = !!current;
 	const isAdmin = product.userRole === "admin";
@@ -152,6 +157,18 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 		qualityScore !== null && qualityScore < 0.5
 			? t("context.qualityLow")
 			: t("context.qualityScore", { score: qualityPercent });
+
+	const ratingData = useQuery(
+		api.ai.inferenceLogs.getInferenceRating,
+		hasContext && current?.version
+			? {
+					productId: product._id,
+					agentName,
+					contextVersion: current.version,
+				}
+			: "skip",
+	);
+	const currentRating = ratingData?.rating ?? null;
 
 	const summaryFields = useMemo(
 		() => [
@@ -198,6 +215,28 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 			setError(err instanceof Error ? err.message : t("errors.unknown"));
 		} finally {
 			setIsGenerating(false);
+		}
+	};
+
+	const handleRating = async (rating: "up" | "down") => {
+		if (!current?.version) return;
+		setIsRating(true);
+		try {
+			await rateInference({
+				productId: product._id,
+				agentName,
+				contextVersion: current.version,
+				rating,
+			});
+			toast.success(
+				currentRating === rating
+					? t("context.ratingRemoved")
+					: t("context.ratingSaved"),
+			);
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : t("errors.unknown"));
+		} finally {
+			setIsRating(false);
 		}
 	};
 
@@ -295,6 +334,38 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 								<>
 									<Separator orientation="vertical" className="h-4" />
 									<Badge variant={qualityVariant}>{qualityLabel}</Badge>
+								</>
+							)}
+							{hasContext && current?.version !== undefined && (
+								<>
+									<Separator orientation="vertical" className="h-4" />
+									<div className="flex items-center gap-2">
+										<span className="text-fontSize-xs text-muted-foreground">
+											{t("context.ratingLabel")}
+										</span>
+										<div className="flex items-center gap-1">
+											<Button
+												type="button"
+												variant={currentRating === "up" ? "secondary" : "outline"}
+												size="icon"
+												onClick={() => handleRating("up")}
+												disabled={isGenerating || isRating}
+												aria-label={t("context.ratingUp")}
+											>
+												<ThumbsUp className="h-4 w-4" />
+											</Button>
+											<Button
+												type="button"
+												variant={currentRating === "down" ? "secondary" : "outline"}
+												size="icon"
+												onClick={() => handleRating("down")}
+												disabled={isGenerating || isRating}
+												aria-label={t("context.ratingDown")}
+											>
+												<ThumbsDown className="h-4 w-4" />
+											</Button>
+										</div>
+									</div>
 								</>
 							)}
 							{current?.language && (

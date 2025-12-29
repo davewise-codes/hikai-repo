@@ -294,10 +294,10 @@ const schema = defineSchema({
     .index("by_product_time", ["productId", "occurredAt"])
     .index("by_raw_event", ["rawEventId"]),
 
-  // Telemetría de uso de IA
-  aiUsage: defineTable({
-    organizationId: v.id("organizations"),
-    productId: v.optional(v.id("products")), // Opcional para casos org-level
+	// Telemetría de uso de IA
+	aiUsage: defineTable({
+		organizationId: v.id("organizations"),
+		productId: v.optional(v.id("products")), // Opcional para casos org-level
     userId: v.id("users"),
     useCase: v.string(), // "echo", "timeline_interpretation", etc.
     agentName: v.string(),
@@ -323,6 +323,36 @@ const schema = defineSchema({
 		.index("by_usecase", ["useCase", "createdAt"])
 		.index("by_org_product_usecase", ["organizationId", "productId", "useCase"])
 		.index("by_user", ["userId", "createdAt"]),
+
+	aiInferenceLogs: defineTable({
+		organizationId: v.id("organizations"),
+		productId: v.id("products"),
+		userId: v.id("users"),
+		useCase: v.string(),
+		agentName: v.string(),
+		promptVersion: v.string(),
+		prompt: v.optional(v.string()),
+		response: v.optional(v.string()),
+		provider: v.string(),
+		model: v.string(),
+		tokensIn: v.number(),
+		tokensOut: v.number(),
+		totalTokens: v.number(),
+		latencyMs: v.number(),
+		estimatedCostUsd: v.number(),
+		contextVersion: v.optional(v.number()),
+		rating: v.optional(v.union(v.literal("up"), v.literal("down"))),
+		ratingAt: v.optional(v.number()),
+		ratingByUserId: v.optional(v.id("users")),
+		ratingMetadata: v.optional(v.any()),
+		metadata: v.optional(v.any()),
+		createdAt: v.number(),
+	})
+		.index("by_org", ["organizationId"])
+		.index("by_product", ["productId"])
+		.index("by_product_agent", ["productId", "agentName"])
+		.index("by_product_agent_context", ["productId", "agentName", "contextVersion"])
+		.index("by_usecase", ["useCase", "createdAt"]),
 
 	agentRuns: defineTable({
 		organizationId: v.id("organizations"),

@@ -1,12 +1,12 @@
+import { createThread, type AgentComponent } from "@convex-dev/agent";
 import { v } from "convex/values";
 import { action } from "../_generated/server";
-import { createThread, type AgentComponent } from "@convex-dev/agent";
 import { api, components, internal } from "../_generated/api";
-import { helloWorldAgent } from "./helloWorldAgent";
 import { Id } from "../_generated/dataModel";
+import { getAgentAIConfig, getAgentTelemetryConfig } from "../ai";
+import { productContextPrompt, PRODUCT_CONTEXT_PROMPT_VERSION } from "../ai/prompts";
+import { helloWorldAgent, HELLO_WORLD_PROMPT_VERSION } from "./helloWorldAgent";
 import { productContextAgent } from "./productContextAgent";
-import { productContextPrompt } from "../ai/prompts";
-import { getAgentAIConfig } from "../ai";
 import { detectStackFromPackageJson } from "./stackDetector";
 import { validateAndEnrichContext } from "./contextValidator";
 
@@ -141,6 +141,27 @@ export const chat = action({
 				{ prompt },
 			);
 			const latencyMs = Date.now() - start;
+			const telemetryConfig = getAgentTelemetryConfig(AGENT_NAME);
+			if (telemetryConfig.persistInferenceLogs && resolvedProductId) {
+				const usage = getUsageTotals(result);
+				await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
+					organizationId: resolvedOrgId,
+					productId: resolvedProductId,
+					userId,
+					useCase: USE_CASE,
+					agentName: AGENT_NAME,
+					promptVersion: HELLO_WORLD_PROMPT_VERSION,
+					prompt,
+					response: result.text,
+					provider: aiConfig.provider,
+					model: aiConfig.model,
+					tokensIn: usage.tokensIn,
+					tokensOut: usage.tokensOut,
+					totalTokens: usage.totalTokens,
+					latencyMs,
+					metadata: SOURCE_METADATA,
+				});
+			}
 
 			return {
 				text: result.text,
@@ -481,6 +502,29 @@ export const generateProductContext = action({
 				sourcesUsed: Array.from(sourcesUsed),
 			};
 
+			const telemetryConfig = getAgentTelemetryConfig(PRODUCT_CONTEXT_AGENT_NAME);
+			if (telemetryConfig.persistInferenceLogs) {
+				const usage = getUsageTotals(result);
+				await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
+					organizationId,
+					productId,
+					userId,
+					useCase: PRODUCT_CONTEXT_USE_CASE,
+					agentName: PRODUCT_CONTEXT_AGENT_NAME,
+					promptVersion: PRODUCT_CONTEXT_PROMPT_VERSION,
+					prompt: promptPayload,
+					response: result.text,
+					provider: aiConfig.provider,
+					model: aiConfig.model,
+					tokensIn: usage.tokensIn,
+					tokensOut: usage.tokensOut,
+					totalTokens: usage.totalTokens,
+					latencyMs: Date.now() - start,
+					contextVersion: version,
+					metadata: { source: "product-context" },
+				});
+			}
+
 			await ctx.runMutation(
 				internal.agents.productContextData.saveProductContext,
 				{
@@ -655,6 +699,27 @@ function parseJsonSafely(text: string): any {
 		? trimmed.replace(/^```[a-zA-Z]*\s*/, "").replace(/```$/, "").trim()
 		: trimmed;
 	return JSON.parse(withoutFences);
+}
+
+function getUsageTotals(result: {
+	usage?: {
+		inputTokens?: number;
+		cachedInputTokens?: number;
+		outputTokens?: number;
+		totalTokens?: number;
+	};
+	totalUsage?: {
+		inputTokens?: number;
+		cachedInputTokens?: number;
+		outputTokens?: number;
+		totalTokens?: number;
+	};
+}): { tokensIn: number; tokensOut: number; totalTokens: number } {
+	const usage = result.totalUsage ?? result.usage;
+	const tokensIn = usage?.inputTokens ?? usage?.cachedInputTokens ?? 0;
+	const tokensOut = usage?.outputTokens ?? 0;
+	const totalTokens = usage?.totalTokens ?? tokensIn + tokensOut;
+	return { tokensIn, tokensOut, totalTokens };
 }
 
 function normalizePersonas(value: unknown): Array<{ name: string; description?: string }> {

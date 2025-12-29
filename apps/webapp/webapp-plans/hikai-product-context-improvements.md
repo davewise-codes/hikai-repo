@@ -33,7 +33,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | F1.4    | Detección automática de stack (package.json)   | ✅ Completado |
 | F1.5    | Post-procesamiento y quality score             | ✅ Completado |
 | F1.6    | Modelo por use-case/agente                     | ✅ Completado |
-| F1.7    | Persistencia extendida de inferencias + rating | ⏳ Pendiente  |
+| F1.7    | Persistencia extendida de inferencias + rating | ✅ Completado |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -616,9 +616,9 @@ PARTE 3: VALIDACIÓN
 
 **Validación**:
 
-- [ ] Registro completo de inferencias guardado
-- [ ] Flag por use-case habilita/deshabilita persistencia
-- [ ] Rating se guarda y se consulta
+- [x] Registro completo de inferencias guardado
+- [x] Flag por agente habilita/deshabilita persistencia
+- [x] Rating se guarda y se consulta
 
 ## Decisiones tomadas
 
