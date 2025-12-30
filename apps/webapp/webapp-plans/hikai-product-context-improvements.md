@@ -34,7 +34,7 @@ El Product Context Agent genera la base estratégica que usa Hikai para interpre
 | F1.5    | Post-procesamiento y quality score             | ✅ Completado |
 | F1.6    | Modelo por use-case/agente                     | ✅ Completado |
 | F1.7    | Persistencia extendida de inferencias + rating | ✅ Completado |
-| F1.8    | Refinar inferencias + UI contexto              | ⏳ Pendiente  |
+| F1.8    | Refinar inferencias + UI contexto              | ✅ Completado |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -663,10 +663,10 @@ PARTE 4: VALIDACION
 
 **Validación**:
 
-- [ ] productDomains/productEpics inferidos y persistidos
-- [ ] notableEvents incluye relatedKeyFeatures validado
-- [ ] UI muestra todas las inferidas y destaca keyFeatures
-- [ ] risks/toneGuidelines/recommendedFocus colapsables
+- [x] productDomains/productEpics inferidos y persistidos
+- [x] notableEvents incluye relatedKeyFeatures validado
+- [x] UI muestra todas las inferidas y destaca keyFeatures
+- [x] risks/toneGuidelines/recommendedFocus colapsables
 - [ ] `pnpm --filter @hikai/convex exec tsc --noEmit` pasa
 - [ ] `pnpm --filter @hikai/webapp exec tsc --noEmit` pasa
 

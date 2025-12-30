@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@hikai/convex";
@@ -11,6 +11,10 @@ import {
 	CardContent,
 	CardHeader,
 	CardTitle,
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
 	Label,
 	Separator,
 	Sheet,
@@ -61,6 +65,8 @@ type ProductContextEntry = {
 	audienceSegments?: Array<{ name: string; description?: string }>;
 	toneGuidelines?: Array<{ name: string; description?: string }>;
 	keyFeatures?: Array<{ name: string; description?: string }>;
+	productDomains?: Array<{ name: string; description?: string }>;
+	productEpics?: Array<{ name: string; description?: string }>;
 	competition?: Array<{ name: string; description?: string }>;
 	strategicPillars?: Array<{ name: string; description?: string }>;
 	releaseCadence?: string;
@@ -73,6 +79,7 @@ type ProductContextEntry = {
 		type?: string;
 		summary: string;
 		occurredAt?: number;
+		relatedKeyFeatures?: string[];
 	}>;
 	confidence?: number;
 	qualityScore?: number;
@@ -134,6 +141,11 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	const threadId = current?.threadId;
 	const hasContext = !!current;
 	const isAdmin = product.userRole === "admin";
+	const hasRisks = (current?.risks?.length ?? 0) > 0;
+	const hasToneGuidelines = (current?.toneGuidelines?.length ?? 0) > 0;
+	const hasRecommendedFocus = (current?.recommendedFocus?.length ?? 0) > 0;
+	const hasCollapsible =
+		hasRisks || hasToneGuidelines || hasRecommendedFocus;
 	const hasSources =
 		(current?.sourcesUsed ?? []).filter((s) => s !== "baseline").length > 0 ||
 		(!hasContext && (connections?.length ?? 0) > 0);
@@ -147,6 +159,10 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 		typeof current?.qualityScore === "number" ? current.qualityScore : null;
 	const qualityPercent =
 		qualityScore !== null ? Math.round(qualityScore * 100) : null;
+	const confidencePercent =
+		typeof current?.confidence === "number"
+			? `${Math.round(current.confidence * 100)}%`
+			: null;
 	const qualityVariant =
 		qualityScore !== null && qualityScore < 0.5
 			? "destructive"
@@ -169,20 +185,6 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 			: "skip",
 	);
 	const currentRating = ratingData?.rating ?? null;
-
-	const summaryFields = useMemo(
-		() => [
-			{ label: t("context.valueProposition"), value: current?.valueProposition },
-			{ label: t("context.targetMarket"), value: current?.targetMarket },
-			{ label: t("context.productCategory"), value: current?.productCategory },
-			{ label: t("context.productType"), value: current?.productType },
-			{ label: t("context.businessModel"), value: current?.businessModel },
-			{ label: t("context.stage"), value: current?.stage },
-			{ label: t("context.releaseCadence"), value: current?.releaseCadence },
-			{ label: t("context.maturity"), value: current?.maturity },
-		],
-		[current, t],
-	);
 
 	const handleGenerate = async () => {
 		setIsGenerating(true);
@@ -401,38 +403,92 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 								<TabsTrigger value="history">{t("context.tabs.history")}</TabsTrigger>
 							</TabsList>
 							<TabsContent value="summary" className="pt-4 space-y-4">
-								<SummarySection
-									title={t("context.identity")}
-									items={summaryFields}
-								/>
-								<DetailList
+								<FeatureList
 									title={t("context.keyFeatures")}
 									items={current?.keyFeatures}
 								/>
 								<DetailList
-									title={t("context.recommendedFocus")}
-									items={current?.recommendedFocus}
+									title={t("context.productDomains")}
+									items={current?.productDomains}
 								/>
 								<DetailList
-									title={t("context.risks")}
-									items={current?.risks}
+									title={t("context.productEpics")}
+									items={current?.productEpics}
 								/>
 								<DetailList
+									title={t("context.competition")}
+									items={current?.competition}
+								/>
+								<TagList
+									title={t("context.integrationEcosystem")}
+									items={current?.integrationEcosystem}
+								/>
+								<TagList
+									title={t("context.technicalStack")}
+									items={current?.technicalStack}
+								/>
+								<DetailList
+									title={t("context.audienceSegments")}
+									items={current?.audienceSegments}
+								/>
+								<TextValue
+									title={t("context.maturity")}
+									value={current?.maturity}
+								/>
+								<TextValue
+									title={t("context.confidence")}
+									value={confidencePercent ?? undefined}
+								/>
+								<EventList
 									title={t("context.notableEvents")}
-									items={current?.notableEvents?.map((event) => ({
-										name: event.summary,
-										description: [
-											event.type,
-											event.source,
-											event.occurredAt
-												? new Date(event.occurredAt).toLocaleDateString()
-												: null,
-											event.rawEventId ? `rawEventId: ${event.rawEventId}` : null,
-										]
-											.filter(Boolean)
-											.join(" • "),
-									}))}
+									items={current?.notableEvents}
 								/>
+								{hasCollapsible && (
+									<Accordion type="multiple" className="w-full">
+										{hasRisks && (
+											<AccordionItem value="risks">
+												<AccordionTrigger>
+													{t("context.risks")}
+												</AccordionTrigger>
+												<AccordionContent>
+													<DetailList
+														title={t("context.risks")}
+														items={current?.risks}
+														condensed
+													/>
+												</AccordionContent>
+											</AccordionItem>
+										)}
+										{hasToneGuidelines && (
+											<AccordionItem value="toneGuidelines">
+												<AccordionTrigger>
+													{t("context.toneGuidelines")}
+												</AccordionTrigger>
+												<AccordionContent>
+													<DetailList
+														title={t("context.toneGuidelines")}
+														items={current?.toneGuidelines}
+														condensed
+													/>
+												</AccordionContent>
+											</AccordionItem>
+										)}
+										{hasRecommendedFocus && (
+											<AccordionItem value="recommendedFocus">
+												<AccordionTrigger>
+													{t("context.recommendedFocus")}
+												</AccordionTrigger>
+												<AccordionContent>
+													<DetailList
+														title={t("context.recommendedFocus")}
+														items={current?.recommendedFocus}
+														condensed
+													/>
+												</AccordionContent>
+											</AccordionItem>
+										)}
+									</Accordion>
+								)}
 							</TabsContent>
 							<TabsContent value="history" className="pt-4">
 								<HistoryList current={current} history={history} />
@@ -544,46 +600,22 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	);
 }
 
-function SummarySection({
-	title,
-	items,
-}: {
-	title: string;
-	items: Array<{ label: string; value?: string | null | undefined }>;
-}) {
-	return (
-		<div className="space-y-2">
-			<div className="flex items-center gap-2">
-				<h4 className="text-fontSize-sm font-medium">{title}</h4>
-			</div>
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-				{items.map((item) => (
-					<div key={item.label} className="space-y-1">
-						<p className="text-fontSize-xs text-muted-foreground">{item.label}</p>
-						<p className="text-fontSize-sm">
-							{item.value && item.value.trim().length > 0
-								? item.value
-								: "—"}
-						</p>
-					</div>
-				))}
-			</div>
-		</div>
-	);
-}
-
 function DetailList({
 	title,
 	items,
+	condensed = false,
 }: {
 	title: string;
 	items?: Array<{ name: string; description?: string }>;
+	condensed?: boolean;
 }) {
 	if (!items || items.length === 0) return null;
 
 	return (
 		<div className="space-y-2">
-			<h4 className="text-fontSize-sm font-medium">{title}</h4>
+			{!condensed && (
+				<h4 className="text-fontSize-sm font-medium">{title}</h4>
+			)}
 			<div className="space-y-2">
 				{items.map((item) => (
 					<div key={item.name} className="rounded-md border border-border p-2">
@@ -593,6 +625,133 @@ function DetailList({
 								{item.description}
 							</p>
 						)}
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function FeatureList({
+	title,
+	items,
+}: {
+	title: string;
+	items?: Array<{ name: string; description?: string }>;
+}) {
+	if (!items || items.length === 0) return null;
+
+	return (
+		<div className="space-y-3">
+			<h4 className="text-fontSize-sm font-medium">{title}</h4>
+			<div className="grid gap-3 md:grid-cols-2">
+				{items.map((item) => (
+					<div
+						key={item.name}
+						className="rounded-md border border-border p-3 bg-muted/30"
+					>
+						<div className="text-fontSize-sm font-semibold">{item.name}</div>
+						{item.description && (
+							<p className="text-fontSize-xs text-muted-foreground mt-1">
+								{item.description}
+							</p>
+						)}
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function TagList({
+	title,
+	items,
+}: {
+	title: string;
+	items?: string[];
+}) {
+	if (!items || items.length === 0) return null;
+
+	return (
+		<div className="space-y-2">
+			<h4 className="text-fontSize-sm font-medium">{title}</h4>
+			<div className="flex flex-wrap gap-2">
+				{items.map((item) => (
+					<Badge key={item} variant="secondary">
+						{item}
+					</Badge>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function TextValue({
+	title,
+	value,
+}: {
+	title: string;
+	value?: string;
+}) {
+	if (!value || value.trim().length === 0) return null;
+
+	return (
+		<div className="space-y-1">
+			<h4 className="text-fontSize-sm font-medium">{title}</h4>
+			<p className="text-fontSize-sm">{value}</p>
+		</div>
+	);
+}
+
+function EventList({
+	title,
+	items,
+}: {
+	title: string;
+	items?: Array<{
+		source: string;
+		rawEventId?: string;
+		type?: string;
+		summary: string;
+		occurredAt?: number;
+		relatedKeyFeatures?: string[];
+	}>;
+}) {
+	if (!items || items.length === 0) return null;
+
+	return (
+		<div className="space-y-2">
+			<h4 className="text-fontSize-sm font-medium">{title}</h4>
+			<div className="space-y-2">
+				{items.map((event, index) => (
+					<div
+						key={`${event.summary}-${index}`}
+						className="rounded-md border border-border p-2"
+					>
+						<div className="text-fontSize-sm font-medium">
+							{event.summary}
+						</div>
+						<p className="text-fontSize-xs text-muted-foreground mt-1">
+							{[
+								event.type,
+								event.source,
+								event.occurredAt
+									? new Date(event.occurredAt).toLocaleDateString()
+									: null,
+								event.rawEventId ? `rawEventId: ${event.rawEventId}` : null,
+							]
+								.filter(Boolean)
+								.join(" • ")}
+						</p>
+						{event.relatedKeyFeatures?.length ? (
+							<div className="mt-2 flex flex-wrap gap-1">
+								{event.relatedKeyFeatures.map((feature) => (
+									<Badge key={feature} variant="outline">
+										{feature}
+									</Badge>
+								))}
+							</div>
+						) : null}
 					</div>
 				))}
 			</div>

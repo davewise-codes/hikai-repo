@@ -24,6 +24,25 @@ const normalizeEnum = (value: string | undefined, allowed: Set<string>) => {
 
 const hasItems = (items?: unknown[]) => Array.isArray(items) && items.length > 0;
 
+const normalizeRelatedKeyFeatures = (
+	events: ProductContextPayload["notableEvents"],
+	keyFeatures: ProductContextPayload["keyFeatures"],
+) => {
+	if (!events || events.length === 0) return events;
+	const names = new Set(
+		(keyFeatures ?? []).map((feature) => feature.name).filter(Boolean),
+	);
+
+	return events.map((event) => {
+		if (!event.relatedKeyFeatures?.length) return event;
+		const filtered = event.relatedKeyFeatures.filter((name) => names.has(name));
+		return {
+			...event,
+			relatedKeyFeatures: filtered.length > 0 ? filtered : undefined,
+		};
+	});
+};
+
 export function validateAndEnrichContext(
 	context: ProductContextPayload,
 	detectedStack?: string[],
@@ -40,6 +59,11 @@ export function validateAndEnrichContext(
 	if (detectedStack && detectedStack.length > 0) {
 		result.technicalStack = detectedStack;
 	}
+
+	result.notableEvents = normalizeRelatedKeyFeatures(
+		result.notableEvents,
+		result.keyFeatures,
+	);
 
 	let score =
 		typeof result.confidence === "number" ? result.confidence : 0.5;

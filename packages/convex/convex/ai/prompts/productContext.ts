@@ -11,6 +11,7 @@ export type NotableEvent = {
 	type?: string;
 	summary: string;
 	occurredAt?: number;
+	relatedKeyFeatures?: string[];
 };
 
 export type ProductContextPayload = {
@@ -41,6 +42,8 @@ export type ProductContextPayload = {
 	toneGuidelines?: LabeledItem[];
 
 	keyFeatures?: LabeledItem[];
+	productDomains?: LabeledItem[];
+	productEpics?: LabeledItem[];
 	competition?: LabeledItem[];
 	maturity?: string;
 	risks?: LabeledItem[];
@@ -73,6 +76,7 @@ Follow these principles:
 - Prefer the user's baseline values; fill missing details using evidence from sources.
 - Be explicit when evidence is weak: lower confidence and keep descriptions short.
 - Do NOT invent product names, competitors, or events without signals.
+- keyFeatures are the central axis of the narrative; tie progress and events back to them when possible.
 - Language: use the provided language preference; default to English ("en"). Normalize all text to that language, translating baseline inputs when needed.
 - Output ONLY valid JSON, no markdown, no comments.
 - Before responding, self-check all Coherence Rules and Examples; if any rule is violated, revise the JSON to comply.
@@ -114,6 +118,8 @@ Expected JSON structure:
   "toneGuidelines": [{ "name": "...", "description": "..." }],
 
   "keyFeatures": [{ "name": "...", "description": "..." }],
+  "productDomains": [{ "name": "...", "description": "..." }],
+  "productEpics": [{ "name": "...", "description": "..." }],
   "competition": [{ "name": "...", "description": "differentiator" }],
   "maturity": "early | mid | late | unknown",
   "risks": [{ "name": "...", "description": "..." }],
@@ -125,7 +131,8 @@ Expected JSON structure:
       "rawEventId": "<rawEvents id if available>",
       "type": "commit|pull_request|release|other",
       "summary": "...",
-      "occurredAt": 0
+      "occurredAt": 0,
+      "relatedKeyFeatures": ["Name from keyFeatures"]
     }
   ],
   "confidence": 0.0-1.0,
@@ -136,6 +143,7 @@ Rules:
 - Keep descriptions concise (<=200 chars each).
 - If a field is unknown, set it to [] or an empty string and lower confidence.
 - For notableEvents, only include items with concrete evidence (e.g., commits, PRs, releases) and link rawEventId when provided.
+- If notableEvents include relatedKeyFeatures, each item MUST match a keyFeatures.name exactly.
 - If stage is "mvp" or "idea", maturity MUST be "early", never "mid" or "late".
 - If releaseCadence is not provided in baseline input, set it to "unknown" (do not infer it).
 - If strategicPillars is empty, confidence MUST be < 0.5.

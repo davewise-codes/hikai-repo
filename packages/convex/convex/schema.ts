@@ -65,6 +65,22 @@ const productContextEntry = v.object({
 			}),
 		),
 	),
+	productDomains: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
+	productEpics: v.optional(
+		v.array(
+			v.object({
+				name: v.string(),
+				description: v.optional(v.string()),
+			}),
+		),
+	),
 	competition: v.optional(
 		v.array(
 			v.object({
@@ -107,6 +123,7 @@ const productContextEntry = v.object({
 				type: v.optional(v.string()),
 				summary: v.string(),
 				occurredAt: v.optional(v.number()),
+				relatedKeyFeatures: v.optional(v.array(v.string())),
 			}),
 		),
 	),
