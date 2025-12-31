@@ -5,11 +5,16 @@ import {
 	NavigationMenuItem,
 	NavigationMenuLink,
 	NavigationMenuList,
-	Button
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuTrigger,
+	SettingsIcon
 } from "@hikai/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ThemeSwitcher } from "./theme-switcher";
+import { ColorThemeSwitcher } from "./color-theme-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { MobileNavigation } from "./mobile-navigation";
 
@@ -26,8 +31,8 @@ export function NavigationBar() {
 	];
 
 	return (
-		<nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-			<div className="container max-w-6xl mx-auto flex h-16 items-center justify-between">
+		<nav className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+			<div className="mx-auto flex h-16 w-full items-center justify-between px-6 sm:px-8">
 				{/* Logo */}
 				<Link href="#hero" className="flex items-center gap-2">
 					<div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
@@ -55,8 +60,40 @@ export function NavigationBar() {
 
 				{/* Desktop Controls */}
 				<div className="hidden md:flex items-center gap-2">
-					<ThemeSwitcher />
-					<LanguageSwitcher />
+					<DropdownMenu>
+						<DropdownMenuTrigger asChild>
+							<Button
+								variant="ghost"
+								size="icon"
+								className="h-9 w-9"
+								aria-label="Open settings"
+							>
+								<SettingsIcon className="h-4 w-4" />
+							</Button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-64 p-3">
+							<div className="space-y-4">
+								<div className="space-y-2">
+									<p className="text-fontSize-xs font-semibold text-muted-foreground">
+										Appearance
+									</p>
+									<div className="flex items-center justify-between gap-3">
+										<span className="text-fontSize-sm">Mode</span>
+										<ThemeSwitcher />
+									</div>
+									<div className="space-y-2">
+										<span className="text-fontSize-sm">Theme</span>
+										<ColorThemeSwitcher triggerClassName="w-full" />
+									</div>
+								</div>
+								<div className="h-px bg-muted" />
+								<div className="flex items-center justify-between gap-3">
+									<span className="text-fontSize-sm">Language</span>
+									<LanguageSwitcher />
+								</div>
+							</div>
+						</DropdownMenuContent>
+					</DropdownMenu>
 					<Button asChild className="ml-2">
 						<Link href="#">
 							{tHome("hero.cta")}

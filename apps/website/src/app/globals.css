@@ -9,3 +9,44 @@ html {
 section {
   scroll-margin-top: 4rem;
 }
+
+.hero-shell {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  --grid-size: 88px;
+}
+
+.hero-bg,
+.hero-gradient,
+.hero-grid,
+.hero-grid-streaks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hero-bg {
+  background-image: url("/hero-background-starred-night.png");
+  background-size: cover;
+  background-position: center;
+  z-index: -5;
+}
+
+.hero-gradient {
+  background: linear-gradient(180deg, rgba(2, 6, 23, 0.78) 0%, rgba(2, 6, 23, 0.45) 55%, rgba(2, 6, 23, 0.78) 100%);
+  z-index: -4;
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: var(--grid-size) var(--grid-size);
+  opacity: 0.32;
+  z-index: -3;
+}
+
+.hero-grid-streaks {
+  display: none;
+}

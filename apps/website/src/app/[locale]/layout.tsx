@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { FontProvider } from "@/providers/font-provider";
 import { ThemeProvider } from "@/providers/client-theme-provider";
+import { defaultColorTheme } from "@hikai/ui";
 import "../globals.css";
 
 export default async function LocaleLayout({
@@ -19,7 +20,11 @@ export default async function LocaleLayout({
 	}
 
 	return (
-		<html lang={locale} suppressHydrationWarning>
+		<html
+			lang={locale}
+			suppressHydrationWarning
+			className={`theme-${defaultColorTheme}`}
+		>
 			<body>
 				<ThemeProvider
 					defaultTheme="system"

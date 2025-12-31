@@ -5,17 +5,18 @@ import { BeforeAfterSection } from "@/components/sections/before-after-section";
 import { BenefitsSection } from "@/components/sections/benefits-section";
 import { FAQSection } from "@/components/sections/faq-section";
 import { CTASection } from "@/components/sections/cta-section";
+import { HeroShell } from "@/components/hero-shell";
 
 export default function HomePage() {
 	return (
 		<div className="min-h-screen flex flex-col">
-			<NavigationBar />
-			<main className="flex-1">
-				{/* Hero Section */}
-				<section id="hero">
+			<HeroShell>
+				<NavigationBar />
+				<section id="hero" className="relative z-10 pt-16">
 					<HeroSection />
 				</section>
-
+			</HeroShell>
+			<main className="flex-1">
 				{/* How It Works Section */}
 				<section id="how">
 					<HowItWorksSection />

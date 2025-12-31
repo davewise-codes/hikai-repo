@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { ThemeSwitcher } from "./theme-switcher";
+import { ColorThemeSwitcher } from "./color-theme-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 
 export function MobileNavigation() {
@@ -61,6 +62,7 @@ export function MobileNavigation() {
 						<span className="text-sm font-medium">Settings</span>
 						<div className="flex items-center gap-2">
 							<ThemeSwitcher />
+							<ColorThemeSwitcher />
 							<LanguageSwitcher />
 						</div>
 					</div>
