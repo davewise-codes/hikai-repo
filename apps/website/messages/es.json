@@ -19,18 +19,79 @@
 			"badge": "Cómo funciona",
 			"title": "Convierte el progreso en",
 			"highlighted": "visibilidad",
-			"subtitle": "Hikai captura lo que está sucediendo y lo entrega a tu audiencia en tres pasos simples.",
+			"subtitle": "Hikai captura lo que está sucediendo y lo entrega a tu audiencia en cuatro pasos claros.",
+			"stepLabel": "Paso",
 			"step1": {
-				"title": "Conecta tus fuentes",
-				"description": "GitHub, Linear, Notion... Hikai se conecta donde se está construyendo tu producto, para que nada se pierda."
+				"headline": "Define tu producto",
+				"body": "Establece una base clara, conecta tus fuentes y deja que Hikai construya una comprensión profunda y centrada en el producto.",
+				"bullets": [
+					"Configuración en minutos",
+					"Primero el producto, no la herramienta",
+					"Una base que evoluciona con el tiempo"
+				],
+				"feature": {
+					"title": "Contexto y taxonomía del producto",
+					"description": "Define qué es tu producto y genera una taxonomía estructurada y evolutiva automáticamente.",
+					"links": [
+						"Cuenta a Hikai sobre tu producto",
+						"Conecta las fuentes de tu producto",
+						"Deja que Hikai construya tu taxonomía"
+					]
+				}
 			},
 			"step2": {
-				"title": "Hikai selecciona",
-				"description": "Transforma lo que pasó — funcionalidades, correcciones, actualizaciones — en contenido listo para compartir."
+				"headline": "Interpretación continua",
+				"body": "Hikai interpreta cada evento de producto de forma continua y sistemática en la cadencia que elijas. Sin reportes. Sin ida y vuelta. Solo una línea de producto que tu audiencia entiende.",
+				"bullets": [
+					"Totalmente automatizado por defecto",
+					"Consistente en el tiempo",
+					"Interpretación según audiencia"
+				],
+				"feature": {
+					"title": "Línea de producto automatizada",
+					"description": "Una línea viva que interpreta cambios de producto y adapta el lenguaje a cada audiencia.",
+					"links": [
+						"Rastrea cambios de producto automáticamente",
+						"Ve la línea de producto interpretada",
+						"Observa interpretaciones por audiencia"
+					]
+				}
 			},
 			"step3": {
-				"title": "Hazlo tuyo",
-				"description": "Dale tu toque con las herramientas de edición de contenido diseñadas especialmente — rápido, simple y siempre auténtico."
+				"headline": "Contenido editorial propuesto",
+				"body": "Hikai convierte tu línea de producto en propuestas de contenido alineadas con tu línea editorial. Sin esfuerzos aislados. Sin páginas en blanco. Una forma sistemática de comunicar tu producto.",
+				"bullets": [
+					"Continuidad editorial integrada",
+					"Marketing, clientes y stakeholders",
+					"Cero fricción para empezar"
+				],
+				"feature": {
+					"title": "Propuestas editoriales de contenido",
+					"description": "Genera propuestas consistentes y específicas por audiencia desde tu línea de producto.",
+					"links": [
+						"Explora propuestas de contenido",
+						"Cambia entre audiencias",
+						"Sigue tu línea editorial"
+					]
+				}
+			},
+			"step4": {
+				"headline": "Humano al mando",
+				"body": "Refina, da forma y publica con herramientas orientadas al propósito. El resultado se siente humano, porque tu juicio define la narrativa.",
+				"bullets": [
+					"Tu juicio es la última palabra",
+					"Narrativa sobre automatización",
+					"Nunca suena a IA"
+				],
+				"feature": {
+					"title": "Edición y publicación con propósito",
+					"description": "Edita y publica con herramientas diseñadas para preservar intención, voz y claridad.",
+					"links": [
+						"Edita con intención",
+						"Da forma a la narrativa",
+						"Publica con confianza"
+					]
+				}
 			}
 		},
 		"beforeAfter": {

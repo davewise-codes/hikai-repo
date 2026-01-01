@@ -19,18 +19,79 @@
 			"badge": "How it works",
 			"title": "Turn progress into",
 			"highlighted": "visibility",
-			"subtitle": "Hikai captures what's happening and delivers it to your audience in three simple steps.",
+			"subtitle": "Hikai captures what's happening and delivers it to your audience in four clear steps.",
+			"stepLabel": "Step",
 			"step1": {
-				"title": "Connect your sources",
-				"description": "GitHub, Linear, Notion… Hikai plugs into where your product is being built, so nothing slips through the cracks."
+				"headline": "Define your product",
+				"body": "Set a clear product baseline, connect your sources, and let Hikai build a deep, product-centric understanding automatically.",
+				"bullets": [
+					"Setup in minutes",
+					"Product-first, not tool-first",
+					"One baseline that evolves over time"
+				],
+				"feature": {
+					"title": "Product context & taxonomy",
+					"description": "Define what your product is and generate a structured, evolving taxonomy automatically.",
+					"links": [
+						"Tell Hikai about your product",
+						"Connect your product sources",
+						"Let Hikai build your product taxonomy"
+					]
+				}
 			},
 			"step2": {
-				"title": "Hikai curates",
-				"description": "It transforms what happened — features, fixes, updates — into ready-to-share content."
+				"headline": "Continuous interpretation",
+				"body": "Hikai continuously and systematically interprets every product event on the cadence you choose. No reports. No back-and-forth. Just a product timeline that makes sense to your audience.",
+				"bullets": [
+					"Fully automated by default",
+					"Consistent over time",
+					"Audience-aware interpretation"
+				],
+				"feature": {
+					"title": "Automated product timeline",
+					"description": "A living timeline that interprets product changes and adapts language to each audience.",
+					"links": [
+						"Track product changes automatically",
+						"View the interpreted product timeline",
+						"See audience-specific interpretations"
+					]
+				}
 			},
 			"step3": {
-				"title": "Make it yours",
-				"description": "Give your touch with Hikai's purpose-built content editing tools — quick, simple, and always authentic."
+				"headline": "Editorial content, proposed",
+				"body": "Hikai turns your product timeline into content proposals aligned with your editorial line. No isolated efforts. No blank pages. Just a systematic way to communicate your product.",
+				"bullets": [
+					"Editorial continuity built-in",
+					"Marketing, customers, and stakeholders",
+					"Zero starting friction"
+				],
+				"feature": {
+					"title": "Editorial content proposals",
+					"description": "Generate consistent, audience-specific content proposals from your product timeline.",
+					"links": [
+						"Explore content proposals",
+						"Switch between audiences",
+						"Follow your editorial line"
+					]
+				}
+			},
+			"step4": {
+				"headline": "Human in control",
+				"body": "Refine, shape, and publish with purpose-oriented tools. The result feels human — because your judgment defines the narrative.",
+				"bullets": [
+					"Your judgment, final word",
+					"Narrative over automation",
+					"Never sounds like AI"
+				],
+				"feature": {
+					"title": "Purpose-oriented editing & publishing",
+					"description": "Edit and publish with tools designed to preserve intent, voice, and clarity.",
+					"links": [
+						"Edit with intent",
+						"Shape the narrative",
+						"Publish with confidence"
+					]
+				}
 			}
 		},
 		"beforeAfter": {
