@@ -6,8 +6,12 @@ export function BeforeAfterSection() {
 	const t = useTranslations("HomePage.beforeAfter");
 
 	return (
-		<section className="py-20 md:py-32">
-			<div className="container max-w-6xl mx-auto px-6 sm:px-8">
+		<section className="relative py-16 md:py-24">
+			<div className="pointer-events-none absolute inset-0">
+				<div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.22)_1px,transparent_1px)] bg-[size:20px_20px] opacity-60 [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)]" />
+				<div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-transparent" />
+			</div>
+			<div className="container max-w-6xl mx-auto px-6 sm:px-8 relative">
 				<div className="text-center mb-16">
 					<Badge variant="secondary" className="mb-6">
 						{t("badge")}

@@ -127,6 +127,18 @@
 			"title": "Más que ahorrar tiempo, verdadero",
 			"highlighted": "momentum",
 			"subtitle": "Hikai reduce la carga, te mantiene consistente, y ayuda a que tu producto brille sin perder tu voz.",
+			"externalTitle": "Sé conocido",
+			"externalCards": [
+				"Gana visibilidad",
+				"Mantente consistente"
+			],
+			"internalTitle": "Sé eficiente",
+			"internalCards": [
+				"Ahorra tiempo",
+				"Habilita la creatividad",
+				"Mantén tu voz",
+				"Trabaja en equipo"
+			],
 			"items": [
 				{
 					"title": "Ahorra tiempo",

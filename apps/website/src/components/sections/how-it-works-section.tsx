@@ -143,8 +143,12 @@ export function HowItWorksSection() {
 	const canGoNext = activeStepIndex < steps.length - 1;
 
 	return (
-		<section className="py-20 md:py-32">
-			<div className="container max-w-6xl mx-auto px-6 sm:px-8">
+		<section className="relative py-16 md:py-24">
+			<div className="pointer-events-none absolute inset-0">
+				<div className="absolute left-1/2 top-1/2 h-[520px] w-[1200px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(249,115,22,0.24),transparent)] blur-[190px]" />
+				<div className="absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)]" />
+			</div>
+			<div className="container max-w-6xl mx-auto px-6 sm:px-8 relative">
 				{/* Header */}
 				<div className="text-center mb-16">
 					<Badge variant="secondary" className="mb-6">

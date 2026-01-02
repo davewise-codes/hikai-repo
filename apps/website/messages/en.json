@@ -127,6 +127,18 @@
 			"title": "More than time savings, true",
 			"highlighted": "momentum",
 			"subtitle": "Hikai reduces the grind, keeps you consistent, and helps your product shine without losing your voice.",
+			"externalTitle": "Be known",
+			"externalCards": [
+				"Gain visibility",
+				"Stay consistent"
+			],
+			"internalTitle": "Be efficient",
+			"internalCards": [
+				"Save time",
+				"Enable creativity",
+				"Keep your voice",
+				"Work as a team"
+			],
 			"items": [
 				{
 					"title": "Save time",

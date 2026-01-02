@@ -5,6 +5,7 @@ import { BeforeAfterSection } from "@/components/sections/before-after-section";
 import { BenefitsSection } from "@/components/sections/benefits-section";
 import { FAQSection } from "@/components/sections/faq-section";
 import { CTASection } from "@/components/sections/cta-section";
+import { Footer } from "@/components/footer";
 import { HeroShell } from "@/components/hero-shell";
 
 export default function HomePage() {
@@ -42,6 +43,7 @@ export default function HomePage() {
 					<CTASection />
 				</section>
 			</main>
+			<Footer />
 		</div>
 	);
 }

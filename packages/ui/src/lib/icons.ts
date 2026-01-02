@@ -74,6 +74,7 @@ export {
   Share,
   ThumbsUp,
   ThumbsDown,
+  Linkedin,
 } from "lucide-react";
 
 // Files & Documents

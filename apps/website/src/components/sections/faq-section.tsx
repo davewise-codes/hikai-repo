@@ -11,7 +11,7 @@ export function FAQSection() {
 	const t = useTranslations("HomePage.faq");
 
 	return (
-		<section className="py-20 md:py-32 bg-muted/30">
+		<section className="py-16 md:py-24 bg-muted/30">
 			<div className="container max-w-4xl mx-auto">
 				{/* Header */}
 				<div className="text-center mb-16">

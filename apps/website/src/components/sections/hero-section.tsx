@@ -7,7 +7,7 @@ export function HeroSection() {
 	const t = useTranslations("HomePage.hero");
 
 	return (
-		<section className="py-20 md:py-32 lg:py-36">
+		<section className="py-16 md:py-24 lg:py-28">
 			<div className="container max-w-6xl mx-auto px-6 sm:px-8">
 				<div className="mx-auto w-full max-w-4xl text-white">
 					<Badge variant="secondary" className="mb-6 bg-white/10 text-white border-white/20">
