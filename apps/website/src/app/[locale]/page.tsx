@@ -10,8 +10,8 @@ import { HeroShell } from "@/components/hero-shell";
 export default function HomePage() {
 	return (
 		<div className="min-h-screen flex flex-col">
+			<NavigationBar />
 			<HeroShell>
-				<NavigationBar />
 				<section id="hero" className="relative z-10 pt-16">
 					<HeroSection />
 				</section>

@@ -22,8 +22,9 @@
 			"subtitle": "Hikai captura lo que está sucediendo y lo entrega a tu audiencia en cuatro pasos claros.",
 			"stepLabel": "Paso",
 			"step1": {
-				"headline": "Define tu producto",
-				"body": "Establece una base clara, conecta tus fuentes y deja que Hikai construya una comprensión profunda y centrada en el producto.",
+				"tabLabel": "Define y conecta",
+				"headline": "Deja que Hikai entienda tu producto",
+				"body": "Conecta tus fuentes de producto — GitHub, Linear, Notion y más — y define una base clara de lo que es tu producto. En minutos.\nDesde ese contexto, Hikai construye automáticamente una comprensión profunda y orientada al negocio: qué se está construyendo, por qué importa y cómo encaja todo.\n\nEsta base centrada en el producto se configura una vez y mejora con el tiempo a medida que tu producto evoluciona.",
 				"bullets": [
 					"Configuración en minutos",
 					"Primero el producto, no la herramienta",
@@ -40,8 +41,9 @@
 				}
 			},
 			"step2": {
-				"headline": "Interpretación continua",
-				"body": "Hikai interpreta cada evento de producto de forma continua y sistemática en la cadencia que elijas. Sin reportes. Sin ida y vuelta. Solo una línea de producto que tu audiencia entiende.",
+				"tabLabel": "Línea de producto",
+				"headline": "Tu producto, en el tiempo",
+				"body": "Hikai rastrea automáticamente cada evento de producto en tu stack — features, correcciones, mejoras y cambios — en la cadencia que elijas.\nCada evento se interpreta, se agrupa y se coloca en una línea de producto viva y compartible que refleja el progreso real con el tiempo.\n\nSin reportes manuales. Sin status updates.\nSolo una vista actualizada de lo que ocurre en tu producto, traducida a una línea que tu audiencia sí puede entender.",
 				"bullets": [
 					"Totalmente automatizado por defecto",
 					"Consistente en el tiempo",
@@ -58,8 +60,9 @@
 				}
 			},
 			"step3": {
-				"headline": "Contenido editorial propuesto",
-				"body": "Hikai convierte tu línea de producto en propuestas de contenido alineadas con tu línea editorial. Sin esfuerzos aislados. Sin páginas en blanco. Una forma sistemática de comunicar tu producto.",
+				"tabLabel": "Contenido editorial",
+				"headline": "La forma más simple de comunicar tu producto",
+				"body": "Desde tu línea de producto, Hikai genera propuestas de contenido que siguen una línea editorial consistente.\nCada actualización se adapta automáticamente para tu mercado, usuarios y stakeholders — sin partir de una hoja en blanco.\n\nEn lugar de esfuerzos aislados, obtienes una forma sistemática y repetible de comunicar lo que tu producto hace y por qué importa.",
 				"bullets": [
 					"Continuidad editorial integrada",
 					"Marketing, clientes y stakeholders",
@@ -76,8 +79,9 @@
 				}
 			},
 			"step4": {
-				"headline": "Humano al mando",
-				"body": "Refina, da forma y publica con herramientas orientadas al propósito. El resultado se siente humano, porque tu juicio define la narrativa.",
+				"tabLabel": "Hazlo tuyo",
+				"headline": "Control humano. Mantén tu voz.",
+				"body": "Revisa, refina y publica con herramientas de edición y publicación orientadas al propósito.\nHikai hace el trabajo pesado, pero tú mantienes el control del tono, el énfasis y la narrativa.\n\nEl resultado se siente humano — porque lo es.\nTu juicio define la historia que tu producto cuenta al mundo.",
 				"bullets": [
 					"Tu juicio es la última palabra",
 					"Narrativa sobre automatización",
@@ -95,26 +99,26 @@
 			}
 		},
 		"beforeAfter": {
-			"badge": "Antes vs Después",
-			"title": "De oculto a",
-			"highlighted": "descubierto",
-			"subtitle": "Deja atrás la lucha de pasar desapercibido — abraza la claridad de hacer visible tu progreso al mercado.",
-			"before": {
-				"title": "Antes de Hikai",
-				"items": [
-					"Tu producto vive en una cueva — valioso, pero invisible",
-					"Las actualizaciones quedan encerradas en commits, tickets o docs que nadie lee",
-					"Pasan semanas sin contar tu historia",
-					"El marketing se siente como un trabajo extra que no tienes tiempo de hacer"
+			"badge": "Cambio de visibilidad",
+			"title": "Marketing en <highlight>piloto automático</highlight>. Deja que tu progreso hable por sí solo.",
+			"subtitle": "Tu producto crecía en silencio, en la oscuridad. Hikai convierte ese progreso en una narrativa constante que tu audiencia sí puede seguir.",
+			"stateA": {
+				"label": "Cuando la comunicación depende de esfuerzo constante",
+				"headline": "El progreso pasa desapercibido",
+				"body": [
+					"Tu producto avanza, pero ese progreso no se ve.",
+					"El marketing se siente como trabajo que no tienes tiempo de hacer.",
+					"Las actualizaciones quedan encerradas en commits, tickets o docs que nadie lee.",
+					"Pasan semanas sin contacto con tu audiencia."
 				]
 			},
-			"with": {
-				"title": "Con Hikai",
-				"items": [
-					"Tu progreso se convierte en una narrativa constante que el mercado puede seguir",
-					"El contenido se extiende naturalmente por los canales — social, blog, documentos",
-					"Mantienes tu voz, sin hacer el trabajo pesado",
-					"La visibilidad se acumula: cada actualización construye confianza y momentum"
+			"stateB": {
+				"label": "Cuando el progreso corre por su cuenta",
+				"headline": "Tu producto se mantiene presente",
+				"body": [
+					"El contenido se extiende naturalmente por los canales.",
+					"Las actualizaciones siguen fluyendo, incluso cuando estás enfocado en otra cosa.",
+					"El mercado reacciona."
 				]
 			}
 		},

@@ -21,6 +21,7 @@ export function HowItWorksSection() {
 	const steps = [
 		{
 			id: "step-1",
+			tabLabel: t("step1.tabLabel"),
 			headline: t("step1.headline"),
 			body: t("step1.body"),
 			bullets: t.raw("step1.bullets") as string[],
@@ -47,6 +48,7 @@ export function HowItWorksSection() {
 		},
 		{
 			id: "step-2",
+			tabLabel: t("step2.tabLabel"),
 			headline: t("step2.headline"),
 			body: t("step2.body"),
 			bullets: t.raw("step2.bullets") as string[],
@@ -73,6 +75,7 @@ export function HowItWorksSection() {
 		},
 		{
 			id: "step-3",
+			tabLabel: t("step3.tabLabel"),
 			headline: t("step3.headline"),
 			body: t("step3.body"),
 			bullets: t.raw("step3.bullets") as string[],
@@ -99,6 +102,7 @@ export function HowItWorksSection() {
 		},
 		{
 			id: "step-4",
+			tabLabel: t("step4.tabLabel"),
 			headline: t("step4.headline"),
 			body: t("step4.body"),
 			bullets: t.raw("step4.bullets") as string[],
@@ -209,7 +213,7 @@ export function HowItWorksSection() {
 									{index + 1}
 								</span>
 								<span className="text-fontSize-sm font-semibold tracking-wide">
-									{step.headline}
+									{step.tabLabel}
 								</span>
 							</TabsTrigger>
 						))}
@@ -227,9 +231,11 @@ export function HowItWorksSection() {
 										<h3 className="text-3xl font-semibold mb-4">
 											{step.headline}
 										</h3>
-										<p className="text-muted-foreground leading-relaxed">
-											{step.body}
-										</p>
+										<div className="text-muted-foreground leading-relaxed space-y-4">
+											{step.body.split("\n\n").map((paragraph) => (
+												<p key={paragraph}>{paragraph}</p>
+											))}
+										</div>
 										<ul className="mt-6 space-y-2 text-muted-foreground">
 											{step.bullets.map((item) => (
 												<li key={item} className="flex items-start gap-2">
