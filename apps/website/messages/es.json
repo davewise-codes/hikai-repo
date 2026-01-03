@@ -9,10 +9,10 @@
 	},
 	"HomePage": {
 		"hero": {
-			"badge": "Visibilidad para fundadores",
-			"title": "Haz que tu producto",
-			"highlighted": "destaque",
-			"subtitle": "Construir es solo la mitad del camino — Hikai lleva tu producto al mercado sin la carga pesada.",
+			"badge": "Visibilidad de mercado para productos",
+			"title": "Haz que tu producto <em>destaque</em>.",
+			"highlighted": "Una suite de comunicación para productos digitales modernos.",
+			"subtitle": "Construir es solo la mitad del camino.\nHikai ayuda a equipos de producto a convertir el progreso en presencia constante en el mercado.",
 			"cta": "Únete a la lista"
 		},
 		"how": {
@@ -142,27 +142,27 @@
 			"items": [
 				{
 					"title": "Ahorra tiempo",
-					"description": "Hikai convierte el progreso en contenido listo para compartir"
+					"description": "El progreso se convierte en contenido compartible sin esfuerzo manual."
 				},
 				{
 					"title": "Gana visibilidad",
-					"description": "Las actualizaciones no se entierran en commits"
+					"description": "Tu producto llega al mercado automáticamente, aunque no estés creando en público."
 				},
 				{
 					"title": "Mantente consistente",
-					"description": "No más semanas en silencio"
+					"description": "No más semanas en silencio. La presencia constante es cómo el mercado empieza a reconocerte."
 				},
 				{
 					"title": "Habilita la creatividad",
-					"description": "Enfócate en el trabajo creativo, no en perseguir actualizaciones"
+					"description": "Evita la página en blanco. Enfócate en dar forma a las ideas, no en empezar desde cero."
 				},
 				{
 					"title": "Mantén tu voz",
-					"description": "Siempre tienes el control"
+					"description": "La automatización gestiona el flujo. Tú decides el mensaje final."
 				},
 				{
 					"title": "Trabaja en equipo",
-					"description": "Incluso con un equipo, Hikai mantiene a todos alineados sin coordinación infinita"
+					"description": "Todos trabajan desde el mismo contexto de producto, sin fricción."
 				}
 			]
 		},

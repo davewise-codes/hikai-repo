@@ -9,10 +9,10 @@
 	},
 	"HomePage": {
 		"hero": {
-			"badge": "Visibility for founders",
-			"title": "Make your product",
-			"highlighted": "stand out",
-			"subtitle": "Building is only half the journey — Hikai delivers your product to the market without the grind.",
+			"badge": "Market visibility for products",
+			"title": "Make your product <em>stand out</em>.",
+			"highlighted": "A communication suite for modern digital products.",
+			"subtitle": "Building is only half the journey.\nHikai helps product-lead teams turn progress into consistent market presence.",
 			"cta": "Join the waitlist"
 		},
 		"how": {
@@ -142,27 +142,27 @@
 			"items": [
 				{
 					"title": "Save time",
-					"description": "Hikai turns progress into ready-to-share content"
+					"description": "Progress turns into shareable content without manual effort."
 				},
 				{
 					"title": "Gain visibility",
-					"description": "Updates don't get buried in commits"
+					"description": "Your product reaches the market automatically — even if you’re not actively creating in public."
 				},
 				{
 					"title": "Stay consistent",
-					"description": "No more silent weeks"
+					"description": "No more silent weeks. Consistent presence is how the market starts to recognize you."
 				},
 				{
 					"title": "Enable creativity",
-					"description": "Focus on creative work, not chasing updates"
+					"description": "Skip the blank page. Focus on shaping ideas, not starting from scratch."
 				},
 				{
 					"title": "Keep your voice",
-					"description": "You're always in control"
+					"description": "Automation handles the flow. You decide the final message."
 				},
 				{
 					"title": "Work as a team",
-					"description": "Even with a team, Hikai keeps everyone aligned without endless coordination"
+					"description": "Everyone works from the same product context, without friction."
 				}
 			]
 		},
