@@ -10,6 +10,7 @@
 
 import type * as agents_actions from "../agents/actions.js";
 import type * as agents_agentRuns from "../agents/agentRuns.js";
+import type * as agents_contextValidator from "../agents/contextValidator.js";
 import type * as agents_helloWorldAgent from "../agents/helloWorldAgent.js";
 import type * as agents_index from "../agents/index.js";
 import type * as agents_messages from "../agents/messages.js";
@@ -21,6 +22,7 @@ import type * as ai_adapters_index from "../ai/adapters/index.js";
 import type * as ai_adapters_openai from "../ai/adapters/openai.js";
 import type * as ai_config from "../ai/config.js";
 import type * as ai_index from "../ai/index.js";
+import type * as ai_inferenceLogs from "../ai/inferenceLogs.js";
 import type * as ai_ports_llmPort from "../ai/ports/llmPort.js";
 import type * as ai_prompts_index from "../ai/prompts/index.js";
 import type * as ai_prompts_productContext from "../ai/prompts/productContext.js";
@@ -56,6 +58,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "agents/actions": typeof agents_actions;
   "agents/agentRuns": typeof agents_agentRuns;
+  "agents/contextValidator": typeof agents_contextValidator;
   "agents/helloWorldAgent": typeof agents_helloWorldAgent;
   "agents/index": typeof agents_index;
   "agents/messages": typeof agents_messages;
@@ -67,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   "ai/adapters/openai": typeof ai_adapters_openai;
   "ai/config": typeof ai_config;
   "ai/index": typeof ai_index;
+  "ai/inferenceLogs": typeof ai_inferenceLogs;
   "ai/ports/llmPort": typeof ai_ports_llmPort;
   "ai/prompts/index": typeof ai_prompts_index;
   "ai/prompts/productContext": typeof ai_prompts_productContext;
