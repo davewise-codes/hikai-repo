@@ -4,7 +4,23 @@ import { routing } from "@/i18n/routing";
 import { FontProvider } from "@/providers/font-provider";
 import { ThemeProvider } from "@/providers/client-theme-provider";
 import { defaultColorTheme } from "@hikai/ui";
+import { WaitlistPopupProvider } from "@/components/waitlist-popup-provider";
 import "../globals.css";
+
+export const metadata = {
+	icons: {
+		icon: [
+			{
+				url: "/favicon-light.svg",
+				media: "(prefers-color-scheme: light)",
+			},
+			{
+				url: "/favicon-dark.svg",
+				media: "(prefers-color-scheme: dark)",
+			},
+		],
+	},
+};
 
 export default async function LocaleLayout({
 	children,
@@ -32,7 +48,9 @@ export default async function LocaleLayout({
 					enableSystem
 				>
 					<FontProvider>
-						<NextIntlClientProvider>{children}</NextIntlClientProvider>
+						<WaitlistPopupProvider>
+							<NextIntlClientProvider>{children}</NextIntlClientProvider>
+						</WaitlistPopupProvider>
 					</FontProvider>
 				</ThemeProvider>
 			</body>

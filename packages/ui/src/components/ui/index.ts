@@ -14,6 +14,9 @@ export * from "./tabs";
 export * from "./textarea";
 export * from "./form";
 export * from "./multi-select-dropdown";
+export * from "./hikai-isotipo";
+export * from "./hikai-logotipo";
+export * from "./hikai-imagotipo";
 
 // F2: New shadcn components
 export * from "./dialog";

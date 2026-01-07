@@ -17,6 +17,12 @@
   /* Coral/orange primary */
   --primary: 22 75% 55%;
   --primary-foreground: 0 0% 100%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 22 75% 55%;
+  --brand-primary-inverse-light: 0 0% 100%;
+  --brand-primary-dark: 22 75% 60%;
+  --brand-primary-inverse-dark: 270 8% 6%;
   /* Teal secondary */
   --secondary: 180 20% 92%;
   --secondary-foreground: 180 25% 30%;
@@ -83,6 +89,12 @@
   /* Coral/orange primary */
   --primary: 22 75% 60%;
   --primary-foreground: 270 8% 6%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 22 75% 55%;
+  --brand-primary-inverse-light: 0 0% 100%;
+  --brand-primary-dark: 22 75% 60%;
+  --brand-primary-inverse-dark: 270 8% 6%;
   /* Teal secondary */
   --secondary: 180 20% 40%;
   --secondary-foreground: 180 15% 90%;

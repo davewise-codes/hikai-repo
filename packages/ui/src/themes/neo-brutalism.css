@@ -17,6 +17,12 @@
   /* Bright red primary */
   --primary: 0 100% 60%;
   --primary-foreground: 0 0% 100%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 0 100% 60%;
+  --brand-primary-inverse-light: 0 0% 100%;
+  --brand-primary-dark: 0 100% 65%;
+  --brand-primary-inverse-dark: 0 0% 0%;
   /* Yellow secondary */
   --secondary: 60 100% 50%;
   --secondary-foreground: 0 0% 0%;
@@ -81,6 +87,12 @@
   /* Bright red primary */
   --primary: 0 100% 65%;
   --primary-foreground: 0 0% 0%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 0 100% 60%;
+  --brand-primary-inverse-light: 0 0% 100%;
+  --brand-primary-dark: 0 100% 65%;
+  --brand-primary-inverse-dark: 0 0% 0%;
   /* Yellow secondary */
   --secondary: 60 100% 55%;
   --secondary-foreground: 0 0% 0%;

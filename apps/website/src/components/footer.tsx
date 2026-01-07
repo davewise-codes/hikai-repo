@@ -1,4 +1,4 @@
-import { Linkedin, X } from "@hikai/ui";
+import { HikaiImagotipo, Linkedin, X } from "@hikai/ui";
 import Link from "next/link";
 
 export function Footer() {
@@ -7,11 +7,8 @@ export function Footer() {
 			<div className="container max-w-6xl mx-auto px-6 sm:px-8 py-16">
 				<div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.8fr] gap-10">
 					<div className="space-y-4">
-						<div className="flex items-center gap-2">
-							<div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
-								H
-							</div>
-							<span className="font-semibold text-lg">Hikai</span>
+						<div className="flex items-center">
+							<HikaiImagotipo className="h-5 w-auto" variant="brand" />
 						</div>
 						<p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
 							A calm product narrative engine. Turn product progress into clear, consistent updates for your audience.

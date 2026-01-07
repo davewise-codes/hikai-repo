@@ -22,6 +22,12 @@
   /* Colores semánticos */
   --primary: 240 5.9% 10%;
   --primary-foreground: 0 0% 98%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 240 5.9% 10%;
+  --brand-primary-inverse-light: 0 0% 98%;
+  --brand-primary-dark: 0 0% 98%;
+  --brand-primary-inverse-dark: 240 5.9% 10%;
   --secondary: 240 4.8% 95.9%;
   --secondary-foreground: 240 5.9% 10%;
   --muted: 240 4.8% 95.9%;
@@ -64,6 +70,12 @@
 
   --primary: 0 0% 98%;
   --primary-foreground: 240 5.9% 10%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 240 5.9% 10%;
+  --brand-primary-inverse-light: 0 0% 98%;
+  --brand-primary-dark: 0 0% 98%;
+  --brand-primary-inverse-dark: 240 5.9% 10%;
   --secondary: 240 3.7% 15.9%;
   --secondary-foreground: 0 0% 98%;
   --muted: 240 3.7% 15.9%;
@@ -105,6 +117,12 @@
 
   --primary: 0 0% 0%;
   --primary-foreground: 0 0% 100%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 0 0% 0%;
+  --brand-primary-inverse-light: 0 0% 100%;
+  --brand-primary-dark: 0 0% 0%;
+  --brand-primary-inverse-dark: 0 0% 100%;
   --secondary: 0 0% 90%;
   --secondary-foreground: 0 0% 0%;
   --muted: 0 0% 85%;

@@ -9,7 +9,8 @@ import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuTrigger,
-	SettingsIcon
+	SettingsIcon,
+	HikaiImagotipo
 } from "@hikai/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -17,6 +18,7 @@ import { ThemeSwitcher } from "./theme-switcher";
 import { ColorThemeSwitcher } from "./color-theme-switcher";
 import { LanguageSwitcher } from "./language-switcher";
 import { MobileNavigation } from "./mobile-navigation";
+import { WaitlistButton } from "./waitlist-button";
 
 export function NavigationBar() {
 	const t = useTranslations("Nav");
@@ -34,13 +36,8 @@ export function NavigationBar() {
 		<nav className="fixed top-0 left-0 right-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
 			<div className="mx-auto flex h-16 w-full items-center justify-between px-6 sm:px-8">
 				{/* Logo */}
-				<Link href="#hero" className="flex items-center gap-2">
-					<div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold">
-						H
-					</div>
-					<span className="font-semibold text-lg hidden sm:inline-block">
-						Hikai
-					</span>
+				<Link href="#hero" className="flex items-center">
+					<HikaiImagotipo className="h-5 w-auto" variant="brand" />
 				</Link>
 
 				{/* Desktop Navigation */}
@@ -94,11 +91,9 @@ export function NavigationBar() {
 							</div>
 						</DropdownMenuContent>
 					</DropdownMenu>
-					<Button asChild className="ml-2">
-						<Link href="#">
-							{tHome("hero.cta")}
-						</Link>
-					</Button>
+					<WaitlistButton className="ml-2">
+						{tHome("hero.cta")}
+					</WaitlistButton>
 				</div>
 
 				{/* Mobile Navigation */}

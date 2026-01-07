@@ -80,6 +80,14 @@ const preset = {
 					DEFAULT: "hsl(var(--warning))",
 					foreground: "hsl(var(--warning-foreground))",
 				},
+				"brand-primary": "hsl(var(--brand-primary))",
+				"brand-primary-inverse": "hsl(var(--brand-primary-inverse))",
+				"brand-primary-light": "hsl(var(--brand-primary-light))",
+				"brand-primary-dark": "hsl(var(--brand-primary-dark))",
+				"brand-primary-inverse-light":
+					"hsl(var(--brand-primary-inverse-light))",
+				"brand-primary-inverse-dark":
+					"hsl(var(--brand-primary-inverse-dark))",
 				border: "hsl(var(--border))",
 				input: "hsl(var(--input))",
 				ring: "hsl(var(--ring))",

@@ -17,6 +17,12 @@
   /* Amber primary */
   --primary: 38 92% 50%;
   --primary-foreground: 0 0% 0%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 38 92% 50%;
+  --brand-primary-inverse-light: 0 0% 0%;
+  --brand-primary-dark: 38 92% 50%;
+  --brand-primary-inverse-dark: 0 0% 0%;
   /* Warm secondary */
   --secondary: 40 30% 94%;
   --secondary-foreground: 30 15% 30%;
@@ -83,6 +89,12 @@
   /* Amber primary */
   --primary: 38 92% 50%;
   --primary-foreground: 0 0% 0%;
+  --brand-primary: var(--primary);
+  --brand-primary-inverse: var(--primary-foreground);
+  --brand-primary-light: 38 92% 50%;
+  --brand-primary-inverse-light: 0 0% 0%;
+  --brand-primary-dark: 38 92% 50%;
+  --brand-primary-inverse-dark: 0 0% 0%;
   /* Warm secondary */
   --secondary: 30 10% 15%;
   --secondary-foreground: 40 15% 85%;
