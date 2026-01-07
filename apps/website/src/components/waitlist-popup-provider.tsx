@@ -75,7 +75,7 @@ export function WaitlistPopupProvider({ children }: { children: React.ReactNode 
 			<Dialog open={isOpen} onOpenChange={setIsOpen}>
 				<DialogContent className="max-w-2xl p-4 sm:p-6 bg-transparent border-none shadow-none">
 					<DialogTitle className="sr-only">Join Hikai Beta Waitlist</DialogTitle>
-					<div className="max-h-[80vh] overflow-y-auto rounded-3xl bg-white p-2 sm:p-3 shadow-2xl">
+					<div className="max-h-[80vh] overflow-y-auto rounded-3xl bg-slate-950 p-2 sm:p-3 shadow-2xl ring-1 ring-white/10">
 						<iframe
 							key={openCount}
 							data-tally-src="https://tally.so/embed/EkdL1q?alignLeft=1&hideTitle=1&dynamicHeight=1"

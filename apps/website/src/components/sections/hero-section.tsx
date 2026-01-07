@@ -38,7 +38,7 @@ export function HeroSection() {
 										<p key={line}>{line}</p>
 									))}
 							</div>
-							<WaitlistButton className="w-full sm:w-auto">
+							<WaitlistButton className="w-auto">
 								{t("cta")}
 							</WaitlistButton>
 						</div>
