@@ -10,9 +10,9 @@ import {
 	cn,
 } from "@hikai/ui";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { WaitlistButton } from "@/components/waitlist-button";
 
 export function HowItWorksSection() {
 	const t = useTranslations("HomePage.how");
@@ -248,11 +248,9 @@ export function HowItWorksSection() {
 												</li>
 											))}
 										</ul>
-										<Button size="lg" asChild className="mt-8">
-											<Link href="#">
-												{tHero("cta")}
-											</Link>
-										</Button>
+										<WaitlistButton className="mt-8">
+											{tHero("cta")}
+										</WaitlistButton>
 									</div>
 									<div className="rounded-3xl border border-border bg-muted/20">
 										<div className="relative overflow-hidden rounded-t-3xl">

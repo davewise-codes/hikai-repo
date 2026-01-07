@@ -125,7 +125,9 @@
       "Bash(pnpm --filter website build:*)",
       "Bash(pnpm --filter @hikai/ui build:*)",
       "Bash(timeout 30s pnpm:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:stack.convex.dev)"
     ],
     "deny": [],
     "ask": [],

@@ -71,6 +71,12 @@ openssl pkcs8 -topk8 -inform PEM -in /Users/dperez/Downloads/hikai-connections-a
 
 pnpm --filter @hikai/convex exec npx convex run connectors/github:syncGithubConnection --productId kd7ajcjwa9nyykv9nt3fxv1aj17wwya2 --connectionId kn7d4jgtyr3k3x1s1b4yzqjqr97wymty
 
+---
+
+- Cambiar modelo de datos para guardar historiales de contexto
+
+---
+
 {
 "toneOfVoice": "professional",
 "strategicPillars": [

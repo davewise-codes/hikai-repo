@@ -1,6 +1,6 @@
-import { Badge, Button } from "@hikai/ui";
+import { Badge } from "@hikai/ui";
 import { useTranslations } from "next-intl";
-import Link from "next/link";
+import { WaitlistButton } from "@/components/waitlist-button";
 
 export function CTASection() {
 	const t = useTranslations("HomePage.finalCta");
@@ -20,11 +20,9 @@ export function CTASection() {
 				<p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 leading-relaxed">
 					{t("subtitle")}
 				</p>
-				<Button size="lg" variant="secondary" className="w-full sm:w-auto" asChild>
-					<Link href="#">
-						{t("cta")}
-					</Link>
-				</Button>
+				<WaitlistButton size="lg" variant="secondary" className="w-full sm:w-auto">
+					{t("cta")}
+				</WaitlistButton>
 			</div>
 		</section>
 	);

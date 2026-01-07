@@ -1,7 +1,7 @@
-import { Button, Badge } from "@hikai/ui";
+import { Badge } from "@hikai/ui";
 import { useTranslations } from "next-intl";
 import { HeroImage } from "./hero-image";
-import Link from "next/link";
+import { WaitlistButton } from "@/components/waitlist-button";
 
 export function HeroSection() {
 	const t = useTranslations("HomePage.hero");
@@ -38,11 +38,9 @@ export function HeroSection() {
 										<p key={line}>{line}</p>
 									))}
 							</div>
-							<Button size="lg" asChild className="w-full sm:w-auto">
-								<Link href="#">
-									{t("cta")}
-								</Link>
-							</Button>
+							<WaitlistButton className="w-full sm:w-auto">
+								{t("cta")}
+							</WaitlistButton>
 						</div>
 					</div>
 					<div className="mt-12 flex justify-center">

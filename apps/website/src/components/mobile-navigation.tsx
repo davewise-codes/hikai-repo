@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { ThemeSwitcher } from "./theme-switcher";
 import { ColorThemeSwitcher } from "./color-theme-switcher";
 import { LanguageSwitcher } from "./language-switcher";
+import { WaitlistButton } from "./waitlist-button";
 
 export function MobileNavigation() {
 	const t = useTranslations("Nav");
@@ -70,11 +71,9 @@ export function MobileNavigation() {
 					<Separator />
 
 					{/* CTA Button */}
-					<Button size="lg" className="w-full" asChild>
-						<Link href="#">
-							{tHome("hero.cta")}
-						</Link>
-					</Button>
+					<WaitlistButton size="lg" className="w-full">
+						{tHome("hero.cta")}
+					</WaitlistButton>
 				</div>
 			</SheetContent>
 		</Sheet>
