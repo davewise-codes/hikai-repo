@@ -7,7 +7,7 @@ export function CTASection() {
 
 	return (
 		<section className="py-16 md:py-24 bg-primary text-primary-foreground">
-			<div className="container max-w-4xl mx-auto text-center">
+			<div className="container max-w-4xl mx-auto px-6 sm:px-8 text-center">
 				<Badge variant="secondary" className="mb-6 bg-primary-foreground/10 text-primary-foreground border-primary-foreground/20">
 					{t("badge")}
 				</Badge>
@@ -20,7 +20,11 @@ export function CTASection() {
 				<p className="text-lg md:text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10 leading-relaxed">
 					{t("subtitle")}
 				</p>
-				<WaitlistButton size="lg" variant="secondary" className="w-full sm:w-auto">
+				<WaitlistButton
+					size="lg"
+					variant="secondary"
+					className="mx-auto w-auto"
+				>
 					{t("cta")}
 				</WaitlistButton>
 			</div>

@@ -12,7 +12,7 @@ export function FAQSection() {
 
 	return (
 		<section className="py-16 md:py-24 bg-muted/30">
-			<div className="container max-w-4xl mx-auto">
+			<div className="container max-w-4xl mx-auto px-6 sm:px-8">
 				{/* Header */}
 				<div className="text-center mb-16">
 					<Badge variant="secondary" className="mb-6">

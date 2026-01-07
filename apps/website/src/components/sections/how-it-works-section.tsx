@@ -176,7 +176,7 @@ export function HowItWorksSection() {
 								{t("stepLabel")}
 							</p>
 							<p className="text-fontSize-sm font-semibold">
-								{activeStepIndex + 1}. {steps[activeStepIndex]?.headline}
+								{activeStepIndex + 1}. {steps[activeStepIndex]?.tabLabel}
 							</p>
 						</div>
 						<div className="flex items-center gap-2">
