@@ -4,9 +4,14 @@ import { action } from "../_generated/server";
 import { api, components, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { getAgentAIConfig, getAgentTelemetryConfig } from "../ai";
-import { productContextPrompt, PRODUCT_CONTEXT_PROMPT_VERSION } from "../ai/prompts";
+import {
+	productContextPrompt,
+	PRODUCT_CONTEXT_PROMPT_VERSION,
+	TIMELINE_INTERPRETER_PROMPT_VERSION,
+} from "../ai/prompts";
 import { helloWorldAgent, HELLO_WORLD_PROMPT_VERSION } from "./helloWorldAgent";
 import { productContextAgent } from "./productContextAgent";
+import { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
 import { detectStackFromPackageJson } from "./stackDetector";
 import { validateAndEnrichContext } from "./contextValidator";
 
@@ -16,6 +21,8 @@ const USE_CASE = "ai_test";
 const SOURCE_METADATA = { source: "ai-test" };
 const PRODUCT_CONTEXT_USE_CASE = "product_context_enrichment";
 const PRODUCT_CONTEXT_AGENT_NAME = "Product Context Agent";
+const TIMELINE_INTERPRETER_USE_CASE = "timeline_interpretation";
+const TIMELINE_INTERPRETER_AGENT_NAME = "Timeline Context Interpreter Agent";
 
 const strategicPillarsCatalog = [
 	{
@@ -575,6 +582,153 @@ export const generateProductContext = action({
 	},
 });
 
+export const interpretTimelineEvents = action({
+	args: {
+		productId: v.id("products"),
+		limit: v.optional(v.number()),
+		threadId: v.optional(v.string()),
+		debugUi: v.optional(v.boolean()),
+	},
+	handler: async (
+		ctx,
+		{ productId, limit, threadId, debugUi },
+	): Promise<{
+		threadId: string;
+		narratives: unknown[];
+	}> => {
+		const aiConfig = getAgentAIConfig(TIMELINE_INTERPRETER_AGENT_NAME);
+		const { organizationId, userId, product } = await ctx.runQuery(
+			internal.lib.access.assertProductAccessInternal,
+			{ productId },
+		);
+
+		const rawSummaries = await ctx.runQuery(
+			internal.agents.productContextData.listRawEventSummaries,
+			{ productId, limit },
+		);
+
+		const rawEvents = rawSummaries.map((event) => ({
+			rawEventId: event.rawEventId,
+			occurredAt: event.occurredAt ?? 0,
+			sourceType:
+				event.type === "commit" ||
+				event.type === "pull_request" ||
+				event.type === "release"
+					? event.type
+					: "other",
+			summary: event.summary,
+		}));
+
+		const baseline = product.productBaseline ?? {};
+		const context = product.productContext?.current ?? {};
+		const releaseCadence = product.releaseCadence ?? "unknown";
+		const languagePreference = product.languagePreference ?? "en";
+
+		const snapshot = {
+			baseline,
+			productContext: context,
+			releaseCadence,
+		};
+
+		const input = {
+			languagePreference,
+			releaseCadence,
+			baseline,
+			productContext: context,
+			rawEvents,
+		};
+
+		const promptPayload = JSON.stringify(input);
+		const tid = threadId ?? (await createThread(ctx, agentComponent));
+		const start = Date.now();
+
+		try {
+			const agentCtx = {
+				...ctx,
+				organizationId,
+				productId,
+				userId,
+				aiPrompt: promptPayload,
+				aiStartMs: start,
+			};
+
+			const result = await timelineContextInterpreterAgent.generateText(
+				agentCtx,
+				{ threadId: tid },
+				{ prompt: promptPayload },
+			);
+
+			const parsed = parseJsonSafely(result.text) as { narratives?: unknown[] };
+			if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.narratives)) {
+				throw new Error(
+					"Invalid JSON response from Timeline Context Interpreter Agent",
+				);
+			}
+
+			const telemetryConfig = getAgentTelemetryConfig(
+				TIMELINE_INTERPRETER_AGENT_NAME,
+			);
+			if (telemetryConfig.persistInferenceLogs) {
+				const usage = getUsageTotals(result);
+				const bucketIds = parsed.narratives
+					.map((item) =>
+						item && typeof item === "object"
+							? (item as { bucketId?: string }).bucketId
+							: undefined,
+					)
+					.filter((value): value is string => Boolean(value));
+
+				await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
+					organizationId,
+					productId,
+					userId,
+					useCase: TIMELINE_INTERPRETER_USE_CASE,
+					agentName: TIMELINE_INTERPRETER_AGENT_NAME,
+					promptVersion: TIMELINE_INTERPRETER_PROMPT_VERSION,
+					prompt: debugUi ? promptPayload : undefined,
+					response: debugUi ? result.text : undefined,
+					provider: aiConfig.provider,
+					model: aiConfig.model,
+					tokensIn: usage.tokensIn,
+					tokensOut: usage.tokensOut,
+					totalTokens: usage.totalTokens,
+					latencyMs: Date.now() - start,
+					contextVersion:
+						typeof (context as { version?: number }).version === "number"
+							? (context as { version: number }).version
+							: undefined,
+					metadata: {
+						rawEventIds: rawEvents.map((event) => event.rawEventId),
+						bucketIds,
+						baselineSnapshotHash: hashString(JSON.stringify(snapshot)),
+					},
+				});
+			}
+
+			return { threadId: tid, narratives: parsed.narratives };
+		} catch (error) {
+			await ctx.runMutation(internal.ai.telemetry.recordError, {
+				organizationId,
+				productId,
+				userId,
+				useCase: TIMELINE_INTERPRETER_USE_CASE,
+				agentName: TIMELINE_INTERPRETER_AGENT_NAME,
+				threadId: tid,
+				provider: aiConfig.provider,
+				model: aiConfig.model,
+				errorMessage:
+					error instanceof Error
+						? error.message
+						: "Unknown error invoking timeline interpreter agent",
+				prompt: debugUi ? promptPayload : undefined,
+				metadata: { source: "timeline-interpretation" },
+			});
+
+			throw error;
+		}
+	},
+});
+
 export const chatStream = action({
 	args: {
 		prompt: v.string(),
@@ -699,6 +853,14 @@ function parseJsonSafely(text: string): any {
 		? trimmed.replace(/^```[a-zA-Z]*\s*/, "").replace(/```$/, "").trim()
 		: trimmed;
 	return JSON.parse(withoutFences);
+}
+
+function hashString(value: string): string {
+	let hash = 5381;
+	for (let i = 0; i < value.length; i += 1) {
+		hash = (hash * 33) ^ value.charCodeAt(i);
+	}
+	return (hash >>> 0).toString(16);
 }
 
 function getUsageTotals(result: {

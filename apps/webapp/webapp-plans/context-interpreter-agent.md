@@ -29,7 +29,7 @@ Ademas, el contexto actual mezcla "current" e historico en el mismo JSON. Querem
 | ------- | -------------------------------------------------------- | ------ |
 | F0.0    | Alineacion de arquitectura y contratos de datos          | ✅     |
 | F1.0    | Separar historico de productContext a tabla dedicada     | ✅     |
-| F2.0    | Agente de interpretacion (prompt, modelo, telemetria)    | ⏳     |
+| F2.0    | Agente de interpretacion (prompt, modelo, telemetria)    | ✅     |
 | F3.0    | Pipeline de interpretacion con agrupacion y snapshots    | ⏳     |
 | F4.0    | UI de timeline y feedback por interpretacion             | ⏳     |
 
