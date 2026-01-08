@@ -90,9 +90,6 @@ type ProductContextCardProps = {
 		_id: Id<"products">;
 		name: string;
 		userRole?: "admin" | "member";
-		productContext?: {
-			current?: ProductContextEntry;
-		};
 		languagePreference?: string;
 	};
 };
@@ -134,9 +131,11 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 			: "skip",
 	) as AgentRun | null | undefined;
 
-	const current = product.productContext?.current;
+	const current = useQuery(api.products.products.getCurrentProductContextSnapshot, {
+		productId: product._id,
+	});
 	const history =
-		useQuery(api.products.products.getProductContextHistory, {
+		useQuery(api.products.products.getProductContextSnapshots, {
 			productId: product._id,
 			limit: 25,
 		}) ?? [];
@@ -150,7 +149,8 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	const hasCollapsible =
 		hasRisks || hasToneGuidelines || hasRecommendedFocus;
 	const hasSources =
-		(current?.sourcesUsed ?? []).filter((s) => s !== "baseline").length > 0 ||
+		(current?.sourcesUsed ?? []).filter((s: string) => s !== "baseline").length >
+			0 ||
 		(!hasContext && (connections?.length ?? 0) > 0);
 
 	const lastUpdated = current?.createdAt
@@ -263,7 +263,7 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 								{t("context.sources")}
 							</span>
 							<div className="flex gap-1">
-								{sources.map((src) => (
+						{sources.map((src: string) => (
 									<Badge key={src} variant="secondary">
 										{src}
 									</Badge>

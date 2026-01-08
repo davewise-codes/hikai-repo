@@ -206,23 +206,22 @@ const schema = defineSchema({
 		languagePreference: v.optional(v.string()),
 		releaseCadence: v.optional(v.string()),
 		productBaseline: v.optional(productBaseline),
-		productContext: v.optional(
-			v.object({
-				current: v.optional(productContextEntry),
-			}),
-		),
+		currentContextSnapshotId: v.optional(v.id("productContextSnapshots")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
 	.index("by_organization", ["organizationId"])
 	.index("by_organization_slug", ["organizationId", "slug"]),
 
-	productContextHistory: defineTable({
+	productContextSnapshots: defineTable({
 		productId: v.id("products"),
 		version: v.number(),
 		createdAt: v.number(),
 		createdBy: v.id("users"),
-		entry: v.any(),
+		baseline: v.any(),
+		context: v.any(),
+		releaseCadence: v.optional(v.string()),
+		languagePreference: v.optional(v.string()),
 	})
 		.index("by_product", ["productId", "createdAt"])
 		.index("by_product_version", ["productId", "version"]),

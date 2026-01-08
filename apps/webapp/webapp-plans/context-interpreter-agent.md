@@ -30,7 +30,7 @@ Ademas, el contexto actual mezcla "current" e historico en el mismo JSON. Querem
 | F0.0    | Alineacion de arquitectura y contratos de datos          | ✅     |
 | F1.0    | Separar historico de productContext a tabla dedicada     | ✅     |
 | F2.0    | Agente de interpretacion (prompt, modelo, telemetria)    | ✅     |
-| F3.0    | Pipeline de interpretacion con agrupacion y snapshots    | ⏳     |
+| F3.0    | Pipeline de interpretacion con agrupacion y snapshots    | ✅     |
 | F4.0    | UI de timeline y feedback por interpretacion             | ⏳     |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
@@ -200,8 +200,9 @@ PARTE 4: VALIDACION
 F3.0: Timeline interpretation pipeline
 
 PARTE 1: MODELO DE DATOS
-- Nuevo modelo para "interpreted timeline event" que pueda referenciar multiples rawEventIds.
-- Guardar snapshot de baseline + productContext (o referencias a version).
+- Reusar tabla interpretedEvents con nuevo esquema narrativo (many-to-one).
+- Crear tabla productContextSnapshots (baseline + context) y guardar referencia en products.currentContextSnapshotId.
+- Cada interpreted event guarda contextSnapshotId en vez de duplicar payload.
 - Guardar bucket/cadencia.
 
 PARTE 2: INTERPRETACION

@@ -15,6 +15,15 @@ export const getProductWithContext = internalQuery({
 	},
 });
 
+export const getContextSnapshotById = internalQuery({
+	args: {
+		snapshotId: v.id("productContextSnapshots"),
+	},
+	handler: async (ctx, { snapshotId }) => {
+		return ctx.db.get(snapshotId);
+	},
+});
+
 export const listRawEventSummaries = internalQuery({
 	args: {
 		productId: v.id("products"),
@@ -73,31 +82,39 @@ export const getRepositoryMetadata = internalQuery({
 export const saveProductContext = internalMutation({
 	args: {
 		productId: v.id("products"),
-		entry: v.any(),
+		context: v.any(),
+		baseline: v.any(),
+		releaseCadence: v.optional(v.string()),
 		languagePreference: v.string(),
 		timestamp: v.number(),
 	},
-	handler: async (ctx, { productId, entry, languagePreference, timestamp }) => {
+	handler: async (
+		ctx,
+		{ productId, context, baseline, releaseCadence, languagePreference, timestamp },
+	) => {
 		const product = await ctx.db.get(productId);
 		if (!product) {
 			throw new Error("Producto no encontrado");
 		}
 
+		const snapshotId = await ctx.db.insert("productContextSnapshots", {
+			productId,
+			version: Number(context?.version ?? 0),
+			createdAt: Number(context?.createdAt ?? timestamp),
+			createdBy: context?.createdBy,
+			baseline,
+			context,
+			releaseCadence,
+			languagePreference,
+		});
+
 		await ctx.db.patch(productId, {
-			productContext: {
-				current: entry,
-			},
+			currentContextSnapshotId: snapshotId,
 			languagePreference,
 			updatedAt: timestamp,
 		});
 
-		await ctx.db.insert("productContextHistory", {
-			productId,
-			version: Number(entry?.version ?? 0),
-			createdAt: Number(entry?.createdAt ?? timestamp),
-			createdBy: entry?.createdBy,
-			entry,
-		});
+		return { snapshotId };
 	},
 });
 

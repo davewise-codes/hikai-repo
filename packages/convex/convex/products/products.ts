@@ -159,7 +159,7 @@ export const getProductBySlug = query({
  * Obtiene el historial de contextos de un producto.
  * Requiere ser miembro del producto.
  */
-export const getProductContextHistory = query({
+export const getProductContextSnapshots = query({
   args: {
     productId: v.id("products"),
     limit: v.optional(v.number()),
@@ -168,12 +168,34 @@ export const getProductContextHistory = query({
     await assertProductAccess(ctx, productId);
 
     const records = await ctx.db
-      .query("productContextHistory")
+      .query("productContextSnapshots")
       .withIndex("by_product", (q) => q.eq("productId", productId))
       .order("desc")
       .take(limit ?? 25);
 
-    return records.map((record) => record.entry);
+    return records.map((record) => record.context);
+  },
+});
+
+/**
+ * Obtiene el snapshot de contexto actual de un producto.
+ * Requiere ser miembro del producto.
+ */
+export const getCurrentProductContextSnapshot = query({
+  args: { productId: v.id("products") },
+  handler: async (ctx, { productId }) => {
+    const { product } = await assertProductAccess(ctx, productId);
+
+    if (!product.currentContextSnapshotId) {
+      return null;
+    }
+
+    const snapshot = await ctx.db.get(product.currentContextSnapshotId);
+    if (!snapshot || snapshot.productId !== productId) {
+      return null;
+    }
+
+    return snapshot.context;
   },
 });
 

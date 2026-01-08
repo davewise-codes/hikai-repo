@@ -227,6 +227,12 @@ export const generateProductContext = action({
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
 		);
+		const currentSnapshot = product.currentContextSnapshotId
+			? await ctx.runQuery(
+					internal.agents.productContextData.getContextSnapshotById,
+					{ snapshotId: product.currentContextSnapshotId },
+				)
+			: null;
 		let runId = agentRunId;
 		if (!runId) {
 			try {
@@ -416,7 +422,7 @@ export const generateProductContext = action({
 			sourcesUsed.add("package.json");
 		}
 
-		const currentVersion = fetchedProduct.productContext?.current?.version ?? 0;
+		const currentVersion = currentSnapshot?.context?.version ?? 0;
 		const baselineSource = fetchedProduct.productBaseline ?? {};
 		const baseline = {
 			productName: fetchedProduct.name,
@@ -447,9 +453,7 @@ export const generateProductContext = action({
 			forceRefresh: forceRefresh ?? false,
 			baseline,
 			detectedTechnicalStack: Array.from(detectedStack),
-			existingContext: forceRefresh
-				? null
-				: fetchedProduct.productContext?.current ?? null,
+			existingContext: forceRefresh ? null : currentSnapshot?.context ?? null,
 			sources: {
 				github: eventSummaries,
 			},
@@ -532,15 +536,14 @@ export const generateProductContext = action({
 				});
 			}
 
-			await ctx.runMutation(
-				internal.agents.productContextData.saveProductContext,
-				{
-					productId,
-					entry: newEntry,
-					languagePreference,
-					timestamp,
-				},
-			);
+			await ctx.runMutation(internal.agents.productContextData.saveProductContext, {
+				productId,
+				context: newEntry,
+				baseline: baselineSource,
+				releaseCadence: fetchedProduct.releaseCadence ?? undefined,
+				languagePreference,
+				timestamp,
+			});
 
 			await recordStep("Product context generation completed", "success");
 			await finishRun("success");
@@ -619,12 +622,20 @@ export const interpretTimelineEvents = action({
 			summary: event.summary,
 		}));
 
-		const baseline = product.productBaseline ?? {};
-		const context = product.productContext?.current ?? {};
-		const releaseCadence = product.releaseCadence ?? "unknown";
+		const currentSnapshot = product.currentContextSnapshotId
+			? await ctx.runQuery(
+					internal.agents.productContextData.getContextSnapshotById,
+					{ snapshotId: product.currentContextSnapshotId },
+				)
+			: null;
+
+		const baseline = currentSnapshot?.baseline ?? product.productBaseline ?? {};
+		const context = currentSnapshot?.context ?? {};
+		const releaseCadence =
+			currentSnapshot?.releaseCadence ?? product.releaseCadence ?? "unknown";
 		const languagePreference = product.languagePreference ?? "en";
 
-		const snapshot = {
+		const snapshotPayload = {
 			baseline,
 			productContext: context,
 			releaseCadence,
@@ -700,7 +711,7 @@ export const interpretTimelineEvents = action({
 					metadata: {
 						rawEventIds: rawEvents.map((event) => event.rawEventId),
 						bucketIds,
-						baselineSnapshotHash: hashString(JSON.stringify(snapshot)),
+						baselineSnapshotHash: hashString(JSON.stringify(snapshotPayload)),
 					},
 				});
 			}
