@@ -209,14 +209,23 @@ const schema = defineSchema({
 		productContext: v.optional(
 			v.object({
 				current: v.optional(productContextEntry),
-				history: v.optional(v.array(productContextEntry)),
 			}),
 		),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
-		.index("by_organization", ["organizationId"])
-		.index("by_organization_slug", ["organizationId", "slug"]),
+	.index("by_organization", ["organizationId"])
+	.index("by_organization_slug", ["organizationId", "slug"]),
+
+	productContextHistory: defineTable({
+		productId: v.id("products"),
+		version: v.number(),
+		createdAt: v.number(),
+		createdBy: v.id("users"),
+		entry: v.any(),
+	})
+		.index("by_product", ["productId", "createdAt"])
+		.index("by_product_version", ["productId", "version"]),
 
   productMembers: defineTable({
     productId: v.id("products"),

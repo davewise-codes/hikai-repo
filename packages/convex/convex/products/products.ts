@@ -156,6 +156,28 @@ export const getProductBySlug = query({
 });
 
 /**
+ * Obtiene el historial de contextos de un producto.
+ * Requiere ser miembro del producto.
+ */
+export const getProductContextHistory = query({
+  args: {
+    productId: v.id("products"),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { productId, limit }) => {
+    await assertProductAccess(ctx, productId);
+
+    const records = await ctx.db
+      .query("productContextHistory")
+      .withIndex("by_product", (q) => q.eq("productId", productId))
+      .order("desc")
+      .take(limit ?? 25);
+
+    return records.map((record) => record.entry);
+  },
+});
+
+/**
  * Obtiene todos los productos donde el usuario es miembro.
  */
 export const getUserProducts = query({

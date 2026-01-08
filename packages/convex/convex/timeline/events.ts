@@ -31,6 +31,8 @@ type InterpretResult = {
 	productId: Id<"products">;
 };
 
+type SyncGithubResult = Awaited<ReturnType<typeof syncGithubConnectionHandler>>;
+
 export const listTimelineByProduct = query({
 	args: {
 		productId: v.id("products"),
@@ -68,13 +70,16 @@ export const triggerManualSync = action({
 		productId: v.id("products"),
 		connectionId: v.id("connections"),
 	},
-	handler: async (ctx, { productId, connectionId }) => {
+	handler: async (
+		ctx,
+		{ productId, connectionId }
+	): Promise<SyncGithubResult & { interpreted: number }> => {
 		await ctx.runQuery(internal.connectors.github.assertProductAccessForGithub, {
 			productId,
 		});
 
 		const result = await syncGithubConnectionHandler(ctx, { productId, connectionId });
-		const interpretResult = await ctx.runMutation(
+		const interpretResult: InterpretResult = await ctx.runMutation(
 			api.timeline.interpret.interpretPendingEvents,
 			{ productId }
 		);

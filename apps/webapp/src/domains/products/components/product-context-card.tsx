@@ -92,7 +92,6 @@ type ProductContextCardProps = {
 		userRole?: "admin" | "member";
 		productContext?: {
 			current?: ProductContextEntry;
-			history?: ProductContextEntry[];
 		};
 		languagePreference?: string;
 	};
@@ -136,7 +135,11 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	) as AgentRun | null | undefined;
 
 	const current = product.productContext?.current;
-	const history = product.productContext?.history ?? [];
+	const history =
+		useQuery(api.products.products.getProductContextHistory, {
+			productId: product._id,
+			limit: 25,
+		}) ?? [];
 	const agentName = "Product Context Agent";
 	const threadId = current?.threadId;
 	const hasContext = !!current;

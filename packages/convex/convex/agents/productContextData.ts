@@ -83,18 +83,20 @@ export const saveProductContext = internalMutation({
 			throw new Error("Producto no encontrado");
 		}
 
-		const history = [
-			...(product.productContext?.history ?? []),
-			...(product.productContext?.current ? [product.productContext.current] : []),
-		];
-
 		await ctx.db.patch(productId, {
 			productContext: {
 				current: entry,
-				history,
 			},
 			languagePreference,
 			updatedAt: timestamp,
+		});
+
+		await ctx.db.insert("productContextHistory", {
+			productId,
+			version: Number(entry?.version ?? 0),
+			createdAt: Number(entry?.createdAt ?? timestamp),
+			createdBy: entry?.createdBy,
+			entry,
 		});
 	},
 });
