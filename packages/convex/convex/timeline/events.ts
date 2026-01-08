@@ -74,10 +74,14 @@ export const triggerManualSync = action({
 		});
 
 		const result = await syncGithubConnectionHandler(ctx, { productId, connectionId });
+		const interpretResult = await ctx.runMutation(
+			api.timeline.interpret.interpretPendingEvents,
+			{ productId }
+		);
 
 		return {
 			...result,
-			interpreted: 0,
+			interpreted: interpretResult.processed,
 		};
 	},
 });
