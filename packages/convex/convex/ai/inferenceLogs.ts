@@ -33,6 +33,25 @@ export const getInferenceRating = query({
 	},
 });
 
+export const getInferenceRatingById = query({
+	args: {
+		productId: v.id("products"),
+		inferenceLogId: v.id("aiInferenceLogs"),
+	},
+	handler: async (ctx, { productId, inferenceLogId }) => {
+		await assertProductAccess(ctx, productId);
+
+		const log = await ctx.db.get(inferenceLogId);
+		if (!log || log.productId !== productId) return null;
+
+		return {
+			rating: log.rating,
+			ratingAt: log.ratingAt,
+			ratingByUserId: log.ratingByUserId,
+		};
+	},
+});
+
 export const rateInference = mutation({
 	args: {
 		productId: v.id("products"),
@@ -73,6 +92,51 @@ export const rateInference = mutation({
 					ratingAt: Date.now(),
 					ratingByUserId: userId,
 					ratingMetadata: { source: "product-context-card" },
+				}
+			: {
+					rating: undefined,
+					ratingAt: undefined,
+					ratingByUserId: undefined,
+					ratingMetadata: undefined,
+				};
+
+		await ctx.db.patch(log._id, patch);
+
+		return { rating: nextRating ?? null };
+	},
+});
+
+export const rateInferenceById = mutation({
+	args: {
+		productId: v.id("products"),
+		inferenceLogId: v.id("aiInferenceLogs"),
+		rating: v.union(v.literal("up"), v.literal("down")),
+	},
+	handler: async (ctx, { productId, inferenceLogId, rating }) => {
+		const { userId } = await assertProductAccess(ctx, productId);
+
+		const log = await ctx.db.get(inferenceLogId);
+		if (!log || log.productId !== productId) {
+			throw new Error("Inference log not found.");
+		}
+
+		const telemetryConfig = getAgentTelemetryConfig(log.agentName);
+		if (!telemetryConfig.enableRating) {
+			throw new Error("Rating is disabled for this agent.");
+		}
+
+		const nextRating = log.rating === rating ? undefined : rating;
+		const patch: {
+			rating?: "up" | "down";
+			ratingAt?: number;
+			ratingByUserId?: Id<"users">;
+			ratingMetadata?: Record<string, unknown>;
+		} = nextRating
+			? {
+					rating: nextRating,
+					ratingAt: Date.now(),
+					ratingByUserId: userId,
+					ratingMetadata: { source: "timeline-detail" },
 				}
 			: {
 					rating: undefined,

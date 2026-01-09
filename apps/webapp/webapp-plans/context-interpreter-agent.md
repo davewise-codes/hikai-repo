@@ -31,7 +31,8 @@ Ademas, el contexto actual mezcla "current" e historico en el mismo JSON. Querem
 | F1.0    | Separar historico de productContext a tabla dedicada     | ✅     |
 | F2.0    | Agente de interpretacion (prompt, modelo, telemetria)    | ✅     |
 | F3.0    | Pipeline de interpretacion con agrupacion y snapshots    | ✅     |
-| F4.0    | UI de timeline y feedback por interpretacion             | ⏳     |
+| F4.0    | UI de timeline y feedback por interpretacion             | ✅     |
+| F5.0    | Mejora de timeline (requerimientos y evolucion)          | ⏳     |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -246,7 +247,7 @@ PARTE 1: UI NARRATIVA
 
 PARTE 2: FEEDBACK
 - Botones para valorar interpretacion (up/down).
-- Enviar rating via aiInferenceLogs (rateInference) con agentName "Timeline Context Interpreter Agent" y contextVersion.
+- Enviar rating via aiInferenceLogs (rateInferenceById) usando inferenceLogId del evento interpretado.
 
 PARTE 3: VALIDACION
 - tsc webapp
@@ -257,6 +258,37 @@ PARTE 3: VALIDACION
 - [ ] UI muestra narrativa (no commits)
 - [ ] Feedback por interpretacion funciona
 - [ ] i18n actualizado
+
+---
+
+### F5.0: Mejora de timeline (requerimientos)
+
+**Objetivo**: Definir requerimientos de producto/UX para la siguiente iteracion del timeline.
+
+**Prompt**:
+
+```
+F5.0: Timeline improvements requirements
+
+PARTE 1: ANALISIS
+- Identificar pain points actuales del timeline (navegacion, claridad, densidad, narrativa).
+- Definir criterios de calidad para una narrativa "buena".
+
+PARTE 2: REQUIREMENTS
+- Especificar mejoras funcionales (filtros, agrupaciones, insights, acciones).
+- Especificar mejoras visuales (layout, jerarquia, badges, densidad).
+
+PARTE 3: METRICAS
+- Definir metricas de exito (adopcion, tiempo de lectura, feedback positivo).
+
+PARTE 4: VALIDACION
+- Checklist de aceptacion para fases futuras.
+```
+
+**Validacion**:
+- [ ] Requerimientos claros y priorizados
+- [ ] Criterios de calidad definidos
+- [ ] Metricas acordadas
 
 ---
 

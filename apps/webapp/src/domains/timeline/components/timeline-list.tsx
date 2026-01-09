@@ -6,14 +6,23 @@ import { formatShortDate } from "@/domains/shared/utils";
 
 export type TimelineListEvent = {
 	_id: Id<"interpretedEvents">;
+	productId: Id<"products">;
+	bucketId: string;
+	bucketStartAt: number;
+	bucketEndAt: number;
+	cadence: string;
 	kind: string;
 	title: string;
 	summary?: string;
+	narrative?: string;
 	occurredAt: number;
 	relevance?: number;
 	tags?: string[];
-	rawStatus: "pending" | "processed" | "error" | null;
-	rawSourceType: "commit" | "pull_request" | "release" | null;
+	audience?: string;
+	feature?: string;
+	rawEventIds: Id<"rawEvents">[];
+	rawEventCount: number;
+	inferenceLogId?: Id<"aiInferenceLogs">;
 };
 
 interface TimelineListProps {
@@ -73,12 +82,14 @@ export function TimelineList({
 
 	if (!events.length) {
 		return (
-			<div className="flex flex-col items-center justify-center gap-2 rounded-lg border p-6 text-center">
-				<p className="text-fontSize-sm font-medium">{t("empty.title")}</p>
-				<p className="text-fontSize-sm text-muted-foreground max-w-md">
-					{t("empty.description")}
-				</p>
-				{emptyAction}
+			<div className="flex min-h-[60vh] items-center justify-center">
+				<div className="flex flex-col items-center justify-center gap-2 rounded-lg border p-6 text-center">
+					<p className="text-fontSize-sm font-medium">{t("empty.title")}</p>
+					<p className="text-fontSize-sm text-muted-foreground max-w-md">
+						{t("empty.description")}
+					</p>
+					{emptyAction}
+				</div>
 			</div>
 		);
 	}
@@ -115,6 +126,11 @@ export function TimelineList({
 											<p className="text-fontSize-sm font-semibold leading-snug">
 												{event.title}
 											</p>
+											{event.summary ? (
+												<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
+													{event.summary}
+												</p>
+											) : null}
 										</CardContent>
 									</Card>
 								</div>
@@ -160,6 +176,11 @@ export function TimelineList({
 											<p className="text-fontSize-sm font-semibold leading-snug">
 												{event.title}
 											</p>
+											{event.summary ? (
+												<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
+													{event.summary}
+												</p>
+											) : null}
 										</CardContent>
 									</Card>
 								</div>

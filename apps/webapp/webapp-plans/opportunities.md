@@ -14,7 +14,7 @@
   - app independiente en src/apps/adminapp que usa el package convex y el ui
   - utiliza la misma arquitectura que webapp (tanstack route, convex, i18n...)
   - aplican las mismas reglas de UI para los componentes de adminapp que a webapp: se usan los temas centralizados, las variables van tokenizadas
-  - la bd de superadmin está en el mismo convex, utilizamos un dominio propio admin.hikai.pro para accederla
+  - la bd de superadmin está en el mismo convex, utilizaremos un dominio propio admin.hikai.pro para accederla, de momento en su propio puerto de localhost, consideremos que levantamos webapp y superadmin a la vez
   - el ui de momento será, un menú de navegación, muy similar al que ya tenemos en apps/webapp/src/domains/shared/components/settings-nav
   - en el bottom damos visibilidad de quién está logado
   - con tres opciones: users, organizations y products
@@ -22,7 +22,7 @@
   - cada tabla permite:
     explorar usuarios, organizaciones, productos viendo: - cuando se creó - cuando se actualizó por última vez - ultima vez que accedió o fue accedido - quién es el owner de una org - quiénes son los admin de una org / producto - filtrar org / prod por tiempo en desuso - filtrar orgs y prods huérfanos - filtrar users por tiempo inactivos - filtrar users que no han activado su cuenta
     y borrar (acción en el row correspondiente, con modal de confirmación) de manera segura y aplicando reglas de negocio de estas entidades: - si borro un usuario: - sus org personales se borran - y se borran sus productos - y las membresías del producto y de la organización - las orgs pro de las que es owner - se transfieren al primer admin - se transfieren al primer usuario - o se borran - y se borran sus productos - y las membresías del producto y de la organización - se eliminan sus membresías de org y de producto - se limpian tablas de auth - si borro un producto - se borran sus membresías - si borro una org - se borran sus productos - se eliminan sus membresías de org y productos
-    - eliminar prooductos también elimina rawEvents e interpretedEvents
+    - eliminar prooductos también elimina rawEvents, interpretedEvents, agentRuns, aiInferenceLogs, aiUsage, ...
   - en términos de implementación, el órden que yo propondría es:
     - crear app, estructura de carpetas, etc
     - crear ui básica y queries, mutations
@@ -77,189 +77,21 @@ pnpm --filter @hikai/convex exec npx convex run connectors/github:syncGithubConn
 
 ---
 
-{
-"toneOfVoice": "professional",
-"strategicPillars": [
-"product-centricity",
-"automation with human oversight",
-"single source of truth",
-"scalability across teams"
-],
-"productVision": "Ser la capa narrativa estándar que conecta el desarrollo de productos digitales con todas las áreas que necesitan comunicar su progreso.",
-"releaseCadence": "continuous",
-"metricsOfInterest": [
-"adoption of timeline",
-"content generated per product",
-"time saved creating content",
-"consistency of product communication"
-]
-}
+limitaciones beta:
 
-{
-"productContextOptions": {
-"productType": [
-"Web App",
-"Mobile App",
-"Desktop App",
-"API",
-"Developer Tool",
-"Marketplace",
-"Internal Tool",
-"Data Platform",
-"Content Platform",
-"E-commerce",
-"Other"
-],
+- una org, org profesional en plan beta
+- no más orgs
+- no más productos
+- máx cadencia = semanal
+- máx fuentes = 3
+- foco: publish el timeline - Link público + script
 
-    "targetMarket": [
-      "B2B",
-      "B2C",
-      "B2B2C",
-      "Internal",
-      "Mixed"
-    ],
+new product flow:
 
-    "businessModel": [
-      "SaaS",
-      "Freemium",
-      "Subscription",
-      "Usage-based",
-      "Transactional",
-      "Marketplace fees",
-      "Advertising",
-      "Enterprise licensing",
-      "Open Source",
-      "Internal cost center",
-      "Other"
-    ],
-
-    "industries": [
-      "Productivity",
-      "Marketing Tech",
-      "Customer Success",
-      "Developer Tools",
-      "Fintech",
-      "Healthtech",
-      "Edtech",
-      "E-commerce",
-      "AI / ML",
-      "Data & Analytics",
-      "Cybersecurity",
-      "HR Tech",
-      "Legal Tech",
-      "Proptech",
-      "Gaming",
-      "Media & Content",
-      "IoT",
-      "Enterprise Software",
-      "Open Source",
-      "Other"
-    ],
-
-    "audiences": [
-      "Product teams",
-      "Engineering teams",
-      "Marketing teams",
-      "Customer success teams",
-      "Sales teams",
-      "Founders",
-      "Executives",
-      "Stakeholders",
-      "Market",
-      "End users",
-      "Developers",
-      "Partners",
-      "Investors"
-    ],
-
-    "stage": [
-      "idea",
-      "mvp",
-      "beta",
-      "early-production",
-      "production",
-      "scaling",
-      "mature"
-    ],
-
-"strategicPillars": [
-{
-"id": "product_excellence",
-"label": "Product Excellence",
-"description": "Construir un producto sólido, fiable, bien ejecutado y con alta calidad técnica y de experiencia."
-},
-{
-"id": "user_adoption_retention",
-"label": "User Adoption & Retention",
-"description": "Conseguir que los usuarios adopten el producto rápidamente y lo usen de forma recurrente."
-},
-{
-"id": "growth_acquisition",
-"label": "Growth & Acquisition",
-"description": "Incrementar visibilidad, usuarios y oportunidades de negocio a través de adquisición y distribución."
-},
-{
-"id": "narrative_brand",
-"label": "Narrative & Brand Positioning",
-"description": "Comunicar de forma clara y diferenciada qué es el producto, por qué importa y cómo se posiciona."
-},
-{
-"id": "operational_efficiency",
-"label": "Operational & Team Efficiency",
-"description": "Mejorar la eficiencia operativa y la alineación de los equipos reduciendo fricción y trabajo manual."
-},
-{
-"id": "scalability_business_impact",
-"label": "Scalability & Business Impact",
-"description": "Asegurar que el producto y el negocio puedan crecer de forma sostenible y con impacto económico."
-}
-],
-
-    "metricsOfInterestSuggestions": [
-      "User adoption",
-      "Feature usage",
-      "Time to value",
-      "Performance improvements",
-      "Reliability / uptime",
-      "Customer satisfaction",
-      "Churn reduction",
-      "Conversion rate",
-      "Content consistency",
-      "Time saved"
-    ],
-
-    "personaRoles": [
-      "Founder",
-      "Product Manager",
-      "Engineer",
-      "Marketing Manager",
-      "Customer Success Manager",
-      "Sales Manager",
-      "Executive",
-      "Developer Advocate",
-      "Operations",
-      "Other"
-    ],
-
-    "toneOfVoice": [
-      "technical",
-      "professional",
-      "friendly",
-      "enthusiastic",
-      "minimal"
-    ]
-
-}
-}
-
-{
-"releaseCadence": [
-"continuous",
-"daily",
-"weekly",
-"biweekly",
-"monthly",
-"quarterly",
-"irregular"
-],
-}
+- signup journey - max automation: your org, your sources, your product. three steps
+- tras org ir a primer producto
+- automaticamente conectar fuentes (quizás primer paso)?
+- automaticamente lanzar primer contexto
+- controlar que al recalcular contexto haya fuentes conectadas
+- sync lanza interpretación
+- sync se programa con cron ajustado a la cadencia.

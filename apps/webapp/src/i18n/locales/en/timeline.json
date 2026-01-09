@@ -22,7 +22,30 @@
     "loading": "Syncing...",
     "success": "Sync completed: {{ingested}} ingested, {{skipped}} skipped",
     "error": "Could not sync events",
-    "noConnection": "Connect a source to sync events"
+    "noConnection": "Connect a source to sync events",
+    "tooltip": "Fetch new raw events and interpret them into narratives."
+  },
+  "regenerate": {
+    "label": "Regenerate",
+    "confirmTitle": "Regenerate timeline?",
+    "confirmDescription": "This will delete existing narrative events and reinterpret all raw events.",
+    "confirm": "Regenerate",
+    "cancel": "Cancel",
+    "success": "Regenerated timeline: {{interpreted}} narratives created",
+    "error": "Could not regenerate timeline",
+    "tooltip": "Delete narratives and rebuild the timeline from all raw events."
+  },
+  "progress": {
+    "title": "Timeline agent steps",
+    "ready": "Ready",
+    "running": "Interpreting timeline...",
+    "completedSync": "Timeline updated · {{time}}",
+    "completedRegenerate": "Timeline regenerated · {{time}}",
+    "failed": "Timeline failed · {{time}}",
+    "history": "History",
+    "empty": "No runs yet.",
+    "sync": "Sync",
+    "regenerate": "Regenerate"
   },
   "navigator": {
     "title": "Navigator",
@@ -52,6 +75,8 @@
     },
     "noSummary": "No summary available yet.",
     "activityHint": "Activity and raw events will appear here.",
-    "activityPlaceholder": "We will surface interpreted and raw events per increment."
+    "activityEmpty": "No raw events linked to this narrative yet.",
+    "ratingUp": "Rate interpretation up",
+    "ratingDown": "Rate interpretation down"
   }
 }

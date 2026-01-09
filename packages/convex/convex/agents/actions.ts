@@ -588,16 +588,32 @@ export const generateProductContext = action({
 export const interpretTimelineEvents = action({
 	args: {
 		productId: v.id("products"),
+		rawEventIds: v.optional(v.array(v.id("rawEvents"))),
 		limit: v.optional(v.number()),
 		threadId: v.optional(v.string()),
 		debugUi: v.optional(v.boolean()),
 	},
 	handler: async (
 		ctx,
-		{ productId, limit, threadId, debugUi },
+		{ productId, rawEventIds, limit, threadId, debugUi },
 	): Promise<{
 		threadId: string;
-		narratives: unknown[];
+		narratives: Array<{
+			bucketId: string;
+			bucketStartAt: number;
+			bucketEndAt: number;
+			cadence: string;
+			title: string;
+			summary?: string;
+			narrative?: string;
+			kind: string;
+			tags?: string[];
+			audience?: string;
+			feature?: string;
+			relevance?: number;
+			rawEventIds: string[];
+		}>;
+		inferenceLogId?: Id<"aiInferenceLogs">;
 	}> => {
 		const aiConfig = getAgentAIConfig(TIMELINE_INTERPRETER_AGENT_NAME);
 		const { organizationId, userId, product } = await ctx.runQuery(
@@ -605,10 +621,15 @@ export const interpretTimelineEvents = action({
 			{ productId },
 		);
 
-		const rawSummaries = await ctx.runQuery(
-			internal.agents.productContextData.listRawEventSummaries,
-			{ productId, limit },
-		);
+		const rawSummaries = rawEventIds?.length
+			? await ctx.runQuery(
+					internal.agents.productContextData.getRawEventSummariesByIds,
+					{ productId, rawEventIds },
+				)
+			: await ctx.runQuery(
+					internal.agents.productContextData.listRawEventSummaries,
+					{ productId, limit },
+				);
 
 		const rawEvents = rawSummaries.map((event) => ({
 			rawEventId: event.rawEventId,
@@ -669,7 +690,23 @@ export const interpretTimelineEvents = action({
 				{ prompt: promptPayload },
 			);
 
-			const parsed = parseJsonSafely(result.text) as { narratives?: unknown[] };
+			const parsed = parseJsonSafely(result.text) as {
+				narratives?: Array<{
+					bucketId: string;
+					bucketStartAt: number;
+					bucketEndAt: number;
+					cadence: string;
+					title: string;
+					summary?: string;
+					narrative?: string;
+					kind: string;
+					tags?: string[];
+					audience?: string;
+					feature?: string;
+					relevance?: number;
+					rawEventIds: string[];
+				}>;
+			};
 			if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.narratives)) {
 				throw new Error(
 					"Invalid JSON response from Timeline Context Interpreter Agent",
@@ -679,6 +716,7 @@ export const interpretTimelineEvents = action({
 			const telemetryConfig = getAgentTelemetryConfig(
 				TIMELINE_INTERPRETER_AGENT_NAME,
 			);
+			let inferenceLogId: Id<"aiInferenceLogs"> | undefined;
 			if (telemetryConfig.persistInferenceLogs) {
 				const usage = getUsageTotals(result);
 				const bucketIds = parsed.narratives
@@ -689,7 +727,9 @@ export const interpretTimelineEvents = action({
 					)
 					.filter((value): value is string => Boolean(value));
 
-				await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
+				inferenceLogId = await ctx.runMutation(
+					internal.ai.telemetry.recordInferenceLog,
+					{
 					organizationId,
 					productId,
 					userId,
@@ -713,10 +753,11 @@ export const interpretTimelineEvents = action({
 						bucketIds,
 						baselineSnapshotHash: hashString(JSON.stringify(snapshotPayload)),
 					},
-				});
+					},
+				);
 			}
 
-			return { threadId: tid, narratives: parsed.narratives };
+			return { threadId: tid, narratives: parsed.narratives, inferenceLogId };
 		} catch (error) {
 			await ctx.runMutation(internal.ai.telemetry.recordError, {
 				organizationId,

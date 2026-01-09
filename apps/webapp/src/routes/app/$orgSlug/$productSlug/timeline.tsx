@@ -4,6 +4,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import {
@@ -13,6 +14,15 @@ import {
 	CardContent,
 	CardHeader,
 	CardTitle,
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
 	Separator,
 	Tabs,
 	TabsContent,
@@ -26,20 +36,41 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+	ThumbsDown,
+	ThumbsUp,
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+	AccordionTrigger,
 } from "@hikai/ui";
 import {
 	ArrowDown,
 	ArrowUp,
 	Clock,
 	Refresh,
+	RotateCcw,
 	ArrowUpToLine,
 	Filter as FilterIcon,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
+import { api } from "@hikai/convex";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import { useGetProductBySlug } from "@/domains/products/hooks";
 import { useConnections } from "@/domains/connectors/hooks";
-import { useTimeline, useTriggerSync } from "@/domains/timeline/hooks";
+import {
+	useTimeline,
+	useTimelineEventDetails,
+	useTriggerSync,
+} from "@/domains/timeline/hooks";
 import {
 	TimelineFilterState,
 	TimelineList,
@@ -58,12 +89,14 @@ function TimelinePage() {
 	const { currentOrg } = useCurrentOrg();
 	const product = useGetProductBySlug(currentOrg?._id, productSlug);
 	const productId = product?._id;
-	const { timeline, isLoading } = useTimeline({ productId });
+	const [refreshKey, setRefreshKey] = useState(0);
+	const { timeline, isLoading } = useTimeline({ productId, refreshKey });
 	const isTimelineLoading = isLoading || product === undefined;
 	const { connections, isLoading: isConnectionsLoading } =
 		useConnections(productId);
 	const triggerSync = useTriggerSync();
 	const [isSyncing, setIsSyncing] = useState(false);
+	const [isRegenerating, setIsRegenerating] = useState(false);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [filters, setFilters] = useState<TimelineFilterState>({
 		kind: "all",
@@ -232,6 +265,7 @@ function TimelinePage() {
 				productId,
 				connectionId: activeConnection._id as Id<"connections">,
 			});
+			setRefreshKey((prev) => prev + 1);
 			toast.success(
 				t("sync.success", {
 					ingested: result.ingested,
@@ -247,9 +281,73 @@ function TimelinePage() {
 		}
 	}, [activeConnection, productId, t, triggerSync]);
 
+	const regenerateTimeline = useAction(api.timeline.events.regenerateTimeline);
+	const handleRegenerate = useCallback(async () => {
+		if (!productId) return;
+		setIsRegenerating(true);
+		try {
+			const result = await regenerateTimeline({ productId });
+			setRefreshKey((prev) => prev + 1);
+			toast.success(
+				t("regenerate.success", {
+					interpreted: result.processed,
+				}),
+			);
+		} catch (errorSync) {
+			toast.error(
+				errorSync instanceof Error
+					? errorSync.message
+					: t("regenerate.error"),
+			);
+		} finally {
+			setIsRegenerating(false);
+		}
+	}, [productId, regenerateTimeline, t]);
+
+	const latestRun = useQuery(
+		api.agents.agentRuns.getLatestRunForUseCase,
+		productId
+			? { productId, useCase: "timeline_interpretation" }
+			: "skip",
+	);
+	const historyRuns = useQuery(
+		api.agents.agentRuns.getRunsForUseCase,
+		productId
+			? { productId, useCase: "timeline_interpretation", limit: 12 }
+			: "skip",
+	);
+	const latestStep =
+		latestRun?.steps?.length
+			? latestRun.steps[latestRun.steps.length - 1]
+			: null;
+	const runStatus = latestRun?.status ?? null;
+	const completedAt = latestRun?.finishedAt ?? latestRun?.startedAt ?? null;
+	const completedLabel = completedAt
+		? new Date(completedAt).toLocaleString()
+		: "";
+	const isRegenerationRun =
+		latestRun?.steps?.some((step) =>
+			step.step.toLowerCase().includes("clearing existing narratives"),
+		) ?? false;
+	const progressLabel =
+		runStatus === "success"
+			? t(
+					isRegenerationRun
+						? "progress.completedRegenerate"
+						: "progress.completedSync",
+					{ time: completedLabel },
+				)
+			: runStatus === "error"
+				? t("progress.failed", { time: completedLabel })
+				: latestStep?.step ?? t("progress.running");
+
 	const selectedEvent = useMemo(
 		() => filteredEvents.find((event) => event._id === selectedId) ?? null,
 		[filteredEvents, selectedId],
+	);
+	const eventDetails = useTimelineEventDetails(
+		productId,
+		selectedId ? (selectedId as Id<"interpretedEvents">) : undefined,
 	);
 
 	const showConnectCta = !isConnectionsLoading && !activeConnection;
@@ -265,10 +363,8 @@ function TimelinePage() {
 	return (
 		<div className="flex h-[calc(100vh-64px)] flex-col gap-4 overflow-hidden p-5">
 			<div className="grid flex-1 grid-rows-[auto_1fr] gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_560px]">
-				<div className="col-start-1 row-start-1 flex flex-col justify-center">
+				<div className="col-start-1 row-start-1 flex items-center justify-between gap-4">
 					<h1 className="text-2xl font-semibold">{t("title")}</h1>
-				</div>
-				<div className="col-start-2 row-start-1 flex items-start justify-end">
 					<div className="flex h-8 flex-wrap items-center gap-2">
 						<Button
 							variant="outline"
@@ -293,6 +389,10 @@ function TimelinePage() {
 						>
 							<ArrowDown className="h-4 w-4" />
 							<span className="text-fontSize-sm">{t("controls.next")}</span>
+						</Button>
+						<Button variant="outline" size="ultra" onClick={handleToday}>
+							<ArrowUpToLine className="h-4 w-4" />
+							<span className="text-fontSize-sm">{t("navigator.today")}</span>
 						</Button>
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
@@ -361,31 +461,177 @@ function TimelinePage() {
 								</DropdownMenuItem>
 							</DropdownMenuContent>
 						</DropdownMenu>
-						<Button
-							variant="outline"
-							size="ultra"
-							onClick={handleSync}
-							disabled={
-								!productId ||
-								isSyncing ||
-								isTimelineLoading ||
-								isConnectionsLoading ||
-								!activeConnection
-							}
-							aria-label={t("sync.label")}
-						>
-							<Refresh className="h-4 w-4" />
-							<span className="text-fontSize-sm">{t("sync.label")}</span>
-						</Button>
-						<Button
-							variant="outline"
-							size="ultra"
-							onClick={handleToday}
-						>
-							<ArrowUpToLine className="h-4 w-4" />
-							<span className="text-fontSize-sm">{t("navigator.today")}</span>
-						</Button>
 					</div>
+				</div>
+				<div className="col-start-2 row-start-1 flex items-start justify-end">
+					<TooltipProvider>
+						<div className="flex flex-col items-end gap-2">
+							<div className="flex h-8 flex-wrap items-center gap-2">
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<Button
+											variant="outline"
+											size="ultra"
+											onClick={handleSync}
+											disabled={
+												!productId ||
+												isSyncing ||
+												isTimelineLoading ||
+												isConnectionsLoading ||
+												!activeConnection
+											}
+											aria-label={t("sync.label")}
+										>
+											<Refresh className="h-4 w-4" />
+											<span className="text-fontSize-sm">{t("sync.label")}</span>
+										</Button>
+									</TooltipTrigger>
+									<TooltipContent>{t("sync.tooltip")}</TooltipContent>
+								</Tooltip>
+								<AlertDialog>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<AlertDialogTrigger asChild>
+												<Button
+													variant="outline"
+													size="ultra"
+													disabled={!productId || isRegenerating}
+												>
+													<RotateCcw className="h-4 w-4" />
+													<span className="text-fontSize-sm">
+														{t("regenerate.label")}
+													</span>
+												</Button>
+											</AlertDialogTrigger>
+										</TooltipTrigger>
+										<TooltipContent>
+											{t("regenerate.tooltip")}
+										</TooltipContent>
+									</Tooltip>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>
+												{t("regenerate.confirmTitle")}
+											</AlertDialogTitle>
+											<AlertDialogDescription>
+												{t("regenerate.confirmDescription")}
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel disabled={isRegenerating}>
+												{t("regenerate.cancel")}
+											</AlertDialogCancel>
+											<AlertDialogAction
+												onClick={handleRegenerate}
+												disabled={isRegenerating}
+											>
+												{t("regenerate.confirm")}
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
+								<Sheet>
+								<SheetTrigger asChild>
+										<Button variant="outline" size="ultra" className="mr-0.5">
+											<Clock className="h-4 w-4" />
+											<span className="text-fontSize-sm">
+												{t("progress.history")}
+											</span>
+										</Button>
+									</SheetTrigger>
+									<SheetContent side="right">
+										<SheetHeader>
+											<SheetTitle>{t("progress.title")}</SheetTitle>
+										</SheetHeader>
+										<div className="mt-4 space-y-3">
+											{historyRuns?.length ? (
+												<Accordion type="single" collapsible>
+											{historyRuns.map((run) => {
+												const isRegenerate =
+													run.steps?.some((step) =>
+														step.step
+															.toLowerCase()
+															.includes("clearing existing narratives"),
+													) ?? false;
+												return (
+													<AccordionItem
+														key={run._id}
+														value={`${run._id}`}
+													>
+														<AccordionTrigger className="hover:no-underline">
+															<span className="flex items-center gap-2 text-fontSize-sm">
+																{new Date(run.startedAt).toLocaleString()}
+																<span className="text-fontSize-xs text-muted-foreground uppercase tracking-wide">
+																	{isRegenerate
+																		? t("progress.regenerate")
+																		: t("progress.sync")}
+																</span>
+																<span
+																	className={cn(
+																		"h-2 w-2 rounded-full",
+																		run.status === "error"
+																			? "bg-destructive"
+																			: run.status === "success"
+																				? "bg-success"
+																				: "bg-muted-foreground",
+																	)}
+																/>
+															</span>
+														</AccordionTrigger>
+														<AccordionContent>
+															<div className="space-y-2 text-fontSize-sm">
+																{run.steps.map((step, index) => (
+																	<div
+																		key={`${step.timestamp}-${index}`}
+																		className="flex items-start gap-3"
+																	>
+																		<span className="text-muted-foreground">
+																			{new Date(step.timestamp).toLocaleTimeString()}
+																		</span>
+																		<span>{step.step}</span>
+																	</div>
+																))}
+															</div>
+														</AccordionContent>
+													</AccordionItem>
+												);
+											})}
+												</Accordion>
+											) : (
+												<p className="text-fontSize-sm text-muted-foreground">
+													{t("progress.empty")}
+												</p>
+											)}
+										</div>
+									</SheetContent>
+								</Sheet>
+							</div>
+							{latestRun ? (
+								<div
+									className={cn(
+										"flex items-center gap-2 text-fontSize-xs",
+										runStatus === "error"
+											? "text-destructive"
+											: runStatus === "success"
+												? "text-success"
+												: "text-muted-foreground",
+									)}
+								>
+									<span
+										className={cn(
+											"h-2 w-2 rounded-full",
+											runStatus === "error"
+												? "bg-destructive"
+												: runStatus === "success"
+													? "bg-success"
+													: "bg-primary animate-pulse",
+										)}
+									/>
+									<span>{progressLabel}</span>
+								</div>
+							) : null}
+						</div>
+					</TooltipProvider>
 				</div>
 
 				<div className="relative col-start-1 row-span-2 h-full overflow-hidden rounded-lg bg-background">
@@ -425,7 +671,8 @@ function TimelinePage() {
 				</div>
 
 				<DetailPanel
-					event={selectedEvent}
+					event={eventDetails?.event ?? selectedEvent}
+					rawEvents={eventDetails?.rawEvents ?? []}
 					isLoading={isTimelineLoading}
 					locale={i18n.language}
 					className="col-start-2 row-start-2"
@@ -437,6 +684,12 @@ function TimelinePage() {
 
 interface DetailPanelProps {
 	event: TimelineListEvent | null;
+	rawEvents: Array<{
+		rawEventId: Id<"rawEvents">;
+		occurredAt: number;
+		sourceType: string;
+		summary: string;
+	}>;
 	isLoading: boolean;
 	locale: string;
 	className?: string;
@@ -444,11 +697,35 @@ interface DetailPanelProps {
 
 function DetailPanel({
 	event,
+	rawEvents,
 	isLoading,
 	locale,
 	className,
 }: DetailPanelProps) {
 	const { t } = useTranslation("timeline");
+	const rateInference = useMutation(api.ai.inferenceLogs.rateInferenceById);
+	const ratingData = useQuery(
+		api.ai.inferenceLogs.getInferenceRatingById,
+		event?.inferenceLogId
+			? { productId: event.productId, inferenceLogId: event.inferenceLogId }
+			: "skip",
+	);
+	const [isRating, setIsRating] = useState(false);
+	const currentRating = ratingData?.rating ?? null;
+
+	const handleRating = async (rating: "up" | "down") => {
+		if (!event?.inferenceLogId) return;
+		setIsRating(true);
+		try {
+			await rateInference({
+				productId: event.productId,
+				inferenceLogId: event.inferenceLogId,
+				rating,
+			});
+		} finally {
+			setIsRating(false);
+		}
+	};
 
 	return (
 		<div className={cn("flex h-full min-h-0 flex-col", className)}>
@@ -464,6 +741,16 @@ function DetailPanel({
 							<Badge variant="outline" className="text-fontSize-xs">
 								{event.kind}
 							</Badge>
+							{event.audience ? (
+								<Badge variant="secondary" className="text-fontSize-xs">
+									{event.audience}
+								</Badge>
+							) : null}
+							{event.feature ? (
+								<Badge variant="secondary" className="text-fontSize-xs">
+									{event.feature}
+								</Badge>
+							) : null}
 							{event.tags?.slice(0, 4).map((tag) => (
 								<Badge
 									key={tag}
@@ -473,6 +760,34 @@ function DetailPanel({
 									{tag}
 								</Badge>
 							))}
+							{event.inferenceLogId ? (
+								<div className="ml-auto flex items-center gap-2">
+									<Button
+										type="button"
+										variant={
+											currentRating === "up" ? "secondary" : "outline"
+										}
+										size="icon"
+										onClick={() => handleRating("up")}
+										disabled={isRating}
+										aria-label={t("detail.ratingUp")}
+									>
+										<ThumbsUp className="h-4 w-4" />
+									</Button>
+									<Button
+										type="button"
+										variant={
+											currentRating === "down" ? "secondary" : "outline"
+										}
+										size="icon"
+										onClick={() => handleRating("down")}
+										disabled={isRating}
+										aria-label={t("detail.ratingDown")}
+									>
+										<ThumbsDown className="h-4 w-4" />
+									</Button>
+								</div>
+							) : null}
 						</div>
 					) : null}
 				</CardHeader>
@@ -524,6 +839,11 @@ function DetailPanel({
 												{t("detail.noSummary")}
 											</p>
 										)}
+										{event.narrative ? (
+											<p className="text-fontSize-sm whitespace-pre-wrap break-words">
+												{event.narrative}
+											</p>
+										) : null}
 									</div>
 								</div>
 							</TabsContent>
@@ -538,9 +858,31 @@ function DetailPanel({
 											<span>{t("detail.activityHint")}</span>
 										</div>
 										<Separator />
-										<p className="text-fontSize-sm text-muted-foreground">
-											{t("detail.activityPlaceholder")}
-										</p>
+										{rawEvents.length ? (
+											<div className="space-y-3">
+												{rawEvents.map((rawEvent) => (
+													<div
+														key={rawEvent.rawEventId}
+														className="rounded-md border border-border p-3"
+													>
+														<p className="text-fontSize-sm font-medium">
+															{rawEvent.summary}
+														</p>
+														<p className="mt-1 text-fontSize-xs text-muted-foreground">
+															{rawEvent.sourceType} ·{" "}
+															{formatShortDate(
+																rawEvent.occurredAt,
+																locale,
+															)}
+														</p>
+													</div>
+												))}
+											</div>
+										) : (
+											<p className="text-fontSize-sm text-muted-foreground">
+												{t("detail.activityEmpty")}
+											</p>
+										)}
 									</div>
 								</div>
 							</TabsContent>

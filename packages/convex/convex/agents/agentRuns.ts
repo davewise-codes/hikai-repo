@@ -105,6 +105,48 @@ export const getRunById = query({
 	},
 });
 
+export const getLatestRunForUseCase = query({
+	args: {
+		productId: v.id("products"),
+		useCase: v.string(),
+	},
+	handler: async (ctx, { productId, useCase }) => {
+		await assertProductAccess(ctx, productId);
+
+		const runs = await ctx.db
+			.query("agentRuns")
+			.withIndex("by_product", (q) => q.eq("productId", productId))
+			.collect();
+
+		const filtered = runs
+			.filter((run) => run.useCase === useCase)
+			.sort((a, b) => b.startedAt - a.startedAt);
+
+		return filtered[0] ?? null;
+	},
+});
+
+export const getRunsForUseCase = query({
+	args: {
+		productId: v.id("products"),
+		useCase: v.string(),
+		limit: v.optional(v.number()),
+	},
+	handler: async (ctx, { productId, useCase, limit }) => {
+		await assertProductAccess(ctx, productId);
+
+		const runs = await ctx.db
+			.query("agentRuns")
+			.withIndex("by_product", (q) => q.eq("productId", productId))
+			.collect();
+
+		return runs
+			.filter((run) => run.useCase === useCase)
+			.sort((a, b) => b.startedAt - a.startedAt)
+			.slice(0, limit ?? 10);
+	},
+});
+
 export const cleanupOldRuns = internalMutation({
 	args: {},
 	handler: async (ctx) => {

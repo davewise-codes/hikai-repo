@@ -46,6 +46,29 @@ export const listRawEventSummaries = internalQuery({
 	},
 });
 
+export const getRawEventSummariesByIds = internalQuery({
+	args: {
+		productId: v.id("products"),
+		rawEventIds: v.array(v.id("rawEvents")),
+	},
+	handler: async (ctx, { productId, rawEventIds }) => {
+		const events = [];
+		for (const rawEventId of rawEventIds) {
+			const event = await ctx.db.get(rawEventId);
+			if (!event || event.productId !== productId) continue;
+			events.push(event);
+		}
+
+		return events.map((event) => ({
+			source: event.provider,
+			rawEventId: `${event._id}`,
+			type: event.sourceType,
+			summary: buildSummary(event.payload, event.sourceType),
+			occurredAt: event.occurredAt,
+		}));
+	},
+});
+
 export const getRepositoryMetadata = internalQuery({
 	args: { productId: v.id("products") },
 	handler: async (ctx, { productId }) => {

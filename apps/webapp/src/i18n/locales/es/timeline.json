@@ -22,7 +22,30 @@
     "loading": "Haciendo sync...",
     "success": "Sync completado: {{ingested}} ingestados, {{skipped}} ignorados",
     "error": "No se pudo sincronizar",
-    "noConnection": "Conecta una fuente para sincronizar eventos"
+    "noConnection": "Conecta una fuente para sincronizar eventos",
+    "tooltip": "Trae nuevos raw events y los interpreta en narrativas."
+  },
+  "regenerate": {
+    "label": "Regenerar",
+    "confirmTitle": "¿Regenerar timeline?",
+    "confirmDescription": "Esto eliminará los eventos narrativos actuales y reinterpretará todos los raw events.",
+    "confirm": "Regenerar",
+    "cancel": "Cancelar",
+    "success": "Timeline regenerado: {{interpreted}} narrativas creadas",
+    "error": "No se pudo regenerar el timeline",
+    "tooltip": "Elimina narrativas y reconstruye el timeline con todos los raw events."
+  },
+  "progress": {
+    "title": "Pasos del agente de timeline",
+    "ready": "Listo",
+    "running": "Interpretando timeline...",
+    "completedSync": "Timeline actualizado · {{time}}",
+    "completedRegenerate": "Timeline regenerado · {{time}}",
+    "failed": "Timeline fallido · {{time}}",
+    "history": "Historial",
+    "empty": "Todavía no hay ejecuciones.",
+    "sync": "Sync",
+    "regenerate": "Regenerar"
   },
   "navigator": {
     "title": "Navegador",
@@ -52,6 +75,8 @@
     },
     "noSummary": "No hay resumen disponible aún.",
     "activityHint": "Aquí aparecerá la actividad e inputs raw.",
-    "activityPlaceholder": "Mostraremos eventos interpretados y raw por incremento."
+    "activityEmpty": "No hay eventos raw enlazados a esta narrativa todavía.",
+    "ratingUp": "Valorar interpretación positivamente",
+    "ratingDown": "Valorar interpretación negativamente"
   }
 }

@@ -306,18 +306,28 @@ const schema = defineSchema({
 
   interpretedEvents: defineTable({
     productId: v.id("products"),
-    rawEventId: v.id("rawEvents"),
-    kind: v.string(),
+    bucketId: v.string(),
+    bucketStartAt: v.number(),
+    bucketEndAt: v.number(),
+    cadence: v.string(),
+    occurredAt: v.number(),
     title: v.string(),
     summary: v.optional(v.string()),
-    occurredAt: v.number(),
-    relevance: v.optional(v.number()),
+    narrative: v.optional(v.string()),
+    kind: v.string(),
     tags: v.optional(v.array(v.string())),
+    audience: v.optional(v.string()),
+    feature: v.optional(v.string()),
+    relevance: v.optional(v.number()),
+    rawEventIds: v.array(v.id("rawEvents")),
+    rawEventCount: v.number(),
+    contextSnapshotId: v.optional(v.id("productContextSnapshots")),
+    inferenceLogId: v.optional(v.id("aiInferenceLogs")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_product_time", ["productId", "occurredAt"])
-    .index("by_raw_event", ["rawEventId"]),
+    .index("by_product_bucket", ["productId", "bucketId"]),
 
 	// Telemetría de uso de IA
 	aiUsage: defineTable({

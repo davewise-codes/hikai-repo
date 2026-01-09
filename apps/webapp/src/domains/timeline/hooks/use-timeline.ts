@@ -6,15 +6,17 @@ import { Id } from "@hikai/convex/convex/_generated/dataModel";
 type UseTimelineArgs = {
 	productId: Id<"products"> | undefined;
 	limit?: number;
+	refreshKey?: number;
 };
 
-export function useTimeline({ productId, limit }: UseTimelineArgs) {
+export function useTimeline({ productId, limit, refreshKey }: UseTimelineArgs) {
 	const timeline = useQuery(
 		api.timeline.events.listTimelineByProduct,
 		productId
 			? {
 					productId,
 					...(limit ? { limit } : {}),
+					...(refreshKey !== undefined ? { refreshKey } : {}),
 				}
 			: "skip"
 	);
@@ -32,4 +34,14 @@ export function useTimeline({ productId, limit }: UseTimelineArgs) {
 export function useTriggerSync() {
 	// triggerManualSync es una action, así que usamos useAction desde el frontend.
 	return useAction(api.timeline.events.triggerManualSync);
+}
+
+export function useTimelineEventDetails(
+	productId: Id<"products"> | undefined,
+	eventId: Id<"interpretedEvents"> | undefined
+) {
+	return useQuery(
+		api.timeline.events.getTimelineEventDetails,
+		productId && eventId ? { productId, eventId } : "skip"
+	);
 }
