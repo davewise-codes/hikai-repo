@@ -32,8 +32,8 @@ Ademas, el contexto actual mezcla "current" e historico en el mismo JSON. Querem
 | F2.0    | Agente de interpretacion (prompt, modelo, telemetria)    | ✅     |
 | F3.0    | Pipeline de interpretacion con agrupacion y snapshots    | ✅     |
 | F4.0    | UI de timeline y feedback por interpretacion             | ✅     |
-| F5.0    | Mejora de timeline (requerimientos y evolucion)          | ⏳     |
-| F6.0    | Implementacion de mejoras del timeline                   | ⏳     |
+| F5.0    | Mejora de timeline (requerimientos y evolucion)          | ✅     |
+| F6.0    | Implementacion de mejoras del timeline                   | ✅     |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 

@@ -71,12 +71,23 @@
     "emptyDescription": "Pick an increment in the timeline to see its details.",
     "tabs": {
       "overview": "Overview",
+      "features": "Features",
+      "fixes": "Fixes",
+      "improvements": "Improvements",
       "activity": "Activity"
     },
+    "empty": {
+      "features": "No feature updates in this increment.",
+      "fixes": "No fixes in this increment.",
+      "improvements": "No improvements in this increment."
+    },
     "noSummary": "No summary available yet.",
-    "activityHint": "Activity and raw events will appear here.",
+    "activityHint": "These are the events used to generate this summary.",
     "activityEmpty": "No raw events linked to this narrative yet.",
     "ratingUp": "Rate interpretation up",
-    "ratingDown": "Rate interpretation down"
+    "ratingDown": "Rate interpretation down",
+    "feedbackPrompt": "Are you happy with this summary?",
+    "focusAreasLabel": "Focus areas:",
+    "focusAreaOther": "Other"
   }
 }

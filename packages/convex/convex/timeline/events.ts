@@ -26,6 +26,22 @@ type TimelineItem = {
 	feature?: string;
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;
+	focusAreas?: string[];
+	features?: Array<{
+		title: string;
+		summary?: string;
+		focusArea?: string;
+	}>;
+	fixes?: Array<{
+		title: string;
+		summary?: string;
+		focusArea?: string;
+	}>;
+	improvements?: Array<{
+		title: string;
+		summary?: string;
+		focusArea?: string;
+	}>;
 	contextSnapshotId?: Id<"productContextSnapshots">;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 	createdAt: number;

@@ -319,6 +319,34 @@ const schema = defineSchema({
     audience: v.optional(v.string()),
     feature: v.optional(v.string()),
     relevance: v.optional(v.number()),
+    focusAreas: v.optional(v.array(v.string())),
+    features: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+          summary: v.optional(v.string()),
+          focusArea: v.optional(v.string()),
+        })
+      )
+    ),
+    fixes: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+          summary: v.optional(v.string()),
+          focusArea: v.optional(v.string()),
+        })
+      )
+    ),
+    improvements: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+          summary: v.optional(v.string()),
+          focusArea: v.optional(v.string()),
+        })
+      )
+    ),
     rawEventIds: v.array(v.id("rawEvents")),
     rawEventCount: v.number(),
     contextSnapshotId: v.optional(v.id("productContextSnapshots")),

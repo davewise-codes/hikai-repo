@@ -8,7 +8,6 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import {
-	Badge,
 	Button,
 	Card,
 	CardContent,
@@ -60,6 +59,9 @@ import {
 	RotateCcw,
 	ArrowUpToLine,
 	Filter as FilterIcon,
+	Sparkles,
+	ShieldCheck,
+	TrendingUp,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { api } from "@hikai/convex";
@@ -363,7 +365,7 @@ function TimelinePage() {
 	return (
 		<div className="flex h-[calc(100vh-64px)] flex-col gap-4 overflow-hidden p-5">
 			<div className="grid flex-1 grid-rows-[auto_1fr] gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_560px]">
-				<div className="col-start-1 row-start-1 flex items-center justify-between gap-4">
+				<div className="col-start-1 row-start-1 flex items-start justify-between gap-4 px-2 md:px-6">
 					<h1 className="text-2xl font-semibold">{t("title")}</h1>
 					<div className="flex h-8 flex-wrap items-center gap-2">
 						<Button
@@ -460,10 +462,10 @@ function TimelinePage() {
 									{t("controls.allDates")}
 								</DropdownMenuItem>
 							</DropdownMenuContent>
-						</DropdownMenu>
+							</DropdownMenu>
+						</div>
 					</div>
-				</div>
-				<div className="col-start-2 row-start-1 flex items-start justify-end">
+				<div className="col-start-2 row-start-1 flex items-start justify-end px-2 md:px-6">
 					<TooltipProvider>
 						<div className="flex flex-col items-end gap-2">
 							<div className="flex h-8 flex-wrap items-center gap-2">
@@ -714,6 +716,12 @@ function DetailPanel({
 	);
 	const [isRating, setIsRating] = useState(false);
 	const currentRating = ratingData?.rating ?? null;
+	const focusAreas = event?.focusAreas ?? [];
+	const displayFocusAreas = focusAreas.map((area) =>
+		area === "Other" ? t("detail.focusAreaOther") : area,
+	);
+	const shouldShowFeedback = !!event?.inferenceLogId && currentRating === null;
+	const [activeTab, setActiveTab] = useState("overview");
 
 	const handleRating = async (rating: "up" | "down") => {
 		if (!event?.inferenceLogId) return;
@@ -729,71 +737,82 @@ function DetailPanel({
 		}
 	};
 
+	const renderCategory = (
+		items: Array<{ title: string; summary?: string; focusArea?: string }>,
+		emptyLabel: string,
+	) => {
+		if (!items.length) {
+			return (
+				<p className="text-fontSize-sm text-muted-foreground">{emptyLabel}</p>
+			);
+		}
+
+		const fallbackArea = t("detail.focusAreaOther");
+		const grouped = items.reduce<Record<string, typeof items>>((acc, item) => {
+			const rawArea = item.focusArea?.trim();
+			const key = rawArea === "Other" ? fallbackArea : rawArea || fallbackArea;
+			if (!acc[key]) acc[key] = [];
+			acc[key].push(item);
+			return acc;
+		}, {});
+
+		return (
+			<div className="space-y-4">
+				{Object.entries(grouped).map(([area, areaItems]) => (
+					<div key={area} className="space-y-2">
+						<p className="text-fontSize-xs uppercase tracking-wide text-muted-foreground">
+							{area}
+						</p>
+						<div className="space-y-2">
+							{areaItems.map((item, index) => (
+								<div
+									key={`${area}-${index}`}
+									className="rounded-md border border-border p-3"
+								>
+									<p className="text-fontSize-sm font-medium">{item.title}</p>
+									{item.summary ? (
+										<p className="mt-1 text-fontSize-xs text-muted-foreground">
+											{item.summary}
+										</p>
+									) : null}
+								</div>
+							))}
+						</div>
+					</div>
+				))}
+			</div>
+		);
+	};
+
 	return (
 		<div className={cn("flex h-full min-h-0 flex-col", className)}>
 			<Card className="flex h-full min-h-0 flex-col">
 				<CardHeader className="pb-3">
-					<CardTitle className="text-lg leading-tight">
-						{isLoading
-							? t("detail.title")
-							: (event?.title ?? t("detail.emptyTitle"))}
-					</CardTitle>
-					{event ? (
-						<div className="mt-2 flex flex-wrap gap-2">
-							<Badge variant="outline" className="text-fontSize-xs">
-								{event.kind}
-							</Badge>
-							{event.audience ? (
-								<Badge variant="secondary" className="text-fontSize-xs">
-									{event.audience}
-								</Badge>
-							) : null}
-							{event.feature ? (
-								<Badge variant="secondary" className="text-fontSize-xs">
-									{event.feature}
-								</Badge>
-							) : null}
-							{event.tags?.slice(0, 4).map((tag) => (
-								<Badge
-									key={tag}
-									variant="secondary"
-									className="text-fontSize-xs"
-								>
-									{tag}
-								</Badge>
-							))}
-							{event.inferenceLogId ? (
-								<div className="ml-auto flex items-center gap-2">
-									<Button
-										type="button"
-										variant={
-											currentRating === "up" ? "secondary" : "outline"
-										}
-										size="icon"
-										onClick={() => handleRating("up")}
-										disabled={isRating}
-										aria-label={t("detail.ratingUp")}
-									>
-										<ThumbsUp className="h-4 w-4" />
-									</Button>
-									<Button
-										type="button"
-										variant={
-											currentRating === "down" ? "secondary" : "outline"
-										}
-										size="icon"
-										onClick={() => handleRating("down")}
-										disabled={isRating}
-										aria-label={t("detail.ratingDown")}
-									>
-										<ThumbsDown className="h-4 w-4" />
-									</Button>
-								</div>
-							) : null}
-						</div>
+					<div className="flex items-start justify-between gap-3">
+						<CardTitle className="text-lg leading-tight">
+							{isLoading
+								? t("detail.title")
+								: (event?.title ?? t("detail.emptyTitle"))}
+						</CardTitle>
+						{event ? (
+							<Button
+								type="button"
+								variant={activeTab === "activity" ? "secondary" : "outline"}
+								size="icon"
+								onClick={() => setActiveTab("activity")}
+								aria-label={t("detail.tabs.activity")}
+							>
+								<Clock className="h-4 w-4" />
+							</Button>
+						) : null}
+					</div>
+					{event && displayFocusAreas.length ? (
+						<p className="mt-2 text-fontSize-xs text-muted-foreground">
+							{t("detail.focusAreasLabel")} {displayFocusAreas.join(" · ")}
+						</p>
 					) : null}
 				</CardHeader>
-				<CardContent className="flex-1 overflow-hidden">
+				<CardContent className="flex-1 overflow-hidden flex flex-col">
 					{isLoading ? (
 						<div className="space-y-3">
 							<div className="h-6 w-3/4 rounded-md bg-muted animate-pulse" />
@@ -811,15 +830,31 @@ function DetailPanel({
 						</div>
 					) : (
 						<Tabs
-							defaultValue="overview"
-							className="flex h-full min-h-0 flex-col"
+							value={activeTab}
+							onValueChange={setActiveTab}
+							className="flex h-full min-h-0 flex-col flex-1"
 						>
 							<TabsList className="w-full justify-start">
 								<TabsTrigger value="overview">
 									{t("detail.tabs.overview")}
 								</TabsTrigger>
-								<TabsTrigger value="activity">
-									{t("detail.tabs.activity")}
+								<TabsTrigger value="features">
+									<span className="flex items-center gap-1.5">
+										<Sparkles className="h-3.5 w-3.5" />
+										{t("detail.tabs.features")}
+									</span>
+								</TabsTrigger>
+								<TabsTrigger value="fixes">
+									<span className="flex items-center gap-1.5">
+										<ShieldCheck className="h-3.5 w-3.5" />
+										{t("detail.tabs.fixes")}
+									</span>
+								</TabsTrigger>
+								<TabsTrigger value="improvements">
+									<span className="flex items-center gap-1.5">
+										<TrendingUp className="h-3.5 w-3.5" />
+										{t("detail.tabs.improvements")}
+									</span>
 								</TabsTrigger>
 							</TabsList>
 							<TabsContent
@@ -841,11 +876,47 @@ function DetailPanel({
 												{t("detail.noSummary")}
 											</p>
 										)}
-										{event.narrative ? (
-											<p className="text-fontSize-sm whitespace-pre-wrap break-words">
-												{event.narrative}
-											</p>
-										) : null}
+											{event.narrative ? (
+												<p className="text-fontSize-sm whitespace-pre-wrap break-words">
+													{event.narrative}
+												</p>
+											) : null}
+									</div>
+								</div>
+							</TabsContent>
+							<TabsContent
+								value="features"
+								className="mt-4 flex-1 overflow-hidden"
+							>
+								<div className="h-full overflow-y-auto rounded-lg border">
+									<div className="space-y-4 p-4">
+										{renderCategory(
+											event.features ?? [],
+											t("detail.empty.features"),
+										)}
+									</div>
+								</div>
+							</TabsContent>
+							<TabsContent
+								value="fixes"
+								className="mt-4 flex-1 overflow-hidden"
+							>
+								<div className="h-full overflow-y-auto rounded-lg border">
+									<div className="space-y-4 p-4">
+										{renderCategory(event.fixes ?? [], t("detail.empty.fixes"))}
+									</div>
+								</div>
+							</TabsContent>
+							<TabsContent
+								value="improvements"
+								className="mt-4 flex-1 overflow-hidden"
+							>
+								<div className="h-full overflow-y-auto rounded-lg border">
+									<div className="space-y-4 p-4">
+										{renderCategory(
+											event.improvements ?? [],
+											t("detail.empty.improvements"),
+										)}
 									</div>
 								</div>
 							</TabsContent>
@@ -890,6 +961,35 @@ function DetailPanel({
 							</TabsContent>
 						</Tabs>
 					)}
+					{!isLoading && event && shouldShowFeedback ? (
+						<div className="mt-4 border-t pt-3">
+							<p className="text-fontSize-sm text-muted-foreground">
+								{t("detail.feedbackPrompt")}
+							</p>
+							<div className="mt-2 flex items-center gap-2">
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									onClick={() => handleRating("up")}
+									disabled={isRating}
+									aria-label={t("detail.ratingUp")}
+								>
+									<ThumbsUp className="h-4 w-4" />
+								</Button>
+								<Button
+									type="button"
+									variant="outline"
+									size="icon"
+									onClick={() => handleRating("down")}
+									disabled={isRating}
+									aria-label={t("detail.ratingDown")}
+								>
+									<ThumbsDown className="h-4 w-4" />
+								</Button>
+							</div>
+						</div>
+					) : null}
 				</CardContent>
 			</Card>
 		</div>

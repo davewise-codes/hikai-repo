@@ -171,11 +171,12 @@
       "spanish": "Spanish"
     },
     "releaseCadenceOptions": {
-      "continuous": "Continuous",
+      "every2Days": "Every 2 days",
+      "twiceWeekly": "Twice weekly",
       "weekly": "Weekly",
       "biweekly": "Biweekly",
       "monthly": "Monthly",
-      "quarterly": "Quarterly"
+      "irregular": "Irregular"
     },
     "members": "Members",
     "createdAt": "Created",

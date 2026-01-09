@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, cn } from "@hikai/ui";
+import { Card, CardContent, cn, Sparkles, ShieldCheck, TrendingUp } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { formatShortDate } from "@/domains/shared/utils";
 
@@ -22,6 +22,22 @@ export type TimelineListEvent = {
 	feature?: string;
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;
+	focusAreas?: string[];
+	features?: Array<{
+		title: string;
+		summary?: string;
+		focusArea?: string;
+	}>;
+	fixes?: Array<{
+		title: string;
+		summary?: string;
+		focusArea?: string;
+	}>;
+	improvements?: Array<{
+		title: string;
+		summary?: string;
+		focusArea?: string;
+	}>;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
 
@@ -52,28 +68,29 @@ export function TimelineList({
 
 	if (isLoading) {
 		return (
-			<div className="space-y-10">
+			<div className="space-y-8">
 				{[0, 1, 2].map((index) => (
-						<div
-							key={index}
-							className="grid grid-cols-1 items-start gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
-						>
-							<div className={cn("md:col-start-1", index % 2 === 0 ? "" : "md:col-start-3")}>
-								<Card className="border-dashed">
-									<CardContent className="space-y-3 p-4">
-										<div className="h-3 w-20 rounded-md bg-muted animate-pulse" />
-										<div className="h-4 w-3/4 rounded-md bg-muted animate-pulse" />
-										<div className="h-3 w-1/2 rounded-md bg-muted animate-pulse" />
-										<div className="flex gap-2">
-											<div className="h-5 w-16 rounded-md bg-muted animate-pulse" />
-											<div className="h-5 w-12 rounded-md bg-muted animate-pulse" />
-										</div>
-									</CardContent>
-								</Card>
-							</div>
-						<div className="hidden items-center justify-center md:flex">
-							<div className="h-full w-px bg-border" />
+					<div
+						key={index}
+						className="grid grid-cols-[96px_24px_minmax(0,1fr)] items-start gap-4"
+					>
+						<div className="pt-1 text-right text-fontSize-xs text-muted-foreground">
+							<div className="h-3 w-16 rounded-md bg-muted animate-pulse ml-auto" />
 						</div>
+						<div className="relative flex h-full justify-center">
+							<div className="absolute top-4 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border border-muted-foreground/60 bg-background" />
+						</div>
+						<Card className="border-dashed">
+							<CardContent className="space-y-3 p-4">
+								<div className="h-3 w-24 rounded-md bg-muted animate-pulse" />
+								<div className="h-4 w-3/4 rounded-md bg-muted animate-pulse" />
+								<div className="h-3 w-1/2 rounded-md bg-muted animate-pulse" />
+								<div className="flex gap-2">
+									<div className="h-4 w-16 rounded-md bg-muted animate-pulse" />
+									<div className="h-4 w-12 rounded-md bg-muted animate-pulse" />
+								</div>
+							</CardContent>
+						</Card>
 					</div>
 				))}
 			</div>
@@ -95,97 +112,65 @@ export function TimelineList({
 	}
 
 	return (
-		<div className="relative py-10 space-y-12">
-			<div className="pointer-events-none absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-border" />
-			{events.map((event, index) => {
-				const isLeft = index % 2 === 0;
+		<div className="relative py-8 space-y-8">
+			<div className="pointer-events-none absolute left-[124px] top-0 h-full w-px bg-border" />
+			{events.map((event) => {
 				const isSelected = selectedId === event._id;
 				const formattedDate = formatShortDate(event.occurredAt, i18n.language);
+				const hasFeatures = (event.features?.length ?? 0) > 0;
+				const hasFixes = (event.fixes?.length ?? 0) > 0;
+				const hasImprovements = (event.improvements?.length ?? 0) > 0;
 
 				return (
 					<div
 						key={event._id}
-						className="grid w-full grid-cols-1 items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+						className="grid grid-cols-[96px_24px_minmax(0,1fr)] items-start gap-4"
 					>
-						{isLeft ? (
-							<>
-								<div
-									ref={(node) => {
-										itemRefs.current[event._id] = node;
-									}}
-									className="order-2 h-full md:order-1 md:col-start-1 md:pr-8"
-								>
-									<Card
-										onClick={() => onSelect(event._id)}
-										className={cn(
-											"cursor-pointer border transition-shadow duration-150 hover:shadow-sm h-full",
-											isSelected ? "border-primary shadow-sm" : "bg-muted/30"
-										)}
-									>
-										<CardContent className="space-y-2 p-3">
-											<p className="text-fontSize-sm font-semibold leading-snug">
-												{event.title}
-											</p>
-											{event.summary ? (
-												<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
-													{event.summary}
-												</p>
-											) : null}
-										</CardContent>
-									</Card>
-								</div>
-								<div className="order-1 md:order-2 flex items-center justify-center">
-									<div className="relative flex items-center justify-center">
-										<div className="hidden md:block absolute right-full mr-2 h-px w-8 bg-border" />
-										<div className="h-3 w-3 rounded-full border border-muted-foreground/70 bg-background" />
+						<div className="pt-1 text-right text-fontSize-xs text-muted-foreground">
+							{formattedDate}
+						</div>
+						<div className="relative flex h-full justify-center">
+							<div className="absolute top-4 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border border-muted-foreground/60 bg-background" />
+						</div>
+						<div
+							ref={(node) => {
+								itemRefs.current[event._id] = node;
+							}}
+						>
+							<Card
+								onClick={() => onSelect(event._id)}
+								className={cn(
+									"cursor-pointer border transition-shadow duration-150 hover:shadow-sm",
+									isSelected ? "border-primary shadow-sm" : "bg-muted/30",
+								)}
+							>
+								<CardContent className="space-y-2 p-3">
+									<div className="flex items-start justify-between gap-3">
+										<p className="text-fontSize-sm font-semibold leading-snug">
+											{event.title}
+										</p>
+										{hasFeatures || hasFixes || hasImprovements ? (
+											<div className="flex items-center gap-1.5 text-muted-foreground">
+												{hasFeatures ? (
+													<Sparkles className="h-3.5 w-3.5" />
+												) : null}
+												{hasFixes ? (
+													<ShieldCheck className="h-3.5 w-3.5" />
+												) : null}
+												{hasImprovements ? (
+													<TrendingUp className="h-3.5 w-3.5" />
+												) : null}
+											</div>
+										) : null}
 									</div>
-								</div>
-								<div className="order-3 hidden md:flex md:col-start-3 items-center justify-start">
-									<span className="text-fontSize-xs text-muted-foreground">
-										{formattedDate}
-									</span>
-								</div>
-							</>
-						) : (
-							<>
-								<div className="order-2 md:order-1 hidden md:flex md:col-start-1 items-center justify-end">
-									<span className="text-fontSize-xs text-muted-foreground">
-										{formattedDate}
-									</span>
-								</div>
-								<div className="order-1 md:order-2 flex items-center justify-center">
-									<div className="relative flex items-center justify-center">
-										<div className="h-3 w-3 rounded-full border border-muted-foreground/70 bg-background" />
-										<div className="hidden md:block absolute left-full ml-2 h-px w-8 bg-border" />
-									</div>
-								</div>
-								<div
-									ref={(node) => {
-										itemRefs.current[event._id] = node;
-									}}
-									className="order-3 h-full md:order-3 md:col-start-3 md:pl-8"
-								>
-									<Card
-										onClick={() => onSelect(event._id)}
-										className={cn(
-											"cursor-pointer border transition-shadow duration-150 hover:shadow-sm h-full",
-											isSelected ? "border-primary shadow-sm" : "bg-muted/30"
-										)}
-									>
-										<CardContent className="space-y-2 p-3">
-											<p className="text-fontSize-sm font-semibold leading-snug">
-												{event.title}
-											</p>
-											{event.summary ? (
-												<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
-													{event.summary}
-												</p>
-											) : null}
-										</CardContent>
-									</Card>
-								</div>
-							</>
-						)}
+									{event.summary ? (
+										<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
+											{event.summary}
+										</p>
+									) : null}
+								</CardContent>
+							</Card>
+						</div>
 					</div>
 				);
 			})}

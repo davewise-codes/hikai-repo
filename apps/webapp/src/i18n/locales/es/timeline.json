@@ -71,12 +71,23 @@
     "emptyDescription": "Selecciona un incremento en el timeline para ver sus detalles.",
     "tabs": {
       "overview": "Overview",
+      "features": "Features",
+      "fixes": "Fixes",
+      "improvements": "Improvements",
       "activity": "Actividad"
     },
+    "empty": {
+      "features": "No hay novedades de features en este incremento.",
+      "fixes": "No hay fixes en este incremento.",
+      "improvements": "No hay mejoras en este incremento."
+    },
     "noSummary": "No hay resumen disponible aún.",
-    "activityHint": "Aquí aparecerá la actividad e inputs raw.",
+    "activityHint": "Estos son los eventos usados para generar este resumen.",
     "activityEmpty": "No hay eventos raw enlazados a esta narrativa todavía.",
     "ratingUp": "Valorar interpretación positivamente",
-    "ratingDown": "Valorar interpretación negativamente"
+    "ratingDown": "Valorar interpretación negativamente",
+    "feedbackPrompt": "¿Te sirve este resumen?",
+    "focusAreasLabel": "Áreas de foco:",
+    "focusAreaOther": "Otro"
   }
 }

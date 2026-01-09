@@ -40,6 +40,22 @@ type InterpretationOutput = {
 		feature?: string;
 		relevance?: number;
 		rawEventIds: string[];
+		focusAreas?: string[];
+		features?: Array<{
+			title: string;
+			summary?: string;
+			focusArea?: string;
+		}>;
+		fixes?: Array<{
+			title: string;
+			summary?: string;
+			focusArea?: string;
+		}>;
+		improvements?: Array<{
+			title: string;
+			summary?: string;
+			focusArea?: string;
+		}>;
 	}>;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
@@ -189,47 +205,78 @@ export const interpretPendingEvents = action({
 				return { attempted: 0, processed: 0, errors: 0, productId, agentRunId: runId };
 			}
 
-			await recordStep("Interpreting with agent", "info");
-			const interpretation: InterpretationOutput = await ctx.runAction(
-				api.agents.actions.interpretTimelineEvents,
-				{
-					productId,
-					rawEventIds: targetRawEvents.map(
-						(event: { _id: Id<"rawEvents"> }) => event._id,
-					),
-					limit: targetRawEvents.length,
-				},
+			const product = await ctx.runQuery(
+				internal.agents.productContextData.getProductWithContext,
+				{ productId },
 			);
+			const snapshot = product.currentContextSnapshotId
+				? await ctx.runQuery(
+						internal.agents.productContextData.getContextSnapshotById,
+						{ snapshotId: product.currentContextSnapshotId },
+					)
+				: null;
+			const releaseCadence =
+				snapshot?.releaseCadence ?? product.releaseCadence ?? "unknown";
+			const normalizedCadence = normalizeCadence(releaseCadence);
 
-			await recordStep("Writing narratives", "info");
+			const buckets = bucketizeRawEvents(targetRawEvents, normalizedCadence);
+			await recordStep(`Bucketing raw events into ${buckets.length} buckets`, "info");
+
 			const now = Date.now();
 			let processed = 0;
-			const validRawEventIds = new Set(
-				targetRawEvents.map((event) => event._id),
-			);
+			const totalBuckets = buckets.length;
+			for (const [index, bucket] of buckets.entries()) {
+				const bucketLabel = formatBucketLabel(bucket.bucketStartAt, bucket.bucketEndAt);
+				await recordStep(
+					`Interpreting bucket ${index + 1}/${totalBuckets} (${bucketLabel})`,
+					"info",
+				);
 
-			for (const narrative of interpretation.narratives) {
-				const { rawEventIds, ...narrativePayload } = narrative;
-				const rawEventIdsForNarrative = Array.from(
-					new Set(
-						rawEventIds.filter((rawEventId) =>
-							validRawEventIds.has(rawEventId as Id<"rawEvents">),
+				const interpretation: InterpretationOutput = await ctx.runAction(
+					api.agents.actions.interpretTimelineEvents,
+					{
+						productId,
+						rawEventIds: bucket.rawEvents.map(
+							(event: { _id: Id<"rawEvents"> }) => event._id,
 						),
-					),
-				).map((rawEventId) => rawEventId as Id<"rawEvents">);
+						limit: bucket.rawEvents.length,
+						bucket: {
+							bucketId: bucket.bucketId,
+							bucketStartAt: bucket.bucketStartAt,
+							bucketEndAt: bucket.bucketEndAt,
+						},
+					},
+				);
 
-				if (!rawEventIdsForNarrative.length) {
-					await recordStep(
-						`Skipped narrative without valid rawEventIds: ${narrative.title}`,
-						"warn",
+				if (!interpretation.narratives.length) {
+					throw new Error(
+						`No narrative returned for bucket ${bucket.bucketId}`,
 					);
-					continue;
+				}
+				if (interpretation.narratives.length > 1) {
+					throw new Error(
+						`Expected one narrative for bucket ${bucket.bucketId}, got ${interpretation.narratives.length}`,
+					);
 				}
 
+				const { rawEventIds: _rawEventIds, ...narrativePayload } =
+					interpretation.narratives[0];
+				await recordStep(
+					`Writing narrative for bucket ${index + 1}/${totalBuckets}`,
+					"info",
+				);
 				await ctx.runMutation(internal.timeline.interpret.insertInterpretedEvent, {
 					productId,
-					narrative: narrativePayload,
-					rawEventIds: rawEventIdsForNarrative,
+					narrative: {
+						...narrativePayload,
+						bucketId: bucket.bucketId,
+						bucketStartAt: bucket.bucketStartAt,
+						bucketEndAt: bucket.bucketEndAt,
+						cadence: normalizedCadence,
+					},
+					rawEventIds: bucket.rawEvents.map(
+						(event: { _id: Id<"rawEvents"> }) => event._id,
+					),
 					inferenceLogId: interpretation.inferenceLogId,
 					createdAt: now,
 				});
@@ -286,6 +333,34 @@ export const insertInterpretedEvent = internalMutation({
 			audience: v.optional(v.string()),
 			feature: v.optional(v.string()),
 			relevance: v.optional(v.number()),
+			focusAreas: v.optional(v.array(v.string())),
+			features: v.optional(
+				v.array(
+					v.object({
+						title: v.string(),
+						summary: v.optional(v.string()),
+						focusArea: v.optional(v.string()),
+					}),
+				),
+			),
+			fixes: v.optional(
+				v.array(
+					v.object({
+						title: v.string(),
+						summary: v.optional(v.string()),
+						focusArea: v.optional(v.string()),
+					}),
+				),
+			),
+			improvements: v.optional(
+				v.array(
+					v.object({
+						title: v.string(),
+						summary: v.optional(v.string()),
+						focusArea: v.optional(v.string()),
+					}),
+				),
+			),
 		}),
 		rawEventIds: v.array(v.id("rawEvents")),
 		inferenceLogId: v.optional(v.id("aiInferenceLogs")),
@@ -314,6 +389,10 @@ export const insertInterpretedEvent = internalMutation({
 			audience: narrative.audience,
 			feature: narrative.feature,
 			relevance: narrative.relevance,
+			focusAreas: narrative.focusAreas,
+			features: narrative.features,
+			fixes: narrative.fixes,
+			improvements: narrative.improvements,
 			rawEventIds,
 			rawEventCount: rawEventIds.length,
 			contextSnapshotId: contextSnapshotId ?? undefined,
@@ -323,3 +402,187 @@ export const insertInterpretedEvent = internalMutation({
 		});
 	},
 });
+
+type BucketedRawEvents = {
+	bucketId: string;
+	bucketStartAt: number;
+	bucketEndAt: number;
+	rawEvents: RawEvent[];
+};
+
+function normalizeCadence(value: string): string {
+	switch (value) {
+		case "continuous":
+			return "every_2_days";
+		case "quarterly":
+			return "quarterly";
+		case "every_2_days":
+		case "twice_weekly":
+		case "weekly":
+		case "biweekly":
+		case "monthly":
+		case "irregular":
+		case "unknown":
+			return value;
+		default:
+			return "unknown";
+	}
+}
+
+function bucketizeRawEvents(
+	rawEvents: RawEvent[],
+	cadence: string,
+): BucketedRawEvents[] {
+	const buckets = new Map<string, BucketedRawEvents>();
+	for (const event of rawEvents) {
+		const bucket = getBucketForTimestamp(event.occurredAt, cadence);
+		const existing = buckets.get(bucket.bucketId);
+		if (existing) {
+			existing.rawEvents.push(event);
+		} else {
+			buckets.set(bucket.bucketId, { ...bucket, rawEvents: [event] });
+		}
+	}
+
+	return Array.from(buckets.values()).sort(
+		(a, b) => a.bucketStartAt - b.bucketStartAt,
+	);
+}
+
+function getBucketForTimestamp(
+	timestamp: number,
+	cadence: string,
+): Omit<BucketedRawEvents, "rawEvents"> {
+	const dayMs = 24 * 60 * 60 * 1000;
+	const date = new Date(timestamp);
+	const startOfDay = Date.UTC(
+		date.getUTCFullYear(),
+		date.getUTCMonth(),
+		date.getUTCDate(),
+	);
+
+	switch (cadence) {
+		case "every_2_days": {
+			const base = Date.UTC(1970, 0, 1);
+			const offset = startOfDay - base;
+			const start = base + Math.floor(offset / (2 * dayMs)) * 2 * dayMs;
+			const end = start + 2 * dayMs;
+			return {
+				bucketId: formatDateId(start),
+				bucketStartAt: start,
+				bucketEndAt: end,
+			};
+		}
+		case "twice_weekly": {
+			const { weekStart, isoYear, isoWeek } = getWeekStart(date);
+			const dayOfWeek = date.getUTCDay() || 7;
+			const isFirstHalf = dayOfWeek <= 4;
+			const start = isFirstHalf ? weekStart : weekStart + 4 * dayMs;
+			const end = isFirstHalf ? weekStart + 4 * dayMs : weekStart + 7 * dayMs;
+			return {
+				bucketId: `${isoYear}-W${padWeek(isoWeek)}-${isFirstHalf ? "A" : "B"}`,
+				bucketStartAt: start,
+				bucketEndAt: end,
+			};
+		}
+		case "weekly": {
+			const { weekStart, isoYear, isoWeek } = getWeekStart(date);
+			return {
+				bucketId: `${isoYear}-W${padWeek(isoWeek)}`,
+				bucketStartAt: weekStart,
+				bucketEndAt: weekStart + 7 * dayMs,
+			};
+		}
+		case "biweekly": {
+			const year = date.getUTCFullYear();
+			const month = date.getUTCMonth();
+			const day = date.getUTCDate();
+			const start =
+				day <= 15
+					? Date.UTC(year, month, 1)
+					: Date.UTC(year, month, 16);
+			const end =
+				day <= 15
+					? Date.UTC(year, month, 16)
+					: Date.UTC(year, month + 1, 1);
+			return {
+				bucketId: `${year}-${padMonth(month + 1)}-${day <= 15 ? "Q1" : "Q2"}`,
+				bucketStartAt: start,
+				bucketEndAt: end,
+			};
+		}
+		case "monthly": {
+			const year = date.getUTCFullYear();
+			const month = date.getUTCMonth();
+			const start = Date.UTC(year, month, 1);
+			const end = Date.UTC(year, month + 1, 1);
+			return {
+				bucketId: `${year}-${padMonth(month + 1)}`,
+				bucketStartAt: start,
+				bucketEndAt: end,
+			};
+		}
+		case "quarterly": {
+			const year = date.getUTCFullYear();
+			const month = date.getUTCMonth();
+			const quarter = Math.floor(month / 3) + 1;
+			const start = Date.UTC(year, (quarter - 1) * 3, 1);
+			const end = Date.UTC(year, quarter * 3, 1);
+			return {
+				bucketId: `${year}-Q${quarter}`,
+				bucketStartAt: start,
+				bucketEndAt: end,
+			};
+		}
+		case "irregular":
+		case "unknown":
+		default: {
+			const base = Date.UTC(1970, 0, 1);
+			const offset = startOfDay - base;
+			const window = 30 * dayMs;
+			const start = base + Math.floor(offset / window) * window;
+			const end = start + window;
+			return {
+				bucketId: `rolling-30d-${formatDateId(start)}`,
+				bucketStartAt: start,
+				bucketEndAt: end,
+			};
+		}
+	}
+}
+
+function formatBucketLabel(start: number, end: number): string {
+	return `${formatDateId(start)} → ${formatDateId(end - 1)}`;
+}
+
+function formatDateId(timestamp: number): string {
+	const date = new Date(timestamp);
+	return `${date.getUTCFullYear()}-${padMonth(
+		date.getUTCMonth() + 1,
+	)}-${padMonth(date.getUTCDate())}`;
+}
+
+function padMonth(value: number): string {
+	return value.toString().padStart(2, "0");
+}
+
+function padWeek(value: number): string {
+	return value.toString().padStart(2, "0");
+}
+
+function getWeekStart(date: Date): { weekStart: number; isoYear: number; isoWeek: number } {
+	const utcDate = new Date(
+		Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+	);
+	const day = utcDate.getUTCDay() || 7;
+	const weekStartDate = new Date(utcDate);
+	weekStartDate.setUTCDate(utcDate.getUTCDate() - day + 1);
+
+	const thursday = new Date(utcDate);
+	thursday.setUTCDate(utcDate.getUTCDate() + 4 - day);
+	const isoYear = thursday.getUTCFullYear();
+	const yearStart = Date.UTC(isoYear, 0, 1);
+	const isoWeek = Math.ceil(((thursday.getTime() - yearStart) / 86400000 + 1) / 7);
+
+	return { weekStart: weekStartDate.getTime(), isoYear, isoWeek };
+}

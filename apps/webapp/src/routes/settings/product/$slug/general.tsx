@@ -110,11 +110,12 @@ function ProductGeneralPage() {
 	};
 
 	const releaseCadenceOptions = [
-		{ value: "continuous", label: t("settings.releaseCadenceOptions.continuous") },
+		{ value: "every_2_days", label: t("settings.releaseCadenceOptions.every2Days") },
+		{ value: "twice_weekly", label: t("settings.releaseCadenceOptions.twiceWeekly") },
 		{ value: "weekly", label: t("settings.releaseCadenceOptions.weekly") },
 		{ value: "biweekly", label: t("settings.releaseCadenceOptions.biweekly") },
 		{ value: "monthly", label: t("settings.releaseCadenceOptions.monthly") },
-		{ value: "quarterly", label: t("settings.releaseCadenceOptions.quarterly") },
+		{ value: "irregular", label: t("settings.releaseCadenceOptions.irregular") },
 	];
 
 	const languageOptions = [

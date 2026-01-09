@@ -592,10 +592,17 @@ export const interpretTimelineEvents = action({
 		limit: v.optional(v.number()),
 		threadId: v.optional(v.string()),
 		debugUi: v.optional(v.boolean()),
+		bucket: v.optional(
+			v.object({
+				bucketId: v.string(),
+				bucketStartAt: v.number(),
+				bucketEndAt: v.number(),
+			}),
+		),
 	},
 	handler: async (
 		ctx,
-		{ productId, rawEventIds, limit, threadId, debugUi },
+		{ productId, rawEventIds, limit, threadId, debugUi, bucket },
 	): Promise<{
 		threadId: string;
 		narratives: Array<{
@@ -612,6 +619,22 @@ export const interpretTimelineEvents = action({
 			feature?: string;
 			relevance?: number;
 			rawEventIds: string[];
+			focusAreas?: string[];
+			features?: Array<{
+				title: string;
+				summary?: string;
+				focusArea?: string;
+			}>;
+			fixes?: Array<{
+				title: string;
+				summary?: string;
+				focusArea?: string;
+			}>;
+			improvements?: Array<{
+				title: string;
+				summary?: string;
+				focusArea?: string;
+			}>;
 		}>;
 		inferenceLogId?: Id<"aiInferenceLogs">;
 	}> => {
@@ -665,6 +688,7 @@ export const interpretTimelineEvents = action({
 		const input = {
 			languagePreference,
 			releaseCadence,
+			bucket: bucket ?? undefined,
 			baseline,
 			productContext: context,
 			rawEvents,
@@ -705,6 +729,22 @@ export const interpretTimelineEvents = action({
 					feature?: string;
 					relevance?: number;
 					rawEventIds: string[];
+					focusAreas?: string[];
+					features?: Array<{
+						title: string;
+						summary?: string;
+						focusArea?: string;
+					}>;
+					fixes?: Array<{
+						title: string;
+						summary?: string;
+						focusArea?: string;
+					}>;
+					improvements?: Array<{
+						title: string;
+						summary?: string;
+						focusArea?: string;
+					}>;
 				}>;
 			};
 			if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.narratives)) {
@@ -712,6 +752,59 @@ export const interpretTimelineEvents = action({
 					"Invalid JSON response from Timeline Context Interpreter Agent",
 				);
 			}
+			const allowedFocusAreas = buildFocusAreaSet(baseline, context);
+			const shouldNormalizeFocusAreas = allowedFocusAreas.size > 0;
+			const normalizeFocusArea = (value: string | undefined) => {
+				const trimmed = value?.trim();
+				if (!trimmed) return undefined;
+				if (!shouldNormalizeFocusAreas) return trimmed;
+				return allowedFocusAreas.has(trimmed) ? trimmed : "Other";
+			};
+
+			parsed.narratives = parsed.narratives.map((narrative) => {
+				const normalizedFeatures =
+					narrative.features?.map((item) => ({
+						...item,
+						focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
+					})) ?? [];
+				const normalizedFixes =
+					narrative.fixes?.map((item) => ({
+						...item,
+						focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
+					})) ?? [];
+				const normalizedImprovements =
+					narrative.improvements?.map((item) => ({
+						...item,
+						focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
+					})) ?? [];
+
+				const normalizedFocusAreas = new Set(
+					(narrative.focusAreas ?? [])
+						.map((area) => normalizeFocusArea(area))
+						.filter((area): area is string => Boolean(area)),
+				);
+				for (const item of normalizedFeatures) {
+					if (item.focusArea) normalizedFocusAreas.add(item.focusArea);
+				}
+				for (const item of normalizedFixes) {
+					if (item.focusArea) normalizedFocusAreas.add(item.focusArea);
+				}
+				for (const item of normalizedImprovements) {
+					if (item.focusArea) normalizedFocusAreas.add(item.focusArea);
+				}
+
+				return {
+					...narrative,
+					focusAreas: normalizedFocusAreas.size
+						? Array.from(normalizedFocusAreas)
+						: undefined,
+					features: normalizedFeatures.length ? normalizedFeatures : undefined,
+					fixes: normalizedFixes.length ? normalizedFixes : undefined,
+					improvements: normalizedImprovements.length
+						? normalizedImprovements
+						: undefined,
+				};
+			});
 
 			const telemetryConfig = getAgentTelemetryConfig(
 				TIMELINE_INTERPRETER_AGENT_NAME,
@@ -934,6 +1027,39 @@ function getUsageTotals(result: {
 	const tokensOut = usage?.outputTokens ?? 0;
 	const totalTokens = usage?.totalTokens ?? tokensIn + tokensOut;
 	return { tokensIn, tokensOut, totalTokens };
+}
+
+function buildFocusAreaSet(
+	baseline: Record<string, unknown>,
+	context: Record<string, unknown>,
+): Set<string> {
+	const focusAreas = new Set<string>();
+	const addString = (value: unknown) => {
+		if (typeof value !== "string") return;
+		const trimmed = value.trim();
+		if (trimmed) focusAreas.add(trimmed);
+	};
+	const addArrayStrings = (value: unknown) => {
+		if (!Array.isArray(value)) return;
+		value.forEach(addString);
+	};
+	const addArrayObjects = (value: unknown) => {
+		if (!Array.isArray(value)) return;
+		value.forEach((item) => {
+			if (!item || typeof item !== "object") return;
+			const name = (item as { name?: unknown }).name;
+			addString(name);
+		});
+	};
+
+	addArrayObjects((context as { keyFeatures?: unknown }).keyFeatures);
+	addArrayObjects((context as { productDomains?: unknown }).productDomains);
+	addArrayObjects((context as { productEpics?: unknown }).productEpics);
+	addArrayObjects((context as { strategicPillars?: unknown }).strategicPillars);
+	addArrayObjects((context as { recommendedFocus?: unknown }).recommendedFocus);
+	addArrayStrings((baseline as { strategicPillars?: unknown }).strategicPillars);
+
+	return focusAreas;
 }
 
 function normalizePersonas(value: unknown): Array<{ name: string; description?: string }> {
