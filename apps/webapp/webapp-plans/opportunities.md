@@ -35,6 +35,7 @@
   - context
   - sources
   - timeline
+    - mejora de timeline: card narrativo con tabs (overview/features/fixes/improvements/activity), focus areas consistentes y filtros futuros
   - content (producing: inception + editing)
     - marketing
     - users

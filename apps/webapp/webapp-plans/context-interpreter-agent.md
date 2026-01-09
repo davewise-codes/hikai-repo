@@ -272,14 +272,27 @@ F5.0: Timeline improvements requirements
 
 PARTE 1: ANALISIS
 - Identificar pain points actuales del timeline (navegacion, claridad, densidad, narrativa).
-- Definir criterios de calidad para una narrativa "buena".
+- Referencias: Linear (timeline + card detallado) y Notion (secciones por categoria).
+- Definir criterios de calidad para una narrativa "buena" (outcome-first, escaneable, consistente).
 
 PARTE 2: REQUIREMENTS
-- Especificar mejoras funcionales (filtros, agrupaciones, insights, acciones).
-- Especificar mejoras visuales (layout, jerarquia, badges, densidad).
+- Definir estructura del card:
+  - Tabs siempre visibles: Overview, Features, Fixes, Improvements, Activity.
+  - Empty state por tab cuando no hay contenido.
+  - Feedback al final del card (no antes del detalle).
+  - Activity muestra siempre los eventos usados para generar la narrativa.
+- Definir modelo de categorizacion:
+  - Un set consistente de "focus areas" usado a lo largo del tiempo.
+  - Agrupaciones simples y sostenibles (evitar jerarquias complejas).
+  - Preparar filtros futuros por focus areas / categorias.
+- Definir jerarquia visual:
+  - 1 titulo + 1 leitmotif (summary corto).
+  - Resumen de focus areas en formato compacto (no badges dominantes).
+  - Contexto de producto no visible en el card (se asume a nivel producto).
 
 PARTE 3: METRICAS
 - Definir metricas de exito (adopcion, tiempo de lectura, feedback positivo).
+- Señales de utilidad (click en tabs, uso de filtros, feedback completado).
 
 PARTE 4: VALIDACION
 - Checklist de aceptacion para fases futuras.

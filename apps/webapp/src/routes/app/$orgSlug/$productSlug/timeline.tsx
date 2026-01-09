@@ -486,7 +486,9 @@ function TimelinePage() {
 											<span className="text-fontSize-sm">{t("sync.label")}</span>
 										</Button>
 									</TooltipTrigger>
-									<TooltipContent>{t("sync.tooltip")}</TooltipContent>
+									<TooltipContent side="bottom" sideOffset={8}>
+										{t("sync.tooltip")}
+									</TooltipContent>
 								</Tooltip>
 								<AlertDialog>
 									<Tooltip>
@@ -504,7 +506,7 @@ function TimelinePage() {
 												</Button>
 											</AlertDialogTrigger>
 										</TooltipTrigger>
-										<TooltipContent>
+										<TooltipContent side="bottom" sideOffset={8}>
 											{t("regenerate.tooltip")}
 										</TooltipContent>
 									</Tooltip>
