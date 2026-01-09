@@ -33,6 +33,7 @@ Ademas, el contexto actual mezcla "current" e historico en el mismo JSON. Querem
 | F3.0    | Pipeline de interpretacion con agrupacion y snapshots    | ✅     |
 | F4.0    | UI de timeline y feedback por interpretacion             | ✅     |
 | F5.0    | Mejora de timeline (requerimientos y evolucion)          | ⏳     |
+| F6.0    | Implementacion de mejoras del timeline                   | ⏳     |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -281,14 +282,31 @@ PARTE 2: REQUIREMENTS
   - Empty state por tab cuando no hay contenido.
   - Feedback al final del card (no antes del detalle).
   - Activity muestra siempre los eventos usados para generar la narrativa.
+  - Copy de Activity: "These are the events used to generate this summary".
 - Definir modelo de categorizacion:
   - Un set consistente de "focus areas" usado a lo largo del tiempo.
   - Agrupaciones simples y sostenibles (evitar jerarquias complejas).
   - Preparar filtros futuros por focus areas / categorias.
+  - Ajustar contrato de salida del agente:
+    - focusAreas normalizados por narrativa.
+    - Listas separadas para features / fixes / improvements con focusArea por item.
+    - Reusar focusAreas existentes del baseline/context; evitar inventar etiquetas nuevas.
+    - Fallback a "Other" si no hay match.
 - Definir jerarquia visual:
   - 1 titulo + 1 leitmotif (summary corto).
   - Resumen de focus areas en formato compacto (no badges dominantes).
   - Contexto de producto no visible en el card (se asume a nivel producto).
+- Definir layout del timeline:
+  - Eje temporal alineado a la izquierda.
+  - Eventos alineados siempre a la derecha (evitar alternancia).
+  - Maximizar ancho util para el contenido.
+- Definir compartibilidad:
+  - Timeline con URL publica.
+  - Script embebible para integrarlo en apps de clientes.
+  - Considerar responsive desde el inicio (embed y vista publica).
+- Definir cues visuales por tipo:
+  - Iconografia y color para Features, Fixes, Improvements.
+  - Enfocado en lectura rapida, sin detalle (detalle solo en el card).
 
 PARTE 3: METRICAS
 - Definir metricas de exito (adopcion, tiempo de lectura, feedback positivo).
@@ -302,6 +320,43 @@ PARTE 4: VALIDACION
 - [ ] Requerimientos claros y priorizados
 - [ ] Criterios de calidad definidos
 - [ ] Metricas acordadas
+
+---
+
+### F6.0: Implementacion de mejoras del timeline
+
+**Objetivo**: Implementar los requerimientos definidos en F5.0.
+
+**Prompt**:
+
+```
+F6.0: Implementacion timeline improvements
+
+PARTE 1: OUTPUT AGENTE
+- Ajustar contrato del agente para focusAreas y listas por categoria.
+- Garantizar consistencia de categorias y fallback "Other".
+
+PARTE 2: UI TIMELINE
+- Reestructurar layout (eje izquierdo, eventos a la derecha).
+- Iconografia y color por tipo (features/fixes/improvements).
+- Tabs con empty states y Activity siempre visible con copy acordado.
+- Feedback al final del card.
+- Reducir peso visual de contexto; mostrar solo focus areas compactas.
+
+PARTE 3: FILTROS Y FUTURO
+- Preparar filtros por focusAreas/categorias (aunque no se activen aun).
+- Asegurar compatibilidad con futura URL publica + embed.
+
+PARTE 4: VALIDACION
+- tsc convex + webapp
+- Validar narrativa, tabs, activity y layout responsive (public/embed).
+```
+
+**Validacion**:
+- [ ] Contrato de salida del agente actualizado
+- [ ] UI con layout y tabs segun F5.0
+- [ ] Activity muestra raw events con copy correcto
+- [ ] Preparado para filtros y compartir (public/embed)
 
 ---
 
