@@ -17,6 +17,20 @@
     "lastMonth": "Last month",
     "allDates": "All dates"
   },
+  "filters": {
+    "focusAreas": "Focus areas",
+    "noFocusAreas": "No focus areas available",
+    "categories": "Categories",
+    "features": "Features",
+    "fixes": "Fixes",
+    "improvements": "Improvements",
+    "date": "Date",
+    "anyTime": "Any time",
+    "from": "From",
+    "to": "To",
+    "clearDates": "Clear dates",
+    "clearAll": "Clear filters"
+  },
   "sync": {
     "label": "Sync now",
     "loading": "Syncing...",
@@ -45,7 +59,16 @@
     "history": "History",
     "empty": "No runs yet.",
     "sync": "Sync",
-    "regenerate": "Regenerate"
+    "regenerate": "Regenerate",
+    "sources": "Sources",
+    "sourcesTitle": "Source classifications",
+    "sourcesEmpty": "No source classifications yet.",
+    "sourceProductCore": "Product core",
+    "sourceMarketingSurface": "Marketing surface",
+    "sourceInfra": "Infrastructure",
+    "sourceDocs": "Docs",
+    "sourceExperiments": "Experiments",
+    "sourceUnknown": "Unknown"
   },
   "navigator": {
     "title": "Navigator",
@@ -63,7 +86,8 @@
       "processed": "Processed",
       "error": "Error"
     },
-    "relevance": "Relevance {{value}}"
+    "relevance": "Relevance {{value}}",
+    "impact": "Impact {{value}}"
   },
   "detail": {
     "title": "Detail",
@@ -86,6 +110,10 @@
     "activityEmpty": "No raw events linked to this narrative yet.",
     "ratingUp": "Rate interpretation up",
     "ratingDown": "Rate interpretation down",
+    "internal": "Internal",
+    "internalGroup": "Internal",
+    "internalSummary": "Internal foundations only",
+    "focusAreasInternal": "Focus areas: Internal foundations",
     "feedbackPrompt": "Are you happy with this summary?",
     "focusAreasLabel": "Focus areas:",
     "focusAreaOther": "Other"

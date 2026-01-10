@@ -1,16 +1,21 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v1.2";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v1.4";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
 	occurredAt: number;
 	sourceType: "commit" | "pull_request" | "release" | "other";
 	summary: string;
+	filePaths?: string[];
+	surfaceHints?: Array<
+		"product_core" | "marketing_surface" | "infra" | "docs" | "experiments" | "unknown"
+	>;
 };
 
 export type TimelineNarrativeItem = {
 	title: string;
 	summary?: string;
 	focusArea?: string;
+	visibility?: "public" | "internal";
 };
 
 export type TimelineNarrativeEvent = {
@@ -31,6 +36,8 @@ export type TimelineNarrativeEvent = {
 	features?: TimelineNarrativeItem[];
 	fixes?: TimelineNarrativeItem[];
 	improvements?: TimelineNarrativeItem[];
+	ongoingFocusAreas?: string[];
+	bucketImpact?: number;
 };
 
 export type TimelineInterpretationOutput = {
@@ -55,8 +62,18 @@ Input JSON:
   "bucket": { "bucketId": "...", "bucketStartAt": 0, "bucketEndAt": 0 },
   "baseline": { ... },
   "productContext": { ... },
+  "repoContexts": [
+    { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|unknown", "notes": "..." }
+  ],
   "rawEvents": [
-    { "rawEventId": "…", "occurredAt": 0, "sourceType": "commit|pull_request|release|other", "summary": "…" }
+    {
+      "rawEventId": "…",
+      "occurredAt": 0,
+      "sourceType": "commit|pull_request|release|other",
+      "summary": "…",
+      "filePaths": ["apps/webapp/..."],
+      "surfaceHints": ["product_core"]
+    }
   ]
 }
 
@@ -78,9 +95,11 @@ Output JSON:
       "relevance": 1-5,
       "rawEventIds": ["rawEventId1", "rawEventId2"],
       "focusAreas": ["Focus Area A", "Focus Area B"],
-      "features": [{ "title": "...", "summary": "...", "focusArea": "Focus Area A" }],
-      "fixes": [{ "title": "...", "summary": "...", "focusArea": "Focus Area B" }],
-      "improvements": [{ "title": "...", "summary": "...", "focusArea": "Focus Area A" }]
+      "features": [{ "title": "...", "summary": "...", "focusArea": "Focus Area A", "visibility": "public|internal" }],
+      "fixes": [{ "title": "...", "summary": "...", "focusArea": "Focus Area B", "visibility": "public|internal" }],
+      "improvements": [{ "title": "...", "summary": "...", "focusArea": "Focus Area A", "visibility": "public|internal" }],
+      "ongoingFocusAreas": ["Focus Area A"],
+      "bucketImpact": 1
     }
   ]
 }
@@ -93,4 +112,9 @@ Rules:
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
 - For focusAreas, prefer taxonomy labels from baseline/context; if no match, use "Other".
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
+- Mark items "internal" when they are below-the-glass development work that does not change the value proposition.
+- Keep summary/narrative public-safe; internal items should only appear in improvements and not be mentioned in summary/narrative.
+- Every public item must map clearly to a keyFeature or productDomain; if it doesn't, mark it internal.
+- Use repoContexts and surfaceHints to judge relevance: marketing_surface, docs, infra, experiments are usually internal unless they clearly map to value for the ICP.
+- If surfaceHints includes marketing_surface and product_core is not present, treat the item as internal by default.
 `.trim();

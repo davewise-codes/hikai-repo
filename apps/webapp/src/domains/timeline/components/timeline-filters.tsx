@@ -1,28 +1,17 @@
 import { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	ArrowDown,
-	ArrowUp,
-	Button,
-	Input,
-	Label,
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@hikai/ui";
+import { ArrowDown, ArrowUp, Button, Input, Label } from "@hikai/ui";
 import { cn } from "@hikai/ui";
 
 export type TimelineFilterState = {
-	kind: string;
+	focusAreas: string[];
+	categories: Array<"features" | "fixes" | "improvements">;
 	from: string;
 	to: string;
 };
 
 interface TimelineFiltersProps {
 	filters: TimelineFilterState;
-	kinds: string[];
 	onChange: (next: TimelineFilterState) => void;
 	onPrev?: () => void;
 	onNext?: () => void;
@@ -34,7 +23,6 @@ interface TimelineFiltersProps {
 
 export function TimelineFilters({
 	filters,
-	kinds,
 	onChange,
 	onPrev,
 	onNext,
@@ -85,27 +73,6 @@ export function TimelineFilters({
 						</Button>
 					</>
 				) : null}
-				<div className="hidden items-center gap-2 md:flex">
-					<Label htmlFor="timeline-kind" className="text-fontSize-xs text-muted-foreground">
-						{t("controls.kind")}
-					</Label>
-					<Select
-						value={filters.kind}
-						onValueChange={(value) => onChange({ ...filters, kind: value })}
-					>
-						<SelectTrigger id="timeline-kind" className="h-9 w-32 text-fontSize-xs">
-							<SelectValue placeholder={t("controls.kind")} />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="all">{t("controls.allKinds")}</SelectItem>
-							{kinds.map((kind) => (
-								<SelectItem key={kind} value={kind}>
-									{kind}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
 				<div className="hidden items-center gap-2 md:flex">
 					<Label htmlFor="timeline-from" className="text-fontSize-xs text-muted-foreground">
 						{t("controls.dateFrom")}

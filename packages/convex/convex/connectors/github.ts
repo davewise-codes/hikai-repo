@@ -189,6 +189,7 @@ type NormalizedGithubEvent = {
 	sourceType: "commit" | "pull_request" | "release";
 	title: string;
 	body?: string;
+	filePaths?: string[];
 	author?: {
 		login?: string;
 		name?: string;
@@ -254,6 +255,74 @@ export const getInstallationTokenForConnection = internalAction({
 	},
 });
 
+export const fetchRepoStructureSummary = internalAction({
+	args: {
+		productId: v.id("products"),
+		connectionId: v.id("connections"),
+		repoFullName: v.string(),
+	},
+	handler: async (ctx, { productId, connectionId, repoFullName }) => {
+		const { token } = await ctx.runAction(
+			internal.connectors.github.getInstallationTokenForConnection,
+			{ productId, connectionId },
+		);
+
+		const repoResponse = await fetch(
+			`https://api.github.com/repos/${repoFullName}`,
+			{ headers: githubHeaders(token) },
+		);
+		if (!repoResponse.ok) {
+			throw new Error(`Failed to fetch repo metadata for ${repoFullName}`);
+		}
+		const repoJson = (await repoResponse.json()) as {
+			default_branch?: string;
+		};
+		const defaultBranch = repoJson.default_branch ?? "main";
+
+		const branchResponse = await fetch(
+			`https://api.github.com/repos/${repoFullName}/branches/${encodeURIComponent(
+				defaultBranch,
+			)}`,
+			{ headers: githubHeaders(token) },
+		);
+		if (!branchResponse.ok) {
+			throw new Error(`Failed to fetch default branch for ${repoFullName}`);
+		}
+		const branchJson = (await branchResponse.json()) as {
+			commit?: { commit?: { tree?: { sha?: string } } };
+		};
+		const treeSha = branchJson.commit?.commit?.tree?.sha;
+		if (!treeSha) {
+			throw new Error(`Missing tree SHA for ${repoFullName}`);
+		}
+
+		const treeResponse = await fetch(
+			`https://api.github.com/repos/${repoFullName}/git/trees/${treeSha}?recursive=1`,
+			{ headers: githubHeaders(token) },
+		);
+		if (!treeResponse.ok) {
+			throw new Error(`Failed to fetch repo tree for ${repoFullName}`);
+		}
+		const treeJson = (await treeResponse.json()) as {
+			tree?: Array<{ path?: string; type?: string }>;
+		};
+		const entries = treeJson.tree ?? [];
+
+		const summary = buildRepoStructureSummary(entries);
+		const fileSamples = await fetchRepoFileSamples(
+			token,
+			repoFullName,
+			entries,
+			summary,
+		);
+
+		return {
+			...summary,
+			fileSamples,
+		};
+	},
+});
+
 export const getRecentExternalIds = internalQuery({
 	args: {
 		connectionId: v.id("connections"),
@@ -270,10 +339,36 @@ export const getRecentExternalIds = internalQuery({
 
 		return events
 			.map((event) => {
-				const payload = event.payload as { externalId?: string };
-				return payload?.externalId;
+				const payload = event.payload as { externalId?: string; filePaths?: string[] };
+				if (!payload?.externalId) return null;
+				return {
+					externalId: payload.externalId,
+					rawEventId: event._id,
+					hasFilePaths: Array.isArray(payload.filePaths) && payload.filePaths.length > 0,
+				};
 			})
-			.filter((value): value is string => typeof value === "string");
+			.filter(
+				(value): value is { externalId: string; rawEventId: Id<"rawEvents">; hasFilePaths: boolean } =>
+					Boolean(value),
+			);
+	},
+});
+
+export const updateRawEventFilePaths = internalMutation({
+	args: {
+		rawEventId: v.id("rawEvents"),
+		filePaths: v.array(v.string()),
+	},
+	handler: async (ctx, { rawEventId, filePaths }) => {
+		const event = await ctx.db.get(rawEventId);
+		if (!event) return;
+		await ctx.db.patch(rawEventId, {
+			payload: {
+				...(event.payload as Record<string, unknown>),
+				filePaths,
+			},
+			updatedAt: Date.now(),
+		});
 	},
 });
 
@@ -291,6 +386,7 @@ export const insertRawEvents = internalMutation({
 				),
 				title: v.string(),
 				body: v.optional(v.string()),
+				filePaths: v.optional(v.array(v.string())),
 				author: v.optional(
 					v.object({
 						login: v.optional(v.string()),
@@ -408,12 +504,17 @@ export async function syncGithubConnectionHandler(
 		);
 
 		const repositories = await fetchInstallationRepositories(token);
-		const recentExternalIds = new Set(
-			await ctx.runQuery(internal.connectors.github.getRecentExternalIds, {
+		const recentExternalMeta = await ctx.runQuery(
+			internal.connectors.github.getRecentExternalIds,
+			{
 				connectionId,
 				since,
-			})
+			},
 		);
+		const recentByExternalId = new Map(
+			recentExternalMeta.map((item) => [item.externalId, item]),
+		);
+		const recentExternalIds = new Set(recentByExternalId.keys());
 
 		let ingested = 0;
 		let skipped = 0;
@@ -422,11 +523,25 @@ export async function syncGithubConnectionHandler(
 		for (const repo of repositories) {
 			const repoEvents = await fetchRepoEvents(token, repo, since);
 			for (const event of repoEvents) {
-				if (recentExternalIds.has(event.externalId)) {
+				const existing = recentByExternalId.get(event.externalId);
+				if (existing) {
+					if (!existing.hasFilePaths && event.filePaths?.length) {
+						await ctx.runMutation(
+							internal.connectors.github.updateRawEventFilePaths,
+							{
+								rawEventId: existing.rawEventId,
+								filePaths: event.filePaths,
+							},
+						);
+					}
 					skipped += 1;
 					continue;
 				}
 
+				if (recentExternalIds.has(event.externalId)) {
+					skipped += 1;
+					continue;
+				}
 				recentExternalIds.add(event.externalId);
 				buffer.push(event);
 
@@ -579,6 +694,167 @@ async function fetchInstallationRepositories(token: string): Promise<GithubRepo[
 	}));
 }
 
+type RepoStructureSummary = {
+	topLevel: Record<string, number>;
+	appPaths: string[];
+	packagePaths: string[];
+	hasConvex: boolean;
+	hasWebapp: boolean;
+	hasWebsite: boolean;
+	monorepoSignal: boolean;
+	fileCount: number;
+	fileSamples?: Array<{ path: string; excerpt: string }>;
+};
+
+function buildRepoStructureSummary(
+	entries: Array<{ path?: string; type?: string }>,
+): RepoStructureSummary {
+	const topLevelCounts: Record<string, number> = {};
+	const appPaths = new Set<string>();
+	const packagePaths = new Set<string>();
+	let hasConvex = false;
+	let hasWebapp = false;
+	let hasWebsite = false;
+	let fileCount = 0;
+
+	for (const entry of entries) {
+		if (!entry.path || entry.type !== "blob") continue;
+		fileCount += 1;
+		const parts = entry.path.split("/").filter(Boolean);
+		const top = parts[0];
+		if (!top) continue;
+		topLevelCounts[top] = (topLevelCounts[top] ?? 0) + 1;
+
+		if (parts[0] === "apps" && parts[1]) {
+			appPaths.add(`${parts[0]}/${parts[1]}`);
+			if (parts[1] === "webapp") hasWebapp = true;
+			if (parts[1] === "website") hasWebsite = true;
+		}
+		if (parts[0] === "packages" && parts[1]) {
+			packagePaths.add(`${parts[0]}/${parts[1]}`);
+			if (parts[1] === "convex") hasConvex = true;
+		}
+		if (parts[0] === "convex") {
+			hasConvex = true;
+		}
+	}
+
+	const monorepoSignal =
+		(appPaths.size > 0 && packagePaths.size > 0) ||
+		appPaths.size + packagePaths.size >= 2;
+
+	return {
+		topLevel: topLevelCounts,
+		appPaths: Array.from(appPaths).sort(),
+		packagePaths: Array.from(packagePaths).sort(),
+		hasConvex,
+		hasWebapp,
+		hasWebsite,
+		monorepoSignal,
+		fileCount,
+	};
+}
+
+async function fetchRepoFileSamples(
+	token: string,
+	repoFullName: string,
+	entries: Array<{ path?: string; type?: string }>,
+	summary: RepoStructureSummary,
+): Promise<Array<{ path: string; excerpt: string }>> {
+	const entrySet = new Set(
+		entries
+			.filter((entry) => entry.type === "blob" && entry.path)
+			.map((entry) => entry.path as string),
+	);
+	const candidatePaths = new Set<string>([
+		"README.md",
+		"package.json",
+		"pnpm-workspace.yaml",
+		"turbo.json",
+	]);
+
+	for (const appPath of summary.appPaths) {
+		candidatePaths.add(`${appPath}/package.json`);
+	}
+	for (const pkgPath of summary.packagePaths) {
+		candidatePaths.add(`${pkgPath}/package.json`);
+	}
+	if (summary.hasConvex) {
+		candidatePaths.add("packages/convex/package.json");
+		candidatePaths.add("packages/convex/convex.config.ts");
+	}
+
+	const availablePaths = Array.from(candidatePaths).filter((path) =>
+		entrySet.has(path),
+	);
+	const limitedPaths = availablePaths.slice(0, 10);
+	const results: Array<{ path: string; excerpt: string }> = [];
+
+	for (const path of limitedPaths) {
+		const content = await fetchRepoFileContent(token, repoFullName, path);
+		if (!content) continue;
+		results.push({
+			path,
+			excerpt: content,
+		});
+	}
+
+	return results;
+}
+
+async function fetchRepoFileContent(
+	token: string,
+	repoFullName: string,
+	path: string,
+): Promise<string | null> {
+	const response = await fetch(
+		`https://api.github.com/repos/${repoFullName}/contents/${encodeURIComponent(
+			path,
+		)}`,
+		{ headers: githubHeaders(token) },
+	);
+	if (!response.ok) {
+		return null;
+	}
+	const json = (await response.json()) as {
+		content?: string;
+		encoding?: string;
+	};
+	if (!json.content || json.encoding !== "base64") {
+		return null;
+	}
+	const decoded = decodeBase64(json.content);
+	const normalized = decoded.replace(/\r\n/g, "\n").trim();
+	return normalized.length > 1200 ? `${normalized.slice(0, 1200)}...` : normalized;
+}
+
+function decodeBase64(value: string): string {
+	if (typeof atob === "function") {
+		return atob(value);
+	}
+
+	const chars =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+	let output = "";
+	let buffer = 0;
+	let bits = 0;
+
+	for (let i = 0; i < value.length; i += 1) {
+		const char = value.charAt(i);
+		if (char === "=") break;
+		const index = chars.indexOf(char);
+		if (index < 0) continue;
+		buffer = (buffer << 6) | index;
+		bits += 6;
+		if (bits >= 8) {
+			bits -= 8;
+			output += String.fromCharCode((buffer >> bits) & 0xff);
+		}
+	}
+
+	return output;
+}
+
 async function fetchRepoEvents(
 	token: string,
 	repo: GithubRepo,
@@ -623,7 +899,10 @@ async function fetchRepoCommits(
 		author?: { login?: string };
 	}>;
 
-	return commits.map((commit) => {
+	const maxFileLookups = 20;
+	const events: NormalizedGithubEvent[] = [];
+
+	for (const [index, commit] of commits.entries()) {
 		const occurredAt = Date.parse(
 			commit.commit.author?.date ??
 				commit.commit.committer?.date ??
@@ -633,12 +912,17 @@ async function fetchRepoCommits(
 		const message = commit.commit.message ?? "";
 		const [title, ...rest] = message.split("\n");
 		const body = rest.join("\n") || message;
+		const filePaths =
+			index < maxFileLookups
+				? await fetchCommitFiles(token, repo, commit.sha)
+				: undefined;
 
-		return {
+		events.push({
 			externalId: `commit:${repo.fullName}:${commit.sha}`,
 			sourceType: "commit",
 			title: title || "Commit",
 			body: body || undefined,
+			filePaths,
 			author: {
 				login: commit.author?.login ?? undefined,
 				name: commit.commit.author?.name ?? undefined,
@@ -646,8 +930,10 @@ async function fetchRepoCommits(
 			url: commit.html_url ?? "",
 			occurredAt: Number.isNaN(occurredAt) ? Date.now() : occurredAt,
 			repo,
-		} satisfies NormalizedGithubEvent;
-	});
+		} satisfies NormalizedGithubEvent);
+	}
+
+	return events;
 }
 
 async function fetchRepoPullRequests(
@@ -679,15 +965,17 @@ async function fetchRepoPullRequests(
 		updated_at?: string;
 		state?: string;
 	}>;
+	const maxFileLookups = 20;
 
-	return pullRequests
+	return Promise.all(
+		pullRequests
 		.filter((pr) => {
 			const reference =
 				pr.merged_at ?? pr.closed_at ?? pr.created_at ?? pr.updated_at ?? null;
 			if (!reference) return true;
 			return Date.parse(reference) >= since;
 		})
-		.map((pr) => {
+		.map(async (pr, index) => {
 			const occurredAtRaw =
 				pr.merged_at ?? pr.closed_at ?? pr.created_at ?? pr.updated_at ?? "";
 			const occurredAt = Date.parse(occurredAtRaw);
@@ -697,12 +985,17 @@ async function fetchRepoPullRequests(
 					: pr.state === "closed"
 						? "closed"
 						: "opened";
+			const filePaths =
+				index < maxFileLookups
+					? await fetchPullRequestFiles(token, repo, pr.number)
+					: undefined;
 
 			return {
 				externalId: `pull_request:${repo.fullName}:${pr.id}`,
 				sourceType: "pull_request",
 				title: pr.title ?? "Pull request",
 				body: pr.body ?? undefined,
+				filePaths,
 				author: {
 					login: pr.user?.login ?? undefined,
 				},
@@ -711,7 +1004,8 @@ async function fetchRepoPullRequests(
 				repo,
 				action,
 			} satisfies NormalizedGithubEvent;
-		});
+		}),
+	);
 }
 
 async function fetchRepoReleases(
@@ -764,6 +1058,47 @@ async function fetchRepoReleases(
 				action: "published",
 			} satisfies NormalizedGithubEvent;
 		});
+}
+
+async function fetchCommitFiles(
+	token: string,
+	repo: GithubRepo,
+	sha: string,
+): Promise<string[] | undefined> {
+	try {
+		const response = await fetch(
+			`https://api.github.com/repos/${repo.fullName}/commits/${sha}`,
+			{ headers: githubHeaders(token) },
+		);
+		if (!response.ok) return undefined;
+		const json = (await response.json()) as {
+			files?: Array<{ filename?: string }>;
+		};
+		const files =
+			json.files?.map((file) => file.filename).filter(Boolean) ?? [];
+		return files.slice(0, 20) as string[];
+	} catch (error) {
+		return undefined;
+	}
+}
+
+async function fetchPullRequestFiles(
+	token: string,
+	repo: GithubRepo,
+	number: number,
+): Promise<string[] | undefined> {
+	try {
+		const response = await fetch(
+			`https://api.github.com/repos/${repo.fullName}/pulls/${number}/files?per_page=100`,
+			{ headers: githubHeaders(token) },
+		);
+		if (!response.ok) return undefined;
+		const json = (await response.json()) as Array<{ filename?: string }>;
+		const files = json.map((file) => file.filename).filter(Boolean);
+		return files.slice(0, 20) as string[];
+	} catch (error) {
+		return undefined;
+	}
 }
 
 function githubHeaders(token: string, isAppJwt = false) {

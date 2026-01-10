@@ -1,6 +1,17 @@
 import { ReactNode, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, cn, Sparkles, ShieldCheck, TrendingUp } from "@hikai/ui";
+import {
+	Card,
+	CardContent,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+	cn,
+	Sparkles,
+	ShieldCheck,
+	TrendingUp,
+} from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { formatShortDate } from "@/domains/shared/utils";
 
@@ -27,17 +38,22 @@ export type TimelineListEvent = {
 		title: string;
 		summary?: string;
 		focusArea?: string;
+		visibility?: "public" | "internal";
 	}>;
 	fixes?: Array<{
 		title: string;
 		summary?: string;
 		focusArea?: string;
+		visibility?: "public" | "internal";
 	}>;
 	improvements?: Array<{
 		title: string;
 		summary?: string;
 		focusArea?: string;
+		visibility?: "public" | "internal";
 	}>;
+	ongoingFocusAreas?: string[];
+	bucketImpact?: number;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
 
@@ -120,6 +136,15 @@ export function TimelineList({
 				const hasFeatures = (event.features?.length ?? 0) > 0;
 				const hasFixes = (event.fixes?.length ?? 0) > 0;
 				const hasImprovements = (event.improvements?.length ?? 0) > 0;
+				const impact = event.bucketImpact ?? 1;
+				const impactSize =
+					impact >= 4 ? "h-4 w-4" : impact >= 2 ? "h-3 w-3" : "h-2 w-2";
+				const impactColor =
+					impact >= 4
+						? "bg-success"
+						: impact >= 3
+							? "bg-warning"
+							: "bg-primary/70";
 
 				return (
 					<div
@@ -130,7 +155,22 @@ export function TimelineList({
 							{formattedDate}
 						</div>
 						<div className="relative flex h-full justify-center">
-							<div className="absolute top-4 left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border border-muted-foreground/60 bg-background" />
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div
+											className={cn(
+												"absolute top-4 left-1/2 -translate-x-1/2 rounded-full border border-muted-foreground/60",
+												impactSize,
+												impactColor,
+											)}
+										/>
+									</TooltipTrigger>
+									<TooltipContent side="right">
+										{t("list.impact", { value: impact })}
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
 						</div>
 						<div
 							ref={(node) => {
@@ -146,9 +186,16 @@ export function TimelineList({
 							>
 								<CardContent className="space-y-2 p-3">
 									<div className="flex items-start justify-between gap-3">
-										<p className="text-fontSize-sm font-semibold leading-snug">
-											{event.title}
-										</p>
+										<div>
+											<p className="text-fontSize-sm font-semibold leading-snug">
+												{event.title}
+											</p>
+											{event.bucketImpact ? (
+												<span className="sr-only">
+													{t("list.impact", { value: event.bucketImpact })}
+												</span>
+											) : null}
+										</div>
 										{hasFeatures || hasFixes || hasImprovements ? (
 											<div className="flex items-center gap-1.5 text-muted-foreground">
 												{hasFeatures ? (

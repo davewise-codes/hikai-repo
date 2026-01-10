@@ -12,6 +12,7 @@ import {
 import { helloWorldAgent, HELLO_WORLD_PROMPT_VERSION } from "./helloWorldAgent";
 import { productContextAgent } from "./productContextAgent";
 import { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
+import { sourceContextAgent } from "./sourceContextAgent";
 import { detectStackFromPackageJson } from "./stackDetector";
 import { validateAndEnrichContext } from "./contextValidator";
 
@@ -23,6 +24,8 @@ const PRODUCT_CONTEXT_USE_CASE = "product_context_enrichment";
 const PRODUCT_CONTEXT_AGENT_NAME = "Product Context Agent";
 const TIMELINE_INTERPRETER_USE_CASE = "timeline_interpretation";
 const TIMELINE_INTERPRETER_AGENT_NAME = "Timeline Context Interpreter Agent";
+const SOURCE_CONTEXT_USE_CASE = "source_context_classification";
+const SOURCE_CONTEXT_AGENT_NAME = "Source Context Classifier Agent";
 
 const strategicPillarsCatalog = [
 	{
@@ -624,20 +627,25 @@ export const interpretTimelineEvents = action({
 				title: string;
 				summary?: string;
 				focusArea?: string;
+				visibility?: "public" | "internal";
 			}>;
 			fixes?: Array<{
 				title: string;
 				summary?: string;
 				focusArea?: string;
+				visibility?: "public" | "internal";
 			}>;
 			improvements?: Array<{
 				title: string;
 				summary?: string;
 				focusArea?: string;
+				visibility?: "public" | "internal";
 			}>;
+			ongoingFocusAreas?: string[];
+			bucketImpact?: number;
 		}>;
 		inferenceLogId?: Id<"aiInferenceLogs">;
-	}> => {
+		}> => {
 		const aiConfig = getAgentAIConfig(TIMELINE_INTERPRETER_AGENT_NAME);
 		const { organizationId, userId, product } = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
@@ -654,16 +662,33 @@ export const interpretTimelineEvents = action({
 					{ productId, limit },
 				);
 
-		const rawEvents = rawSummaries.map((event) => ({
-			rawEventId: event.rawEventId,
-			occurredAt: event.occurredAt ?? 0,
-			sourceType:
-				event.type === "commit" ||
-				event.type === "pull_request" ||
-				event.type === "release"
-					? event.type
-					: "other",
-			summary: event.summary,
+		const rawEvents = rawSummaries.map((event) => {
+			const filePaths = Array.isArray((event as { filePaths?: string[] }).filePaths)
+				? ((event as { filePaths: string[] }).filePaths ?? [])
+				: [];
+			return {
+				rawEventId: event.rawEventId,
+				occurredAt: event.occurredAt ?? 0,
+				sourceType:
+					event.type === "commit" ||
+					event.type === "pull_request" ||
+					event.type === "release"
+						? event.type
+						: "other",
+				summary: event.summary,
+				filePaths,
+				surfaceHints: deriveSurfaceHints(filePaths),
+			};
+		});
+
+		const repoContexts = await ctx.runQuery(
+			internal.agents.sourceContextData.listSourceContexts,
+			{ productId },
+		);
+		const repoContextSummary = repoContexts.map((item) => ({
+			sourceId: item.sourceId,
+			classification: item.classification,
+			notes: item.notes,
 		}));
 
 		const currentSnapshot = product.currentContextSnapshotId
@@ -691,6 +716,7 @@ export const interpretTimelineEvents = action({
 			bucket: bucket ?? undefined,
 			baseline,
 			productContext: context,
+			repoContexts: repoContextSummary,
 			rawEvents,
 		};
 
@@ -734,17 +760,22 @@ export const interpretTimelineEvents = action({
 						title: string;
 						summary?: string;
 						focusArea?: string;
+						visibility?: "public" | "internal";
 					}>;
 					fixes?: Array<{
 						title: string;
 						summary?: string;
 						focusArea?: string;
+						visibility?: "public" | "internal";
 					}>;
 					improvements?: Array<{
 						title: string;
 						summary?: string;
 						focusArea?: string;
+						visibility?: "public" | "internal";
 					}>;
+					ongoingFocusAreas?: string[];
+					bucketImpact?: number;
 				}>;
 			};
 			if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.narratives)) {
@@ -752,45 +783,142 @@ export const interpretTimelineEvents = action({
 					"Invalid JSON response from Timeline Context Interpreter Agent",
 				);
 			}
-			const allowedFocusAreas = buildFocusAreaSet(baseline, context);
-			const shouldNormalizeFocusAreas = allowedFocusAreas.size > 0;
+			const focusAreaSets = buildFocusAreaSets(baseline, context);
+			focusAreaSets.all.add("Technical");
+			const shouldNormalizeFocusAreas = focusAreaSets.all.size > 0;
 			const normalizeFocusArea = (value: string | undefined) => {
 				const trimmed = value?.trim();
 				if (!trimmed) return undefined;
 				if (!shouldNormalizeFocusAreas) return trimmed;
-				return allowedFocusAreas.has(trimmed) ? trimmed : "Other";
+				return focusAreaSets.all.has(trimmed) ? trimmed : "Other";
+			};
+			const shouldForcePublic = (
+				focusArea: string | undefined,
+				text: string,
+			): boolean => {
+				const normalizedFocus = focusArea ?? "";
+				const isCoreArea =
+					focusAreaSets.keyFeatures.has(normalizedFocus) ||
+					focusAreaSets.domains.has(normalizedFocus);
+				const coreKeywords =
+					/(timeline|narrative|context|insight|distribution|stakeholder|reporting|content generation|changelog|release notes)/;
+				const technicalKeywords =
+					/(performance|reliability|stability|latency|security|scalability|availability|resilience)/;
+				if (normalizedFocus === "Technical") {
+					return technicalKeywords.test(text);
+				}
+				return isCoreArea && coreKeywords.test(text);
 			};
 
 			parsed.narratives = parsed.narratives.map((narrative) => {
-				const normalizedFeatures =
-					narrative.features?.map((item) => ({
-						...item,
-						focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
-					})) ?? [];
-				const normalizedFixes =
-					narrative.fixes?.map((item) => ({
-						...item,
-						focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
-					})) ?? [];
-				const normalizedImprovements =
-					narrative.improvements?.map((item) => ({
-						...item,
-						focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
-					})) ?? [];
+			const normalizedFeatures =
+				narrative.features?.map((item) => ({
+					title: item.title,
+					summary: item.summary,
+					focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
+					visibility: item.visibility ?? "public",
+				})) ?? [];
+			const normalizedFixes =
+				narrative.fixes?.map((item) => ({
+					title: item.title,
+					summary: item.summary,
+					focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
+					visibility: item.visibility ?? "public",
+				})) ?? [];
+			const normalizedImprovements =
+				narrative.improvements?.map((item) => ({
+					title: item.title,
+					summary: item.summary,
+					focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
+					visibility: item.visibility ?? "public",
+				})) ?? [];
 
-				const normalizedFocusAreas = new Set(
-					(narrative.focusAreas ?? [])
-						.map((area) => normalizeFocusArea(area))
-						.filter((area): area is string => Boolean(area)),
-				);
-				for (const item of normalizedFeatures) {
-					if (item.focusArea) normalizedFocusAreas.add(item.focusArea);
+			const splitByVisibility = (
+				items: Array<{
+					title: string;
+					summary?: string;
+					focusArea?: string;
+					visibility?: "public" | "internal";
+				}>,
+			) => {
+				const internalItems = [];
+				const publicItems = [];
+				for (const item of items) {
+					if (item.visibility === "internal") internalItems.push(item);
+					else publicItems.push(item);
 				}
-				for (const item of normalizedFixes) {
-					if (item.focusArea) normalizedFocusAreas.add(item.focusArea);
+				return { internalItems, publicItems };
+			};
+
+			const adjustedFeatures = normalizedFeatures.map((item) => {
+				if (item.focusArea === "Other") {
+					return { ...item, visibility: "internal" as const };
 				}
-				for (const item of normalizedImprovements) {
-					if (item.focusArea) normalizedFocusAreas.add(item.focusArea);
+				if (item.visibility === "internal") {
+					const text = `${item.title} ${item.summary ?? ""}`.toLowerCase();
+					if (shouldForcePublic(item.focusArea, text)) {
+						return { ...item, visibility: "public" as const };
+					}
+				}
+				return item;
+			});
+			const adjustedFixes = normalizedFixes.map((item) => {
+				if (item.focusArea === "Other") {
+					return { ...item, visibility: "internal" as const };
+				}
+				if (item.visibility === "internal") {
+					const text = `${item.title} ${item.summary ?? ""}`.toLowerCase();
+					if (shouldForcePublic(item.focusArea, text)) {
+						return { ...item, visibility: "public" as const };
+					}
+				}
+				return item;
+			});
+			const adjustedImprovements = normalizedImprovements.map((item) => {
+				if (item.focusArea === "Other") {
+					return { ...item, visibility: "internal" as const };
+				}
+				if (item.visibility === "internal") return item;
+				const isCoreArea =
+					item.focusArea &&
+					(focusAreaSets.keyFeatures.has(item.focusArea) ||
+						focusAreaSets.domains.has(item.focusArea) ||
+						item.focusArea === "Technical");
+				const text = `${item.title} ${item.summary ?? ""}`.toLowerCase();
+				if (!isCoreArea || (item.focusArea === "Technical" && !shouldForcePublic(item.focusArea, text))) {
+					return { ...item, visibility: "internal" as const };
+				}
+				return item;
+			});
+
+			const { internalItems: internalFeatures, publicItems: publicFeatures } =
+				splitByVisibility(adjustedFeatures);
+			const { internalItems: internalFixes, publicItems: publicFixes } =
+				splitByVisibility(adjustedFixes);
+			const { internalItems: internalImprovements, publicItems: publicImprovements } =
+				splitByVisibility(adjustedImprovements);
+			const mergedImprovements = [
+				...publicImprovements,
+				...internalImprovements,
+				...internalFeatures,
+				...internalFixes,
+			];
+
+				const normalizedFocusAreas = new Set<string>();
+				for (const item of adjustedFeatures) {
+					if (item.focusArea && item.focusArea !== "Other") {
+						normalizedFocusAreas.add(item.focusArea);
+					}
+				}
+				for (const item of adjustedFixes) {
+					if (item.focusArea && item.focusArea !== "Other") {
+						normalizedFocusAreas.add(item.focusArea);
+					}
+				}
+				for (const item of adjustedImprovements) {
+					if (item.focusArea && item.focusArea !== "Other") {
+						normalizedFocusAreas.add(item.focusArea);
+					}
 				}
 
 				return {
@@ -798,11 +926,13 @@ export const interpretTimelineEvents = action({
 					focusAreas: normalizedFocusAreas.size
 						? Array.from(normalizedFocusAreas)
 						: undefined,
-					features: normalizedFeatures.length ? normalizedFeatures : undefined,
-					fixes: normalizedFixes.length ? normalizedFixes : undefined,
-					improvements: normalizedImprovements.length
-						? normalizedImprovements
+					features: publicFeatures.length ? publicFeatures : undefined,
+					fixes: publicFixes.length ? publicFixes : undefined,
+					improvements: mergedImprovements.length
+						? mergedImprovements
 						: undefined,
+					ongoingFocusAreas: narrative.ongoingFocusAreas,
+					bucketImpact: narrative.bucketImpact,
 				};
 			});
 
@@ -873,6 +1003,327 @@ export const interpretTimelineEvents = action({
 		}
 	},
 });
+
+export const classifySourceContext = action({
+	args: {
+		productId: v.id("products"),
+	},
+	handler: async (
+		ctx,
+		{ productId },
+	): Promise<{ classified: number }> => {
+		const { organizationId, userId, product } = await ctx.runQuery(
+			internal.lib.access.assertProductAccessInternal,
+			{ productId },
+		);
+
+		const rawEvents = await ctx.runQuery(
+			internal.timeline.interpret.getAllRawEventsForProduct,
+			{ productId },
+		);
+		const existingContexts = await ctx.runQuery(
+			internal.agents.sourceContextData.listSourceContexts,
+			{ productId },
+		);
+		const existingByKey = new Map(
+			existingContexts.map((item) => [`${item.sourceType}:${item.sourceId}`, item]),
+		);
+		const repoSamples = new Map<
+			string,
+			{
+				sourceType: string;
+				summaries: Array<string>;
+				pathHints: Set<string>;
+				connectionId?: Id<"connections">;
+			}
+		>();
+		for (const event of rawEvents) {
+			const repoName =
+				typeof (event.payload as any)?.repo?.fullName === "string"
+					? ((event.payload as any).repo.fullName as string)
+					: null;
+			if (!repoName) continue;
+			const connectionId = (event as { connectionId?: Id<"connections"> })
+				.connectionId;
+			const entry = repoSamples.get(repoName) ?? {
+				sourceType: event.sourceType,
+				summaries: [],
+				pathHints: new Set<string>(),
+				connectionId,
+			};
+			if (entry.summaries.length < 6) {
+				entry.summaries.push(
+					buildSourceSummary(event.payload, event.sourceType),
+				);
+			}
+			const hints = extractPathHints(event.payload);
+			for (const hint of hints) {
+				entry.pathHints.add(hint);
+			}
+			if (!entry.connectionId && connectionId) {
+				entry.connectionId = connectionId;
+			}
+			repoSamples.set(repoName, entry);
+		}
+
+		let classified = 0;
+		for (const [sourceId, entry] of repoSamples.entries()) {
+			const sourceType = "repo";
+			const key = `${sourceType}:${sourceId}`;
+			const existing = existingByKey.get(key);
+			const now = Date.now();
+			const isFresh =
+				typeof existing?.updatedAt === "number" && now - existing.updatedAt < 86400000;
+			let structureSummary: unknown = null;
+			if (isFresh && existing?.structure) {
+				structureSummary =
+					(existing.structure as { summary?: unknown }).summary ?? existing.structure;
+			} else if (entry.connectionId) {
+				try {
+					structureSummary = await ctx.runAction(
+						internal.connectors.github.fetchRepoStructureSummary,
+						{
+							productId,
+							connectionId: entry.connectionId,
+							repoFullName: sourceId,
+						},
+					);
+				} catch (error) {
+					structureSummary = null;
+				}
+			}
+			const pathOverview = structureSummary
+				? buildPathOverviewFromStructure(structureSummary)
+				: buildPathOverview(Array.from(entry.pathHints));
+
+			const promptPayload = JSON.stringify({
+				product: {
+					name: product.name,
+					productType: product.productBaseline?.productType ?? "",
+					valueProposition: product.productBaseline?.valueProposition ?? "",
+					targetMarket: product.productBaseline?.targetMarket ?? "",
+					audiences: product.productBaseline?.audiences ?? [],
+					stage: product.productBaseline?.stage ?? "",
+				},
+				repo: {
+					sourceType,
+					sourceId,
+					samples: entry.summaries,
+					pathOverview,
+					structureSummary,
+				},
+			});
+			const tid = await createThread(ctx, agentComponent);
+			const start = Date.now();
+
+			const agentCtx = {
+				...ctx,
+				organizationId,
+				productId,
+				userId,
+				aiPrompt: promptPayload,
+				aiStartMs: start,
+			};
+
+			const result = await sourceContextAgent.generateText(
+				agentCtx,
+				{ threadId: tid },
+				{ prompt: promptPayload },
+			);
+
+			const parsed = parseJsonSafely(result.text) as {
+				classification?:
+					| "product_core"
+					| "marketing_surface"
+					| "infra"
+					| "docs"
+					| "experiments"
+					| "unknown";
+				notes?: string;
+			};
+			if (!parsed?.classification) continue;
+
+			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
+				productId,
+				sourceType,
+				sourceId,
+				classification: parsed.classification,
+				notes: parsed.notes,
+				structure: structureSummary
+					? { summary: structureSummary, updatedAt: now, source: "github_tree" }
+					: existing?.structure,
+			});
+			classified += 1;
+		}
+
+		return { classified };
+	},
+});
+
+function buildSourceSummary(payload: unknown, sourceType: string): string {
+	const safe = toSafeString;
+	const title = safe((payload as any)?.title ?? "");
+	const body = safe((payload as any)?.body ?? "");
+	const files = extractPathHints(payload).slice(0, 4).join(", ");
+
+	const bodySnippet = body.length > 200 ? `${body.slice(0, 200)}...` : body;
+	const parts = [sourceType ? `[${sourceType}]` : "", title, bodySnippet].filter(
+		(p) => p && p.length > 0,
+	);
+	if (files) parts.push(`files: ${files}`);
+
+	return parts.join(" • ");
+}
+
+function extractPathHints(payload: unknown): string[] {
+	const hints = new Set<string>();
+	const safe = toSafeString;
+	const title = safe((payload as any)?.title ?? "");
+	const body = safe((payload as any)?.body ?? "");
+	const text = `${title} ${body}`;
+
+	const regex = /\b(?:apps|packages|convex|docs|doc|website|webapp|web|ui)\/[\w.-]+(?:\/[\w./-]+)?/g;
+	const matches = text.match(regex) ?? [];
+	for (const match of matches) {
+		hints.add(normalizePathHint(match));
+	}
+
+	const commitList = Array.isArray((payload as any)?.commits)
+		? ((payload as any).commits as Array<Record<string, unknown>>)
+		: [];
+	for (const commit of commitList) {
+		const arrays = [
+			commit.added,
+			commit.modified,
+			commit.removed,
+		] as Array<unknown>;
+		for (const value of arrays) {
+			if (!Array.isArray(value)) continue;
+			for (const file of value) {
+				if (typeof file !== "string") continue;
+				hints.add(normalizePathHint(file));
+			}
+		}
+	}
+
+	const filePaths = Array.isArray((payload as any)?.filePaths)
+		? ((payload as any).filePaths as string[])
+		: [];
+	for (const filePath of filePaths) {
+		hints.add(normalizePathHint(filePath));
+	}
+
+	return Array.from(hints);
+}
+
+function normalizePathHint(path: string): string {
+	const normalized = path.replace(/^\.\/+/, "");
+	const parts = normalized.split("/").filter(Boolean);
+	if (parts.length >= 2) {
+		return `${parts[0]}/${parts[1]}`;
+	}
+	return parts[0] ?? normalized;
+}
+
+function buildPathOverview(hints: string[]): {
+	topLevel: Record<string, number>;
+	notablePaths: string[];
+	monorepoSignal: boolean;
+} {
+	const counts: Record<string, number> = {};
+	for (const hint of hints) {
+		const [top] = hint.split("/");
+		if (!top) continue;
+		counts[top] = (counts[top] ?? 0) + 1;
+	}
+	const notablePaths = Array.from(new Set(hints)).slice(0, 12);
+	const monorepoSignal =
+		("apps" in counts && "packages" in counts) || notablePaths.length >= 3;
+
+	return {
+		topLevel: counts,
+		notablePaths,
+		monorepoSignal,
+	};
+}
+
+function buildPathOverviewFromStructure(structureSummary: any): {
+	topLevel: Record<string, number>;
+	notablePaths: string[];
+	monorepoSignal: boolean;
+} {
+	const topLevel = structureSummary?.topLevel ?? {};
+	const appPaths = Array.isArray(structureSummary?.appPaths)
+		? structureSummary.appPaths
+		: [];
+	const packagePaths = Array.isArray(structureSummary?.packagePaths)
+		? structureSummary.packagePaths
+		: [];
+	const notablePaths = [...appPaths, ...packagePaths].slice(0, 12);
+	const monorepoSignal = Boolean(structureSummary?.monorepoSignal);
+
+	return {
+		topLevel,
+		notablePaths,
+		monorepoSignal,
+	};
+}
+
+function deriveSurfaceHints(filePaths: string[]): Array<
+	"product_core" | "marketing_surface" | "infra" | "docs" | "experiments" | "unknown"
+> {
+	if (!filePaths.length) return ["unknown"];
+
+	const hints = new Set<
+		"product_core" | "marketing_surface" | "infra" | "docs" | "experiments"
+	>();
+
+	for (const path of filePaths) {
+		const normalized = path.replace(/^\.\/+/, "");
+		if (normalized.startsWith("apps/webapp") || normalized.startsWith("apps/app")) {
+			hints.add("product_core");
+		} else if (
+			normalized.startsWith("apps/website") ||
+			normalized.startsWith("apps/marketing") ||
+			normalized.startsWith("website/") ||
+			normalized.startsWith("marketing/")
+		) {
+			hints.add("marketing_surface");
+		} else if (
+			normalized.startsWith("packages/convex") ||
+			normalized.startsWith("convex/")
+		) {
+			hints.add("infra");
+		} else if (
+			normalized.startsWith("packages/ui") ||
+			normalized.startsWith("packages/tailwind-config") ||
+			normalized.startsWith("packages/typescript-config")
+		) {
+			hints.add("infra");
+		} else if (normalized.startsWith("docs/") || normalized.startsWith("doc/")) {
+			hints.add("docs");
+		} else if (
+			normalized.startsWith("experiments/") ||
+			normalized.startsWith("sandbox/") ||
+			normalized.startsWith("playground/")
+		) {
+			hints.add("experiments");
+		}
+	}
+
+	if (!hints.size) return ["unknown"];
+	return Array.from(hints);
+}
+
+function toSafeString(value: unknown): string {
+	if (value === null || value === undefined) return "";
+	const str = String(value);
+	return str
+		.replace(/\\x[0-9A-Fa-f]{2}/g, "")
+		.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
 
 export const chatStream = action({
 	args: {
@@ -1029,37 +1480,36 @@ function getUsageTotals(result: {
 	return { tokensIn, tokensOut, totalTokens };
 }
 
-function buildFocusAreaSet(
+function buildFocusAreaSets(
 	baseline: Record<string, unknown>,
 	context: Record<string, unknown>,
-): Set<string> {
-	const focusAreas = new Set<string>();
-	const addString = (value: unknown) => {
+): { all: Set<string>; keyFeatures: Set<string>; domains: Set<string> } {
+	const all = new Set<string>();
+	const keyFeatures = new Set<string>();
+	const domains = new Set<string>();
+	const addString = (set: Set<string>, value: unknown) => {
 		if (typeof value !== "string") return;
 		const trimmed = value.trim();
-		if (trimmed) focusAreas.add(trimmed);
+		if (trimmed) set.add(trimmed);
 	};
-	const addArrayStrings = (value: unknown) => {
+	const addArrayStrings = (set: Set<string>, value: unknown) => {
 		if (!Array.isArray(value)) return;
-		value.forEach(addString);
+		value.forEach((item) => addString(set, item));
 	};
-	const addArrayObjects = (value: unknown) => {
+	const addArrayObjects = (set: Set<string>, value: unknown) => {
 		if (!Array.isArray(value)) return;
 		value.forEach((item) => {
 			if (!item || typeof item !== "object") return;
 			const name = (item as { name?: unknown }).name;
-			addString(name);
+			addString(set, name);
 		});
 	};
 
-	addArrayObjects((context as { keyFeatures?: unknown }).keyFeatures);
-	addArrayObjects((context as { productDomains?: unknown }).productDomains);
-	addArrayObjects((context as { productEpics?: unknown }).productEpics);
-	addArrayObjects((context as { strategicPillars?: unknown }).strategicPillars);
-	addArrayObjects((context as { recommendedFocus?: unknown }).recommendedFocus);
-	addArrayStrings((baseline as { strategicPillars?: unknown }).strategicPillars);
-
-	return focusAreas;
+	addArrayObjects(keyFeatures, (context as { keyFeatures?: unknown }).keyFeatures);
+	addArrayObjects(domains, (context as { productDomains?: unknown }).productDomains);
+	addArrayObjects(all, (context as { keyFeatures?: unknown }).keyFeatures);
+	addArrayObjects(all, (context as { productDomains?: unknown }).productDomains);
+	return { all, keyFeatures, domains };
 }
 
 function normalizePersonas(value: unknown): Array<{ name: string; description?: string }> {

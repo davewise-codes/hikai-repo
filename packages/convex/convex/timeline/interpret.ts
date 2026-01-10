@@ -45,17 +45,22 @@ type InterpretationOutput = {
 			title: string;
 			summary?: string;
 			focusArea?: string;
+			visibility?: "public" | "internal";
 		}>;
 		fixes?: Array<{
 			title: string;
 			summary?: string;
 			focusArea?: string;
+			visibility?: "public" | "internal";
 		}>;
 		improvements?: Array<{
 			title: string;
 			summary?: string;
 			focusArea?: string;
+			visibility?: "public" | "internal";
 		}>;
+		ongoingFocusAreas?: string[];
+		bucketImpact?: number;
 	}>;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
@@ -217,14 +222,34 @@ export const interpretPendingEvents = action({
 				: null;
 			const releaseCadence =
 				snapshot?.releaseCadence ?? product.releaseCadence ?? "unknown";
+			const debugUi = snapshot?.context?.aiDebug === true;
 			const normalizedCadence = normalizeCadence(releaseCadence);
 
 			const buckets = bucketizeRawEvents(targetRawEvents, normalizedCadence);
 			await recordStep(`Bucketing raw events into ${buckets.length} buckets`, "info");
 
+			await recordStep("Classifying sources", "info");
+			await ctx.runAction(api.agents.actions.classifySourceContext, { productId });
+			const sourceContexts = await ctx.runQuery(
+				internal.agents.sourceContextData.listSourceContexts,
+				{ productId },
+			);
+			if (sourceContexts.length) {
+				const summary = sourceContexts
+					.slice(0, 5)
+					.map((item) => `${item.sourceId} → ${item.classification}`)
+					.join(" · ");
+				const suffix =
+					sourceContexts.length > 5
+						? ` +${sourceContexts.length - 5} more`
+						: "";
+				await recordStep(`Source contexts: ${summary}${suffix}`, "info");
+			}
+
 			const now = Date.now();
 			let processed = 0;
 			const totalBuckets = buckets.length;
+			let previousFocusAreas: string[] = [];
 			for (const [index, bucket] of buckets.entries()) {
 				const bucketLabel = formatBucketLabel(bucket.bucketStartAt, bucket.bucketEndAt);
 				await recordStep(
@@ -240,6 +265,7 @@ export const interpretPendingEvents = action({
 							(event: { _id: Id<"rawEvents"> }) => event._id,
 						),
 						limit: bucket.rawEvents.length,
+						debugUi,
 						bucket: {
 							bucketId: bucket.bucketId,
 							bucketStartAt: bucket.bucketStartAt,
@@ -261,6 +287,12 @@ export const interpretPendingEvents = action({
 
 				const { rawEventIds: _rawEventIds, ...narrativePayload } =
 					interpretation.narratives[0];
+				const focusAreas = narrativePayload.focusAreas ?? [];
+				const ongoingFocusAreas = focusAreas.filter((area) =>
+					previousFocusAreas.includes(area),
+				);
+				const bucketImpact = computeBucketImpact(bucket.rawEvents);
+				previousFocusAreas = focusAreas;
 				await recordStep(
 					`Writing narrative for bucket ${index + 1}/${totalBuckets}`,
 					"info",
@@ -273,6 +305,8 @@ export const interpretPendingEvents = action({
 						bucketStartAt: bucket.bucketStartAt,
 						bucketEndAt: bucket.bucketEndAt,
 						cadence: normalizedCadence,
+						ongoingFocusAreas: ongoingFocusAreas.length ? ongoingFocusAreas : undefined,
+						bucketImpact,
 					},
 					rawEventIds: bucket.rawEvents.map(
 						(event: { _id: Id<"rawEvents"> }) => event._id,
@@ -340,6 +374,9 @@ export const insertInterpretedEvent = internalMutation({
 						title: v.string(),
 						summary: v.optional(v.string()),
 						focusArea: v.optional(v.string()),
+						visibility: v.optional(
+							v.union(v.literal("public"), v.literal("internal")),
+						),
 					}),
 				),
 			),
@@ -349,6 +386,9 @@ export const insertInterpretedEvent = internalMutation({
 						title: v.string(),
 						summary: v.optional(v.string()),
 						focusArea: v.optional(v.string()),
+						visibility: v.optional(
+							v.union(v.literal("public"), v.literal("internal")),
+						),
 					}),
 				),
 			),
@@ -358,9 +398,14 @@ export const insertInterpretedEvent = internalMutation({
 						title: v.string(),
 						summary: v.optional(v.string()),
 						focusArea: v.optional(v.string()),
+						visibility: v.optional(
+							v.union(v.literal("public"), v.literal("internal")),
+						),
 					}),
 				),
 			),
+			ongoingFocusAreas: v.optional(v.array(v.string())),
+			bucketImpact: v.optional(v.number()),
 		}),
 		rawEventIds: v.array(v.id("rawEvents")),
 		inferenceLogId: v.optional(v.id("aiInferenceLogs")),
@@ -393,6 +438,8 @@ export const insertInterpretedEvent = internalMutation({
 			features: narrative.features,
 			fixes: narrative.fixes,
 			improvements: narrative.improvements,
+			ongoingFocusAreas: narrative.ongoingFocusAreas,
+			bucketImpact: narrative.bucketImpact,
 			rawEventIds,
 			rawEventCount: rawEventIds.length,
 			contextSnapshotId: contextSnapshotId ?? undefined,
@@ -585,4 +632,53 @@ function getWeekStart(date: Date): { weekStart: number; isoYear: number; isoWeek
 	const isoWeek = Math.ceil(((thursday.getTime() - yearStart) / 86400000 + 1) / 7);
 
 	return { weekStart: weekStartDate.getTime(), isoYear, isoWeek };
+}
+
+function computeBucketImpact(rawEvents: RawEvent[]): number {
+	const count = rawEvents.length;
+	let score = 1;
+
+	if (count >= 12) score += 2;
+	else if (count >= 6) score += 1;
+
+	const sourceTypes = new Set(rawEvents.map((event) => event.sourceType));
+	if (sourceTypes.size > 1) score += 1;
+
+	const summaryText = rawEvents
+		.map((event) => buildSummary(event.payload, event.sourceType))
+		.join(" ")
+		.toLowerCase();
+	const impactKeywords =
+		/(launch|release|major|breaking|redesign|security|performance|stability|scalability|migration|rollout)/;
+	if (impactKeywords.test(summaryText)) score += 1;
+
+	return Math.min(5, Math.max(1, score));
+}
+
+function buildSummary(payload: unknown, sourceType: string): string {
+	const safe = toSafeString;
+	const title = safe((payload as any)?.title ?? "");
+	const body = safe((payload as any)?.body ?? "");
+	const repo = safe((payload as any)?.repo?.fullName ?? "");
+
+	const bodySnippet = body.length > 140 ? `${body.slice(0, 140)}...` : body;
+	const parts = [
+		sourceType ? `[${sourceType}]` : "",
+		repo,
+		title,
+		bodySnippet,
+	].filter((p) => p && p.length > 0);
+
+	if (parts.length === 0) return "";
+	return parts.join(" • ");
+}
+
+function toSafeString(value: unknown): string {
+	if (value === null || value === undefined) return "";
+	const str = String(value);
+	return str
+		.replace(/\\x[0-9A-Fa-f]{2}/g, "")
+		.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
 }

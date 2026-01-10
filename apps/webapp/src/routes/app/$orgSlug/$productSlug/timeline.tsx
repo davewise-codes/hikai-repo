@@ -30,11 +30,16 @@ import {
 	toast,
 	cn,
 	DropdownMenu,
+	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
+	DropdownMenuSub,
+	DropdownMenuSubContent,
+	DropdownMenuSubTrigger,
+	DatePicker,
 	ThumbsDown,
 	ThumbsUp,
 	Sheet,
@@ -46,6 +51,9 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
 	Accordion,
 	AccordionContent,
 	AccordionItem,
@@ -58,10 +66,12 @@ import {
 	Refresh,
 	RotateCcw,
 	ArrowUpToLine,
+	Database,
 	Filter as FilterIcon,
 	Sparkles,
 	ShieldCheck,
 	TrendingUp,
+	X,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { api } from "@hikai/convex";
@@ -73,12 +83,7 @@ import {
 	useTimelineEventDetails,
 	useTriggerSync,
 } from "@/domains/timeline/hooks";
-import {
-	TimelineFilterState,
-	TimelineList,
-	TimelineListEvent,
-	useTimelineKinds,
-} from "@/domains/timeline";
+import { TimelineFilterState, TimelineList, TimelineListEvent } from "@/domains/timeline";
 import { formatRelativeDate, formatShortDate } from "@/domains/shared/utils";
 
 export const Route = createFileRoute("/app/$orgSlug/$productSlug/timeline")({
@@ -101,13 +106,31 @@ function TimelinePage() {
 	const [isRegenerating, setIsRegenerating] = useState(false);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [filters, setFilters] = useState<TimelineFilterState>({
-		kind: "all",
+		focusAreas: [],
+		categories: [],
 		from: "",
 		to: "",
 	});
 	const [datePreset, setDatePreset] = useState<
 		"all" | "last7" | "last30" | "lastMonth"
 	>("all");
+	const currentContext = useQuery(
+		api.products.products.getCurrentProductContextSnapshot,
+		productId ? { productId } : "skip",
+	);
+
+	const focusAreaOptions = useMemo(() => {
+		const names = new Set<string>();
+		const addNames = (items?: Array<{ name?: string }>) => {
+			items?.forEach((item) => {
+				if (item?.name) names.add(item.name);
+			});
+		};
+		addNames(currentContext?.productDomains);
+		addNames(currentContext?.keyFeatures);
+		names.add("Technical");
+		return Array.from(names).sort((a, b) => a.localeCompare(b));
+	}, [currentContext]);
 
 	const activeConnection = useMemo(
 		() => connections?.find((connection) => connection.status === "active"),
@@ -117,14 +140,27 @@ function TimelinePage() {
 	const filteredEvents = useMemo(() => {
 		if (!timeline) return [];
 		return timeline.filter((event) => {
-			const matchKind = filters.kind === "all" || event.kind === filters.kind;
+			const matchFocusAreas =
+				filters.focusAreas.length === 0 ||
+				(event.focusAreas ?? []).some((area) =>
+					filters.focusAreas.includes(area),
+				);
+			const matchCategories =
+				filters.categories.length === 0 ||
+				filters.categories.some((category) => {
+					if (category === "features") return (event.features?.length ?? 0) > 0;
+					if (category === "fixes") return (event.fixes?.length ?? 0) > 0;
+					if (category === "improvements")
+						return (event.improvements?.length ?? 0) > 0;
+					return false;
+				});
 			const matchFrom =
 				!filters.from || event.occurredAt >= new Date(filters.from).getTime();
 			const matchTo =
 				!filters.to || event.occurredAt <= new Date(filters.to).getTime();
-			return matchKind && matchFrom && matchTo;
+			return matchFocusAreas && matchCategories && matchFrom && matchTo;
 		});
-	}, [filters.from, filters.kind, filters.to, timeline]);
+	}, [filters, timeline]);
 
 	const sortedEvents = useMemo(
 		() => [...filteredEvents].sort((a, b) => a.occurredAt - b.occurredAt),
@@ -173,8 +209,6 @@ function TimelinePage() {
 			return;
 		setSelectedId(filteredEvents[0]._id);
 	}, [filteredEvents, selectedId]);
-
-	const kinds = useTimelineKinds(timeline ?? []);
 
 	const applyDatePreset = useCallback(
 		(preset: "all" | "last7" | "last30" | "lastMonth") => {
@@ -318,6 +352,10 @@ function TimelinePage() {
 			? { productId, useCase: "timeline_interpretation", limit: 12 }
 			: "skip",
 	);
+	const sourceContexts = useQuery(
+		api.agents.sourceContext.listSourceContexts,
+		productId ? { productId } : "skip",
+	);
 	const latestStep =
 		latestRun?.steps?.length
 			? latestRun.steps[latestRun.steps.length - 1]
@@ -342,6 +380,23 @@ function TimelinePage() {
 			: runStatus === "error"
 				? t("progress.failed", { time: completedLabel })
 				: latestStep?.step ?? t("progress.running");
+	const sourceContextLabels = useMemo(
+		() => ({
+			product_core: t("progress.sourceProductCore"),
+			marketing_surface: t("progress.sourceMarketingSurface"),
+			infra: t("progress.sourceInfra"),
+			docs: t("progress.sourceDocs"),
+			experiments: t("progress.sourceExperiments"),
+			unknown: t("progress.sourceUnknown"),
+		}),
+		[t],
+	);
+	const orderedSourceContexts = useMemo(() => {
+		if (!sourceContexts?.length) return [];
+		return [...sourceContexts].sort((a, b) =>
+			a.sourceId.localeCompare(b.sourceId),
+		);
+	}, [sourceContexts]);
 
 	const selectedEvent = useMemo(
 		() => filteredEvents.find((event) => event._id === selectedId) ?? null,
@@ -353,10 +408,75 @@ function TimelinePage() {
 	);
 
 	const showConnectCta = !isConnectionsLoading && !activeConnection;
-	const handleKindChange = useCallback(
-		(value: string) => setFilters((prev) => ({ ...prev, kind: value })),
-		[],
-	);
+	const handleFocusAreaToggle = useCallback((value: string) => {
+		setFilters((prev) => ({
+			...prev,
+			focusAreas: prev.focusAreas.includes(value)
+				? prev.focusAreas.filter((item) => item !== value)
+				: [...prev.focusAreas, value],
+		}));
+	}, []);
+
+	const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improvements") => {
+		setFilters((prev) => ({
+			...prev,
+			categories: prev.categories.includes(value)
+				? prev.categories.filter((item) => item !== value)
+				: [...prev.categories, value],
+		}));
+	}, []);
+
+	const handleFromChange = useCallback((value: string) => {
+		setDatePreset("all");
+		setFilters((prev) => ({ ...prev, from: value }));
+	}, []);
+
+	const handleToChange = useCallback((value: string) => {
+		setDatePreset("all");
+		setFilters((prev) => ({ ...prev, to: value }));
+	}, []);
+
+	const toDateString = useCallback((date: Date | undefined) => {
+		if (!date) return "";
+		const year = date.getFullYear();
+		const month = `${date.getMonth() + 1}`.padStart(2, "0");
+		const day = `${date.getDate()}`.padStart(2, "0");
+		return `${year}-${month}-${day}`;
+	}, []);
+
+	const parseDateString = useCallback((value: string) => {
+		if (!value) return undefined;
+		const [year, month, day] = value.split("-").map(Number);
+		if (!year || !month || !day) return undefined;
+		return new Date(year, month - 1, day);
+	}, []);
+
+	const clearDates = useCallback(() => {
+		setDatePreset("all");
+		setFilters((prev) => ({ ...prev, from: "", to: "" }));
+	}, []);
+
+	const clearAllFilters = useCallback(() => {
+		setDatePreset("all");
+		setFilters({ focusAreas: [], categories: [], from: "", to: "" });
+	}, []);
+
+	const hasActiveFilters =
+		filters.focusAreas.length > 0 ||
+		filters.categories.length > 0 ||
+		!!filters.from ||
+		!!filters.to;
+
+	const dateFilterLabel = useMemo(() => {
+		if (!filters.from && !filters.to) return null;
+		const fromLabel = filters.from
+			? formatShortDate(new Date(filters.from).getTime(), i18n.language)
+			: t("filters.anyTime");
+		const toLabel = filters.to
+			? formatShortDate(new Date(filters.to).getTime(), i18n.language)
+			: t("filters.anyTime");
+		return `${fromLabel} → ${toLabel}`;
+	}, [filters.from, filters.to, i18n.language, t]);
 	const handleToday = useCallback(() => {
 		setFilters((prev) => ({ ...prev, from: "", to: "" }));
 		if (filteredEvents.length) setSelectedId(filteredEvents[0]._id);
@@ -365,106 +485,229 @@ function TimelinePage() {
 	return (
 		<div className="flex h-[calc(100vh-64px)] flex-col gap-4 overflow-hidden p-5">
 			<div className="grid flex-1 grid-rows-[auto_1fr] gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_560px]">
-				<div className="col-start-1 row-start-1 flex items-start justify-between gap-4 px-2 md:px-6">
-					<h1 className="text-2xl font-semibold">{t("title")}</h1>
-					<div className="flex h-8 flex-wrap items-center gap-2">
-						<Button
-							variant="outline"
-							size="ultra"
-							onClick={selectPrev}
-							disabled={!filteredEvents.length || !selectedId}
-							aria-label={t("controls.prev")}
-						>
-							<ArrowUp className="h-4 w-4" />
-							<span className="text-fontSize-sm">{t("controls.prev")}</span>
-						</Button>
-						<Button
-							variant="outline"
-							size="ultra"
-							onClick={selectNext}
-							disabled={
-								!filteredEvents.length ||
-								!selectedId ||
-								filteredEvents[filteredEvents.length - 1]?._id === selectedId
-							}
-							aria-label={t("controls.next")}
-						>
-							<ArrowDown className="h-4 w-4" />
-							<span className="text-fontSize-sm">{t("controls.next")}</span>
-						</Button>
+				<div className="col-start-1 row-start-1 flex flex-col gap-2 px-2 md:px-6">
+					<div className="flex items-start justify-between gap-4">
+						<h1 className="text-2xl font-semibold">{t("title")}</h1>
+						<div className="flex h-8 flex-wrap items-center gap-2">
+							<Button
+								variant="outline"
+								size="ultra"
+								onClick={selectPrev}
+								disabled={!filteredEvents.length || !selectedId}
+								aria-label={t("controls.prev")}
+							>
+								<ArrowUp className="h-4 w-4" />
+								<span className="text-fontSize-sm">{t("controls.prev")}</span>
+							</Button>
+							<Button
+								variant="outline"
+								size="ultra"
+								onClick={selectNext}
+								disabled={
+									!filteredEvents.length ||
+									!selectedId ||
+									filteredEvents[filteredEvents.length - 1]?._id === selectedId
+								}
+								aria-label={t("controls.next")}
+							>
+								<ArrowDown className="h-4 w-4" />
+								<span className="text-fontSize-sm">{t("controls.next")}</span>
+							</Button>
 						<Button variant="outline" size="ultra" onClick={handleToday}>
 							<ArrowUpToLine className="h-4 w-4" />
 							<span className="text-fontSize-sm">{t("navigator.today")}</span>
 						</Button>
+					</div>
+				</div>
+					<div className="flex min-h-[22px] items-center justify-end gap-4">
+						<div className="flex flex-wrap items-center justify-end gap-2 text-fontSize-xs text-muted-foreground">
+							{hasActiveFilters ? (
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={clearAllFilters}
+									aria-label={t("filters.clearAll")}
+								>
+									<X className="h-3.5 w-3.5" />
+								</Button>
+							) : null}
+							{filters.focusAreas.map((area) => (
+								<span
+									key={area}
+									className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
+								>
+									{area}
+									<button
+										type="button"
+										onClick={() => handleFocusAreaToggle(area)}
+										className="text-muted-foreground hover:text-foreground"
+									>
+										<X className="h-3 w-3" />
+									</button>
+								</span>
+							))}
+							{filters.categories.map((category) => (
+								<span
+									key={category}
+									className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
+								>
+									{t(`filters.${category}`)}
+									<button
+										type="button"
+										onClick={() => handleCategoryToggle(category)}
+										className="text-muted-foreground hover:text-foreground"
+									>
+										<X className="h-3 w-3" />
+									</button>
+								</span>
+							))}
+							{dateFilterLabel ? (
+								<span className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5">
+									{t("filters.date")} {dateFilterLabel}
+									<button
+										type="button"
+										onClick={clearDates}
+										className="text-muted-foreground hover:text-foreground"
+									>
+										<X className="h-3 w-3" />
+									</button>
+								</span>
+							) : null}
+						</div>
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
-								<Button variant="outline" size="ultra">
-									<FilterIcon className="h-4 w-4" />
+								<Button variant="ghost" size="ultra">
+									<FilterIcon
+										className="h-4 w-4"
+										{...(hasActiveFilters
+											? { fill: "currentColor", stroke: "none" }
+											: {})}
+									/>
 									<span className="text-fontSize-sm">
 										{t("controls.filter")}
 									</span>
 								</Button>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end" className="w-48">
-								<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
-									{t("controls.type")}
-								</DropdownMenuLabel>
-								{kinds.map((kind) => (
-									<DropdownMenuItem
-										key={kind}
-										onSelect={() => handleKindChange(kind)}
-										className={cn(
-											"text-fontSize-sm capitalize",
-											filters.kind === kind ? "font-semibold" : "",
+							<DropdownMenuContent align="end" className="w-56">
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger>
+										{t("filters.focusAreas")}
+									</DropdownMenuSubTrigger>
+									<DropdownMenuSubContent className="w-56">
+										{focusAreaOptions.length ? (
+											focusAreaOptions.map((area) => (
+												<DropdownMenuCheckboxItem
+													key={area}
+													checked={filters.focusAreas.includes(area)}
+													onCheckedChange={() => handleFocusAreaToggle(area)}
+													onSelect={(event) => event.preventDefault()}
+													className="text-fontSize-sm"
+												>
+													{area}
+												</DropdownMenuCheckboxItem>
+											))
+										) : (
+											<DropdownMenuItem disabled className="text-fontSize-sm">
+												{t("filters.noFocusAreas")}
+											</DropdownMenuItem>
 										)}
-									>
-										{kind === "all" ? t("controls.allKinds") : kind}
-									</DropdownMenuItem>
-								))}
-								<DropdownMenuSeparator />
-								<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
-									{t("controls.date")}
-								</DropdownMenuLabel>
-								<DropdownMenuItem
-									onSelect={() => applyDatePreset("last7")}
-									className={cn(
-										datePreset === "last7" ? "font-semibold" : "",
-										"text-fontSize-sm",
-									)}
-								>
-									{t("controls.last7")}
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onSelect={() => applyDatePreset("last30")}
-									className={cn(
-										datePreset === "last30" ? "font-semibold" : "",
-										"text-fontSize-sm",
-									)}
-								>
-									{t("controls.last30")}
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onSelect={() => applyDatePreset("lastMonth")}
-									className={cn(
-										datePreset === "lastMonth" ? "font-semibold" : "",
-										"text-fontSize-sm",
-									)}
-								>
-									{t("controls.lastMonth")}
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onSelect={() => applyDatePreset("all")}
-									className={cn(
-										datePreset === "all" ? "font-semibold" : "",
-										"text-fontSize-sm",
-									)}
-								>
-									{t("controls.allDates")}
-								</DropdownMenuItem>
+									</DropdownMenuSubContent>
+								</DropdownMenuSub>
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger>
+										{t("filters.categories")}
+									</DropdownMenuSubTrigger>
+									<DropdownMenuSubContent className="w-56">
+										{(["features", "fixes", "improvements"] as const).map(
+											(category) => (
+												<DropdownMenuCheckboxItem
+													key={category}
+													checked={filters.categories.includes(category)}
+													onCheckedChange={() => handleCategoryToggle(category)}
+													onSelect={(event) => event.preventDefault()}
+													className="text-fontSize-sm"
+												>
+													{t(`filters.${category}`)}
+												</DropdownMenuCheckboxItem>
+											),
+										)}
+									</DropdownMenuSubContent>
+								</DropdownMenuSub>
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger>
+										{t("filters.date")}
+									</DropdownMenuSubTrigger>
+									<DropdownMenuSubContent className="w-60">
+										<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
+											{t("filters.date")}
+										</DropdownMenuLabel>
+										<DropdownMenuItem
+											onSelect={() => applyDatePreset("last7")}
+											className={cn(
+												datePreset === "last7" ? "font-semibold" : "",
+												"text-fontSize-sm",
+											)}
+										>
+											{t("controls.last7")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onSelect={() => applyDatePreset("last30")}
+											className={cn(
+												datePreset === "last30" ? "font-semibold" : "",
+												"text-fontSize-sm",
+											)}
+										>
+											{t("controls.last30")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onSelect={() => applyDatePreset("lastMonth")}
+											className={cn(
+												datePreset === "lastMonth" ? "font-semibold" : "",
+												"text-fontSize-sm",
+											)}
+										>
+											{t("controls.lastMonth")}
+										</DropdownMenuItem>
+										<DropdownMenuItem
+											onSelect={() => applyDatePreset("all")}
+											className={cn(
+												datePreset === "all" ? "font-semibold" : "",
+												"text-fontSize-sm",
+											)}
+										>
+											{t("controls.allDates")}
+										</DropdownMenuItem>
+										<DropdownMenuSeparator />
+										<div className="px-2 pb-2 pt-2">
+											<div className="grid gap-2">
+												<DatePicker
+													value={parseDateString(filters.from)}
+													onChange={(date) =>
+														handleFromChange(toDateString(date))
+													}
+													placeholder={t("filters.from")}
+												/>
+												<DatePicker
+													value={parseDateString(filters.to)}
+													onChange={(date) => handleToChange(toDateString(date))}
+													placeholder={t("filters.to")}
+												/>
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={clearDates}
+													disabled={!filters.from && !filters.to}
+												>
+													{t("filters.clearDates")}
+												</Button>
+											</div>
+										</div>
+									</DropdownMenuSubContent>
+								</DropdownMenuSub>
 							</DropdownMenuContent>
-							</DropdownMenu>
-						</div>
+						</DropdownMenu>
 					</div>
+				</div>
 				<div className="col-start-2 row-start-1 flex items-start justify-end px-2 md:px-6">
 					<TooltipProvider>
 						<div className="flex flex-col items-end gap-2">
@@ -611,27 +854,77 @@ function TimelinePage() {
 								</Sheet>
 							</div>
 							{latestRun ? (
-								<div
-									className={cn(
-										"flex items-center gap-2 text-fontSize-xs",
-										runStatus === "error"
-											? "text-destructive"
-											: runStatus === "success"
-												? "text-success"
-												: "text-muted-foreground",
-									)}
-								>
-									<span
+								<div className="flex w-full items-center justify-between text-fontSize-xs">
+									<Popover>
+										<PopoverTrigger asChild>
+											<Button
+												variant="ghost"
+												size="sm"
+												className="h-7 gap-2 px-2 text-fontSize-xs"
+											>
+												<Database className="h-3.5 w-3.5" />
+												<span>{t("progress.sources")}</span>
+											</Button>
+										</PopoverTrigger>
+										<PopoverContent align="start" className="w-64">
+											<div className="space-y-3">
+												<div className="text-fontSize-sm font-medium">
+													{t("progress.sourcesTitle")}
+												</div>
+												{orderedSourceContexts.length ? (
+													<div className="space-y-2">
+														{orderedSourceContexts.map((context) => (
+															<div key={context._id} className="space-y-1">
+																<div className="flex items-center justify-between gap-3">
+																	<span className="truncate text-fontSize-sm">
+																		{context.sourceId}
+																	</span>
+																	<span className="text-fontSize-xs text-muted-foreground">
+																		{
+																			sourceContextLabels[
+																				context.classification
+																			]
+																		}
+																	</span>
+																</div>
+																{context.notes ? (
+																	<p className="text-fontSize-xs text-muted-foreground">
+																		{context.notes}
+																	</p>
+																) : null}
+															</div>
+														))}
+													</div>
+												) : (
+													<p className="text-fontSize-sm text-muted-foreground">
+														{t("progress.sourcesEmpty")}
+													</p>
+												)}
+											</div>
+										</PopoverContent>
+									</Popover>
+									<div
 										className={cn(
-											"h-2 w-2 rounded-full",
+											"flex items-center gap-2",
 											runStatus === "error"
-												? "bg-destructive"
+												? "text-destructive"
 												: runStatus === "success"
-													? "bg-success"
-													: "bg-primary animate-pulse",
+													? "text-success"
+													: "text-muted-foreground",
 										)}
-									/>
-									<span>{progressLabel}</span>
+									>
+										<span
+											className={cn(
+												"h-2 w-2 rounded-full",
+												runStatus === "error"
+													? "bg-destructive"
+													: runStatus === "success"
+														? "bg-success"
+														: "bg-primary animate-pulse",
+											)}
+										/>
+										<span>{progressLabel}</span>
+									</div>
 								</div>
 							) : null}
 						</div>
@@ -718,8 +1011,9 @@ function DetailPanel({
 	const currentRating = ratingData?.rating ?? null;
 	const focusAreas = event?.focusAreas ?? [];
 	const displayFocusAreas = focusAreas.map((area) =>
-		area === "Other" ? t("detail.focusAreaOther") : area,
+		area === "Other" ? t("detail.internalGroup") : area,
 	);
+	const shouldShowInternalNote = !displayFocusAreas.length;
 	const shouldShowFeedback = !!event?.inferenceLogId && currentRating === null;
 	const [activeTab, setActiveTab] = useState("overview");
 
@@ -738,7 +1032,12 @@ function DetailPanel({
 	};
 
 	const renderCategory = (
-		items: Array<{ title: string; summary?: string; focusArea?: string }>,
+		items: Array<{
+			title: string;
+			summary?: string;
+			focusArea?: string;
+			visibility?: "public" | "internal";
+		}>,
 		emptyLabel: string,
 	) => {
 		if (!items.length) {
@@ -750,7 +1049,7 @@ function DetailPanel({
 		const fallbackArea = t("detail.focusAreaOther");
 		const grouped = items.reduce<Record<string, typeof items>>((acc, item) => {
 			const rawArea = item.focusArea?.trim();
-			const key = rawArea === "Other" ? fallbackArea : rawArea || fallbackArea;
+			const key = rawArea === "Other" ? t("detail.internalGroup") : rawArea || fallbackArea;
 			if (!acc[key]) acc[key] = [];
 			acc[key].push(item);
 			return acc;
@@ -769,7 +1068,14 @@ function DetailPanel({
 									key={`${area}-${index}`}
 									className="rounded-md border border-border p-3"
 								>
-									<p className="text-fontSize-sm font-medium">{item.title}</p>
+									<div className="flex items-center justify-between gap-2">
+										<p className="text-fontSize-sm font-medium">{item.title}</p>
+										{item.visibility === "internal" ? (
+											<span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+												{t("detail.internal")}
+											</span>
+										) : null}
+									</div>
 									{item.summary ? (
 										<p className="mt-1 text-fontSize-xs text-muted-foreground">
 											{item.summary}
@@ -809,6 +1115,10 @@ function DetailPanel({
 					{event && displayFocusAreas.length ? (
 						<p className="mt-2 text-fontSize-xs text-muted-foreground">
 							{t("detail.focusAreasLabel")} {displayFocusAreas.join(" · ")}
+						</p>
+					) : event && shouldShowInternalNote ? (
+						<p className="mt-2 text-fontSize-xs text-muted-foreground">
+							{t("detail.focusAreasInternal")}
 						</p>
 					) : null}
 				</CardHeader>
@@ -863,6 +1173,11 @@ function DetailPanel({
 							>
 								<div className="h-full overflow-y-auto rounded-lg border">
 									<div className="space-y-2 p-4 break-words">
+										{shouldShowInternalNote ? (
+											<p className="text-fontSize-xs uppercase tracking-wide text-muted-foreground">
+												{t("detail.internalSummary")}
+											</p>
+										) : null}
 										<p className="text-fontSize-xs uppercase tracking-wide text-muted-foreground">
 											{formatShortDate(event.occurredAt, locale)} ·{" "}
 											{formatRelativeDate(event.occurredAt, locale)}

@@ -41,6 +41,10 @@ export const listRawEventSummaries = internalQuery({
 			rawEventId: `${event._id}`,
 			type: event.sourceType,
 			summary: buildSummary(event.payload, event.sourceType),
+			filePaths:
+				Array.isArray((event.payload as any)?.filePaths)
+					? ((event.payload as any).filePaths as string[])
+					: [],
 			occurredAt: event.occurredAt,
 		}));
 	},
@@ -64,6 +68,10 @@ export const getRawEventSummariesByIds = internalQuery({
 			rawEventId: `${event._id}`,
 			type: event.sourceType,
 			summary: buildSummary(event.payload, event.sourceType),
+			filePaths:
+				Array.isArray((event.payload as any)?.filePaths)
+					? ((event.payload as any).filePaths as string[])
+					: [],
 			occurredAt: event.occurredAt,
 		}));
 	},

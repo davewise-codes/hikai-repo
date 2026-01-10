@@ -17,6 +17,20 @@
     "lastMonth": "Mes pasado",
     "allDates": "Todas las fechas"
   },
+  "filters": {
+    "focusAreas": "Áreas de foco",
+    "noFocusAreas": "No hay áreas de foco disponibles",
+    "categories": "Categorías",
+    "features": "Features",
+    "fixes": "Fixes",
+    "improvements": "Improvements",
+    "date": "Fecha",
+    "anyTime": "Cualquier fecha",
+    "from": "Desde",
+    "to": "Hasta",
+    "clearDates": "Quitar fechas",
+    "clearAll": "Limpiar filtros"
+  },
   "sync": {
     "label": "Sync ahora",
     "loading": "Haciendo sync...",
@@ -45,7 +59,16 @@
     "history": "Historial",
     "empty": "Todavía no hay ejecuciones.",
     "sync": "Sync",
-    "regenerate": "Regenerar"
+    "regenerate": "Regenerar",
+    "sources": "Fuentes",
+    "sourcesTitle": "Clasificación de fuentes",
+    "sourcesEmpty": "Todavía no hay clasificaciones.",
+    "sourceProductCore": "Producto",
+    "sourceMarketingSurface": "Marketing",
+    "sourceInfra": "Infraestructura",
+    "sourceDocs": "Docs",
+    "sourceExperiments": "Experimentos",
+    "sourceUnknown": "Desconocido"
   },
   "navigator": {
     "title": "Navegador",
@@ -63,7 +86,8 @@
       "processed": "Procesado",
       "error": "Error"
     },
-    "relevance": "Relevancia {{value}}"
+    "relevance": "Relevancia {{value}}",
+    "impact": "Impacto {{value}}"
   },
   "detail": {
     "title": "Detalle",
@@ -86,6 +110,10 @@
     "activityEmpty": "No hay eventos raw enlazados a esta narrativa todavía.",
     "ratingUp": "Valorar interpretación positivamente",
     "ratingDown": "Valorar interpretación negativamente",
+    "internal": "Interno",
+    "internalGroup": "Interno",
+    "internalSummary": "Solo bases internas",
+    "focusAreasInternal": "Áreas de foco: bases internas",
     "feedbackPrompt": "¿Te sirve este resumen?",
     "focusAreasLabel": "Áreas de foco:",
     "focusAreaOther": "Otro"

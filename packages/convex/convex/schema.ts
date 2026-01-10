@@ -278,6 +278,26 @@ const schema = defineSchema({
     .index("by_product_type", ["productId", "connectorTypeId"])
     .index("by_status", ["status"]),
 
+  sourceContext: defineTable({
+    productId: v.id("products"),
+    sourceType: v.string(), // "repo"
+    sourceId: v.string(), // repo fullName or identifier
+    classification: v.union(
+      v.literal("product_core"),
+      v.literal("marketing_surface"),
+      v.literal("infra"),
+      v.literal("docs"),
+      v.literal("experiments"),
+      v.literal("unknown")
+    ),
+    notes: v.optional(v.string()),
+    structure: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_product_source", ["productId", "sourceType", "sourceId"])
+    .index("by_product", ["productId"]),
+
   rawEvents: defineTable({
     productId: v.id("products"),
     connectionId: v.id("connections"),
@@ -326,6 +346,7 @@ const schema = defineSchema({
           title: v.string(),
           summary: v.optional(v.string()),
           focusArea: v.optional(v.string()),
+          visibility: v.optional(v.union(v.literal("public"), v.literal("internal"))),
         })
       )
     ),
@@ -335,6 +356,7 @@ const schema = defineSchema({
           title: v.string(),
           summary: v.optional(v.string()),
           focusArea: v.optional(v.string()),
+          visibility: v.optional(v.union(v.literal("public"), v.literal("internal"))),
         })
       )
     ),
@@ -344,9 +366,12 @@ const schema = defineSchema({
           title: v.string(),
           summary: v.optional(v.string()),
           focusArea: v.optional(v.string()),
+          visibility: v.optional(v.union(v.literal("public"), v.literal("internal"))),
         })
       )
     ),
+    ongoingFocusAreas: v.optional(v.array(v.string())),
+    bucketImpact: v.optional(v.number()),
     rawEventIds: v.array(v.id("rawEvents")),
     rawEventCount: v.number(),
     contextSnapshotId: v.optional(v.id("productContextSnapshots")),

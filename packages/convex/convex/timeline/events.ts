@@ -31,17 +31,22 @@ type TimelineItem = {
 		title: string;
 		summary?: string;
 		focusArea?: string;
+		visibility?: "public" | "internal";
 	}>;
 	fixes?: Array<{
 		title: string;
 		summary?: string;
 		focusArea?: string;
+		visibility?: "public" | "internal";
 	}>;
 	improvements?: Array<{
 		title: string;
 		summary?: string;
 		focusArea?: string;
+		visibility?: "public" | "internal";
 	}>;
+	ongoingFocusAreas?: string[];
+	bucketImpact?: number;
 	contextSnapshotId?: Id<"productContextSnapshots">;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 	createdAt: number;
