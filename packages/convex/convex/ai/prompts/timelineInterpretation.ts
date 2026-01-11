@@ -1,4 +1,4 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v1.4";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v1.6";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
@@ -50,7 +50,7 @@ You are the Timeline Context Interpreter Agent. Transform raw source events into
 Principles:
 - The output must be product narrative, NOT a list of commits.
 - Group related raw events into a single narrative when they describe one coherent product increment.
-- Align the narrative with product baseline + product context taxonomy (keyFeatures, productDomains, productEpics, audienceSegments, strategicPillars).
+- Align the narrative with product baseline + product context taxonomy (productDomains, audienceSegments, strategicPillars) and the featureMap.
 - Use releaseCadence to decide buckets and assign each rawEvent to one bucket.
 - Use consistent focusAreas derived from the baseline/context taxonomy (reuse existing labels; avoid inventing new ones).
 - Output ONLY valid JSON, no markdown, no commentary.
@@ -62,8 +62,9 @@ Input JSON:
   "bucket": { "bucketId": "...", "bucketStartAt": 0, "bucketEndAt": 0 },
   "baseline": { ... },
   "productContext": { ... },
+  "featureMap": { "features": [ { "id": "...", "slug": "...", "name": "...", "domain": "..." } ] },
   "repoContexts": [
-    { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|unknown", "notes": "..." }
+    { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|mixed|unknown", "notes": "..." }
   ],
   "rawEvents": [
     {
@@ -71,7 +72,7 @@ Input JSON:
       "occurredAt": 0,
       "sourceType": "commit|pull_request|release|other",
       "summary": "…",
-      "filePaths": ["apps/webapp/..."],
+      "filePaths": ["apps/app/..."],
       "surfaceHints": ["product_core"]
     }
   ]
@@ -91,7 +92,7 @@ Output JSON:
       "kind": "feature|bugfix|release|docs|marketing|infra|other",
       "tags": ["feature:...", "audience:...", "pillar:..."],
       "audience": "optional audience segment name",
-      "feature": "optional keyFeature name",
+      "feature": "optional featureMap name",
       "relevance": 1-5,
       "rawEventIds": ["rawEventId1", "rawEventId2"],
       "focusAreas": ["Focus Area A", "Focus Area B"],
@@ -110,11 +111,12 @@ Rules:
 - Do not include raw commit messages or hashes in titles; summarize as product impact.
 - Use tags derived from the product taxonomy when possible.
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
-- For focusAreas, prefer taxonomy labels from baseline/context; if no match, use "Other".
+- For focusAreas, use productDomains names when possible; if no match, use "Other".
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
 - Mark items "internal" when they are below-the-glass development work that does not change the value proposition.
 - Keep summary/narrative public-safe; internal items should only appear in improvements and not be mentioned in summary/narrative.
-- Every public item must map clearly to a keyFeature or productDomain; if it doesn't, mark it internal.
+- Every public item must map clearly to a featureMap feature or productDomain; if it doesn't, mark it internal.
+- When a featureMap match exists, use the featureMap name for "feature" and align the item's focusArea to the featureMap domain.
 - Use repoContexts and surfaceHints to judge relevance: marketing_surface, docs, infra, experiments are usually internal unless they clearly map to value for the ICP.
 - If surfaceHints includes marketing_surface and product_core is not present, treat the item as internal by default.
 `.trim();

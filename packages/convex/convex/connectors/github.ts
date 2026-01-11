@@ -309,7 +309,7 @@ export const fetchRepoStructureSummary = internalAction({
 		const entries = treeJson.tree ?? [];
 
 		const summary = buildRepoStructureSummary(entries);
-		const fileSamples = await fetchRepoFileSamples(
+		const samples = await fetchRepoFileSamples(
 			token,
 			repoFullName,
 			entries,
@@ -318,7 +318,9 @@ export const fetchRepoStructureSummary = internalAction({
 
 		return {
 			...summary,
-			fileSamples,
+			fileSamples: samples.fileSamples,
+			uiTextSamples: samples.uiTextSamples,
+			docSamples: samples.docSamples,
 		};
 	},
 });
@@ -698,6 +700,25 @@ type RepoStructureSummary = {
 	topLevel: Record<string, number>;
 	appPaths: string[];
 	packagePaths: string[];
+	routePaths: string[];
+	componentPaths: string[];
+	docPaths: string[];
+	folderTree?: Array<{ name: string; children?: Array<{ name: string; children?: any[] }> }>;
+	surfaceMap?: {
+		buckets: Array<{
+			name: string;
+			count: number;
+			samplePaths: string[];
+		}>;
+	};
+	flowHints?: Array<{
+		path: string;
+		kind: "route" | "component" | "ui_text";
+		label: string;
+		surface?: string;
+	}>;
+	uiTextSamples?: Array<{ path: string; excerpt: string }>;
+	docSamples?: Array<{ path: string; excerpt: string }>;
 	hasConvex: boolean;
 	hasWebapp: boolean;
 	hasWebsite: boolean;
@@ -712,6 +733,20 @@ function buildRepoStructureSummary(
 	const topLevelCounts: Record<string, number> = {};
 	const appPaths = new Set<string>();
 	const packagePaths = new Set<string>();
+	const routePaths = new Set<string>();
+	const componentPaths = new Set<string>();
+	const docPaths = new Set<string>();
+	const folderTree = buildFolderTree(entries, 6, 12);
+	const surfaceBuckets: Record<
+		string,
+		{ count: number; samplePaths: string[] }
+	> = {};
+	const flowHints: Array<{
+		path: string;
+		kind: "route" | "component" | "ui_text";
+		label: string;
+		surface?: string;
+	}> = [];
 	let hasConvex = false;
 	let hasWebapp = false;
 	let hasWebsite = false;
@@ -734,8 +769,51 @@ function buildRepoStructureSummary(
 			packagePaths.add(`${parts[0]}/${parts[1]}`);
 			if (parts[1] === "convex") hasConvex = true;
 		}
-		if (parts[0] === "convex") {
-			hasConvex = true;
+	if (parts[0] === "convex") {
+		hasConvex = true;
+	}
+	if (
+		entry.path?.match(
+			/(^|\/)(routes|pages|app)(\/|$).*\.(ts|tsx|js|jsx)$/i,
+		)
+	) {
+		routePaths.add(entry.path);
+		if (flowHints.length < 40) {
+			flowHints.push({
+				path: entry.path,
+				kind: "route",
+				label: guessFlowLabel(entry.path),
+				surface: classifySurfaceFromPath(entry.path) ?? undefined,
+			});
+		}
+	}
+	if (
+		entry.path?.match(/(^|\/)components(\/|$).*\.(ts|tsx|js|jsx)$/i)
+	) {
+		componentPaths.add(entry.path);
+		if (flowHints.length < 40) {
+			flowHints.push({
+				path: entry.path,
+				kind: "component",
+				label: guessFlowLabel(entry.path),
+				surface: classifySurfaceFromPath(entry.path) ?? undefined,
+			});
+		}
+	}
+	if (entry.path?.match(/(^|\/)(docs|doc|guides)(\/|$).+\.md$/i)) {
+		docPaths.add(entry.path);
+	}
+
+		const surface = classifySurfaceFromPath(entry.path);
+		if (surface) {
+			if (!surfaceBuckets[surface]) {
+				surfaceBuckets[surface] = { count: 0, samplePaths: [] };
+			}
+			const bucket = surfaceBuckets[surface];
+			bucket.count += 1;
+			if (bucket.samplePaths.length < 6) {
+				bucket.samplePaths.push(entry.path);
+			}
 		}
 	}
 
@@ -747,6 +825,18 @@ function buildRepoStructureSummary(
 		topLevel: topLevelCounts,
 		appPaths: Array.from(appPaths).sort(),
 		packagePaths: Array.from(packagePaths).sort(),
+		routePaths: Array.from(routePaths).sort().slice(0, 40),
+		componentPaths: Array.from(componentPaths).sort().slice(0, 40),
+		docPaths: Array.from(docPaths).sort().slice(0, 20),
+		folderTree,
+		flowHints: flowHints.slice(0, 40),
+		surfaceMap: {
+			buckets: Object.entries(surfaceBuckets).map(([name, bucket]) => ({
+				name,
+				count: bucket.count,
+				samplePaths: bucket.samplePaths,
+			})),
+		},
 		hasConvex,
 		hasWebapp,
 		hasWebsite,
@@ -755,12 +845,105 @@ function buildRepoStructureSummary(
 	};
 }
 
+function classifySurfaceFromPath(path: string): string | null {
+	const normalized = path.replace(/^\.\/+/, "").toLowerCase();
+	const segments = normalized.split("/");
+	const hasToken = (tokens: string[]) =>
+		segments.some((segment) => tokens.includes(segment));
+
+	const docTokens = ["docs", "doc", "guides"];
+	const marketingTokens = ["marketing", "website", "landing", "blog", "brand"];
+	const adminTokens = ["admin", "backoffice", "back-office", "console"];
+	const platformTokens = [
+		"platform",
+		"backend",
+		"server",
+		"api",
+		"core",
+		"services",
+		"infra",
+	];
+
+	if (normalized.endsWith(".md") || hasToken(docTokens)) return "product_docs";
+	if (hasToken(marketingTokens)) return "product_marketing";
+	if (hasToken(adminTokens)) return "product_admin";
+	if (hasToken(platformTokens)) return "product_platform";
+	if (normalized.startsWith("apps/")) return "product_core";
+	if (normalized.startsWith("packages/")) return "product_platform";
+
+	return "product_other";
+}
+
+function guessFlowLabel(path: string): string {
+	const parts = path.split("/").filter(Boolean);
+	const filename = parts[parts.length - 1] ?? "";
+	const base = filename.replace(/\.(ts|tsx|js|jsx)$/i, "");
+	const normalized = base
+		.replace(/\$/g, "")
+		.replace(/[-_]+/g, " ")
+		.replace(/([a-z])([A-Z])/g, "$1 $2")
+		.trim();
+	return normalized.length > 0 ? normalized : base;
+}
+
+function buildFolderTree(
+	entries: Array<{ path?: string; type?: string }>,
+	maxDepth: number,
+	maxChildren: number,
+): Array<{ name: string; children?: Array<{ name: string; children?: any[] }> }> {
+	type TreeNode = {
+		name: string;
+		children: Map<string, TreeNode>;
+		isFile: boolean;
+	};
+
+	const root: TreeNode = { name: "", children: new Map(), isFile: false };
+	const addChild = (node: TreeNode, name: string, isFile: boolean) => {
+		if (node.children.size >= maxChildren && !node.children.has(name)) return null;
+		if (!node.children.has(name)) {
+			node.children.set(name, {
+				name,
+				children: new Map(),
+				isFile,
+			});
+		}
+		return node.children.get(name) ?? null;
+	};
+
+	for (const entry of entries) {
+		if (!entry.path || entry.type !== "blob") continue;
+		const parts = entry.path.split("/").filter(Boolean);
+		let node = root;
+		for (let i = 0; i < Math.min(parts.length, maxDepth); i += 1) {
+			const part = parts[i];
+			const isFile = i === parts.length - 1;
+			const next = addChild(node, part, isFile);
+			if (!next) break;
+			node = next;
+		}
+	}
+
+	const toOutput = (node: TreeNode): { name: string; children?: any[] } => {
+		if (!node.children.size) return { name: node.name };
+		return {
+			name: node.name,
+			children: Array.from(node.children.values()).map(toOutput),
+		};
+	};
+
+	return Array.from(root.children.values()).map(toOutput);
+}
+
 async function fetchRepoFileSamples(
 	token: string,
 	repoFullName: string,
 	entries: Array<{ path?: string; type?: string }>,
 	summary: RepoStructureSummary,
-): Promise<Array<{ path: string; excerpt: string }>> {
+): Promise<{
+	fileSamples: Array<{ path: string; excerpt: string }>;
+	uiTextSamples: Array<{ path: string; excerpt: string }>;
+	docSamples: Array<{ path: string; excerpt: string }>;
+}> {
 	const entrySet = new Set(
 		entries
 			.filter((entry) => entry.type === "blob" && entry.path)
@@ -771,6 +954,13 @@ async function fetchRepoFileSamples(
 		"package.json",
 		"pnpm-workspace.yaml",
 		"turbo.json",
+	]);
+
+	const uiTextCandidates = selectPathsByPattern(entries, [
+		/(^|\/)(i18n|locales|messages|translations|copy)(\/|$).*\.(json|ts|tsx|js)$/i,
+	]);
+	const docCandidates = selectPathsByPattern(entries, [
+		/(^|\/)(docs|doc|guides)(\/|$).+\.md$/i,
 	]);
 
 	for (const appPath of summary.appPaths) {
@@ -789,6 +979,8 @@ async function fetchRepoFileSamples(
 	);
 	const limitedPaths = availablePaths.slice(0, 10);
 	const results: Array<{ path: string; excerpt: string }> = [];
+	const uiTextSamples: Array<{ path: string; excerpt: string }> = [];
+	const docSamples: Array<{ path: string; excerpt: string }> = [];
 
 	for (const path of limitedPaths) {
 		const content = await fetchRepoFileContent(token, repoFullName, path);
@@ -799,7 +991,25 @@ async function fetchRepoFileSamples(
 		});
 	}
 
-	return results;
+	for (const path of uiTextCandidates.slice(0, 6)) {
+		if (!entrySet.has(path)) continue;
+		const content = await fetchRepoFileContent(token, repoFullName, path);
+		if (!content) continue;
+		uiTextSamples.push({ path, excerpt: content });
+	}
+
+	for (const path of docCandidates.slice(0, 6)) {
+		if (!entrySet.has(path)) continue;
+		const content = await fetchRepoFileContent(token, repoFullName, path);
+		if (!content) continue;
+		docSamples.push({ path, excerpt: content });
+	}
+
+	return {
+		fileSamples: results,
+		uiTextSamples,
+		docSamples,
+	};
 }
 
 async function fetchRepoFileContent(
@@ -853,6 +1063,23 @@ function decodeBase64(value: string): string {
 	}
 
 	return output;
+}
+
+function selectPathsByPattern(
+	entries: Array<{ path?: string; type?: string }>,
+	patterns: RegExp[],
+): string[] {
+	const paths: string[] = [];
+	for (const entry of entries) {
+		if (entry.type !== "blob" || !entry.path) continue;
+		for (const pattern of patterns) {
+			if (pattern.test(entry.path)) {
+				paths.push(entry.path);
+				break;
+			}
+		}
+	}
+	return paths;
 }
 
 async function fetchRepoEvents(

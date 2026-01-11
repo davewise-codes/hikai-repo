@@ -7,3 +7,4 @@ export { generateProductContext } from "./actions";
 export { interpretTimelineEvents } from "./actions";
 export { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
 export { sourceContextAgent } from "./sourceContextAgent";
+export { featureMapAgent } from "./featureMapAgent";

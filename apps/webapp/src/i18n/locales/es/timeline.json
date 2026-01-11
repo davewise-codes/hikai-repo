@@ -19,7 +19,11 @@
   },
   "filters": {
     "focusAreas": "Áreas de foco",
+    "focusAreasContext": "Áreas de producto",
+    "focusAreasInternal": "Interno y técnico",
     "noFocusAreas": "No hay áreas de foco disponibles",
+    "internalWork": "Trabajo interno",
+    "technicalWork": "Técnico",
     "categories": "Categorías",
     "features": "Features",
     "fixes": "Fixes",
@@ -68,6 +72,7 @@
     "sourceInfra": "Infraestructura",
     "sourceDocs": "Docs",
     "sourceExperiments": "Experimentos",
+    "sourceMixed": "Superficies mixtas",
     "sourceUnknown": "Desconocido"
   },
   "navigator": {

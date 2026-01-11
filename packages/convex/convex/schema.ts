@@ -57,23 +57,7 @@ const productContextEntry = v.object({
 		),
 	),
 
-	keyFeatures: v.optional(
-		v.array(
-			v.object({
-				name: v.string(),
-				description: v.optional(v.string()),
-			}),
-		),
-	),
 	productDomains: v.optional(
-		v.array(
-			v.object({
-				name: v.string(),
-				description: v.optional(v.string()),
-			}),
-		),
-	),
-	productEpics: v.optional(
 		v.array(
 			v.object({
 				name: v.string(),
@@ -220,6 +204,7 @@ const schema = defineSchema({
 		createdBy: v.id("users"),
 		baseline: v.any(),
 		context: v.any(),
+		featureMap: v.optional(v.any()),
 		releaseCadence: v.optional(v.string()),
 		languagePreference: v.optional(v.string()),
 	})
@@ -288,6 +273,7 @@ const schema = defineSchema({
       v.literal("infra"),
       v.literal("docs"),
       v.literal("experiments"),
+      v.literal("mixed"),
       v.literal("unknown")
     ),
     notes: v.optional(v.string()),

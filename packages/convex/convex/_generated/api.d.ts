@@ -11,6 +11,7 @@
 import type * as agents_actions from "../agents/actions.js";
 import type * as agents_agentRuns from "../agents/agentRuns.js";
 import type * as agents_contextValidator from "../agents/contextValidator.js";
+import type * as agents_featureMapAgent from "../agents/featureMapAgent.js";
 import type * as agents_helloWorldAgent from "../agents/helloWorldAgent.js";
 import type * as agents_index from "../agents/index.js";
 import type * as agents_messages from "../agents/messages.js";
@@ -28,6 +29,7 @@ import type * as ai_config from "../ai/config.js";
 import type * as ai_index from "../ai/index.js";
 import type * as ai_inferenceLogs from "../ai/inferenceLogs.js";
 import type * as ai_ports_llmPort from "../ai/ports/llmPort.js";
+import type * as ai_prompts_featureMap from "../ai/prompts/featureMap.js";
 import type * as ai_prompts_index from "../ai/prompts/index.js";
 import type * as ai_prompts_productContext from "../ai/prompts/productContext.js";
 import type * as ai_prompts_timelineInterpretation from "../ai/prompts/timelineInterpretation.js";
@@ -64,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   "agents/actions": typeof agents_actions;
   "agents/agentRuns": typeof agents_agentRuns;
   "agents/contextValidator": typeof agents_contextValidator;
+  "agents/featureMapAgent": typeof agents_featureMapAgent;
   "agents/helloWorldAgent": typeof agents_helloWorldAgent;
   "agents/index": typeof agents_index;
   "agents/messages": typeof agents_messages;
@@ -81,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "ai/index": typeof ai_index;
   "ai/inferenceLogs": typeof ai_inferenceLogs;
   "ai/ports/llmPort": typeof ai_ports_llmPort;
+  "ai/prompts/featureMap": typeof ai_prompts_featureMap;
   "ai/prompts/index": typeof ai_prompts_index;
   "ai/prompts/productContext": typeof ai_prompts_productContext;
   "ai/prompts/timelineInterpretation": typeof ai_prompts_timelineInterpretation;

@@ -115,13 +115,22 @@ export const saveProductContext = internalMutation({
 		productId: v.id("products"),
 		context: v.any(),
 		baseline: v.any(),
+		featureMap: v.optional(v.any()),
 		releaseCadence: v.optional(v.string()),
 		languagePreference: v.string(),
 		timestamp: v.number(),
 	},
 	handler: async (
 		ctx,
-		{ productId, context, baseline, releaseCadence, languagePreference, timestamp },
+		{
+			productId,
+			context,
+			baseline,
+			featureMap,
+			releaseCadence,
+			languagePreference,
+			timestamp,
+		},
 	) => {
 		const product = await ctx.db.get(productId);
 		if (!product) {
@@ -135,6 +144,7 @@ export const saveProductContext = internalMutation({
 			createdBy: context?.createdBy,
 			baseline,
 			context,
+			featureMap,
 			releaseCadence,
 			languagePreference,
 		});
@@ -146,6 +156,18 @@ export const saveProductContext = internalMutation({
 		});
 
 		return { snapshotId };
+	},
+});
+
+export const updateFeatureMapForSnapshot = internalMutation({
+	args: {
+		snapshotId: v.id("productContextSnapshots"),
+		featureMap: v.any(),
+	},
+	handler: async (ctx, { snapshotId, featureMap }) => {
+		await ctx.db.patch(snapshotId, {
+			featureMap,
+		});
 	},
 });
 

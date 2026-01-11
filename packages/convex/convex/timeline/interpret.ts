@@ -246,6 +246,16 @@ export const interpretPendingEvents = action({
 				await recordStep(`Source contexts: ${summary}${suffix}`, "info");
 			}
 
+			await recordStep("Refreshing feature map", "info");
+			try {
+				await ctx.runAction(api.agents.actions.refreshFeatureMap, {
+					productId,
+					debugUi,
+				});
+			} catch {
+				await recordStep("Feature map refresh failed", "warn");
+			}
+
 			const now = Date.now();
 			let processed = 0;
 			const totalBuckets = buckets.length;

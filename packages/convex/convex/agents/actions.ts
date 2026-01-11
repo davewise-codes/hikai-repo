@@ -1,6 +1,7 @@
 import { createThread, type AgentComponent } from "@convex-dev/agent";
 import { v } from "convex/values";
 import { action } from "../_generated/server";
+import type { ActionCtx } from "../_generated/server";
 import { api, components, internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { getAgentAIConfig, getAgentTelemetryConfig } from "../ai";
@@ -8,11 +9,13 @@ import {
 	productContextPrompt,
 	PRODUCT_CONTEXT_PROMPT_VERSION,
 	TIMELINE_INTERPRETER_PROMPT_VERSION,
+	FEATURE_MAP_PROMPT_VERSION,
 } from "../ai/prompts";
 import { helloWorldAgent, HELLO_WORLD_PROMPT_VERSION } from "./helloWorldAgent";
 import { productContextAgent } from "./productContextAgent";
 import { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
 import { sourceContextAgent } from "./sourceContextAgent";
+import { featureMapAgent } from "./featureMapAgent";
 import { detectStackFromPackageJson } from "./stackDetector";
 import { validateAndEnrichContext } from "./contextValidator";
 
@@ -26,6 +29,8 @@ const TIMELINE_INTERPRETER_USE_CASE = "timeline_interpretation";
 const TIMELINE_INTERPRETER_AGENT_NAME = "Timeline Context Interpreter Agent";
 const SOURCE_CONTEXT_USE_CASE = "source_context_classification";
 const SOURCE_CONTEXT_AGENT_NAME = "Source Context Classifier Agent";
+const FEATURE_MAP_USE_CASE = "feature_map_generation";
+const FEATURE_MAP_AGENT_NAME = "Feature Map Agent";
 
 const strategicPillarsCatalog = [
 	{
@@ -261,14 +266,14 @@ export const generateProductContext = action({
 			debugSteps.push(message);
 			if (!runId) return;
 			try {
-				await ctx.runMutation(internal.agents.agentRuns.appendStep, {
-					productId,
-					runId,
-					step: message,
-					status,
-					timestamp: Date.now(),
-					metadata,
-				});
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId,
+				step: message,
+				status,
+				timestamp: Date.now(),
+				metadata,
+			});
 			} catch {
 				// Avoid failing the agent if debug logging fails.
 			}
@@ -293,6 +298,8 @@ export const generateProductContext = action({
 		};
 
 		await recordStep("Started product context generation");
+		await recordStep("Refreshing source context structure", "info");
+		await refreshSourceContextsForProduct(ctx, productId);
 
 		const tid = threadId ?? (await createThread(ctx, agentComponent));
 		const fetchedProduct =
@@ -543,10 +550,31 @@ export const generateProductContext = action({
 				productId,
 				context: newEntry,
 				baseline: baselineSource,
+				featureMap: undefined,
 				releaseCadence: fetchedProduct.releaseCadence ?? undefined,
 				languagePreference,
 				timestamp,
 			});
+
+			await recordStep("Generating feature map", "info");
+			try {
+				const featureMapResult = await ctx.runAction(
+					api.agents.actions.refreshFeatureMap,
+					{
+						productId,
+						debugUi,
+					},
+				);
+				if (featureMapResult?.decisionSummary) {
+					await recordStep(
+						"Feature map decisions",
+						"info",
+						featureMapResult.decisionSummary as Record<string, unknown>,
+					);
+				}
+			} catch {
+				await recordStep("Feature map generation failed", "warn");
+			}
 
 			await recordStep("Product context generation completed", "success");
 			await finishRun("success");
@@ -583,6 +611,168 @@ export const generateProductContext = action({
 				metadata: { source: "product-context" },
 			});
 
+			throw error;
+		}
+	},
+});
+
+export const refreshFeatureMap = action({
+	args: {
+		productId: v.id("products"),
+		debugUi: v.optional(v.boolean()),
+	},
+	handler: async (
+		ctx,
+		{ productId, debugUi },
+	): Promise<{
+		featureMap: Record<string, unknown> | null;
+		updated: boolean;
+		decisionSummary?: Record<string, unknown>;
+	}> => {
+		const aiConfig = getAgentAIConfig(FEATURE_MAP_AGENT_NAME);
+		const { organizationId, userId, product } = await ctx.runQuery(
+			internal.lib.access.assertProductAccessInternal,
+			{ productId },
+		);
+
+		const currentSnapshot = product.currentContextSnapshotId
+			? await ctx.runQuery(
+					internal.agents.productContextData.getContextSnapshotById,
+					{ snapshotId: product.currentContextSnapshotId },
+				)
+			: null;
+		if (!currentSnapshot) {
+			return { featureMap: null, updated: false };
+		}
+
+		const previousFeatureMap =
+			(currentSnapshot as { featureMap?: Record<string, unknown> }).featureMap ??
+			null;
+		const baseline = currentSnapshot.baseline ?? product.productBaseline ?? {};
+		const productContext = currentSnapshot.context ?? {};
+		const languagePreference = product.languagePreference ?? "en";
+
+		const sourceContexts = await ctx.runQuery(
+			internal.agents.sourceContextData.listSourceContexts,
+			{ productId },
+		);
+		const sources = sourceContexts.map((source) => ({
+			sourceId: source.sourceId,
+			classification: source.classification,
+			structureSummary: source.structure?.summary ?? source.structure ?? null,
+		}));
+
+		const promptPayload = JSON.stringify({
+			languagePreference,
+			baseline,
+			productContext,
+			previousFeatureMap,
+			sources,
+		});
+
+		const tid = await createThread(ctx, agentComponent);
+		const start = Date.now();
+
+		try {
+			const agentCtx = {
+				...ctx,
+				organizationId,
+				productId,
+				userId,
+				aiPrompt: promptPayload,
+				aiStartMs: start,
+			};
+
+			const result = await featureMapAgent.generateText(
+				agentCtx,
+				{ threadId: tid },
+				{ prompt: promptPayload },
+			);
+
+			const parsed = parseJsonSafely(result.text) as {
+				features?: Array<Record<string, unknown>>;
+				domains?: Array<Record<string, unknown>>;
+				domainMap?: Record<string, unknown>;
+				decisionSummary?: Record<string, unknown>;
+				generatedAt?: number;
+				sourcesUsed?: string[];
+			};
+			if (!parsed || !Array.isArray(parsed.features)) {
+				throw new Error("Invalid JSON response from Feature Map Agent");
+			}
+
+		const now = Date.now();
+			let normalized = normalizeFeatureMap(parsed, previousFeatureMap, now);
+			normalized = applyFeatureMapGuardrails(
+				normalized,
+				parsed.decisionSummary ?? {},
+				languagePreference,
+			);
+
+			const nextHash = hashString(JSON.stringify(normalized));
+			const previousHash = previousFeatureMap
+				? hashString(JSON.stringify(previousFeatureMap))
+				: null;
+			const updated = nextHash !== previousHash;
+
+			if (updated) {
+				await ctx.runMutation(
+					internal.agents.productContextData.updateFeatureMapForSnapshot,
+					{
+						snapshotId: currentSnapshot._id,
+						featureMap: normalized,
+					},
+				);
+			}
+
+			const telemetryConfig = getAgentTelemetryConfig(FEATURE_MAP_AGENT_NAME);
+			if (telemetryConfig.persistInferenceLogs) {
+				const usage = getUsageTotals(result);
+				await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
+					organizationId,
+					productId,
+					userId,
+					useCase: FEATURE_MAP_USE_CASE,
+					agentName: FEATURE_MAP_AGENT_NAME,
+					promptVersion: FEATURE_MAP_PROMPT_VERSION,
+					prompt: debugUi ? promptPayload : undefined,
+					response: debugUi ? result.text : undefined,
+					provider: aiConfig.provider,
+					model: aiConfig.model,
+					tokensIn: usage.tokensIn,
+					tokensOut: usage.tokensOut,
+					totalTokens: usage.totalTokens,
+					latencyMs: Date.now() - start,
+					contextVersion: currentSnapshot.context?.version ?? undefined,
+					metadata: {
+						source: "feature-map",
+						updated,
+					},
+				});
+			}
+
+			return {
+				featureMap: normalized,
+				updated,
+				decisionSummary: normalized.decisionSummary as Record<string, unknown>,
+			};
+		} catch (error) {
+			await ctx.runMutation(internal.ai.telemetry.recordError, {
+				organizationId,
+				productId,
+				userId,
+				useCase: FEATURE_MAP_USE_CASE,
+				agentName: FEATURE_MAP_AGENT_NAME,
+				threadId: tid,
+				provider: aiConfig.provider,
+				model: aiConfig.model,
+				errorMessage:
+					error instanceof Error
+						? error.message
+						: "Unknown error invoking Feature Map Agent",
+				prompt: debugUi ? promptPayload : undefined,
+				metadata: { source: "feature-map" },
+			});
 			throw error;
 		}
 	},
@@ -700,6 +890,9 @@ export const interpretTimelineEvents = action({
 
 		const baseline = currentSnapshot?.baseline ?? product.productBaseline ?? {};
 		const context = currentSnapshot?.context ?? {};
+		const featureMap =
+			(currentSnapshot as { featureMap?: Record<string, unknown> })?.featureMap ??
+			null;
 		const releaseCadence =
 			currentSnapshot?.releaseCadence ?? product.releaseCadence ?? "unknown";
 		const languagePreference = product.languagePreference ?? "en";
@@ -716,6 +909,7 @@ export const interpretTimelineEvents = action({
 			bucket: bucket ?? undefined,
 			baseline,
 			productContext: context,
+			featureMap,
 			repoContexts: repoContextSummary,
 			rawEvents,
 		};
@@ -783,7 +977,7 @@ export const interpretTimelineEvents = action({
 					"Invalid JSON response from Timeline Context Interpreter Agent",
 				);
 			}
-			const focusAreaSets = buildFocusAreaSets(baseline, context);
+			const focusAreaSets = buildFocusAreaSets(context, featureMap);
 			focusAreaSets.all.add("Technical");
 			const shouldNormalizeFocusAreas = focusAreaSets.all.size > 0;
 			const normalizeFocusArea = (value: string | undefined) => {
@@ -798,7 +992,6 @@ export const interpretTimelineEvents = action({
 			): boolean => {
 				const normalizedFocus = focusArea ?? "";
 				const isCoreArea =
-					focusAreaSets.keyFeatures.has(normalizedFocus) ||
 					focusAreaSets.domains.has(normalizedFocus);
 				const coreKeywords =
 					/(timeline|narrative|context|insight|distribution|stakeholder|reporting|content generation|changelog|release notes)/;
@@ -881,8 +1074,7 @@ export const interpretTimelineEvents = action({
 				if (item.visibility === "internal") return item;
 				const isCoreArea =
 					item.focusArea &&
-					(focusAreaSets.keyFeatures.has(item.focusArea) ||
-						focusAreaSets.domains.has(item.focusArea) ||
+					(focusAreaSets.domains.has(item.focusArea) ||
 						item.focusArea === "Technical");
 				const text = `${item.title} ${item.summary ?? ""}`.toLowerCase();
 				if (!isCoreArea || (item.focusArea === "Technical" && !shouldForcePublic(item.focusArea, text))) {
@@ -921,8 +1113,13 @@ export const interpretTimelineEvents = action({
 					}
 				}
 
+				const normalizedFeature =
+					typeof narrative.feature === "string"
+						? narrative.feature.trim()
+						: undefined;
 				return {
 					...narrative,
+					feature: normalizedFeature || undefined,
 					focusAreas: normalizedFocusAreas.size
 						? Array.from(normalizedFocusAreas)
 						: undefined,
@@ -1138,16 +1335,22 @@ export const classifySourceContext = action({
 					| "infra"
 					| "docs"
 					| "experiments"
+					| "mixed"
 					| "unknown";
 				notes?: string;
 			};
 			if (!parsed?.classification) continue;
 
+			const derivedClassification = deriveClassificationFromStructure(
+				structureSummary,
+			);
+			const resolvedClassification = derivedClassification ?? parsed.classification;
+
 			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
 				productId,
 				sourceType,
 				sourceId,
-				classification: parsed.classification,
+				classification: resolvedClassification,
 				notes: parsed.notes,
 				structure: structureSummary
 					? { summary: structureSummary, updatedAt: now, source: "github_tree" }
@@ -1173,6 +1376,74 @@ function buildSourceSummary(payload: unknown, sourceType: string): string {
 	if (files) parts.push(`files: ${files}`);
 
 	return parts.join(" • ");
+}
+
+function classifySurfaceFromPath(path: string): string | null {
+	const normalized = path.replace(/^\.\/+/, "").toLowerCase();
+	const segments = normalized.split("/");
+	const hasToken = (tokens: string[]) =>
+		segments.some((segment) => tokens.includes(segment));
+
+	const docTokens = ["docs", "doc", "guides"];
+	const marketingTokens = ["marketing", "website", "landing", "blog", "brand"];
+	const adminTokens = ["admin", "backoffice", "back-office", "console"];
+	const platformTokens = [
+		"platform",
+		"backend",
+		"server",
+		"api",
+		"core",
+		"services",
+		"infra",
+	];
+
+	if (normalized.endsWith(".md") || hasToken(docTokens)) return "product_docs";
+	if (hasToken(marketingTokens)) return "product_marketing";
+	if (hasToken(adminTokens)) return "product_admin";
+	if (hasToken(platformTokens)) return "product_platform";
+	if (normalized.startsWith("apps/")) return "product_core";
+	if (normalized.startsWith("packages/")) return "product_platform";
+
+	return "product_other";
+}
+
+function deriveClassificationFromStructure(
+	structureSummary: unknown,
+):
+	| "product_core"
+	| "marketing_surface"
+	| "infra"
+	| "docs"
+	| "experiments"
+	| "mixed"
+	| "unknown"
+	| null {
+	const summary = structureSummary as {
+		surfaceMap?: { buckets?: Array<{ name?: string; count?: number }> };
+	};
+	const buckets = summary?.surfaceMap?.buckets ?? [];
+	if (!Array.isArray(buckets) || buckets.length === 0) return null;
+
+	const names = buckets
+		.map((bucket) => (bucket.name ?? "").trim())
+		.filter(Boolean);
+	const has = (name: string) => names.includes(name);
+
+	if (has("product_core")) {
+		const extra = names.filter(
+			(name) =>
+				name !== "product_core" && name !== "product_platform",
+		);
+		if (extra.length > 0) return "mixed";
+		return "product_core";
+	}
+	if (has("product_marketing")) return "marketing_surface";
+	if (has("product_docs")) return "docs";
+	if (has("product_platform")) return "infra";
+	if (has("product_admin")) return "mixed";
+	if (has("product_other")) return "unknown";
+
+	return null;
 }
 
 function extractPathHints(payload: unknown): string[] {
@@ -1277,37 +1548,59 @@ function deriveSurfaceHints(filePaths: string[]): Array<
 	const hints = new Set<
 		"product_core" | "marketing_surface" | "infra" | "docs" | "experiments"
 	>();
+	const marketingTokens = [
+		"marketing",
+		"website",
+		"landing",
+		"growth",
+		"brand",
+		"promo",
+	];
+	const productTokens = [
+		"app",
+		"webapp",
+		"dashboard",
+		"client",
+		"frontend",
+		"portal",
+	];
+	const infraTokens = [
+		"backend",
+		"server",
+		"api",
+		"infra",
+		"convex",
+		"functions",
+		"services",
+		"packages",
+	];
+	const docTokens = ["docs", "doc", "guides"];
+	const experimentTokens = ["experiments", "sandbox", "playground", "prototype"];
 
 	for (const path of filePaths) {
 		const normalized = path.replace(/^\.\/+/, "");
-		if (normalized.startsWith("apps/webapp") || normalized.startsWith("apps/app")) {
-			hints.add("product_core");
-		} else if (
-			normalized.startsWith("apps/website") ||
-			normalized.startsWith("apps/marketing") ||
-			normalized.startsWith("website/") ||
-			normalized.startsWith("marketing/")
-		) {
-			hints.add("marketing_surface");
-		} else if (
-			normalized.startsWith("packages/convex") ||
-			normalized.startsWith("convex/")
-		) {
-			hints.add("infra");
-		} else if (
-			normalized.startsWith("packages/ui") ||
-			normalized.startsWith("packages/tailwind-config") ||
-			normalized.startsWith("packages/typescript-config")
-		) {
-			hints.add("infra");
-		} else if (normalized.startsWith("docs/") || normalized.startsWith("doc/")) {
-			hints.add("docs");
-		} else if (
-			normalized.startsWith("experiments/") ||
-			normalized.startsWith("sandbox/") ||
-			normalized.startsWith("playground/")
-		) {
+		const segments = normalized.toLowerCase().split("/");
+		const hasToken = (tokens: string[]) =>
+			segments.some((segment) => tokens.includes(segment));
+
+		if (hasToken(experimentTokens)) {
 			hints.add("experiments");
+			continue;
+		}
+		if (hasToken(docTokens) || normalized.endsWith(".md")) {
+			hints.add("docs");
+			continue;
+		}
+		if (hasToken(marketingTokens)) {
+			hints.add("marketing_surface");
+			continue;
+		}
+		if (hasToken(infraTokens)) {
+			hints.add("infra");
+			continue;
+		}
+		if (normalized.includes("/apps/") || hasToken(productTokens)) {
+			hints.add("product_core");
 		}
 	}
 
@@ -1443,6 +1736,76 @@ async function resolveAccess(
 	throw new Error("organizationId or productId is required to run the agent");
 }
 
+async function refreshSourceContextsForProduct(
+	ctx: ActionCtx,
+	productId: Id<"products">,
+): Promise<{ refreshed: number }> {
+	const sourceContexts = await ctx.runQuery(
+		internal.agents.sourceContextData.listSourceContexts,
+		{ productId },
+	);
+	if (!sourceContexts.length) return { refreshed: 0 };
+
+	const repoMeta = await ctx.runQuery(
+		internal.agents.productContextData.getRepositoryMetadata,
+		{ productId },
+	);
+	const connectionId = repoMeta[0]?.connectionId;
+	if (!connectionId) return { refreshed: 0 };
+
+	let refreshed = 0;
+	const now = Date.now();
+
+	for (const source of sourceContexts) {
+		if (source.sourceType !== "repo") continue;
+		const structureSummary =
+			(source.structure as { summary?: unknown })?.summary ??
+			source.structure ??
+			null;
+		const surfaceBuckets = Array.isArray(
+			(structureSummary as { surfaceMap?: { buckets?: unknown } })?.surfaceMap
+				?.buckets,
+		)
+			? (structureSummary as { surfaceMap: { buckets: unknown[] } }).surfaceMap
+					.buckets
+			: [];
+		const updatedAt =
+			typeof (source.structure as { updatedAt?: number })?.updatedAt === "number"
+				? (source.structure as { updatedAt: number }).updatedAt
+				: null;
+		const isFresh = updatedAt ? now - updatedAt < 12 * 60 * 60 * 1000 : false;
+
+		if (isFresh && surfaceBuckets.length > 0) {
+			continue;
+		}
+
+		try {
+			const summary = await ctx.runAction(
+				internal.connectors.github.fetchRepoStructureSummary,
+				{
+					productId,
+					connectionId,
+					repoFullName: source.sourceId,
+				},
+			);
+			const derivedClassification = deriveClassificationFromStructure(summary);
+			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
+				productId,
+				sourceType: source.sourceType,
+				sourceId: source.sourceId,
+				classification: derivedClassification ?? source.classification ?? "unknown",
+				notes: source.notes,
+				structure: { summary, updatedAt: now, source: "github_tree" },
+			});
+			refreshed += 1;
+		} catch {
+			continue;
+		}
+	}
+
+	return { refreshed };
+}
+
 function parseJsonSafely(text: string): any {
 	const trimmed = text.trim();
 	const withoutFences = trimmed.startsWith("```")
@@ -1481,11 +1844,10 @@ function getUsageTotals(result: {
 }
 
 function buildFocusAreaSets(
-	baseline: Record<string, unknown>,
 	context: Record<string, unknown>,
-): { all: Set<string>; keyFeatures: Set<string>; domains: Set<string> } {
+	featureMap: Record<string, unknown> | null,
+): { all: Set<string>; domains: Set<string> } {
 	const all = new Set<string>();
-	const keyFeatures = new Set<string>();
 	const domains = new Set<string>();
 	const addString = (set: Set<string>, value: unknown) => {
 		if (typeof value !== "string") return;
@@ -1505,11 +1867,697 @@ function buildFocusAreaSets(
 		});
 	};
 
-	addArrayObjects(keyFeatures, (context as { keyFeatures?: unknown }).keyFeatures);
 	addArrayObjects(domains, (context as { productDomains?: unknown }).productDomains);
-	addArrayObjects(all, (context as { keyFeatures?: unknown }).keyFeatures);
 	addArrayObjects(all, (context as { productDomains?: unknown }).productDomains);
-	return { all, keyFeatures, domains };
+	if (featureMap) {
+		const features = (featureMap as { features?: unknown }).features;
+		if (Array.isArray(features)) {
+			features.forEach((feature) => {
+				if (!feature || typeof feature !== "object") return;
+				const domain = (feature as { domain?: unknown }).domain;
+				addString(domains, domain);
+				addString(all, domain);
+			});
+		}
+	}
+	return { all, domains };
+}
+
+const DOMAIN_TAXONOMY = [
+	{
+		name: "Core Experience",
+		kind: "product",
+		aliases: [
+			"core",
+			"core experience",
+			"product core",
+			"product experience",
+			"narrative layer",
+			"experiencia central",
+			"experiencia principal",
+			"núcleo del producto",
+		],
+	},
+	{
+		name: "Data Ingestion",
+		kind: "product",
+		aliases: [
+			"data ingestion",
+			"ingestion",
+			"connectors",
+			"integrations",
+			"sources",
+			"ingesta de datos",
+			"conectores",
+			"integraciones",
+			"fuentes",
+		],
+	},
+	{
+		name: "Automation & AI",
+		kind: "product",
+		aliases: [
+			"automation",
+			"ai",
+			"orchestration",
+			"telemetry & ai orchestration",
+			"llm",
+			"insight extraction",
+			"automatización",
+			"automatización e ia",
+			"orquestación",
+			"extracción de insights",
+		],
+	},
+	{
+		name: "Analytics & Reporting",
+		kind: "product",
+		aliases: [
+			"analytics",
+			"reporting",
+			"insights",
+			"metrics",
+			"analítica",
+			"informes",
+			"métricas",
+		],
+	},
+	{
+		name: "Content Distribution",
+		kind: "product",
+		aliases: [
+			"content distribution",
+			"distribution",
+			"content automation",
+			"publishing",
+			"templates",
+			"distribución de contenido",
+			"automatización de contenido",
+			"publicación",
+			"plantillas",
+		],
+	},
+	{
+		name: "Collaboration & Access",
+		kind: "product",
+		aliases: [
+			"collaboration",
+			"access",
+			"auth",
+			"onboarding",
+			"permissions",
+			"roles",
+			"teams",
+			"orgs",
+			"colaboración",
+			"acceso",
+			"autenticación",
+			"permisos",
+			"roles",
+			"equipos",
+			"organizaciones",
+		],
+	},
+	{
+		name: "Platform Foundation",
+		kind: "technical",
+		aliases: [
+			"platform",
+			"platform foundation",
+			"infrastructure",
+			"security",
+			"billing",
+			"reliability",
+			"performance",
+			"plataforma",
+			"fundación de plataforma",
+			"infraestructura",
+			"seguridad",
+			"facturación",
+			"fiabilidad",
+			"rendimiento",
+		],
+	},
+	{
+		name: "Internal Tools",
+		kind: "internal",
+		aliases: [
+			"internal",
+			"internal tools",
+			"ops",
+			"admin tools",
+			"dev tools",
+			"ai test panel",
+			"herramientas internas",
+			"operaciones",
+			"herramientas de admin",
+			"herramientas de desarrollo",
+		],
+	},
+	{
+		name: "Marketing Presence",
+		kind: "internal",
+		aliases: [
+			"marketing",
+			"website",
+			"landing",
+			"brand",
+			"marketing pages",
+			"presencia de marketing",
+			"sitio web",
+			"landing page",
+			"marca",
+		],
+	},
+	{
+		name: "Documentation & Support",
+		kind: "internal",
+		aliases: [
+			"docs",
+			"documentation",
+			"support",
+			"guides",
+			"help",
+			"documentación",
+			"soporte",
+			"guías",
+			"ayuda",
+		],
+	},
+] as const;
+
+function normalizeDomainKey(value: string): string {
+	return value
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, " ")
+		.trim();
+}
+
+function canonicalizeDomainName(
+	value: string,
+	kind?: string,
+): { name: string; kind: string } | undefined {
+	if (!value) return undefined;
+	const key = normalizeDomainKey(value);
+	if (!key) return undefined;
+
+	const direct = DOMAIN_TAXONOMY.find(
+		(domain) => normalizeDomainKey(domain.name) === key,
+	);
+	if (direct) return { name: direct.name, kind: direct.kind };
+
+	const byAlias = DOMAIN_TAXONOMY.find((domain) =>
+		domain.aliases.some((alias) => normalizeDomainKey(alias) === key),
+	);
+	if (byAlias) return { name: byAlias.name, kind: byAlias.kind };
+
+	if (key.includes("doc")) return { name: "Documentation & Support", kind: "internal" };
+	if (key.includes("marketing") || key.includes("website"))
+		return { name: "Marketing Presence", kind: "internal" };
+	if (key.includes("internal") || key.includes("admin"))
+		return { name: "Internal Tools", kind: "internal" };
+	if (key.includes("platform") || key.includes("infra") || key.includes("security") || key.includes("billing"))
+		return { name: "Platform Foundation", kind: "technical" };
+
+	if (kind === "technical") return { name: "Platform Foundation", kind };
+	if (kind === "internal") return { name: "Internal Tools", kind };
+	if (kind === "product") return { name: "Core Experience", kind };
+	return { name: "Core Experience", kind: "product" };
+}
+
+function normalizeFeatureMap(
+	parsed: {
+		features?: Array<Record<string, unknown>>;
+		domains?: Array<Record<string, unknown>>;
+		domainMap?: Record<string, unknown>;
+		decisionSummary?: Record<string, unknown>;
+		sourcesUsed?: string[];
+	},
+	previous: Record<string, unknown> | null,
+	generatedAt: number,
+): Record<string, unknown> {
+	const previousFeatures = Array.isArray(
+		(previous as { features?: unknown })?.features,
+	)
+		? ((previous as { features: Array<Record<string, unknown>> }).features ?? [])
+		: [];
+	const previousById = new Map(
+		previousFeatures
+			.map((feature) => {
+				const id = typeof feature.id === "string" ? feature.id : "";
+				return id ? [id, feature] : null;
+			})
+			.filter((entry): entry is [string, Record<string, unknown>] => Boolean(entry)),
+	);
+	const previousByName = new Map(
+		previousFeatures
+			.map((feature) => {
+				const name = typeof feature.name === "string" ? feature.name.trim() : "";
+				return name ? [name.toLowerCase(), feature] : null;
+			})
+			.filter((entry): entry is [string, Record<string, unknown>] => Boolean(entry)),
+	);
+
+	const normalizedFeatures = parsed.features?.map((feature) => {
+		const name =
+			typeof feature.name === "string" ? feature.name.trim() : "Untitled feature";
+		const existingByName = previousByName.get(name.toLowerCase());
+		const id =
+			typeof feature.id === "string" && feature.id.trim()
+				? feature.id.trim()
+				: typeof existingByName?.id === "string"
+					? (existingByName.id as string)
+					: slugifyFeatureId(name);
+		const slug =
+			typeof feature.slug === "string" && feature.slug.trim()
+				? feature.slug.trim()
+				: typeof existingByName?.slug === "string"
+					? (existingByName.slug as string)
+					: slugifyFeatureId(name);
+		const deprecated = Boolean(feature.deprecated);
+
+		const visibilityHint =
+			typeof feature.visibilityHint === "string" ? feature.visibilityHint : undefined;
+		const domainName =
+			typeof feature.domain === "string" ? feature.domain.trim() : "";
+		const canonicalDomain =
+			domainName &&
+			(canonicalizeDomainName(domainName, visibilityHint)?.name ?? domainName);
+		const fallbackDomain =
+			!canonicalDomain && visibilityHint === "internal"
+				? "Internal Tools"
+				: undefined;
+
+		return {
+			...feature,
+			id,
+			slug,
+			name,
+			deprecated,
+			domain: canonicalDomain || fallbackDomain || feature.domain,
+			lastSeenAt: generatedAt,
+		};
+	}) ?? [];
+
+	const normalizedDomains = Array.isArray(parsed.domains)
+		? parsed.domains
+				.map((domain) => {
+					if (!domain || typeof domain !== "object") return null;
+					const rawName =
+						typeof domain.name === "string" ? domain.name.trim() : "";
+					if (!rawName) return null;
+					const canonical = canonicalizeDomainName(
+						rawName,
+						typeof domain.kind === "string" ? domain.kind : undefined,
+					);
+					const name = canonical?.name ?? rawName;
+					return {
+						name,
+						description:
+							typeof domain.description === "string"
+								? domain.description
+								: undefined,
+						kind: canonical?.kind ??
+							(typeof domain.kind === "string" ? domain.kind : undefined),
+						weight:
+							typeof domain.weight === "number" ? domain.weight : undefined,
+					};
+				})
+				.filter(Boolean) as Array<{
+					name: string;
+					description?: string;
+					kind?: string;
+					weight?: number;
+				}>
+		: undefined;
+
+	const previousDomains = Array.isArray(
+		(previous as { domains?: unknown })?.domains,
+	)
+		? ((previous as { domains: Array<Record<string, unknown>> }).domains ?? [])
+		: [];
+
+	const normalizedDomainMap = normalizeDomainMap(
+		parsed.domainMap,
+		normalizedDomains ?? previousDomains,
+	);
+
+	const nextIds = new Set(
+		normalizedFeatures
+			.map((feature) => (typeof feature.id === "string" ? feature.id : ""))
+			.filter(Boolean),
+	);
+	const carryOver = previousFeatures
+		.filter((feature) => {
+			const id = typeof feature.id === "string" ? feature.id : "";
+			return id && !nextIds.has(id);
+		})
+		.map((feature) => ({
+			...feature,
+			deprecated: true,
+		}));
+
+	return {
+		features: [...normalizedFeatures, ...carryOver],
+		domains: normalizedDomains ?? previousDomains,
+		domainMap: normalizedDomainMap ?? (previous as { domainMap?: unknown })?.domainMap,
+		decisionSummary:
+			parsed.decisionSummary ??
+			(previous as { decisionSummary?: unknown })?.decisionSummary,
+		generatedAt,
+		sourcesUsed: parsed.sourcesUsed ?? [],
+		version:
+			typeof (previous as { version?: unknown })?.version === "number"
+				? ((previous as { version: number }).version ?? 0) + 1
+				: 1,
+	};
+}
+
+function normalizeDomainMap(
+	domainMap: unknown,
+	domains: Array<Record<string, unknown>>,
+): Record<string, unknown> | undefined {
+	if (!domainMap || typeof domainMap !== "object") return undefined;
+	const map = domainMap as {
+		columns?: unknown;
+		rows?: unknown;
+		items?: unknown;
+	};
+	const columns =
+		typeof map.columns === "number" && map.columns > 0 ? map.columns : 0;
+	const rows = typeof map.rows === "number" && map.rows > 0 ? map.rows : 0;
+	if (!columns || !rows || !Array.isArray(map.items)) return undefined;
+
+	const domainNames = new Set(
+		domains
+			.map((domain) =>
+				typeof domain.name === "string" ? domain.name.trim() : "",
+			)
+			.filter(Boolean),
+	);
+
+	const items = map.items
+		.map((item) => {
+			if (!item || typeof item !== "object") return null;
+			const entry = item as Record<string, unknown>;
+			const rawDomain =
+				typeof entry.domain === "string" ? entry.domain.trim() : "";
+			const domain =
+				rawDomain && canonicalizeDomainName(rawDomain)?.name
+					? canonicalizeDomainName(rawDomain)?.name ?? rawDomain
+					: rawDomain;
+			if (!domain || !domainNames.has(domain)) return null;
+			const x = typeof entry.x === "number" ? entry.x : null;
+			const y = typeof entry.y === "number" ? entry.y : null;
+			const w = typeof entry.w === "number" ? entry.w : null;
+			const h = typeof entry.h === "number" ? entry.h : null;
+			if (
+				x === null ||
+				y === null ||
+				w === null ||
+				h === null ||
+				w <= 0 ||
+				h <= 0
+			) {
+				return null;
+			}
+
+			return {
+				domain,
+				x,
+				y,
+				w,
+				h,
+				kind:
+					typeof entry.kind === "string" ? entry.kind : undefined,
+				weight:
+					typeof entry.weight === "number" ? entry.weight : undefined,
+			};
+		})
+		.filter(Boolean) as Array<{
+			domain: string;
+			x: number;
+			y: number;
+			w: number;
+			h: number;
+			kind?: string;
+			weight?: number;
+		}>;
+
+	if (!items.length) return undefined;
+
+	return {
+		columns,
+		rows,
+		items,
+	};
+}
+
+function applyFeatureMapGuardrails(
+	featureMap: Record<string, unknown>,
+	decisionSummary: Record<string, unknown>,
+	languagePreference: string,
+): Record<string, unknown> {
+	const features = Array.isArray(
+		(featureMap as { features?: unknown }).features,
+	)
+		? ((featureMap as { features: Array<Record<string, unknown>> }).features ?? [])
+		: [];
+	const domains = Array.isArray(
+		(featureMap as { domains?: unknown }).domains,
+	)
+		? ((featureMap as { domains: Array<Record<string, unknown>> }).domains ?? [])
+		: [];
+	const domainMap = (featureMap as { domainMap?: unknown }).domainMap as
+		| Record<string, unknown>
+		| undefined;
+
+	const decisionDomains = Array.isArray(
+		(decisionSummary as { domainDecisions?: unknown }).domainDecisions,
+	)
+		? ((decisionSummary as { domainDecisions: Array<Record<string, unknown>> })
+				.domainDecisions ?? [])
+		: [];
+	const decisionFeatures = Array.isArray(
+		(decisionSummary as { featureDecisions?: unknown }).featureDecisions,
+	)
+		? ((decisionSummary as { featureDecisions: Array<Record<string, unknown>> })
+				.featureDecisions ?? [])
+		: [];
+
+	const allowedSurface = (surface: unknown) =>
+		surface === "product_core" || surface === "product_platform";
+
+	const internalDomain =
+		domains.find((domain) => domain.kind === "internal")?.name ?? "Internal Tools";
+	const technicalDomain =
+		domains.find((domain) => domain.kind === "technical")?.name ??
+		"Platform Foundation";
+
+	const productDomainNames = new Set<string>(
+		DOMAIN_TAXONOMY.filter((domain) => domain.kind === "product").map(
+			(domain) => domain.name,
+		),
+	);
+
+	const domainByName = new Map(
+		domains
+			.map((domain) => {
+				const name = typeof domain.name === "string" ? domain.name : "";
+				return name ? [name, domain] : null;
+			})
+			.filter(Boolean) as Array<[string, Record<string, unknown>]>,
+	);
+
+	const decisionsByDomain = new Map(
+		decisionDomains
+			.map((decision) => {
+				const raw = typeof decision.domain === "string" ? decision.domain : "";
+				const canonical = raw ? canonicalizeDomainName(raw)?.name ?? raw : "";
+				return canonical ? [canonical, decision] : null;
+			})
+			.filter(Boolean) as Array<[string, Record<string, unknown>]>,
+	);
+
+	const allowedDomains = new Set<string>();
+	domains.forEach((domain) => {
+		const name = typeof domain.name === "string" ? domain.name : "";
+		if (!name) return;
+		if (!productDomainNames.has(name)) {
+			allowedDomains.add(name);
+			return;
+		}
+		const decision = decisionsByDomain.get(name);
+		const surfaces = Array.isArray(decision?.surfaces)
+			? (decision?.surfaces as unknown[])
+			: [];
+		const alignment =
+			typeof decision?.alignment === "string"
+				? (decision.alignment as string)
+				: "medium";
+		const evidence = Array.isArray(decision?.evidence)
+			? (decision?.evidence as Array<Record<string, unknown>>)
+			: [];
+		const hasCoreUiEvidence = evidence.some((item) => {
+			const type = item.type;
+			const path = typeof item.path === "string" ? item.path : "";
+			const surface = classifySurfaceFromPath(path);
+			return (
+				(type === "route" || type === "component") &&
+				(surface === "product_core" || surface === "product_platform")
+			);
+		});
+		if (alignment !== "high") return;
+		if (surfaces.some(allowedSurface) && hasCoreUiEvidence) {
+			allowedDomains.add(name);
+		}
+	});
+
+	const filteredDomains = domains.filter((domain) => {
+		const name = typeof domain.name === "string" ? domain.name : "";
+		return name ? allowedDomains.has(name) : false;
+	});
+
+	const decisionsByFeature = new Map(
+		decisionFeatures
+			.map((decision) => {
+				const name = typeof decision.feature === "string" ? decision.feature : "";
+				return name ? [name, decision] : null;
+			})
+			.filter(Boolean) as Array<[string, Record<string, unknown>]>,
+	);
+
+	const adjustedFeatures = features.map((feature) => {
+		const name = typeof feature.name === "string" ? feature.name : "";
+		const decision = decisionsByFeature.get(name);
+		const surfaces = Array.isArray(decision?.surfaces)
+			? (decision?.surfaces as unknown[])
+			: [];
+		const alignment =
+			typeof decision?.alignment === "string"
+				? (decision.alignment as string)
+				: "medium";
+		const evidence = Array.isArray(decision?.evidence)
+			? (decision?.evidence as Array<Record<string, unknown>>)
+			: [];
+		const hasCoreUiEvidence = evidence.some((item) => {
+			const type = item.type;
+			const path = typeof item.path === "string" ? item.path : "";
+			const surface = classifySurfaceFromPath(path);
+			return (
+				(type === "route" || type === "component") &&
+				(surface === "product_core" || surface === "product_platform")
+			);
+		});
+		const allowedSurfaceHit = surfaces.some(allowedSurface);
+		const targetDomain =
+			typeof feature.domain === "string"
+				? canonicalizeDomainName(feature.domain)?.name ?? feature.domain
+				: undefined;
+		const isCoreUi = evidence.some((item) => {
+			const type = item.type;
+			const path = typeof item.path === "string" ? item.path : "";
+			const surface = classifySurfaceFromPath(path);
+			return type === "route" || type === "component"
+				? surface === "product_core"
+				: false;
+		});
+		const hasMarketingEvidence = evidence.some((item) => {
+			const path = typeof item.path === "string" ? item.path : "";
+			const surface = classifySurfaceFromPath(path);
+			const value = typeof item.value === "string" ? item.value.toLowerCase() : "";
+			return surface === "product_marketing" || value.includes("marketing") || value.includes("i18n");
+		});
+		const hasDocsEvidence = evidence.some((item) => {
+			const path = typeof item.path === "string" ? item.path : "";
+			const surface = classifySurfaceFromPath(path);
+			const value = typeof item.value === "string" ? item.value.toLowerCase() : "";
+			return surface === "product_docs" || value.includes("docs") || value.includes("documentation");
+		});
+		const inAllowedDomain =
+			targetDomain && allowedDomains.has(targetDomain);
+
+		if (
+			(!allowedSurfaceHit && !hasCoreUiEvidence) ||
+			alignment !== "high" ||
+			!inAllowedDomain
+		) {
+			return {
+				...feature,
+				visibilityHint: "internal",
+				domain: internalDomain || technicalDomain,
+			};
+		}
+
+		if (isCoreUi && targetDomain === internalDomain) {
+			return {
+				...feature,
+				visibilityHint: "public",
+				domain: "Core Experience",
+			};
+		}
+
+		if (!isCoreUi && hasMarketingEvidence) {
+			return {
+				...feature,
+				visibilityHint: "internal",
+				domain: "Marketing Presence",
+			};
+		}
+
+		if (!isCoreUi && hasDocsEvidence) {
+			return {
+				...feature,
+				visibilityHint: "internal",
+				domain: "Documentation & Support",
+			};
+		}
+
+		if (!isCoreUi && targetDomain === "Automation & AI") {
+			return {
+				...feature,
+				visibilityHint: "internal",
+				domain: "Platform Foundation",
+			};
+		}
+
+		return {
+			...feature,
+			domain: targetDomain ?? feature.domain,
+		};
+	});
+
+	const adjustedDomainMap =
+		domainMap && typeof domainMap === "object"
+			? {
+					...domainMap,
+					items: Array.isArray((domainMap as { items?: unknown }).items)
+						? (domainMap as { items: Array<Record<string, unknown>> }).items.filter(
+								(item) =>
+									item &&
+									typeof item.domain === "string" &&
+									allowedDomains.has(item.domain),
+							)
+						: [],
+				}
+			: domainMap;
+
+	return {
+		...featureMap,
+		features: adjustedFeatures,
+		domains: filteredDomains,
+		domainMap: adjustedDomainMap,
+	};
+}
+
+function slugifyFeatureId(value: string): string {
+	return value
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "-")
+		.replace(/(^-|-$)+/g, "")
+		.slice(0, 48);
 }
 
 function normalizePersonas(value: unknown): Array<{ name: string; description?: string }> {

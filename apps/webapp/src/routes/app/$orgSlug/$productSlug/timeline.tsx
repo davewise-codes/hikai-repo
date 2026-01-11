@@ -119,6 +119,8 @@ function TimelinePage() {
 		productId ? { productId } : "skip",
 	);
 
+	const internalFocusValue = "__internal__";
+	const technicalFocusValue = "Technical";
 	const focusAreaOptions = useMemo(() => {
 		const names = new Set<string>();
 		const addNames = (items?: Array<{ name?: string }>) => {
@@ -127,10 +129,15 @@ function TimelinePage() {
 			});
 		};
 		addNames(currentContext?.productDomains);
-		addNames(currentContext?.keyFeatures);
-		names.add("Technical");
-		return Array.from(names).sort((a, b) => a.localeCompare(b));
-	}, [currentContext]);
+		const contextAreas = Array.from(names).sort((a, b) => a.localeCompare(b));
+		return {
+			contextAreas,
+			internalAreas: [
+				{ value: technicalFocusValue, label: t("filters.technicalWork") },
+				{ value: internalFocusValue, label: t("filters.internalWork") },
+			],
+		};
+	}, [currentContext, t]);
 
 	const activeConnection = useMemo(
 		() => connections?.find((connection) => connection.status === "active"),
@@ -140,11 +147,14 @@ function TimelinePage() {
 	const filteredEvents = useMemo(() => {
 		if (!timeline) return [];
 		return timeline.filter((event) => {
+			const eventAreas = event.focusAreas ?? [];
+			const isInternalOnly = eventAreas.length === 0 || eventAreas.includes("Other");
 			const matchFocusAreas =
 				filters.focusAreas.length === 0 ||
-				(event.focusAreas ?? []).some((area) =>
-					filters.focusAreas.includes(area),
-				);
+				filters.focusAreas.some((area) => {
+					if (area === internalFocusValue) return isInternalOnly;
+					return eventAreas.includes(area);
+				});
 			const matchCategories =
 				filters.categories.length === 0 ||
 				filters.categories.some((category) => {
@@ -387,6 +397,7 @@ function TimelinePage() {
 			infra: t("progress.sourceInfra"),
 			docs: t("progress.sourceDocs"),
 			experiments: t("progress.sourceExperiments"),
+			mixed: t("progress.sourceMixed"),
 			unknown: t("progress.sourceUnknown"),
 		}),
 		[t],
@@ -536,7 +547,11 @@ function TimelinePage() {
 									key={area}
 									className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
 								>
-									{area}
+									{area === internalFocusValue
+										? t("filters.internalWork")
+										: area === technicalFocusValue
+											? t("filters.technicalWork")
+											: area}
 									<button
 										type="button"
 										onClick={() => handleFocusAreaToggle(area)}
@@ -590,22 +605,42 @@ function TimelinePage() {
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-56">
 								<DropdownMenuSub>
-									<DropdownMenuSubTrigger>
-										{t("filters.focusAreas")}
-									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent className="w-56">
-										{focusAreaOptions.length ? (
-											focusAreaOptions.map((area) => (
-												<DropdownMenuCheckboxItem
-													key={area}
-													checked={filters.focusAreas.includes(area)}
-													onCheckedChange={() => handleFocusAreaToggle(area)}
-													onSelect={(event) => event.preventDefault()}
-													className="text-fontSize-sm"
-												>
-													{area}
-												</DropdownMenuCheckboxItem>
-											))
+								<DropdownMenuSubTrigger>
+									{t("filters.focusAreas")}
+								</DropdownMenuSubTrigger>
+								<DropdownMenuSubContent className="w-56">
+										{focusAreaOptions.contextAreas.length ? (
+											<>
+												<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
+													{t("filters.focusAreasContext")}
+												</DropdownMenuLabel>
+												{focusAreaOptions.contextAreas.map((area) => (
+													<DropdownMenuCheckboxItem
+														key={area}
+														checked={filters.focusAreas.includes(area)}
+														onCheckedChange={() => handleFocusAreaToggle(area)}
+														onSelect={(event) => event.preventDefault()}
+														className="text-fontSize-sm"
+													>
+														{area}
+													</DropdownMenuCheckboxItem>
+												))}
+												<DropdownMenuSeparator />
+												<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
+													{t("filters.focusAreasInternal")}
+												</DropdownMenuLabel>
+												{focusAreaOptions.internalAreas.map((area) => (
+													<DropdownMenuCheckboxItem
+														key={area.value}
+														checked={filters.focusAreas.includes(area.value)}
+														onCheckedChange={() => handleFocusAreaToggle(area.value)}
+														onSelect={(event) => event.preventDefault()}
+														className="text-fontSize-sm"
+													>
+														{area.label}
+													</DropdownMenuCheckboxItem>
+												))}
+											</>
 										) : (
 											<DropdownMenuItem disabled className="text-fontSize-sm">
 												{t("filters.noFocusAreas")}

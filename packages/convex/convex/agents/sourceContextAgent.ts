@@ -39,9 +39,9 @@ Input shape:
     "sourceType": "repo",
     "sourceId": "...",
     "samples": ["..."],
-    "pathOverview": { "topLevel": { "apps": 3 }, "notablePaths": ["apps/webapp"], "monorepoSignal": true },
+    "pathOverview": { "topLevel": { "apps": 3 }, "notablePaths": ["apps/app"], "monorepoSignal": true },
     "structureSummary": {
-      "appPaths": ["apps/webapp", "apps/website"],
+      "appPaths": ["apps/app", "apps/marketing"],
       "packagePaths": ["packages/convex"],
       "monorepoSignal": true,
       "fileSamples": [{ "path": "package.json", "excerpt": "..." }]
@@ -51,13 +51,13 @@ Input shape:
 
 Output ONLY valid JSON with:
 {
-  "classification": "product_core|marketing_surface|infra|docs|experiments|unknown",
+  "classification": "product_core|marketing_surface|infra|docs|experiments|mixed|unknown",
   "notes": "short evidence-based reason"
 }
 
 Evidence-first rules:
 - Base decisions on repository structure signals (apps/, packages/, docs/), stack hints, and product baseline.
-- If structureSummary.appPaths includes a product app (e.g. apps/webapp, apps/app, apps/dashboard) and baseline productType is Web App, prefer product_core.
+- If structureSummary.appPaths includes a likely product app (e.g. apps/app, apps/dashboard, client/, frontend/) and baseline productType is Web App, prefer product_core.
 - Do NOT rely only on commit frequency or superficial language.
 - If evidence is weak, return "unknown" and say why.
 Use structureSummary and pathOverview before sample text. If fileSamples include app/package manifests, prefer them over commit messages.
@@ -68,8 +68,9 @@ Classification guide:
 - infra: build tooling, platform reliability, backend foundations, shared UI/tokens when they primarily serve the product.
 - docs: documentation and guides.
 - experiments: spikes, prototypes, sandboxes.
+- mixed: repo contains multiple surfaces (e.g., product core + marketing).
 
-Notes should include concrete evidence (e.g., "Monorepo: apps/webapp + packages/convex; baseline=Web App").
+Notes should include concrete evidence (e.g., "Monorepo: apps/app + packages/backend; baseline=Web App").
 `.trim(),
 	usageHandler: async (ctx, { usage, provider, model, threadId, agentName }) => {
 		const customCtx = ctx as ActionCtx & Partial<AgentCtx>;

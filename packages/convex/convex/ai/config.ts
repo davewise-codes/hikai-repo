@@ -23,6 +23,7 @@ const AGENT_MODEL_OVERRIDES: Record<string, AgentModelOverride> = {
 	"Product Context Agent": { provider: "openai", model: "gpt-5-mini" },
 	"Timeline Context Interpreter Agent": { provider: "openai", model: "gpt-5-mini" },
 	"Source Context Classifier Agent": { provider: "openai", model: "gpt-5-mini" },
+	"Feature Map Agent": { provider: "openai", model: "gpt-5-mini" },
 	"Hello World Agent": { provider: "openai", model: "gpt-4o-mini" },
 };
 
@@ -36,6 +37,7 @@ const AGENT_TELEMETRY_CONFIG: Record<string, AgentTelemetryConfig> = {
 		persistInferenceLogs: false,
 		enableRating: false,
 	},
+	"Feature Map Agent": { persistInferenceLogs: true, enableRating: false },
 	"Hello World Agent": { persistInferenceLogs: true, enableRating: false },
 };
 

@@ -173,7 +173,10 @@ export const getProductContextSnapshots = query({
       .order("desc")
       .take(limit ?? 25);
 
-    return records.map((record) => record.context);
+    return records.map((record) => ({
+      ...record.context,
+      featureMap: record.featureMap ?? record.context?.featureMap,
+    }));
   },
 });
 
@@ -195,7 +198,10 @@ export const getCurrentProductContextSnapshot = query({
       return null;
     }
 
-    return snapshot.context;
+    return {
+      ...snapshot.context,
+      featureMap: snapshot.featureMap ?? snapshot.context?.featureMap,
+    };
   },
 });
 

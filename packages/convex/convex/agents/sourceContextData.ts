@@ -41,6 +41,7 @@ export const upsertSourceContext = internalMutation({
 			v.literal("infra"),
 			v.literal("docs"),
 			v.literal("experiments"),
+			v.literal("mixed"),
 			v.literal("unknown"),
 		),
 		notes: v.optional(v.string()),
