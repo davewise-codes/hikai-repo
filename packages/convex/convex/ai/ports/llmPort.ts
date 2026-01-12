@@ -7,6 +7,7 @@ export interface LLMGenerateParams {
   systemPrompt?: string;
   maxTokens?: number;
   temperature?: number;
+  topP?: number;
 }
 
 export interface LLMGenerateResult {

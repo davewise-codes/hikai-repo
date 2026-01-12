@@ -86,7 +86,7 @@ Input JSON:
   "sources": [
     {
       "sourceId": "org/repo",
-      "classification": "product_core|product_platform|product_admin|product_marketing|product_docs|product_other|mixed|unknown",
+      "classification": "product_core|product_platform|product_admin|product_marketing|product_docs|product_other|unknown",
       "structureSummary": {
         "appPaths": ["apps/app"],
         "packagePaths": ["packages/convex"],

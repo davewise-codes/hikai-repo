@@ -625,7 +625,303 @@ expect(repo2Result.evidence).not.toContain(repo1Data.path);
 
 ---
 
-## 8. Decisiones Tomadas
+## 8. Especificaciones Técnicas Detalladas
+
+### 8.1 Checkpoints: Tabla Convex Dedicada
+
+```typescript
+// packages/convex/convex/schema.ts
+agentCheckpoints: defineTable({
+  productId: v.id("products"),
+  orchestrationRunId: v.string(),  // UUID del run completo
+  phase: v.union(
+    v.literal("surface_classification"),
+    v.literal("domain_mapping"),
+    v.literal("feature_extraction"),
+    v.literal("narrative_building")
+  ),
+  phaseIndex: v.number(),  // 0, 1, 2, 3
+  status: v.union(
+    v.literal("pending"),
+    v.literal("in_progress"),
+    v.literal("completed"),
+    v.literal("blocked"),
+    v.literal("retrying")
+  ),
+  version: v.number(),  // Incrementa con cada retry
+  input: v.any(),       // Input de la fase (JSON)
+  output: v.optional(v.any()),  // Output si completed (JSON)
+  error: v.optional(v.object({
+    message: v.string(),
+    retryCount: v.number(),
+    lastAttemptAt: v.number(),
+  })),
+  startedAt: v.number(),
+  completedAt: v.optional(v.number()),
+})
+  .index("by_product_run", ["productId", "orchestrationRunId"])
+  .index("by_product_phase", ["productId", "phase"]),
+```
+
+### 8.2 Summarization: Reglas Determinísticas Puras
+
+```typescript
+// packages/convex/convex/agents/core/summarizers.ts
+
+export interface SurfaceSummary {
+  totalRepos: number;
+  byClassification: Record<SurfaceClassification, number>;
+  topPaths: Array<{ path: string; classification: SurfaceClassification }>;
+  monorepoDetected: boolean;
+  primarySurface: SurfaceClassification;
+  confidence: number;
+}
+
+export function summarizeSurfaces(
+  classifications: SurfaceClassificationResult[]
+): SurfaceSummary {
+  // Reglas determinísticas - sin LLM
+  const byClassification = classifications.reduce((acc, c) => {
+    acc[c.classification] = (acc[c.classification] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const topPaths = classifications
+    .flatMap(c => c.evidence.map(e => ({ path: e.path, classification: c.classification })))
+    .slice(0, 10);  // Límite fijo
+
+  const primarySurface = Object.entries(byClassification)
+    .sort((a, b) => b[1] - a[1])[0]?.[0] as SurfaceClassification || "unknown";
+
+  const monorepoDetected = classifications.some(c =>
+    c.evidence.some(e => e.path.includes("apps/") || e.path.includes("packages/"))
+  );
+
+  const confidence = classifications.reduce((sum, c) => sum + c.confidence, 0)
+    / classifications.length;
+
+  return {
+    totalRepos: classifications.length,
+    byClassification,
+    topPaths,
+    monorepoDetected,
+    primarySurface,
+    confidence,
+  };
+}
+```
+
+### 8.3 Skill Versioning: Frontmatter + Config
+
+```markdown
+<!-- packages/convex/convex/agents/skills/surface-classification.skill.md -->
+---
+name: surface-classification
+version: v1.2
+author: hikai-team
+updated: 2026-01-11
+requires:
+  - tool: read_file
+  - tool: glob
+---
+
+[Contenido del skill...]
+```
+
+```typescript
+// packages/convex/convex/agents/taxonomy/surface-classifier.ts
+export const surfaceClassifierConfig: AgentConfig = {
+  name: "SurfaceClassifier",
+  skill: {
+    name: "surface-classification",
+    version: "v1.2",  // Versión explícita
+  },
+  tools: getToolsForAgent("read_only"),
+  maxTurns: 5,
+  maxTokens: 2000,
+  timeoutMs: 30000,
+};
+
+// packages/convex/convex/agents/core/skill-loader.ts
+export async function loadSkill(
+  skillName: string,
+  version: string
+): Promise<Skill> {
+  const skillPath = `skills/${skillName}.skill.md`;
+  const content = await readSkillFile(skillPath);
+  const parsed = parseSkillMd(content);
+
+  if (parsed.version !== version) {
+    console.warn(`Skill version mismatch: expected ${version}, got ${parsed.version}`);
+    // Decide: throw o usar la versión disponible
+  }
+
+  return parsed;
+}
+```
+
+### 8.4 Error Handling: Retry con Backoff + Blocked
+
+```typescript
+// packages/convex/convex/agents/core/error-handler.ts
+
+export interface RetryConfig {
+  maxRetries: 2;  // Máximo 2 reintentos (3 intentos total)
+  baseDelayMs: 1000;
+  maxDelayMs: 10000;
+  backoffMultiplier: 2;
+}
+
+export async function executeWithRetry<T>(
+  fn: () => Promise<T>,
+  config: RetryConfig,
+  onRetry?: (attempt: number, error: Error) => Promise<void>
+): Promise<{ result: T; attempts: number } | { error: Error; blocked: true; attempts: number }> {
+  let lastError: Error;
+
+  for (let attempt = 1; attempt <= config.maxRetries + 1; attempt++) {
+    try {
+      const result = await fn();
+      return { result, attempts: attempt };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt <= config.maxRetries) {
+        const delay = Math.min(
+          config.baseDelayMs * Math.pow(config.backoffMultiplier, attempt - 1),
+          config.maxDelayMs
+        );
+
+        if (onRetry) {
+          await onRetry(attempt, lastError);
+        }
+
+        await sleep(delay);
+      }
+    }
+  }
+
+  return { error: lastError!, blocked: true, attempts: config.maxRetries + 1 };
+}
+
+// Uso en orchestrator
+const classificationResult = await executeWithRetry(
+  () => classifySurface(ctx, repoData),
+  DEFAULT_RETRY_CONFIG,
+  async (attempt, error) => {
+    await updateCheckpoint(ctx, checkpointId, {
+      status: "retrying",
+      error: { message: error.message, retryCount: attempt, lastAttemptAt: Date.now() },
+    });
+  }
+);
+
+if ("blocked" in classificationResult) {
+  await updateCheckpoint(ctx, checkpointId, {
+    status: "blocked",
+    error: {
+      message: classificationResult.error.message,
+      retryCount: classificationResult.attempts,
+      lastAttemptAt: Date.now(),
+    },
+  });
+  throw new PhaseBlockedError(phase, classificationResult.error);
+}
+```
+
+### 8.5 Schema Validation: Zod Estricto
+
+```typescript
+// packages/convex/convex/agents/schemas/surface-classification.schema.ts
+import { z } from "zod";
+
+export const SurfaceClassificationSchema = z.object({
+  classification: z.enum([
+    "product_core",
+    "product_platform",
+    "product_admin",
+    "product_marketing",
+    "product_docs",
+    "product_other",
+    "mixed",
+    "unknown",
+  ]),
+  confidence: z.number().min(0).max(1),
+  evidence: z.array(z.object({
+    type: z.enum(["path", "file_content", "package_json", "readme"]),
+    value: z.string(),
+    path: z.string().optional(),
+  })).min(1),
+  notes: z.string().max(500),
+});
+
+export type SurfaceClassification = z.infer<typeof SurfaceClassificationSchema>;
+
+// packages/convex/convex/agents/schemas/feature-map.schema.ts
+export const FeatureSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]+$/),
+  slug: z.string().regex(/^[a-z0-9-]+$/).max(48),
+  name: z.string().min(1).max(100),
+  domain: z.string(),
+  description: z.string().max(500).optional(),
+  visibilityHint: z.enum(["public", "internal"]),
+  confidence: z.number().min(0).max(1),
+  deprecated: z.boolean().default(false),
+  evidence: z.array(z.object({
+    type: z.enum(["ui_text", "doc", "route", "component"]),
+    value: z.string(),
+    path: z.string().optional(),
+  })),
+});
+
+export const FeatureMapSchema = z.object({
+  features: z.array(FeatureSchema),
+  domains: z.array(z.object({
+    name: z.string(),
+    description: z.string().optional(),
+    kind: z.enum(["product", "technical", "internal"]),
+    weight: z.number().min(0).max(1),
+  })),
+  generatedAt: z.number(),
+  sourcesUsed: z.array(z.string()),
+});
+
+export type FeatureMap = z.infer<typeof FeatureMapSchema>;
+
+// packages/convex/convex/agents/core/agent-loop.ts
+export async function executeAgentLoop<T>(
+  ctx: ActionCtx,
+  config: AgentLoopConfig,
+  initialPrompt: string,
+  outputSchema: z.ZodType<T>,
+  skills?: string[]
+): Promise<AgentResult<T>> {
+  // ... agent loop logic ...
+
+  const rawOutput = parseJsonSafely(response.text);
+
+  // Validación estricta con Zod
+  const parseResult = outputSchema.safeParse(rawOutput);
+
+  if (!parseResult.success) {
+    throw new AgentSchemaValidationError(
+      config.name,
+      parseResult.error.issues,
+      rawOutput
+    );
+  }
+
+  return {
+    data: parseResult.data,
+    turns,
+    status: "completed",
+  };
+}
+```
+
+---
+
+## 9. Decisiones Tomadas
 
 | Decisión | Opción Elegida | Rationale |
 |----------|----------------|-----------|
@@ -633,10 +929,15 @@ expect(repo2Result.evidence).not.toContain(repo1Data.path);
 | **Estrategia de migración** | Agente por agente | No hay producción, no hay concern de breaking changes |
 | **Métrica de determinismo** | >85% consistencia | Balance entre strictness y flexibilidad práctica |
 | **Primer agente a migrar** | Surface Classifier | Es el más simple, valida la arquitectura core |
+| **Checkpoints storage** | Tabla Convex `agentCheckpoints` | Query fácil, rollback simple, bien integrado |
+| **Summarization** | Reglas determinísticas puras | Sin LLM, 100% reproducible, bajo costo |
+| **Skill versioning** | Frontmatter + config por agente | Control explícito de versiones, trazabilidad |
+| **Error handling** | Retry con backoff + blocked | 2 reintentos, exponential backoff, falla graceful |
+| **Schema validation** | Zod estricto + runtime | Contratos claros, fallo temprano si schema inválido |
 
 ---
 
-## 9. Plan de Ejecución Priorizado
+## 10. Plan de Ejecución Priorizado
 
 ### Sprint 1: Agent Core + Surface Classifier
 
@@ -722,7 +1023,7 @@ expect(repo2Result.evidence).not.toContain(repo1Data.path);
 
 ---
 
-## 10. Próximos Pasos Inmediatos
+## 11. Próximos Pasos Inmediatos
 
 1. [x] Definir arquitectura propuesta
 2. [x] Tomar decisiones sobre skills, migración, métricas

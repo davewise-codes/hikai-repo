@@ -21,6 +21,7 @@ export function createAnthropicAdapter(
 				prompt: params.prompt,
 				maxOutputTokens: params.maxTokens ?? 1024,
 				temperature: params.temperature,
+				topP: params.topP,
 			});
 
 			const latencyMs = Date.now() - startTime;

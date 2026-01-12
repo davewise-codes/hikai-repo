@@ -51,8 +51,11 @@ Input shape:
 
 Output ONLY valid JSON with:
 {
-  "classification": "product_core|marketing_surface|infra|docs|experiments|mixed|unknown",
-  "notes": "short evidence-based reason"
+  "classification": "product_core|marketing_surface|infra|docs|experiments|unknown",
+  "notes": "short evidence-based reason",
+  "surfaceBuckets": [
+    { "surface": "product_core", "pathPrefix": "apps/app", "signalCount": 120 }
+  ]
 }
 
 Evidence-first rules:
@@ -60,6 +63,7 @@ Evidence-first rules:
 - If structureSummary.appPaths includes a likely product app (e.g. apps/app, apps/dashboard, client/, frontend/) and baseline productType is Web App, prefer product_core.
 - Do NOT rely only on commit frequency or superficial language.
 - If evidence is weak, return "unknown" and say why.
+- Do NOT use "mixed". If multiple surfaces exist, include surfaceBuckets to reflect the split.
 Use structureSummary and pathOverview before sample text. If fileSamples include app/package manifests, prefer them over commit messages.
 
 Classification guide:
@@ -68,7 +72,6 @@ Classification guide:
 - infra: build tooling, platform reliability, backend foundations, shared UI/tokens when they primarily serve the product.
 - docs: documentation and guides.
 - experiments: spikes, prototypes, sandboxes.
-- mixed: repo contains multiple surfaces (e.g., product core + marketing).
 
 Notes should include concrete evidence (e.g., "Monorepo: apps/app + packages/backend; baseline=Web App").
 `.trim(),

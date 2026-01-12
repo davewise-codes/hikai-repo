@@ -19,6 +19,7 @@ export function createOpenAIAdapter(modelId: string = "gpt-4o-mini"): LLMPort {
 				prompt: params.prompt,
 				maxOutputTokens: params.maxTokens,
 				temperature: params.temperature,
+				topP: params.topP,
 			});
 
 			const latencyMs = Date.now() - startTime;

@@ -35,6 +35,7 @@ export const upsertSourceContext = internalMutation({
 		productId: v.id("products"),
 		sourceType: v.string(),
 		sourceId: v.string(),
+		sourceLabel: v.optional(v.string()),
 		classification: v.union(
 			v.literal("product_core"),
 			v.literal("marketing_surface"),
@@ -44,12 +45,55 @@ export const upsertSourceContext = internalMutation({
 			v.literal("mixed"),
 			v.literal("unknown"),
 		),
+		surfaceSignals: v.optional(
+			v.array(
+				v.object({
+					surface: v.union(
+						v.literal("management"),
+						v.literal("design"),
+						v.literal("product_front"),
+						v.literal("platform"),
+						v.literal("marketing"),
+						v.literal("admin"),
+						v.literal("docs"),
+					),
+					bucketId: v.string(),
+					evidence: v.optional(v.array(v.string())),
+				}),
+			),
+		),
+		surfaceBuckets: v.optional(
+			v.array(
+				v.object({
+					surface: v.union(
+						v.literal("product_core"),
+						v.literal("marketing_surface"),
+						v.literal("infra"),
+						v.literal("docs"),
+						v.literal("experiments"),
+						v.literal("unknown"),
+					),
+					pathPrefix: v.string(),
+					signalCount: v.optional(v.number()),
+				}),
+			),
+		),
 		notes: v.optional(v.string()),
 		structure: v.optional(v.any()),
 	},
 	handler: async (
 		ctx,
-		{ productId, sourceType, sourceId, classification, notes, structure },
+		{
+			productId,
+			sourceType,
+			sourceId,
+			sourceLabel,
+			classification,
+			surfaceSignals,
+			surfaceBuckets,
+			notes,
+			structure,
+		},
 	) => {
 		const existing = await ctx.db
 			.query("sourceContext")
@@ -62,6 +106,9 @@ export const upsertSourceContext = internalMutation({
 		if (existing) {
 			await ctx.db.patch(existing._id, {
 				classification,
+				sourceLabel,
+				surfaceSignals,
+				surfaceBuckets,
 				notes,
 				structure,
 				updatedAt: now,
@@ -73,7 +120,10 @@ export const upsertSourceContext = internalMutation({
 			productId,
 			sourceType,
 			sourceId,
+			sourceLabel,
 			classification,
+			surfaceSignals,
+			surfaceBuckets,
 			notes,
 			structure,
 			createdAt: now,

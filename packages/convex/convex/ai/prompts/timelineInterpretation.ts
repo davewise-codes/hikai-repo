@@ -64,7 +64,7 @@ Input JSON:
   "productContext": { ... },
   "featureMap": { "features": [ { "id": "...", "slug": "...", "name": "...", "domain": "..." } ] },
   "repoContexts": [
-    { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|mixed|unknown", "notes": "..." }
+    { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|unknown", "notes": "..." }
   ],
   "rawEvents": [
     {

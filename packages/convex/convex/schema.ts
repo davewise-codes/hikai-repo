@@ -267,6 +267,7 @@ const schema = defineSchema({
     productId: v.id("products"),
     sourceType: v.string(), // "repo"
     sourceId: v.string(), // repo fullName or identifier
+    sourceLabel: v.optional(v.string()),
     classification: v.union(
       v.literal("product_core"),
       v.literal("marketing_surface"),
@@ -276,6 +277,39 @@ const schema = defineSchema({
       v.literal("mixed"),
       v.literal("unknown")
     ),
+    surfaceSignals: v.optional(
+      v.array(
+        v.object({
+          surface: v.union(
+            v.literal("management"),
+            v.literal("design"),
+            v.literal("product_front"),
+            v.literal("platform"),
+            v.literal("marketing"),
+            v.literal("admin"),
+            v.literal("docs")
+          ),
+          bucketId: v.string(),
+          evidence: v.optional(v.array(v.string())),
+        })
+      )
+    ),
+    surfaceBuckets: v.optional(
+      v.array(
+        v.object({
+          surface: v.union(
+            v.literal("product_core"),
+            v.literal("marketing_surface"),
+            v.literal("infra"),
+            v.literal("docs"),
+            v.literal("experiments"),
+            v.literal("unknown")
+          ),
+          pathPrefix: v.string(),
+          signalCount: v.optional(v.number()),
+        })
+      )
+    ),
     notes: v.optional(v.string()),
     structure: v.optional(v.any()),
     createdAt: v.number(),
@@ -283,6 +317,53 @@ const schema = defineSchema({
   })
     .index("by_product_source", ["productId", "sourceType", "sourceId"])
     .index("by_product", ["productId"]),
+
+  surfaceSignalRuns: defineTable({
+    productId: v.id("products"),
+    createdBy: v.id("users"),
+    agentRunId: v.optional(v.id("agentRuns")),
+    createdAt: v.number(),
+    rawOutput: v.optional(v.string()),
+    steps: v.optional(
+      v.array(
+        v.object({
+          step: v.string(),
+          status: v.union(
+            v.literal("info"),
+            v.literal("success"),
+            v.literal("warn"),
+            v.literal("error")
+          ),
+          timestamp: v.number(),
+          metadata: v.optional(v.any()),
+        })
+      )
+    ),
+    sources: v.array(
+      v.object({
+        sourceType: v.string(),
+        sourceId: v.string(),
+        sourceLabel: v.string(),
+        surfaces: v.array(
+          v.object({
+            surface: v.union(
+              v.literal("management"),
+              v.literal("design"),
+              v.literal("product_front"),
+              v.literal("platform"),
+              v.literal("marketing"),
+              v.literal("admin"),
+              v.literal("docs")
+            ),
+            bucketId: v.string(),
+            evidence: v.optional(v.array(v.string())),
+          })
+        ),
+      })
+    ),
+  })
+    .index("by_product", ["productId"])
+    .index("by_product_time", ["productId", "createdAt"]),
 
   rawEvents: defineTable({
     productId: v.id("products"),

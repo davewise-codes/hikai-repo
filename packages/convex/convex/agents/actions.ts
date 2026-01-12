@@ -9,13 +9,14 @@ import {
 	productContextPrompt,
 	PRODUCT_CONTEXT_PROMPT_VERSION,
 	TIMELINE_INTERPRETER_PROMPT_VERSION,
-	FEATURE_MAP_PROMPT_VERSION,
 } from "../ai/prompts";
 import { helloWorldAgent, HELLO_WORLD_PROMPT_VERSION } from "./helloWorldAgent";
 import { productContextAgent } from "./productContextAgent";
 import { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
-import { sourceContextAgent } from "./sourceContextAgent";
-import { featureMapAgent } from "./featureMapAgent";
+import { classifySurface } from "./taxonomy/surface_classifier";
+import { extractFeatures } from "./taxonomy/feature_extractor";
+import { buildProductTaxonomy } from "./taxonomy/orchestrator";
+import type { SurfaceSignalResult } from "./surface_signal_mapper";
 import { detectStackFromPackageJson } from "./stackDetector";
 import { validateAndEnrichContext } from "./contextValidator";
 
@@ -27,10 +28,10 @@ const PRODUCT_CONTEXT_USE_CASE = "product_context_enrichment";
 const PRODUCT_CONTEXT_AGENT_NAME = "Product Context Agent";
 const TIMELINE_INTERPRETER_USE_CASE = "timeline_interpretation";
 const TIMELINE_INTERPRETER_AGENT_NAME = "Timeline Context Interpreter Agent";
-const SOURCE_CONTEXT_USE_CASE = "source_context_classification";
-const SOURCE_CONTEXT_AGENT_NAME = "Source Context Classifier Agent";
 const FEATURE_MAP_USE_CASE = "feature_map_generation";
 const FEATURE_MAP_AGENT_NAME = "Feature Map Agent";
+const SURFACE_SIGNAL_USE_CASE = "surface_signal_mapping";
+const SURFACE_SIGNAL_AGENT_NAME = "Surface Signal Mapper Agent";
 
 const strategicPillarsCatalog = [
 	{
@@ -629,7 +630,6 @@ export const refreshFeatureMap = action({
 		updated: boolean;
 		decisionSummary?: Record<string, unknown>;
 	}> => {
-		const aiConfig = getAgentAIConfig(FEATURE_MAP_AGENT_NAME);
 		const { organizationId, userId, product } = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
@@ -670,26 +670,17 @@ export const refreshFeatureMap = action({
 			sources,
 		});
 
-		const tid = await createThread(ctx, agentComponent);
-		const start = Date.now();
-
 		try {
-			const agentCtx = {
-				...ctx,
+			const parsed = await extractFeatures({
+				ctx,
 				organizationId,
 				productId,
 				userId,
-				aiPrompt: promptPayload,
-				aiStartMs: start,
-			};
+				input: JSON.parse(promptPayload),
+				debugPrompt: debugUi,
+			});
 
-			const result = await featureMapAgent.generateText(
-				agentCtx,
-				{ threadId: tid },
-				{ prompt: promptPayload },
-			);
-
-			const parsed = parseJsonSafely(result.text) as {
+			const parsedResult = parsed as {
 				features?: Array<Record<string, unknown>>;
 				domains?: Array<Record<string, unknown>>;
 				domainMap?: Record<string, unknown>;
@@ -697,15 +688,15 @@ export const refreshFeatureMap = action({
 				generatedAt?: number;
 				sourcesUsed?: string[];
 			};
-			if (!parsed || !Array.isArray(parsed.features)) {
+			if (!parsedResult || !Array.isArray(parsedResult.features)) {
 				throw new Error("Invalid JSON response from Feature Map Agent");
 			}
 
-		const now = Date.now();
-			let normalized = normalizeFeatureMap(parsed, previousFeatureMap, now);
+			const now = Date.now();
+			let normalized = normalizeFeatureMap(parsedResult, previousFeatureMap, now);
 			normalized = applyFeatureMapGuardrails(
 				normalized,
-				parsed.decisionSummary ?? {},
+				parsedResult.decisionSummary ?? {},
 				languagePreference,
 			);
 
@@ -725,32 +716,6 @@ export const refreshFeatureMap = action({
 				);
 			}
 
-			const telemetryConfig = getAgentTelemetryConfig(FEATURE_MAP_AGENT_NAME);
-			if (telemetryConfig.persistInferenceLogs) {
-				const usage = getUsageTotals(result);
-				await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
-					organizationId,
-					productId,
-					userId,
-					useCase: FEATURE_MAP_USE_CASE,
-					agentName: FEATURE_MAP_AGENT_NAME,
-					promptVersion: FEATURE_MAP_PROMPT_VERSION,
-					prompt: debugUi ? promptPayload : undefined,
-					response: debugUi ? result.text : undefined,
-					provider: aiConfig.provider,
-					model: aiConfig.model,
-					tokensIn: usage.tokensIn,
-					tokensOut: usage.tokensOut,
-					totalTokens: usage.totalTokens,
-					latencyMs: Date.now() - start,
-					contextVersion: currentSnapshot.context?.version ?? undefined,
-					metadata: {
-						source: "feature-map",
-						updated,
-					},
-				});
-			}
-
 			return {
 				featureMap: normalized,
 				updated,
@@ -763,7 +728,6 @@ export const refreshFeatureMap = action({
 				userId,
 				useCase: FEATURE_MAP_USE_CASE,
 				agentName: FEATURE_MAP_AGENT_NAME,
-				threadId: tid,
 				provider: aiConfig.provider,
 				model: aiConfig.model,
 				errorMessage:
@@ -777,6 +741,193 @@ export const refreshFeatureMap = action({
 		}
 	},
 });
+
+export const runTaxonomyOrchestrator = action({
+	args: {
+		productId: v.id("products"),
+		debug: v.optional(v.boolean()),
+	},
+	handler: async (
+		ctx,
+		{ productId, debug },
+	): Promise<{
+		surfaceSummary: Record<string, unknown>;
+		domainMap: Record<string, unknown> | null;
+		featureMap: Record<string, unknown> | null;
+		rawFeatureResponse?: string | null;
+		featureMapInvalid?: boolean;
+	}> => {
+		const { organizationId, userId } = await ctx.runQuery(
+			internal.lib.access.assertProductAccessInternal,
+			{ productId },
+		);
+
+		const result = await buildProductTaxonomy({
+			ctx,
+			productId,
+			organizationId,
+			userId,
+			options: debug
+				? {
+						sampling: { temperature: 0 },
+						maxTokens: { domainMapper: 3000, featureExtractor: 6000 },
+						debug: true,
+					}
+				: undefined,
+		});
+
+		return {
+			surfaceSummary: result.surfaceSummary,
+			domainMap: result.domainMap as Record<string, unknown> | null,
+			featureMap: result.featureMap as Record<string, unknown> | null,
+			rawFeatureResponse: (() => {
+				const rawResponse = (result.featureMap as { rawResponse?: unknown } | null)
+					?.rawResponse;
+				return typeof rawResponse === "string" ? rawResponse : null;
+			})(),
+			featureMapInvalid:
+				(result.featureMap as { invalidOutput?: boolean } | null)?.invalidOutput ??
+				false,
+		};
+	},
+});
+
+export const runTaxonomyDeterminismCheck = action({
+	args: {
+		productId: v.id("products"),
+		runs: v.optional(v.number()),
+	},
+	handler: async (
+		ctx,
+		{ productId, runs },
+	): Promise<{
+		runs: number;
+		featureSimilarity: number;
+		domainSimilarity: number;
+		errors: string[];
+		runDurationsMs: number[];
+		tokenUsage: {
+			tokensIn: number;
+			tokensOut: number;
+			totalTokens: number;
+			costUsd: number;
+		};
+	}> => {
+		const { organizationId, userId } = await ctx.runQuery(
+			internal.lib.access.assertProductAccessInternal,
+			{ productId },
+		);
+		const totalRuns = Math.max(1, Math.min(runs ?? 5, 10));
+		const outputs: Array<{
+			domains: string[];
+			features: string[];
+		}> = [];
+		const errors: string[] = [];
+		const runDurationsMs: number[] = [];
+		const startWindow = Date.now();
+
+		for (let i = 0; i < totalRuns; i += 1) {
+			const start = Date.now();
+			const result = await buildProductTaxonomy({
+				ctx,
+				productId,
+				organizationId,
+				userId,
+				options: {
+					sampling: { temperature: 0 },
+					maxTokens: { domainMapper: 3000, featureExtractor: 6000 },
+				},
+			});
+			runDurationsMs.push(Date.now() - start);
+
+			if (!result.domainMap) {
+				errors.push(`run-${i + 1}: domainMap null`);
+			}
+			if (!result.featureMap) {
+				errors.push(`run-${i + 1}: featureMap null`);
+			}
+
+			const domainNames = Array.isArray(result.domainMap?.domains)
+				? result.domainMap.domains
+						.map((domain) =>
+							typeof domain?.name === "string" ? domain.name : null,
+						)
+						.filter((name): name is string => Boolean(name))
+				: [];
+			const featureNames = Array.isArray(result.featureMap?.features)
+				? result.featureMap.features
+						.map((feature) => {
+							if (typeof feature?.id === "string") return feature.id;
+							if (typeof feature?.slug === "string") return feature.slug;
+							if (typeof feature?.name === "string") return feature.name;
+							return null;
+						})
+						.filter((name): name is string => Boolean(name))
+				: [];
+
+			outputs.push({
+				domains: uniqueSorted(domainNames),
+				features: uniqueSorted(featureNames),
+			});
+		}
+
+		const [baseline] = outputs;
+		const domainSimilarity = averageSimilarity(
+			outputs.map((output) => output.domains),
+			baseline?.domains ?? [],
+		);
+		const featureSimilarity = averageSimilarity(
+			outputs.map((output) => output.features),
+			baseline?.features ?? [],
+		);
+
+		const usageSummary = await ctx.runQuery(api.lib.aiUsage.getProductUsage, {
+			productId,
+			startDate: startWindow,
+			endDate: Date.now(),
+		});
+		const tokenUsage = {
+			tokensIn: usageSummary.totals.tokensIn,
+			tokensOut: usageSummary.totals.tokensOut,
+			totalTokens: usageSummary.totals.totalTokens,
+			costUsd: usageSummary.totals.estimatedCostUsd,
+		};
+
+		return {
+			runs: totalRuns,
+			featureSimilarity,
+			domainSimilarity,
+			errors,
+			runDurationsMs,
+			tokenUsage,
+		};
+	},
+});
+
+function uniqueSorted(items: string[]): string[] {
+	return Array.from(new Set(items)).sort((a, b) => a.localeCompare(b));
+}
+
+function averageSimilarity(
+	runs: string[][],
+	baseline: string[],
+): number {
+	if (!baseline.length) return 0;
+	const baselineSet = new Set(baseline);
+	const scores = runs.map((run) => jaccardSimilarity(baselineSet, run));
+	const total = scores.reduce((sum, value) => sum + value, 0);
+	return Number((total / scores.length).toFixed(4));
+}
+
+function jaccardSimilarity(baseline: Set<string>, sample: string[]): number {
+	const sampleSet = new Set(sample);
+	const intersection = Array.from(sampleSet).filter((value) =>
+		baseline.has(value),
+	);
+	const union = new Set([...baseline, ...sampleSet]);
+	if (union.size === 0) return 1;
+	return intersection.length / union.size;
+}
 
 export const interpretTimelineEvents = action({
 	args: {
@@ -1293,7 +1444,7 @@ export const classifySourceContext = action({
 				? buildPathOverviewFromStructure(structureSummary)
 				: buildPathOverview(Array.from(entry.pathHints));
 
-			const promptPayload = JSON.stringify({
+			const promptInput = {
 				product: {
 					name: product.name,
 					productType: product.productBaseline?.productType ?? "",
@@ -1309,36 +1460,15 @@ export const classifySourceContext = action({
 					pathOverview,
 					structureSummary,
 				},
-			});
-			const tid = await createThread(ctx, agentComponent);
-			const start = Date.now();
-
-			const agentCtx = {
-				...ctx,
+			};
+			const promptPayload = JSON.stringify(promptInput);
+			const parsed = await classifySurface({
+				ctx,
 				organizationId,
 				productId,
 				userId,
-				aiPrompt: promptPayload,
-				aiStartMs: start,
-			};
-
-			const result = await sourceContextAgent.generateText(
-				agentCtx,
-				{ threadId: tid },
-				{ prompt: promptPayload },
-			);
-
-			const parsed = parseJsonSafely(result.text) as {
-				classification?:
-					| "product_core"
-					| "marketing_surface"
-					| "infra"
-					| "docs"
-					| "experiments"
-					| "mixed"
-					| "unknown";
-				notes?: string;
-			};
+				input: promptInput,
+			});
 			if (!parsed?.classification) continue;
 
 			const derivedClassification = deriveClassificationFromStructure(
@@ -1352,6 +1482,7 @@ export const classifySourceContext = action({
 				sourceId,
 				classification: resolvedClassification,
 				notes: parsed.notes,
+				surfaceBuckets: parsed.surfaceBuckets,
 				structure: structureSummary
 					? { summary: structureSummary, updatedAt: now, source: "github_tree" }
 					: existing?.structure,
@@ -1362,6 +1493,495 @@ export const classifySourceContext = action({
 		return { classified };
 	},
 });
+
+export const regenerateSurfaceSignals = action({
+	args: {
+		productId: v.id("products"),
+		agentRunId: v.optional(v.id("agentRuns")),
+	},
+	handler: async (
+		ctx,
+		{ productId, agentRunId },
+	): Promise<{
+		runId?: Id<"agentRuns">;
+		sources: number;
+	}> => {
+		const { organizationId, userId } = await ctx.runQuery(
+			internal.lib.access.assertProductAccessInternal,
+			{ productId },
+		);
+
+		let runId = agentRunId;
+		const runSteps: Array<{
+			step: string;
+			status: "info" | "success" | "warn" | "error";
+			timestamp: number;
+			metadata?: Record<string, unknown>;
+		}> = [];
+		if (!runId) {
+			try {
+				const created = await ctx.runMutation(api.agents.agentRuns.createAgentRun, {
+					productId,
+					useCase: SURFACE_SIGNAL_USE_CASE,
+					agentName: SURFACE_SIGNAL_AGENT_NAME,
+				});
+				runId = created.runId;
+			} catch {
+				runId = undefined;
+			}
+		}
+
+		const recordStep = async (
+			step: string,
+			status: "info" | "success" | "warn" | "error",
+			metadata?: Record<string, unknown>,
+		) => {
+			const entry = { step, status, timestamp: Date.now(), metadata };
+			runSteps.push(entry);
+			if (!runId) return;
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId,
+				step,
+				status,
+				timestamp: entry.timestamp,
+				metadata,
+			});
+		};
+
+		await recordStep("Collecting sources", "info");
+
+		const existingContexts = await ctx.runQuery(
+			internal.agents.sourceContextData.listSourceContexts,
+			{ productId },
+		);
+		const existingByKey = new Map(
+			existingContexts.map((item) => [`${item.sourceType}:${item.sourceId}`, item]),
+		);
+		const repoSamples = new Map<
+			string,
+			{
+				sourceType: string;
+				sourceLabel: string;
+				summaries: Array<string>;
+				pathHints: Set<string>;
+				connectionId?: Id<"connections">;
+			}
+		>();
+
+		const repoMetadata = await ctx.runQuery(
+			internal.agents.productContextData.getRepositoryMetadata,
+			{ productId },
+		);
+		await recordStep(
+			`github: found ${repoMetadata.length} active connections`,
+			"info",
+		);
+
+		for (const metadata of repoMetadata) {
+			const { connectionId } = metadata;
+			try {
+				await recordStep(`github: resolving token for ${connectionId}`, "info");
+				const tokenResult = await ctx.runAction(
+					internal.connectors.github.getInstallationTokenForConnection,
+					{ productId, connectionId },
+				);
+				const repositories = await fetchInstallationRepositories(
+					tokenResult.token,
+				);
+				await recordStep(
+					`github: connection ${connectionId} has ${repositories.length} repos`,
+					"info",
+				);
+
+				for (const repo of repositories) {
+					if (repoSamples.has(repo.fullName)) continue;
+					repoSamples.set(repo.fullName, {
+						sourceType: "github",
+						sourceLabel: repo.fullName,
+						summaries: [],
+						pathHints: new Set<string>(),
+						connectionId,
+					});
+				}
+			} catch (error) {
+				await recordStep(
+					`github: connection ${connectionId} error ${
+						error instanceof Error ? error.message : "unknown error"
+					}`,
+					"warn",
+				);
+			}
+		}
+
+		const sourceInputs: Array<{
+			sourceType: string;
+			sourceId: string;
+			sourceLabel: string;
+			structureSummary: unknown;
+			pathOverview: unknown;
+			samples: string[];
+		}> = [];
+
+		for (const [sourceId, entry] of repoSamples.entries()) {
+			await recordStep(`Fetching structure for ${sourceId}`, "info");
+			let structureSummary: unknown = null;
+			if (entry.connectionId) {
+				try {
+					structureSummary = await ctx.runAction(
+						internal.connectors.github.fetchRepoStructureSummary,
+						{
+							productId,
+							connectionId: entry.connectionId,
+							repoFullName: sourceId,
+						},
+					);
+				} catch {
+					structureSummary = null;
+				}
+			}
+			const pathOverview = structureSummary
+				? buildPathOverviewFromStructure(structureSummary)
+				: buildPathOverview(Array.from(entry.pathHints));
+
+			sourceInputs.push({
+				sourceType: entry.sourceType,
+				sourceId,
+				sourceLabel: entry.sourceLabel,
+				structureSummary,
+				pathOverview,
+				samples: entry.summaries,
+			});
+		}
+
+		sourceInputs.sort((a, b) => a.sourceId.localeCompare(b.sourceId));
+
+		if (sourceInputs.length === 0) {
+			await recordStep("No sources available", "warn");
+			await ctx.runMutation(
+				internal.agents.surfaceSignalsData.insertSurfaceSignalRun,
+				{
+					productId,
+					createdBy: userId,
+					createdAt: Date.now(),
+					agentRunId: runId,
+					rawOutput: JSON.stringify({ sources: [] }, null, 2),
+					steps: runSteps,
+					sources: [],
+				},
+			);
+			await recordStep("Surface mapping completed", "success");
+			if (runId) {
+				await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+					productId,
+					runId,
+					status: "success",
+				});
+			}
+			return { runId, sources: 0 };
+		}
+
+		await recordStep("Mapping surfaces (repo structure)", "info");
+		const mapping = buildDeterministicSurfaceSignals(sourceInputs);
+
+		if (!mapping) {
+			await recordStep("Surface mapping failed", "error");
+			if (runId) {
+				await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+					productId,
+					runId,
+					status: "error",
+					errorMessage: "Surface mapping failed",
+				});
+			}
+			return { runId, sources: 0 };
+		}
+
+		await recordStep("Persisting surface signals", "info");
+		for (const source of mapping.sources) {
+			const key = `${source.sourceType}:${source.sourceId}`;
+			const existing = existingByKey.get(key);
+			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
+				productId,
+				sourceType: source.sourceType,
+				sourceId: source.sourceId,
+				sourceLabel: source.sourceLabel,
+				classification: existing?.classification ?? "unknown",
+				surfaceSignals: source.surfaces,
+				notes: existing?.notes,
+				structure: existing?.structure,
+			});
+		}
+
+		await ctx.runMutation(internal.agents.surfaceSignalsData.insertSurfaceSignalRun, {
+			productId,
+			createdBy: userId,
+			createdAt: Date.now(),
+			agentRunId: runId,
+			rawOutput: JSON.stringify(mapping, null, 2),
+			steps: runSteps,
+			sources: mapping.sources,
+		});
+
+		await recordStep("Surface mapping completed", "success");
+		if (runId) {
+			await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+				productId,
+				runId,
+				status: "success",
+			});
+		}
+
+		return { runId, sources: mapping.sources.length };
+	},
+});
+
+type SurfaceSignalSurface =
+	| "management"
+	| "design"
+	| "product_front"
+	| "platform"
+	| "marketing"
+	| "admin"
+	| "docs";
+
+const SURFACE_SIGNAL_ORDER: SurfaceSignalSurface[] = [
+	"management",
+	"design",
+	"product_front",
+	"platform",
+	"marketing",
+	"admin",
+	"docs",
+];
+
+function buildDeterministicSurfaceSignals(
+	sources: Array<{
+		sourceType: string;
+		sourceId: string;
+		sourceLabel: string;
+		structureSummary: unknown;
+		pathOverview: unknown;
+		samples: string[];
+	}>,
+): SurfaceSignalResult {
+	return {
+		sources: sources.map((source) => {
+			const buckets = buildSurfaceBucketsFromStructure(source.structureSummary);
+			const surfaces =
+				buckets.length > 0
+					? buckets
+					: [
+							{
+								surface: "product_front" as const,
+								bucketId: "repo",
+							},
+						];
+			return {
+				sourceType: source.sourceType,
+				sourceId: source.sourceId,
+				sourceLabel: source.sourceLabel,
+				surfaces,
+			};
+		}),
+	};
+}
+
+function buildSurfaceBucketsFromStructure(
+	structureSummary: unknown,
+): Array<{ surface: SurfaceSignalSurface; bucketId: string; evidence?: string[] }> {
+	if (!structureSummary || typeof structureSummary !== "object") return [];
+	const summary = structureSummary as {
+		appPaths?: string[];
+		packagePaths?: string[];
+		docPaths?: string[];
+		routePaths?: string[];
+		componentPaths?: string[];
+		surfaceMap?: { buckets?: Array<{ samplePaths?: string[] }> };
+	};
+
+	const candidates = new Set<string>();
+	const addPaths = (paths?: string[]) => {
+		if (!Array.isArray(paths)) return;
+		for (const path of paths) {
+			if (typeof path === "string" && path.trim().length > 0) {
+				candidates.add(path);
+			}
+		}
+	};
+
+	addPaths(summary.appPaths);
+	addPaths(summary.packagePaths);
+	addPaths(summary.docPaths);
+	addPaths(summary.routePaths);
+	addPaths(summary.componentPaths);
+	if (summary.surfaceMap?.buckets) {
+		for (const bucket of summary.surfaceMap.buckets) {
+			addPaths(bucket.samplePaths);
+		}
+	}
+
+	const buckets = new Map<
+		SurfaceSignalSurface,
+		Map<string, Set<string>>
+	>();
+
+	for (const path of candidates) {
+		if (isIgnoredSurfacePath(path)) continue;
+		const surface = classifySignalSurfaceFromPath(path);
+		const bucketId = deriveBucketIdFromPath(path);
+		if (!surface || !bucketId) continue;
+		if (!buckets.has(surface)) {
+			buckets.set(surface, new Map());
+		}
+		const surfaceBuckets = buckets.get(surface)!;
+		if (!surfaceBuckets.has(bucketId)) {
+			surfaceBuckets.set(bucketId, new Set());
+		}
+		const evidence = surfaceBuckets.get(bucketId)!;
+		if (evidence.size < 3) {
+			evidence.add(path);
+		}
+	}
+
+	const results: Array<{
+		surface: SurfaceSignalSurface;
+		bucketId: string;
+		evidence?: string[];
+	}> = [];
+
+	for (const surface of SURFACE_SIGNAL_ORDER) {
+		const surfaceBuckets = buckets.get(surface);
+		if (!surfaceBuckets) continue;
+		const sortedBuckets = Array.from(surfaceBuckets.entries())
+			.sort(
+				(a, b) =>
+					b[1].size - a[1].size || a[0].localeCompare(b[0]),
+			)
+			.slice(0, 8);
+		for (const [bucketId, evidence] of sortedBuckets) {
+			results.push({
+				surface,
+				bucketId,
+				evidence: Array.from(evidence),
+			});
+		}
+	}
+
+	return results;
+}
+
+function classifySignalSurfaceFromPath(path: string): SurfaceSignalSurface | null {
+	const normalized = path.replace(/^\.\/+/, "").toLowerCase();
+	const segments = normalized.split("/").filter(Boolean);
+	const hasToken = (tokens: string[]) =>
+		segments.some((segment) => tokens.includes(segment));
+
+	const designTokens = ["design", "ux", "ui", "wireframes", "figma"];
+	const managementTokens = [
+		"roadmap",
+		"strategy",
+		"requirements",
+		"prd",
+		"spec",
+		"planning",
+	];
+	const marketingTokens = ["marketing", "website", "landing", "blog", "brand"];
+	const adminTokens = ["admin", "backoffice", "back-office", "console"];
+	const platformTokens = [
+		"platform",
+		"backend",
+		"server",
+		"api",
+		"core",
+		"services",
+		"infra",
+		"convex",
+	];
+	const docTokens = ["docs", "doc", "guides", "readme"];
+
+	if (hasToken(designTokens)) return "design";
+	if (hasToken(managementTokens)) return "management";
+	if (hasToken(marketingTokens)) return "marketing";
+	if (hasToken(adminTokens)) return "admin";
+	if (hasToken(platformTokens) || normalized.startsWith("packages/")) {
+		return "platform";
+	}
+	if (hasToken(docTokens) || normalized.endsWith(".md")) return "docs";
+	if (normalized.startsWith("apps/")) return "product_front";
+
+	return "product_front";
+}
+
+function isIgnoredSurfacePath(path: string): boolean {
+	const normalized = path.replace(/^\.\/+/, "");
+	if (!normalized) return true;
+	const parts = normalized.split("/").filter(Boolean);
+	const rootName = parts[0] ?? "";
+	const rootFilesToIgnore = new Set([
+		".gitignore",
+		".gitattributes",
+		".editorconfig",
+		".prettierrc",
+		".prettierrc.json",
+		".prettierrc.js",
+		".prettierrc.cjs",
+		".prettierrc.yaml",
+		".prettierrc.yml",
+		".eslintrc",
+		".eslintrc.json",
+		".eslintrc.js",
+		".eslintrc.cjs",
+		".eslintignore",
+		".stylelintrc",
+		".stylelintrc.json",
+		".stylelintrc.js",
+		"eslint.config.js",
+		"eslint.config.mjs",
+		"prettier.config.js",
+		"prettier.config.cjs",
+		"tsconfig.json",
+		"turbo.json",
+		"pnpm-lock.yaml",
+		"pnpm-workspace.yaml",
+		"package.json",
+	]);
+
+	if (parts.length === 1 && (rootName.startsWith(".") || rootFilesToIgnore.has(rootName))) {
+		return true;
+	}
+
+	if (rootName.startsWith(".") && parts.length <= 2) {
+		return true;
+	}
+
+	return false;
+}
+
+function deriveBucketIdFromPath(path: string): string | null {
+	const normalized = path.replace(/^\.\/+/, "");
+	const parts = normalized.split("/").filter(Boolean);
+	if (parts.length === 0) return null;
+
+	if ((parts[0] === "apps" || parts[0] === "packages") && parts[1]) {
+		if (parts[2] && (parts[2] === "doc" || parts[2] === "docs")) {
+			return `${parts[0]}/${parts[1]}/${parts[2]}`;
+		}
+		return `${parts[0]}/${parts[1]}`;
+	}
+
+	if (parts[0] === "docs" || parts[0] === "doc") {
+		return parts[0];
+	}
+
+	if (parts.length >= 2 && !parts[0].startsWith(".")) {
+		return `${parts[0]}/${parts[1]}`;
+	}
+
+	if (parts[0].startsWith(".")) return null;
+
+	return parts[0];
+}
 
 function buildSourceSummary(payload: unknown, sourceType: string): string {
 	const safe = toSafeString;
@@ -1415,7 +2035,6 @@ function deriveClassificationFromStructure(
 	| "infra"
 	| "docs"
 	| "experiments"
-	| "mixed"
 	| "unknown"
 	| null {
 	const summary = structureSummary as {
@@ -1429,21 +2048,46 @@ function deriveClassificationFromStructure(
 		.filter(Boolean);
 	const has = (name: string) => names.includes(name);
 
-	if (has("product_core")) {
-		const extra = names.filter(
-			(name) =>
-				name !== "product_core" && name !== "product_platform",
-		);
-		if (extra.length > 0) return "mixed";
-		return "product_core";
-	}
+	if (has("product_core")) return "product_core";
+	if (has("product_platform")) return "infra";
+	if (has("product_admin")) return "infra";
 	if (has("product_marketing")) return "marketing_surface";
 	if (has("product_docs")) return "docs";
-	if (has("product_platform")) return "infra";
-	if (has("product_admin")) return "mixed";
 	if (has("product_other")) return "unknown";
 
 	return null;
+}
+
+const SOURCE_CLASSIFICATIONS = new Set([
+	"product_core",
+	"marketing_surface",
+	"infra",
+	"docs",
+	"experiments",
+	"unknown",
+]);
+
+function normalizeSourceClassification(
+	value: unknown,
+):
+	| "product_core"
+	| "marketing_surface"
+	| "infra"
+	| "docs"
+	| "experiments"
+	| "unknown"
+	| null {
+	if (typeof value !== "string") return null;
+	if (value === "mixed") return "unknown";
+	return SOURCE_CLASSIFICATIONS.has(value)
+		? (value as
+				| "product_core"
+				| "marketing_surface"
+				| "infra"
+				| "docs"
+				| "experiments"
+				| "unknown")
+		: null;
 }
 
 function extractPathHints(payload: unknown): string[] {
@@ -1789,11 +2433,15 @@ async function refreshSourceContextsForProduct(
 				},
 			);
 			const derivedClassification = deriveClassificationFromStructure(summary);
+			const normalizedClassification = normalizeSourceClassification(
+				source.classification,
+			);
 			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
 				productId,
 				sourceType: source.sourceType,
 				sourceId: source.sourceId,
-				classification: derivedClassification ?? source.classification ?? "unknown",
+				classification:
+					derivedClassification ?? normalizedClassification ?? "unknown",
 				notes: source.notes,
 				structure: { summary, updatedAt: now, source: "github_tree" },
 			});
