@@ -74,6 +74,52 @@ type SurfaceSignalRun = {
 	}>;
 };
 
+type WorkCatalogItem = {
+	name: string;
+	displayName?: string;
+	signals: string[];
+	notes?: string;
+};
+
+type WorkCatalogRun = {
+	_id: Id<"workCatalogRuns">;
+	createdAt: number;
+	rawOutput?: string;
+	steps?: AgentRunStep[];
+	sources: Array<{
+		sourceType: string;
+		sourceId: string;
+		sourceLabel: string;
+		catalog: {
+			feature_surface: WorkCatalogItem[];
+			capabilities: WorkCatalogItem[];
+			work: WorkCatalogItem[];
+		};
+	}>;
+};
+
+type GlossaryTerm = {
+	term: string;
+	evidence: string[];
+	source: string;
+	surface?: SurfaceKey;
+};
+
+type GlossaryRun = {
+	_id: Id<"glossaryRuns">;
+	createdAt: number;
+	rawOutput?: string;
+	steps?: AgentRunStep[];
+	glossary: {
+		terms: GlossaryTerm[];
+	};
+	sources: Array<{
+		sourceType: string;
+		sourceId: string;
+		sourceLabel: string;
+	}>;
+};
+
 const SURFACE_KEYS: SurfaceKey[] = [
 	"management",
 	"design",
@@ -120,6 +166,23 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 		api.agents.surfaceSignals.getLatestSurfaceSignalRun,
 		{ productId: product._id },
 	) as SurfaceSignalRun | null | undefined;
+	const latestWorkCatalogRun = useQuery(
+		api.agents.workCatalog.getLatestWorkCatalogRun,
+		{ productId: product._id },
+	) as WorkCatalogRun | null | undefined;
+	const latestGlossaryRun = useQuery(api.agents.glossary.getLatestGlossaryRun, {
+		productId: product._id,
+	}) as GlossaryRun | null | undefined;
+	const glossaryHistory =
+		(useQuery(api.agents.glossary.listGlossaryRuns, {
+			productId: product._id,
+			limit: 20,
+		}) as GlossaryRun[] | undefined) ?? [];
+	const workCatalogHistory =
+		(useQuery(api.agents.workCatalog.listWorkCatalogRuns, {
+			productId: product._id,
+			limit: 20,
+		}) as WorkCatalogRun[] | undefined) ?? [];
 	const surfaceRunHistory =
 		(useQuery(api.agents.surfaceSignals.listSurfaceSignalRuns, {
 			productId: product._id,
@@ -150,6 +213,63 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 			return { surface, items };
 		});
 	}, [latestSurfaceRun]);
+
+	const workCatalogRows = useMemo(() => {
+		const categories: Array<{
+			key: "feature_surface" | "capabilities" | "work";
+			items: Array<{
+				name: string;
+				displayName?: string;
+				signals: string[];
+				sourceLabel: string;
+			}>;
+		}> = [
+			{ key: "feature_surface", items: [] },
+			{ key: "capabilities", items: [] },
+			{ key: "work", items: [] },
+		];
+
+		if (latestWorkCatalogRun?.sources) {
+			for (const source of latestWorkCatalogRun.sources) {
+				for (const item of source.catalog.feature_surface ?? []) {
+					categories[0].items.push({
+						name: item.name,
+						displayName: item.displayName,
+						signals: item.signals,
+						sourceLabel: source.sourceLabel,
+					});
+				}
+				for (const item of source.catalog.capabilities ?? []) {
+					categories[1].items.push({
+						name: item.name,
+						displayName: item.displayName,
+						signals: item.signals,
+						sourceLabel: source.sourceLabel,
+					});
+				}
+				for (const item of source.catalog.work ?? []) {
+					categories[2].items.push({
+						name: item.name,
+						displayName: item.displayName,
+						signals: item.signals,
+						sourceLabel: source.sourceLabel,
+					});
+				}
+			}
+		}
+
+		return categories.map((category) => ({
+			key: category.key,
+			items: category.items.sort((a, b) =>
+				(a.displayName ?? a.name).localeCompare(b.displayName ?? b.name),
+			),
+		}));
+	}, [latestWorkCatalogRun]);
+
+	const glossaryRows = useMemo(() => {
+		const terms = latestGlossaryRun?.glossary?.terms ?? [];
+		return terms.slice().sort((a, b) => a.term.localeCompare(b.term)).slice(0, 40);
+	}, [latestGlossaryRun]);
 
 	const agentStep =
 		activeRun?.steps?.length
@@ -279,6 +399,128 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 									))
 								)}
 							</div>
+							<div className="mt-6 border-t border-border pt-4">
+								<div className="text-fontSize-sm font-medium">
+									{t("context.glossaryHistoryTitle")}
+								</div>
+								<div className="mt-3 space-y-4">
+									{glossaryHistory.length === 0 ? (
+										<p className="text-fontSize-sm text-muted-foreground">
+											{t("context.glossaryHistoryEmpty")}
+										</p>
+									) : (
+										glossaryHistory.map((run) => (
+											<div
+												key={run._id}
+												className="rounded-md border border-border p-3"
+											>
+												<div className="text-fontSize-sm font-medium">
+													{new Date(run.createdAt).toLocaleString()}
+												</div>
+												<div className="text-fontSize-xs text-muted-foreground">
+													{t("context.glossaryHistorySources", {
+														count: run.sources.length,
+													})}
+												</div>
+												{run.steps?.length ? (
+													<div className="mt-3 space-y-2">
+														<div className="text-fontSize-xs font-medium text-muted-foreground">
+															{t("context.surfaceSignalsHistorySteps")}
+														</div>
+														<div className="space-y-1">
+															{run.steps.map((step, index) => (
+																<div
+																	key={`${run._id}-${index}`}
+																	className="flex items-center gap-2 text-fontSize-xs"
+																>
+																	<span className="text-muted-foreground">
+																		{new Date(step.timestamp).toLocaleTimeString()}
+																	</span>
+																	<span className="text-muted-foreground">
+																		·
+																	</span>
+																	<span>{step.step}</span>
+																</div>
+															))}
+														</div>
+													</div>
+												) : null}
+												{run.rawOutput ? (
+													<details className="mt-3 rounded-md border border-border px-3 py-2">
+														<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
+															{t("context.glossaryHistoryRaw")}
+														</summary>
+														<pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap text-fontSize-xs text-muted-foreground">
+															{run.rawOutput}
+														</pre>
+													</details>
+												) : null}
+											</div>
+										))
+									)}
+								</div>
+							</div>
+							<div className="mt-6 border-t border-border pt-4">
+								<div className="text-fontSize-sm font-medium">
+									{t("context.workCatalogHistoryTitle")}
+								</div>
+								<div className="mt-3 space-y-4">
+									{workCatalogHistory.length === 0 ? (
+										<p className="text-fontSize-sm text-muted-foreground">
+											{t("context.workCatalogHistoryEmpty")}
+										</p>
+									) : (
+										workCatalogHistory.map((run) => (
+											<div
+												key={run._id}
+												className="rounded-md border border-border p-3"
+											>
+												<div className="text-fontSize-sm font-medium">
+													{new Date(run.createdAt).toLocaleString()}
+												</div>
+												<div className="text-fontSize-xs text-muted-foreground">
+													{t("context.workCatalogHistorySources", {
+														count: run.sources.length,
+													})}
+												</div>
+												{run.steps?.length ? (
+													<div className="mt-3 space-y-2">
+														<div className="text-fontSize-xs font-medium text-muted-foreground">
+															{t("context.surfaceSignalsHistorySteps")}
+														</div>
+														<div className="space-y-1">
+															{run.steps.map((step, index) => (
+																<div
+																	key={`${run._id}-${index}`}
+																	className="flex items-center gap-2 text-fontSize-xs"
+																>
+																	<span className="text-muted-foreground">
+																		{new Date(step.timestamp).toLocaleTimeString()}
+																	</span>
+																	<span className="text-muted-foreground">
+																		·
+																	</span>
+																	<span>{step.step}</span>
+																</div>
+															))}
+														</div>
+													</div>
+												) : null}
+												{run.rawOutput ? (
+													<details className="mt-3 rounded-md border border-border px-3 py-2">
+														<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
+															{t("context.workCatalogHistoryRaw")}
+														</summary>
+														<pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap text-fontSize-xs text-muted-foreground">
+															{run.rawOutput}
+														</pre>
+													</details>
+												) : null}
+											</div>
+										))
+									)}
+								</div>
+							</div>
 						</SheetContent>
 					</Sheet>
 					<Button
@@ -315,6 +557,8 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 					</div>
 				)}
 				<SurfaceSignalsTable rows={surfaceRows} />
+				<GlossaryTable rows={glossaryRows} latestRun={latestGlossaryRun} />
+				<WorkCatalogTable rows={workCatalogRows} />
 			</CardContent>
 		</Card>
 	);
@@ -361,6 +605,163 @@ function SurfaceSignalsTable({
 						</div>
 					</div>
 				))}
+			</div>
+		</div>
+	);
+}
+
+function WorkCatalogTable({
+	rows,
+}: {
+	rows: Array<{
+		key: "feature_surface" | "capabilities" | "work";
+		items: Array<{
+			name: string;
+			displayName?: string;
+			signals: string[];
+			sourceLabel: string;
+		}>;
+	}>;
+}) {
+	const { t } = useTranslation("products");
+	return (
+		<div className="rounded-md border border-border">
+			<div className="border-b border-border px-4 py-3">
+				<div className="text-fontSize-sm font-medium">
+					{t("context.workCatalogTitle")}
+				</div>
+				<div className="text-fontSize-xs text-muted-foreground">
+					{t("context.workCatalogSubtitle")}
+				</div>
+			</div>
+			<div className="divide-y divide-border">
+				{rows.map((row) => (
+					<div key={row.key} className="grid grid-cols-[220px_1fr]">
+						<div className="px-4 py-3 text-fontSize-sm font-medium">
+							{t(`context.workCatalog.${row.key}`)}
+						</div>
+						<div className="px-4 py-3">
+							{row.items.length === 0 ? (
+								<span className="text-fontSize-sm text-muted-foreground">
+									{t("context.workCatalogEmpty")}
+								</span>
+							) : (
+								<div className="flex flex-wrap gap-2">
+									{row.items.map((item, index) => (
+										<TooltipProvider key={`${item.name}-${index}`}>
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<Badge variant="outline">
+														{item.displayName ?? item.name}
+													</Badge>
+												</TooltipTrigger>
+												<TooltipContent side="bottom" sideOffset={8}>
+													<div className="text-fontSize-xs">
+														{item.sourceLabel}
+													</div>
+													{item.displayName ? (
+														<div className="text-fontSize-xs text-muted-foreground">
+															{item.name}
+														</div>
+													) : null}
+													<div className="text-fontSize-xs text-muted-foreground">
+														{t("context.workCatalogSignalsCount", {
+															count: item.signals.length,
+														})}
+													</div>
+													{item.signals.length > 0 ? (
+														<div className="mt-2 space-y-1 text-fontSize-xs text-muted-foreground">
+															{item.signals.slice(0, 3).map((signal) => (
+																<div key={signal}>{signal}</div>
+															))}
+														</div>
+													) : null}
+												</TooltipContent>
+											</Tooltip>
+										</TooltipProvider>
+									))}
+								</div>
+							)}
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
+function GlossaryTable({
+	rows,
+	latestRun,
+}: {
+	rows: GlossaryTerm[];
+	latestRun?: GlossaryRun | null;
+}) {
+	const { t } = useTranslation("products");
+	return (
+		<div className="rounded-md border border-border">
+			<div className="border-b border-border px-4 py-3">
+				<div className="text-fontSize-sm font-medium">
+					{t("context.glossaryTitle")}
+				</div>
+				<div className="text-fontSize-xs text-muted-foreground">
+					{t("context.glossarySubtitle")}
+				</div>
+			</div>
+			{latestRun?.rawOutput ? (
+				<div className="border-b border-border px-4 py-3">
+					<details className="rounded-md border border-border px-3 py-2">
+						<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
+							{t("context.glossaryHistoryRaw")}
+						</summary>
+						<pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap text-fontSize-xs text-muted-foreground">
+							{latestRun.rawOutput}
+						</pre>
+					</details>
+				</div>
+			) : null}
+			<div className="divide-y divide-border">
+				{rows.length === 0 ? (
+					<div className="px-4 py-3 text-fontSize-sm text-muted-foreground">
+						{t("context.glossaryEmpty")}
+					</div>
+				) : (
+					rows.map((row) => (
+						<div key={`${row.term}-${row.source}`} className="grid grid-cols-[220px_1fr]">
+							<div className="px-4 py-3 text-fontSize-sm font-medium">
+								{row.term}
+							</div>
+							<div className="px-4 py-3">
+								<div className="flex flex-wrap gap-2">
+									<Badge variant="outline">{row.source}</Badge>
+									{row.surface ? (
+										<Badge variant="outline">
+											{t(`context.surfaceSignals.${row.surface}`)}
+										</Badge>
+									) : null}
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Badge variant="outline">
+													{t("context.glossaryEvidenceCount", {
+														count: row.evidence.length,
+													})}
+												</Badge>
+											</TooltipTrigger>
+											<TooltipContent side="bottom" sideOffset={8}>
+												<div className="space-y-1 text-fontSize-xs text-muted-foreground">
+													{row.evidence.slice(0, 3).map((item) => (
+														<div key={item}>{item}</div>
+													))}
+												</div>
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								</div>
+							</div>
+						</div>
+					))
+				)}
 			</div>
 		</div>
 	);
