@@ -7,7 +7,7 @@ export const insertSurfaceSignalRun = internalMutation({
 		createdBy: v.id("users"),
 		agentRunId: v.optional(v.id("agentRuns")),
 		createdAt: v.number(),
-		rawOutput: v.optional(v.string()),
+		rawOutputFileId: v.optional(v.id("_storage")),
 		steps: v.optional(
 			v.array(
 				v.object({
@@ -48,7 +48,7 @@ export const insertSurfaceSignalRun = internalMutation({
 	},
 	handler: async (
 		ctx,
-		{ productId, createdBy, createdAt, sources, agentRunId, rawOutput, steps },
+		{ productId, createdBy, createdAt, sources, agentRunId, rawOutputFileId, steps },
 	) => {
 		const id = await ctx.db.insert("surfaceSignalRuns", {
 			productId,
@@ -56,7 +56,7 @@ export const insertSurfaceSignalRun = internalMutation({
 			createdAt,
 			sources,
 			agentRunId,
-			rawOutput,
+			rawOutputFileId,
 			steps,
 		});
 		return { id };

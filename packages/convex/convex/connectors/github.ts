@@ -317,6 +317,7 @@ export const fetchRepoStructureSummary = internalAction({
 		);
 
 		return {
+			defaultBranch,
 			...summary,
 			fileSamples: samples.fileSamples,
 			uiTextSamples: samples.uiTextSamples,
@@ -697,6 +698,7 @@ async function fetchInstallationRepositories(token: string): Promise<GithubRepo[
 }
 
 type RepoStructureSummary = {
+	defaultBranch?: string;
 	topLevel: Record<string, number>;
 	appPaths: string[];
 	packagePaths: string[];
@@ -962,6 +964,13 @@ async function fetchRepoFileSamples(
 	const docCandidates = selectPathsByPattern(entries, [
 		/(^|\/)(docs|doc|guides)(\/|$).+\.md$/i,
 	]);
+	const schemaCandidates = selectPathsByPattern(entries, [
+		/(^|\/)convex\/schema\.ts$/i,
+		/(^|\/)schema\.prisma$/i,
+		/(^|\/)drizzle\/.*schema\.(ts|tsx)$/i,
+		/(^|\/)db\/schema\.(ts|tsx)$/i,
+		/(^|\/)supabase\/.+\.sql$/i,
+	]);
 
 	for (const appPath of summary.appPaths) {
 		candidatePaths.add(`${appPath}/package.json`);
@@ -972,6 +981,8 @@ async function fetchRepoFileSamples(
 	if (summary.hasConvex) {
 		candidatePaths.add("packages/convex/package.json");
 		candidatePaths.add("packages/convex/convex.config.ts");
+		candidatePaths.add("packages/convex/convex/schema.ts");
+		candidatePaths.add("convex/schema.ts");
 	}
 
 	const availablePaths = Array.from(candidatePaths).filter((path) =>
@@ -1003,6 +1014,12 @@ async function fetchRepoFileSamples(
 		const content = await fetchRepoFileContent(token, repoFullName, path);
 		if (!content) continue;
 		docSamples.push({ path, excerpt: content });
+	}
+	for (const path of schemaCandidates.slice(0, 6)) {
+		if (!entrySet.has(path)) continue;
+		const content = await fetchRepoFileContent(token, repoFullName, path);
+		if (!content) continue;
+		results.push({ path, excerpt: content });
 	}
 
 	return {

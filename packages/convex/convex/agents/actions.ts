@@ -17,8 +17,13 @@ import { classifySurface } from "./taxonomy/surface_classifier";
 import { extractFeatures } from "./taxonomy/feature_extractor";
 import { buildProductTaxonomy } from "./taxonomy/orchestrator";
 import type { SurfaceSignalResult } from "./surface_signal_mapper";
-import { nameWorkCatalogItems } from "./workCatalogNamer";
-import { curateGlossary } from "./glossaryCurator";
+import {
+	buildProductContextInputs,
+	getBusinessDataModel,
+	getRepoFolderTopology,
+	getUiSitemap,
+	getUserFlows,
+} from "./contextTools";
 import { detectStackFromPackageJson } from "./stackDetector";
 import { validateAndEnrichContext } from "./contextValidator";
 
@@ -1664,6 +1669,28 @@ export const regenerateSurfaceSignals = action({
 
 		if (sourceInputs.length === 0) {
 			await recordStep("No sources available", "warn");
+			const generatedAt = new Date().toISOString();
+			const emptySources: Array<{
+				sourceType: string;
+				sourceId: string;
+				sourceLabel: string;
+				structureSummary: unknown;
+				surfaceSignals: [];
+			}> = [];
+			const outputs = buildProductContextInputs(
+				productId,
+				emptySources,
+				generatedAt,
+			);
+			const { uiSitemap, userFlows, businessDataModel, repoFolderTopology } =
+				outputs;
+			const emptySurfaceRawFileId = await storeRawOutput(ctx, { sources: [] });
+			const contextInputsRawFileId = await storeRawOutput(ctx, {
+				uiSitemap,
+				userFlows,
+				businessDataModel,
+				repoFolderTopology,
+			});
 			await ctx.runMutation(
 				internal.agents.surfaceSignalsData.insertSurfaceSignalRun,
 				{
@@ -1671,36 +1698,24 @@ export const regenerateSurfaceSignals = action({
 					createdBy: userId,
 					createdAt: Date.now(),
 					agentRunId: runId,
-					rawOutput: JSON.stringify({ sources: [] }, null, 2),
+					rawOutputFileId: emptySurfaceRawFileId,
 					steps: runSteps,
 					sources: [],
 				},
 			);
-			await ctx.runMutation(internal.agents.glossaryData.insertGlossaryRun, {
+			await ctx.runMutation(internal.agents.contextInputsData.insertContextInputRun, {
 				productId,
 				createdBy: userId,
 				createdAt: Date.now(),
 				agentRunId: runId,
-				rawOutput: JSON.stringify(
-					{
-						input: { product: { name: product.name }, signals: [] },
-						output: { terms: [] },
-					},
-					null,
-					2,
-				),
+				rawOutputFileId: contextInputsRawFileId,
 				steps: runSteps,
-				sources: [],
-				glossary: { terms: [] },
-			});
-			await ctx.runMutation(internal.agents.workCatalogData.insertWorkCatalogRun, {
-				productId,
-				createdBy: userId,
-				createdAt: Date.now(),
-				agentRunId: runId,
-				rawOutput: JSON.stringify({ sources: [] }, null, 2),
-				steps: runSteps,
-				sources: [],
+				summary: summarizeContextInputs({
+					uiSitemap,
+					userFlows,
+					businessDataModel,
+					repoFolderTopology,
+				}),
 			});
 			await recordStep("Surface mapping completed", "success");
 			if (runId) {
@@ -1745,102 +1760,49 @@ export const regenerateSurfaceSignals = action({
 			});
 		}
 
-		await recordStep("Building product glossary signals", "info");
-		const glossarySignals = buildGlossarySignals(
-			sourceInputs,
-			mapping,
-			{
-				name: product.name,
-				valueProposition: product.productBaseline?.valueProposition ?? "",
-				problemSolved: product.productBaseline?.problemSolved ?? "",
-				productVision: product.productBaseline?.productVision ?? "",
-			},
-		);
-		const glossaryCandidates = buildGlossaryCandidates(glossarySignals);
-		let glossary = buildGlossaryFromCandidates(glossarySignals, glossaryCandidates);
-		await recordStep("Curating glossary terms", "info");
-		try {
-			const curated = await curateGlossary({
-				ctx,
-				organizationId,
-				productId,
-				userId,
-				input: {
-					product: {
-						name: product.name,
-						valueProposition: product.productBaseline?.valueProposition ?? "",
-					},
-					candidates: glossaryCandidates,
-				},
-			});
-			if (curated) {
-				glossary = {
-					sources: glossarySignals.sources,
-					glossary: curated,
-				};
-			}
-		} catch {
-			// Fallback to deterministic glossary.
-		}
-		await ctx.runMutation(internal.agents.glossaryData.insertGlossaryRun, {
-			productId,
-			createdBy: userId,
-			createdAt: Date.now(),
-			agentRunId: runId,
-			rawOutput: JSON.stringify(
-				{
-					input: {
-						product: {
-							name: product.name,
-							valueProposition: product.productBaseline?.valueProposition ?? "",
-						},
-						signals: glossarySignals.signals,
-						candidates: glossaryCandidates,
-					},
-					output: glossary.glossary,
-				},
-				null,
-				2,
-			),
-			steps: runSteps,
-			sources: glossary.sources,
-			glossary: glossary.glossary,
+		await recordStep("Building UI sitemap", "info");
+		const toolSources = sourceInputs.map((source) => ({
+			...source,
+			surfaceSignals:
+				mapping.sources.find(
+					(item) =>
+						item.sourceType === source.sourceType && item.sourceId === source.sourceId,
+				)?.surfaces ?? [],
+		}));
+		const uiSitemap = getUiSitemap(productId, toolSources);
+
+		await recordStep("Building user flows", "info");
+		const userFlows = getUserFlows(productId, uiSitemap, toolSources);
+
+		await recordStep("Building business data model", "info");
+		const businessDataModel = getBusinessDataModel(productId, toolSources);
+
+		await recordStep("Building repo topology", "info");
+		const repoFolderTopology = getRepoFolderTopology(productId, toolSources);
+
+		const contextInputsRawFileId = await storeRawOutput(ctx, {
+			uiSitemap,
+			userFlows,
+			businessDataModel,
+			repoFolderTopology,
+		});
+		const surfaceSignalsRawFileId = await storeRawOutput(ctx, {
+			surfaces: mapping,
 		});
 
-		await recordStep("Cataloging development work", "info");
-		const workCatalog = buildDevelopmentWorkCatalog(sourceInputs, mapping);
-		let namedWorkCatalog = applyGlossaryToCatalog(workCatalog, glossary.glossary);
-		await recordStep("Naming catalog items", "info");
-		try {
-			const namedResult = await nameWorkCatalogItems({
-				ctx,
-				organizationId,
-				productId,
-				userId,
-				input: {
-					product: {
-						name: product.name,
-						valueProposition: product.productBaseline?.valueProposition ?? "",
-					},
-					glossary: glossary.glossary,
-					sources: workCatalog.sources,
-				},
-			});
-			if (namedResult) {
-				namedWorkCatalog = namedResult;
-			}
-		} catch {
-			// Fallback to deterministic catalog.
-		}
-
-		await ctx.runMutation(internal.agents.workCatalogData.insertWorkCatalogRun, {
+		await ctx.runMutation(internal.agents.contextInputsData.insertContextInputRun, {
 			productId,
 			createdBy: userId,
 			createdAt: Date.now(),
 			agentRunId: runId,
-			rawOutput: JSON.stringify(namedWorkCatalog, null, 2),
+			rawOutputFileId: contextInputsRawFileId,
 			steps: runSteps,
-			sources: namedWorkCatalog.sources,
+			summary: summarizeContextInputs({
+				uiSitemap,
+				userFlows,
+				businessDataModel,
+				repoFolderTopology,
+			}),
 		});
 
 		await ctx.runMutation(internal.agents.surfaceSignalsData.insertSurfaceSignalRun, {
@@ -1848,28 +1810,12 @@ export const regenerateSurfaceSignals = action({
 			createdBy: userId,
 			createdAt: Date.now(),
 			agentRunId: runId,
-			rawOutput: JSON.stringify(
-				{
-					surfaces: mapping,
-					glossary: {
-						input: {
-							product: {
-								name: product.name,
-								valueProposition: product.productBaseline?.valueProposition ?? "",
-							},
-							signals: glossarySignals.signals,
-						},
-						output: glossary.glossary,
-					},
-				},
-				null,
-				2,
-			),
+			rawOutputFileId: surfaceSignalsRawFileId,
 			steps: runSteps,
 			sources: mapping.sources,
 		});
 
-		await recordStep("Context cataloging completed", "success");
+		await recordStep("Context inputs completed", "success");
 		if (runId) {
 			await ctx.runMutation(internal.agents.agentRuns.finishRun, {
 				productId,
@@ -1910,7 +1856,7 @@ function buildDeterministicSurfaceSignals(
 		pathOverview: unknown;
 		samples: string[];
 	}>,
-): SurfaceSignalResult {
+	): SurfaceSignalResult {
 	return {
 		sources: sources.map((source) => {
 			const buckets = buildSurfaceBucketsFromStructure(source.structureSummary);
@@ -1931,6 +1877,27 @@ function buildDeterministicSurfaceSignals(
 			};
 		}),
 	};
+}
+
+function summarizeContextInputs(inputs: {
+	uiSitemap: { items?: unknown[] };
+	userFlows: { flows?: unknown[] };
+	businessDataModel: { entities?: unknown[]; relationships?: unknown[] };
+	repoFolderTopology: { repos?: unknown[] };
+}) {
+	return {
+		uiSitemapCount: inputs.uiSitemap.items?.length ?? 0,
+		userFlowsCount: inputs.userFlows.flows?.length ?? 0,
+		businessEntityCount: inputs.businessDataModel.entities?.length ?? 0,
+		businessRelationshipCount: inputs.businessDataModel.relationships?.length ?? 0,
+		repoCount: inputs.repoFolderTopology.repos?.length ?? 0,
+	};
+}
+
+async function storeRawOutput(ctx: ActionCtx, payload: unknown): Promise<Id<"_storage">> {
+	const raw = JSON.stringify(payload, null, 2);
+	const blob = new Blob([raw], { type: "application/json" });
+	return ctx.storage.store(blob);
 }
 
 function buildSurfaceBucketsFromStructure(
@@ -2128,1003 +2095,6 @@ function deriveBucketIdFromPath(path: string): string | null {
 
 	return parts[0];
 }
-
-type WorkCatalogCategory = "feature_surface" | "capabilities" | "work";
-
-type WorkCatalogItem = {
-	name: string;
-	signals: string[];
-	notes?: string;
-};
-
-type WorkCatalog = {
-	feature_surface: WorkCatalogItem[];
-	capabilities: WorkCatalogItem[];
-	work: WorkCatalogItem[];
-};
-
-type WorkCatalogSource = {
-	sourceType: string;
-	sourceId: string;
-	sourceLabel: string;
-	catalog: WorkCatalog;
-};
-
-type WorkCatalogResult = {
-	sources: WorkCatalogSource[];
-};
-
-function buildDevelopmentWorkCatalog(
-	sources: Array<{
-		sourceType: string;
-		sourceId: string;
-		sourceLabel: string;
-		structureSummary: unknown;
-		pathOverview: unknown;
-		samples: string[];
-	}>,
-	mapping: SurfaceSignalResult,
-): WorkCatalogResult {
-	const eligibleSources = new Set(
-		mapping.sources
-			.filter((source) =>
-				source.surfaces.some(
-					(surface) =>
-						surface.surface === "product_front" ||
-						surface.surface === "platform",
-				),
-			)
-			.map((source) => `${source.sourceType}:${source.sourceId}`),
-	);
-
-	return {
-		sources: sources
-			.filter((source) =>
-				eligibleSources.has(`${source.sourceType}:${source.sourceId}`),
-			)
-			.map((source) => ({
-				sourceType: source.sourceType,
-				sourceId: source.sourceId,
-				sourceLabel: source.sourceLabel,
-				catalog: buildWorkCatalogFromStructure(source.structureSummary),
-			})),
-	};
-}
-
-function buildWorkCatalogFromStructure(structureSummary: unknown): WorkCatalog {
-	const candidates = collectStructurePaths(structureSummary).filter((path) =>
-		isProductDevelopmentPath(path),
-	);
-	const buckets: Record<WorkCatalogCategory, Map<string, Set<string>>> = {
-		feature_surface: new Map(),
-		capabilities: new Map(),
-		work: new Map(),
-	};
-
-	for (const path of candidates) {
-		const rule = matchWorkCatalogRule(path);
-		if (!rule) continue;
-		const categoryBuckets = buckets[rule.category];
-		if (!categoryBuckets.has(rule.name)) {
-			categoryBuckets.set(rule.name, new Set());
-		}
-		const signals = categoryBuckets.get(rule.name)!;
-		if (signals.size < 8) {
-			signals.add(path);
-		}
-	}
-
-	return {
-		feature_surface: buildCatalogItems(
-			buckets.feature_surface,
-			WORK_CATALOG_RULES.feature_surface,
-		),
-		capabilities: buildCatalogItems(
-			buckets.capabilities,
-			WORK_CATALOG_RULES.capabilities,
-		),
-		work: buildCatalogItems(buckets.work, WORK_CATALOG_RULES.work),
-	};
-}
-
-function collectStructurePaths(structureSummary: unknown): string[] {
-	if (!structureSummary || typeof structureSummary !== "object") return [];
-	const summary = structureSummary as {
-		appPaths?: string[];
-		packagePaths?: string[];
-		docPaths?: string[];
-		routePaths?: string[];
-		componentPaths?: string[];
-		flowHints?: Array<{ path?: string }>;
-		surfaceMap?: { buckets?: Array<{ samplePaths?: string[] }> };
-		fileSamples?: Array<{ path?: string }>;
-		uiTextSamples?: Array<{ path?: string }>;
-		docSamples?: Array<{ path?: string }>;
-	};
-
-	const paths = new Set<string>();
-	const addPaths = (items?: Array<{ path?: string }> | string[]) => {
-		if (!items) return;
-		for (const item of items) {
-			if (typeof item === "string") {
-				if (item.trim().length > 0) paths.add(item);
-			} else if (item?.path && item.path.trim().length > 0) {
-				paths.add(item.path);
-			}
-		}
-	};
-
-	addPaths(summary.appPaths);
-	addPaths(summary.packagePaths);
-	addPaths(summary.docPaths);
-	addPaths(summary.routePaths);
-	addPaths(summary.componentPaths);
-	addPaths(summary.flowHints);
-	addPaths(summary.fileSamples);
-	addPaths(summary.uiTextSamples);
-	addPaths(summary.docSamples);
-
-	if (summary.surfaceMap?.buckets) {
-		for (const bucket of summary.surfaceMap.buckets) {
-			addPaths(bucket.samplePaths);
-		}
-	}
-
-	return Array.from(paths);
-}
-
-type WorkCatalogRule = {
-	name: string;
-	category: WorkCatalogCategory;
-	tokens: string[];
-	requireUi?: boolean;
-	requireBackend?: boolean;
-	notes?: string;
-};
-
-type GlossaryTerm = {
-	term: string;
-	evidence: string[];
-	source: string;
-	surface?: SurfaceSignalSurface;
-};
-
-type GlossaryResult = {
-	sources: Array<{ sourceType: string; sourceId: string; sourceLabel: string }>;
-	glossary: { terms: GlossaryTerm[] };
-};
-
-type GlossaryPayload = { terms: GlossaryTerm[] };
-
-type GlossarySignal = {
-	id: string;
-	text: string;
-	source: string;
-	surface?: SurfaceSignalSurface;
-};
-
-type GlossarySignals = {
-	sources: Array<{ sourceType: string; sourceId: string; sourceLabel: string }>;
-	signals: GlossarySignal[];
-};
-
-type GlossaryCandidate = {
-	id: string;
-	term: string;
-	score: number;
-	evidenceIds: string[];
-	evidenceTexts: string[];
-	sources: string[];
-	surfaces: SurfaceSignalSurface[];
-};
-
-const WORK_CATALOG_RULES: Record<WorkCatalogCategory, WorkCatalogRule[]> = {
-	feature_surface: [
-		{
-			name: "Authentication UI",
-			category: "feature_surface",
-			tokens: ["login", "signin", "signup", "auth", "password", "otp", "verify"],
-			requireUi: true,
-		},
-		{
-			name: "Baseline input form",
-			category: "feature_surface",
-			tokens: ["baseline", "context", "snapshot", "taxonomy"],
-			requireUi: true,
-		},
-		{
-			name: "Settings & preferences",
-			category: "feature_surface",
-			tokens: ["settings", "preferences", "profile", "account", "team", "org", "organization", "workspace"],
-			requireUi: true,
-		},
-		{
-			name: "Timeline & activity",
-			category: "feature_surface",
-			tokens: ["timeline", "activity", "events", "feed", "stream"],
-			requireUi: true,
-		},
-		{
-			name: "Sources & connectors UI",
-			category: "feature_surface",
-			tokens: ["source", "sources", "connector", "connectors", "integration"],
-			requireUi: true,
-		},
-		{
-			name: "Admin console UI",
-			category: "feature_surface",
-			tokens: ["admin", "console", "backoffice"],
-			requireUi: true,
-		},
-		{
-			name: "Dashboard & overview",
-			category: "feature_surface",
-			tokens: ["dashboard", "overview", "home"],
-			requireUi: true,
-		},
-	],
-	capabilities: [
-		{
-			name: "OAuth authentication",
-			category: "capabilities",
-			tokens: ["oauth", "oidc", "sso", "auth", "session", "jwt", "token"],
-			requireBackend: true,
-		},
-		{
-			name: "Connectors & integrations",
-			category: "capabilities",
-			tokens: ["connector", "connectors", "integration", "webhook", "github", "slack", "notion", "linear", "figma", "airtable"],
-			requireBackend: true,
-		},
-		{
-			name: "Agents runtime",
-			category: "capabilities",
-			tokens: ["agent", "agents", "ai", "llm", "prompt", "inference", "model"],
-			requireBackend: true,
-		},
-		{
-			name: "Data storage & schema",
-			category: "capabilities",
-			tokens: ["db", "database", "schema", "migrations", "storage", "persist"],
-			requireBackend: true,
-		},
-		{
-			name: "API layer",
-			category: "capabilities",
-			tokens: ["api", "apis", "endpoint", "router", "handler", "controller", "rpc", "function", "functions"],
-			requireBackend: true,
-		},
-		{
-			name: "Analytics & telemetry",
-			category: "capabilities",
-			tokens: ["analytics", "telemetry", "metrics", "tracking", "event"],
-			requireBackend: true,
-		},
-		{
-			name: "Background jobs & sync",
-			category: "capabilities",
-			tokens: ["job", "jobs", "queue", "worker", "cron", "scheduler", "sync"],
-			requireBackend: true,
-		},
-		{
-			name: "Permissions & access control",
-			category: "capabilities",
-			tokens: ["access", "permission", "permissions", "role", "roles", "policy", "rbac"],
-			requireBackend: true,
-		},
-		{
-			name: "Billing & subscriptions",
-			category: "capabilities",
-			tokens: ["billing", "invoice", "subscription", "stripe", "payment", "payments"],
-			requireBackend: true,
-		},
-	],
-	work: [
-		{
-			name: "Build & tooling",
-			category: "work",
-			tokens: ["build", "tooling", "config", "configs", "scripts", "tsconfig", "vite", "webpack", "rollup", "babel", "eslint", "prettier"],
-		},
-		{
-			name: "Testing & quality",
-			category: "work",
-			tokens: ["test", "tests", "spec", "specs", "lint", "quality", "coverage", "storybook", "vitest", "jest", "cypress", "playwright"],
-		},
-		{
-			name: "CI/CD & delivery",
-			category: "work",
-			tokens: ["ci", "cd", "pipeline", "pipelines", ".github", "github", "deploy", "docker", "k8s", "kubernetes", "terraform", "ansible", "nix"],
-		},
-		{
-			name: "Performance & reliability",
-			category: "work",
-			tokens: ["perf", "performance", "optimize", "monitoring", "observability", "logging", "tracing", "security", "audit"],
-		},
-	],
-};
-
-const UI_PATH_TOKENS = ["routes", "route", "pages", "page", "views", "view", "screens", "screen", "components", "component", "ui", "layouts", "layout"];
-const BACKEND_PATH_TOKENS = ["api", "server", "backend", "services", "service", "functions", "function", "convex", "lib", "domain", "core"];
-
-function matchWorkCatalogRule(path: string): WorkCatalogRule | null {
-	const normalized = path.replace(/^\.\/+/, "").toLowerCase();
-	const segments = normalized.split("/").filter(Boolean);
-	const hasToken = (tokens: string[]) =>
-		segments.some((segment) => tokens.includes(segment)) ||
-		tokens.some((token) => normalized.includes(token));
-
-	const isUiPath = hasToken(UI_PATH_TOKENS) || normalized.startsWith("apps/");
-	const isBackendPath = hasToken(BACKEND_PATH_TOKENS) || normalized.startsWith("packages/");
-
-	const rules = [
-		...WORK_CATALOG_RULES.feature_surface,
-		...WORK_CATALOG_RULES.capabilities,
-		...WORK_CATALOG_RULES.work,
-	];
-
-	for (const rule of rules) {
-		if (rule.requireUi && !isUiPath) continue;
-		if (rule.requireBackend && !isBackendPath) continue;
-		if (!hasToken(rule.tokens)) continue;
-		return rule;
-	}
-
-	return null;
-}
-
-function isProductDevelopmentPath(path: string): boolean {
-	const surface = classifySignalSurfaceFromPath(path);
-	if (surface === "product_marketing") return false;
-	if (surface === "product_docs") return false;
-	if (surface === "product_admin") return false;
-	return true;
-}
-
-function buildCatalogItems(
-	buckets: Map<string, Set<string>>,
-	rules: WorkCatalogRule[],
-): WorkCatalogItem[] {
-	const ruleByName = new Map(rules.map((rule) => [rule.name, rule]));
-	return Array.from(buckets.entries())
-		.sort((a, b) => b[1].size - a[1].size || a[0].localeCompare(b[0]))
-		.slice(0, 10)
-		.map(([name, signals]) => ({
-			name,
-			signals: Array.from(signals),
-			notes: ruleByName.get(name)?.notes,
-		}));
-}
-
-const GLOSSARY_STOPWORDS = new Set([
-	"index",
-	"layout",
-	"provider",
-	"providers",
-	"hook",
-	"hooks",
-	"utils",
-	"util",
-	"types",
-	"type",
-	"constants",
-	"common",
-	"shared",
-	"helpers",
-	"config",
-	"settings",
-	"routes",
-	"route",
-	"component",
-	"components",
-	"page",
-	"pages",
-	"view",
-	"views",
-	"screen",
-	"screens",
-	"locale",
-	"locales",
-	"subtitle",
-	"title",
-	"description",
-	"label",
-	"placeholder",
-	"continue",
-	"success",
-	"welcome",
-	"root",
-	"slug",
-	"productslug",
-	"orgslug",
-	"cancel",
-	"confirm",
-	"create",
-	"delete",
-	"save",
-	"edit",
-	"add",
-	"remove",
-	"yes",
-	"no",
-	"ok",
-	"style",
-	"styles",
-	"theme",
-	"themes",
-	"test",
-	"tests",
-	"doc",
-	"docs",
-	"readme",
-]);
-
-const GLOSSARY_GENERIC_ROUTE_LABELS = new Set([
-	"general",
-	"settings",
-	"profile",
-	"preferences",
-	"plan",
-	"billing",
-	"teams",
-	"team",
-	"users",
-	"user",
-	"members",
-	"member",
-	"accounts",
-	"account",
-	"login",
-	"signin",
-	"signup",
-	"sign in",
-	"sign up",
-	"logout",
-	"routes",
-	"route",
-	"root",
-	"app",
-	"apps",
-]);
-
-const GLOSSARY_GENERIC_UI_TITLES = new Set([
-	"user menu",
-	"my products",
-	"my organizations",
-	"leave product",
-	"leave organization",
-	"switch organization",
-]);
-
-const GLOSSARY_GENERIC_DOC_HEADINGS = new Set([
-	"overview",
-	"introduction",
-	"concept",
-	"concepto",
-	"flow",
-	"flujo",
-	"setup",
-	"install",
-	"configuration",
-	"configuracin",
-	"architecture",
-	"arquitectura",
-	"ruta de prueba",
-	"contenido del panel",
-	"validacin manual",
-	"registro signup",
-	"emailpassword",
-]);
-
-function buildGlossarySignals(
-	sources: Array<{
-		sourceType: string;
-		sourceId: string;
-		sourceLabel: string;
-		structureSummary: unknown;
-		pathOverview: unknown;
-		samples: string[];
-	}>,
-	mapping: SurfaceSignalResult,
-	baseline?: {
-		name?: string;
-		valueProposition?: string;
-		problemSolved?: string;
-		productVision?: string;
-	},
-): GlossarySignals {
-	const signals: GlossarySignal[] = [];
-	let counter = 0;
-
-	const addSignal = (
-		text: string,
-		source: string,
-		surface?: SurfaceSignalSurface,
-	) => {
-		const trimmed = text.trim();
-		if (!trimmed) return;
-		counter += 1;
-		signals.push({
-			id: `sig_${counter}`,
-			text: trimmed,
-			source,
-			surface,
-		});
-	};
-
-	for (const entry of extractBaselineGlossaryTerms(baseline).slice(0, 6)) {
-		addSignal(entry.term, "baseline");
-	}
-
-	const surfaceBySource = new Map<string, SurfaceSignalSurface[]>();
-	const bucketsBySource = new Map<string, Map<SurfaceSignalSurface, string[]>>();
-	for (const source of mapping.sources) {
-		surfaceBySource.set(
-			`${source.sourceType}:${source.sourceId}`,
-			source.surfaces.map((item) => item.surface),
-		);
-		const bucketMap = new Map<SurfaceSignalSurface, string[]>();
-		for (const item of source.surfaces) {
-			const entries = bucketMap.get(item.surface) ?? [];
-			entries.push(item.bucketId);
-			bucketMap.set(item.surface, entries);
-		}
-		bucketsBySource.set(`${source.sourceType}:${source.sourceId}`, bucketMap);
-	}
-
-	for (const source of sources) {
-		const key = `${source.sourceType}:${source.sourceId}`;
-		const surfaces = surfaceBySource.get(key) ?? [];
-		const structure = source.structureSummary as {
-			routePaths?: string[];
-			componentPaths?: string[];
-			uiTextSamples?: Array<{ path?: string; excerpt?: string }>;
-			docSamples?: Array<{ path?: string; excerpt?: string }>;
-		};
-
-		const buckets = bucketsBySource.get(key);
-		const productFrontBuckets = buckets?.get("product_front") ?? [];
-		const marketingBuckets = buckets?.get("marketing") ?? [];
-		const docsBuckets = buckets?.get("docs") ?? [];
-
-		if (surfaces.includes("product_front")) {
-			for (const path of filterPathsByBuckets(
-				structure?.routePaths ?? [],
-				productFrontBuckets,
-			)) {
-				const label = labelFromPath(path);
-				if (label && !isGenericRouteLabel(label)) {
-					addSignal(label, "routes", "product_front");
-				}
-			}
-			for (const path of filterPathsByBuckets(
-				structure?.componentPaths ?? [],
-				productFrontBuckets,
-			)) {
-				const hookLabel = labelFromHookPath(path);
-				if (hookLabel && !isGenericRouteLabel(hookLabel)) {
-					addSignal(hookLabel, "flow_hooks", "product_front");
-				}
-			}
-			for (const sample of filterSamplesByBuckets(
-				structure?.uiTextSamples ?? [],
-				productFrontBuckets,
-			)) {
-				if (!sample?.excerpt || !sample?.path) continue;
-				const titles = extractTitleValues(sample.excerpt);
-				for (const title of titles) {
-					if (!isGenericUiTitle(title)) {
-						addSignal(title, "ui_titles", "product_front");
-					}
-				}
-			}
-		}
-
-		if (surfaces.includes("marketing")) {
-			for (const sample of filterSamplesByBuckets(
-				structure?.uiTextSamples ?? [],
-				marketingBuckets,
-			)) {
-				if (!sample?.excerpt || !sample?.path) continue;
-				const titles = extractTitleValues(sample.excerpt);
-				for (const title of titles) {
-					if (!isGenericUiSentence(title)) {
-						addSignal(title, "marketing_copy", "marketing");
-					}
-				}
-			}
-		}
-
-		if (surfaces.includes("docs")) {
-			for (const sample of filterSamplesByBuckets(
-				structure?.docSamples ?? [],
-				docsBuckets,
-			)) {
-				if (!sample?.excerpt || !sample?.path) continue;
-				const headings = extractMarkdownHeadings(sample.excerpt);
-				for (const heading of headings) {
-					if (!isGenericDocHeading(heading)) {
-						addSignal(heading, "docs_copy", "docs");
-					}
-				}
-			}
-		}
-	}
-
-	return {
-		sources: sources.map((source) => ({
-			sourceType: source.sourceType,
-			sourceId: source.sourceId,
-			sourceLabel: source.sourceLabel,
-		})),
-		signals: signals.slice(0, 80),
-	};
-}
-
-function buildGlossaryFromSignals(signals: GlossarySignals): GlossaryResult {
-	return {
-		sources: signals.sources,
-		glossary: { terms: [] },
-	};
-}
-
-function buildGlossaryCandidates(signals: GlossarySignals): GlossaryCandidate[] {
-	const termMap = new Map<
-		string,
-		{
-			term: string;
-			evidenceIds: Set<string>;
-			evidenceTexts: Set<string>;
-			sources: Set<string>;
-			surfaces: Set<SurfaceSignalSurface>;
-			score: number;
-		}
-	>();
-
-	for (const signal of signals.signals) {
-		const extracted = extractGlossaryTermsFromText(signal.text);
-		for (const term of extracted) {
-			const key = term.toLowerCase();
-			const entry =
-				termMap.get(key) ??
-				{
-					term,
-					evidenceIds: new Set<string>(),
-					evidenceTexts: new Set<string>(),
-					sources: new Set<string>(),
-					surfaces: new Set<SurfaceSignalSurface>(),
-					score: 0,
-				};
-			entry.evidenceIds.add(signal.id);
-			entry.evidenceTexts.add(signal.text);
-			entry.sources.add(signal.source);
-			if (signal.surface) {
-				entry.surfaces.add(signal.surface);
-			}
-			entry.score += 1;
-			termMap.set(key, entry);
-		}
-	}
-
-	const scored = Array.from(termMap.values())
-		.filter((entry) => !shouldDropGlossaryCandidate(entry))
-		.map((entry) => {
-		let score = entry.score;
-		if (entry.sources.has("baseline")) score += 1;
-		if (entry.sources.has("marketing_copy")) score += 2;
-		if (entry.sources.has("docs_copy")) score += 1;
-		if (entry.sources.has("ui_titles")) score += 1;
-		if (entry.sources.size >= 2) score += 2;
-		if (entry.surfaces.size >= 2) score += 1;
-		if (entry.term.trim().split(/\s+/).length >= 2) score += 1;
-
-		return {
-			id: `cand_${entry.term.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
-			term: entry.term,
-			score,
-			evidenceIds: Array.from(entry.evidenceIds).slice(0, 4),
-			evidenceTexts: Array.from(entry.evidenceTexts).slice(0, 3),
-			sources: Array.from(entry.sources),
-			surfaces: Array.from(entry.surfaces),
-		};
-	});
-
-	return scored
-		.sort((a, b) => b.score - a.score || a.term.localeCompare(b.term))
-		.slice(0, 40);
-}
-
-function shouldDropGlossaryCandidate(entry: {
-	term: string;
-	sources: Set<string>;
-	surfaces: Set<SurfaceSignalSurface>;
-}): boolean {
-	const normalized = entry.term.toLowerCase();
-	if (GLOSSARY_GENERIC_ROUTE_LABELS.has(normalized)) {
-		const onlyUiSignals = Array.from(entry.sources).every((source) =>
-			["routes", "ui_titles", "flow_hooks"].includes(source),
-		);
-		if (onlyUiSignals) return true;
-	}
-	return false;
-}
-
-function buildGlossaryFromCandidates(
-	signals: GlossarySignals,
-	candidates: GlossaryCandidate[],
-): GlossaryResult {
-	if (candidates.length === 0) return { sources: signals.sources, glossary: { terms: [] } };
-	return {
-		sources: signals.sources,
-		glossary: {
-			terms: candidates.slice(0, 20).map((candidate) => ({
-				term: candidate.term,
-				evidence: candidate.evidenceTexts.length
-					? candidate.evidenceTexts
-					: candidate.evidenceIds,
-				source: candidate.sources[0] ?? "signals",
-				surface: candidate.surfaces[0],
-			})),
-		},
-	};
-}
-
-function labelFromPath(path: string): string | null {
-	const normalized = path.replace(/^\.\/+/, "");
-	const parts = normalized.split("/").filter(Boolean);
-	const filename = parts[parts.length - 1] ?? "";
-	if (!filename) return null;
-	const base = filename.replace(/\.(ts|tsx|js|jsx|md|json)$/i, "");
-	if (base.startsWith("$") || base.startsWith("[") || base.includes("slug")) {
-		return null;
-	}
-	const cleaned = base.replace(/[_-]+/g, " ").replace(/\$/g, "");
-	const normalizedBase = cleaned.trim().toLowerCase();
-	if (normalizedBase === "index" || normalizedBase === "layout") {
-		let fallback = parts[parts.length - 2] ?? "";
-		if (fallback.startsWith("$") || fallback.startsWith("[")) {
-			fallback = parts[parts.length - 3] ?? "";
-		}
-		if (fallback) {
-			const fallbackLabel = fallback.replace(/[_-]+/g, " ").replace(/\$/g, "");
-			const label = titleize(fallbackLabel);
-			const lower = label.toLowerCase();
-			if (GLOSSARY_STOPWORDS.has(lower)) return null;
-			return isNoisyGlossaryLabel(label) ? null : label;
-		}
-	}
-	const normalizedLabel = cleaned
-		.replace(/([a-z])([A-Z])/g, "$1 $2")
-		.trim();
-	if (!normalizedLabel) return null;
-	const lower = normalizedLabel.toLowerCase();
-	if (GLOSSARY_STOPWORDS.has(lower)) return null;
-	if (lower.length < 3) return null;
-	const label = titleize(normalizedLabel);
-	return isNoisyGlossaryLabel(label) ? null : label;
-}
-
-function titleize(value: string): string {
-	return value
-		.split(" ")
-		.filter(Boolean)
-		.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-		.join(" ");
-}
-
-function extractGlossaryTermsFromText(text: string): string[] {
-	const terms = new Set<string>();
-	const valueMatches = text.match(/\"([^\"]{3,60})\"/g) ?? [];
-	for (const match of valueMatches) {
-		const term = match.replace(/\"/g, "").trim();
-		if (term.length < 3 || term.length > 48) continue;
-		const lower = term.toLowerCase();
-		if (GLOSSARY_STOPWORDS.has(lower)) continue;
-		if (/^[0-9\s]+$/.test(term)) continue;
-		terms.add(titleize(term.replace(/[._-]+/g, " ")));
-	}
-
-	if (!valueMatches.length) {
-		const cleaned = text.replace(/[^\w\s-]/g, " ").trim();
-		if (cleaned.length >= 3 && cleaned.length <= 48) {
-			const lower = cleaned.toLowerCase();
-			if (!GLOSSARY_STOPWORDS.has(lower)) {
-				terms.add(titleize(cleaned));
-			}
-		}
-	}
-
-	return Array.from(terms).slice(0, 8);
-}
-
-function extractBaselineGlossaryTerms(baseline?: {
-	name?: string;
-	valueProposition?: string;
-	problemSolved?: string;
-	productVision?: string;
-}): Array<{ term: string; evidence: string[] }> {
-	if (!baseline) return [];
-	const terms: Array<{ term: string; evidence: string[] }> = [];
-	const addText = (value?: string) => {
-		if (!value) return;
-		const extracted = extractGlossaryTermsFromText(value);
-		for (const term of extracted) {
-			terms.push({ term, evidence: [value] });
-		}
-	};
-
-	if (baseline.name) {
-		terms.push({ term: baseline.name, evidence: [baseline.name] });
-	}
-	addText(baseline.valueProposition);
-	addText(baseline.problemSolved);
-	addText(baseline.productVision);
-
-	return terms.slice(0, 12);
-}
-
-function labelFromHookPath(path: string): string | null {
-	const normalized = path.replace(/^\.\/+/, "");
-	if (!normalized.includes("/hooks/")) return null;
-	const parts = normalized.split("/").filter(Boolean);
-	const filename = parts[parts.length - 1] ?? "";
-	const base = filename.replace(/\.(ts|tsx|js|jsx)$/i, "");
-	if (!base.startsWith("use") || base.length <= 3) return null;
-	const cleaned = base.replace(/^use/, "").replace(/[_-]+/g, " ").trim();
-	if (!cleaned) return null;
-	const normalizedLabel = cleaned.replace(/([a-z])([A-Z])/g, "$1 $2").trim();
-	if (!normalizedLabel) return null;
-	const lower = normalizedLabel.toLowerCase();
-	if (GLOSSARY_STOPWORDS.has(lower)) return null;
-	const label = titleize(normalizedLabel);
-	return isNoisyGlossaryLabel(label) ? null : label;
-}
-
-function extractTitleValues(text: string): string[] {
-	const matches =
-		text.match(
-			/\"(title|heading|headline|heroTitle|heroHeadline|tagline)\"\s*:\s*\"([^\"]{3,80})\"/gi,
-		) ?? [];
-	const values = new Set<string>();
-	for (const match of matches) {
-		const parts = match.split(":");
-		const value = parts.slice(1).join(":").replace(/\"/g, "").trim();
-		if (!value) continue;
-		const lower = value.toLowerCase();
-		if (GLOSSARY_STOPWORDS.has(lower)) continue;
-		values.add(titleize(value));
-	}
-	return Array.from(values).slice(0, 10);
-}
-
-function extractMarkdownHeadings(text: string): string[] {
-	const headings = text.match(/^\s{0,3}#{1,3}\s+([^\n#]{3,80})/gm) ?? [];
-	const terms = new Set<string>();
-	for (const match of headings) {
-		const heading = match.replace(/^#+\s*/, "").trim();
-		const cleaned = heading.replace(/[^\w\s-]/g, "").trim();
-		if (cleaned.length < 3 || cleaned.length > 60) continue;
-		const normalized = cleaned.toLowerCase();
-		if (GLOSSARY_STOPWORDS.has(normalized)) continue;
-		terms.add(titleize(cleaned));
-	}
-	return Array.from(terms).slice(0, 10);
-}
-
-function isNoisyGlossaryLabel(label: string): boolean {
-	const normalized = label.toLowerCase();
-	if (normalized.includes("slug")) return true;
-	if (normalized === "root") return true;
-	if (normalized === "index") return true;
-	return false;
-}
-
-function isGenericRouteLabel(label: string): boolean {
-	const normalized = label.toLowerCase();
-	if (GLOSSARY_GENERIC_ROUTE_LABELS.has(normalized)) return true;
-	if (normalized.includes("settings") || normalized.includes("profile")) return true;
-	return false;
-}
-
-function isGenericUiTitle(label: string): boolean {
-	const normalized = label.toLowerCase();
-	if (GLOSSARY_GENERIC_UI_TITLES.has(normalized)) return true;
-	if (normalized.includes("menu")) return true;
-	return false;
-}
-
-function isGenericDocHeading(label: string): boolean {
-	const normalized = label.toLowerCase();
-	if (GLOSSARY_GENERIC_DOC_HEADINGS.has(normalized)) return true;
-	if (normalized.includes("ruta")) return true;
-	return false;
-}
-
-function isGenericUiSentence(value: string): boolean {
-	const normalized = value.toLowerCase();
-	const genericTokens = [
-		"sign in",
-		"sign up",
-		"create account",
-		"continue with",
-		"enter your",
-		"no products",
-		"no sources",
-		"are you sure",
-		"you have left",
-		"you don't belong",
-		"you are not",
-	];
-	return genericTokens.some((token) => normalized.includes(token));
-}
-
-function filterPathsByBuckets(paths: string[], buckets: string[]): string[] {
-	if (!buckets.length) return [];
-	return paths.filter((path) => buckets.some((bucket) => path.startsWith(bucket)));
-}
-
-function filterSamplesByBuckets<T extends { path?: string }>(
-	samples: T[],
-	buckets: string[],
-): T[] {
-	if (!buckets.length) return [];
-	return samples.filter((sample) =>
-		sample.path ? buckets.some((bucket) => sample.path.startsWith(bucket)) : false,
-	);
-}
-
-function applyGlossaryToCatalog(
-	catalog: WorkCatalogResult,
-	glossary: GlossaryPayload,
-): WorkCatalogResult {
-	const glossaryTerms = glossary.terms
-		.map((term) => ({
-			term: term.term,
-			normalized: normalizeGlossaryToken(term.term),
-		}))
-		.filter((term) => term.normalized.length > 2);
-
-	const applyToItems = (items: WorkCatalogItem[]) =>
-		items.map((item) => {
-			const normalizedSignals = normalizeGlossaryToken(item.signals.join(" "));
-			let bestMatch: string | undefined;
-			let bestLength = 0;
-
-			for (const entry of glossaryTerms) {
-				if (!entry.normalized) continue;
-				if (normalizedSignals.includes(entry.normalized)) {
-					if (entry.normalized.length > bestLength) {
-						bestLength = entry.normalized.length;
-						bestMatch = entry.term;
-					}
-				}
-			}
-
-			return {
-				...item,
-				displayName: bestMatch ?? item.displayName,
-			};
-		});
-
-	return {
-		sources: catalog.sources.map((source) => ({
-			...source,
-			catalog: {
-				feature_surface: applyToItems(source.catalog.feature_surface),
-				capabilities: applyToItems(source.catalog.capabilities),
-				work: applyToItems(source.catalog.work),
-			},
-		})),
-	};
-}
-
-function normalizeGlossaryToken(value: string): string {
-	return value
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, " ")
-		.replace(/\s+/g, " ")
-		.trim();
-}
-
 
 function buildSourceSummary(payload: unknown, sourceType: string): string {
 	const safe = toSafeString;

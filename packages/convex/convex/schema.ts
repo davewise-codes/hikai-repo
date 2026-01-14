@@ -324,6 +324,7 @@ const schema = defineSchema({
     agentRunId: v.optional(v.id("agentRuns")),
     createdAt: v.number(),
     rawOutput: v.optional(v.string()),
+    rawOutputFileId: v.optional(v.id("_storage")),
     steps: v.optional(
       v.array(
         v.object({
@@ -365,12 +366,13 @@ const schema = defineSchema({
     .index("by_product", ["productId"])
     .index("by_product_time", ["productId", "createdAt"]),
 
-  workCatalogRuns: defineTable({
+  contextInputRuns: defineTable({
     productId: v.id("products"),
     createdBy: v.id("users"),
     agentRunId: v.optional(v.id("agentRuns")),
     createdAt: v.number(),
     rawOutput: v.optional(v.string()),
+    rawOutputFileId: v.optional(v.id("_storage")),
     steps: v.optional(
       v.array(
         v.object({
@@ -386,91 +388,16 @@ const schema = defineSchema({
         })
       )
     ),
-    sources: v.array(
+    summary: v.optional(
       v.object({
-        sourceType: v.string(),
-        sourceId: v.string(),
-        sourceLabel: v.string(),
-        catalog: v.object({
-          feature_surface: v.array(
-            v.object({
-              name: v.string(),
-              displayName: v.optional(v.string()),
-              signals: v.array(v.string()),
-              notes: v.optional(v.string()),
-            })
-          ),
-          capabilities: v.array(
-            v.object({
-              name: v.string(),
-              displayName: v.optional(v.string()),
-              signals: v.array(v.string()),
-              notes: v.optional(v.string()),
-            })
-          ),
-          work: v.array(
-            v.object({
-              name: v.string(),
-              displayName: v.optional(v.string()),
-              signals: v.array(v.string()),
-              notes: v.optional(v.string()),
-            })
-          ),
-        }),
+        uiSitemapCount: v.number(),
+        userFlowsCount: v.number(),
+        businessEntityCount: v.number(),
+        businessRelationshipCount: v.number(),
+        repoCount: v.number(),
       })
     ),
-  })
-    .index("by_product", ["productId"])
-    .index("by_product_time", ["productId", "createdAt"]),
-
-  glossaryRuns: defineTable({
-    productId: v.id("products"),
-    createdBy: v.id("users"),
-    agentRunId: v.optional(v.id("agentRuns")),
-    createdAt: v.number(),
-    rawOutput: v.optional(v.string()),
-    steps: v.optional(
-      v.array(
-        v.object({
-          step: v.string(),
-          status: v.union(
-            v.literal("info"),
-            v.literal("success"),
-            v.literal("warn"),
-            v.literal("error")
-          ),
-          timestamp: v.number(),
-          metadata: v.optional(v.any()),
-        })
-      )
-    ),
-    sources: v.array(
-      v.object({
-        sourceType: v.string(),
-        sourceId: v.string(),
-        sourceLabel: v.string(),
-      })
-    ),
-    glossary: v.object({
-      terms: v.array(
-        v.object({
-          term: v.string(),
-          evidence: v.array(v.string()),
-          source: v.string(),
-          surface: v.optional(
-            v.union(
-              v.literal("management"),
-              v.literal("design"),
-              v.literal("product_front"),
-              v.literal("platform"),
-              v.literal("marketing"),
-              v.literal("admin"),
-              v.literal("docs")
-            )
-          ),
-        })
-      )
-    }),
+    outputs: v.optional(v.any()),
   })
     .index("by_product", ["productId"])
     .index("by_product_time", ["productId", "createdAt"]),
