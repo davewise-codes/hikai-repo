@@ -1,7 +1,8 @@
-import type {
-	ToolCall,
-	ToolDefinition,
-	ToolResult,
+import {
+	executeToolCall,
+	type ToolCall,
+	type ToolDefinition,
+	type ToolResult,
 } from "./tool_registry";
 
 export type AgentMessage = {
@@ -150,39 +151,9 @@ async function executeToolCalls(
 	toolCalls: ToolCall[],
 	tools: ToolDefinition[],
 ): Promise<ToolResult[]> {
-	const toolMap = new Map<string, ToolDefinition>(
-		tools.map((tool) => [tool.name, tool]),
-	);
-
 	const results: ToolResult[] = [];
 	for (const call of toolCalls) {
-		const tool = toolMap.get(call.name);
-		if (!tool?.execute) {
-			results.push({
-				name: call.name,
-				input: call.input,
-				error: "Tool not registered",
-				toolCallId: call.id,
-			});
-			continue;
-		}
-
-		try {
-			const output = await tool.execute(call.input);
-			results.push({
-				name: call.name,
-				input: call.input,
-				output,
-				toolCallId: call.id,
-			});
-		} catch (error) {
-			results.push({
-				name: call.name,
-				input: call.input,
-				error: error instanceof Error ? error.message : "Unknown tool error",
-				toolCallId: call.id,
-			});
-		}
+		results.push(await executeToolCall(tools, call));
 	}
 
 	return results;

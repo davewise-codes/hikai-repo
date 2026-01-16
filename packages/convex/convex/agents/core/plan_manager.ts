@@ -20,12 +20,15 @@ const MAX_ITEMS = 15;
 export function createPlan(
 	items: Array<{ content: string; activeForm: string }>,
 ): PlanManager {
-	const trimmedItems = items.slice(0, MAX_ITEMS).map((item, index) => ({
-		id: `step-${index + 1}`,
-		content: item.content,
-		activeForm: item.activeForm,
-		status: index === 0 ? "in_progress" : "pending",
-	}));
+	const trimmedItems: PlanItem[] = items.slice(0, MAX_ITEMS).map((item, index) => {
+		const status: PlanStatus = index === 0 ? "in_progress" : "pending";
+		return {
+			id: `step-${index + 1}`,
+			content: item.content,
+			activeForm: item.activeForm,
+			status,
+		};
+	});
 
 	return {
 		items: trimmedItems,

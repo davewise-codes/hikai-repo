@@ -2,14 +2,13 @@ import type { ActionCtx } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
 import { getAgentAIConfig, getAgentTelemetryConfig } from "../../ai";
-import { createLLMAdapter } from "../../ai/config";
+import { createLLMAdapter, type AIProvider } from "../../ai/config";
 import {
 	executeAgentLoop,
 	type AgentMessage,
 	type AgentModel,
 } from "../core/agent_loop";
 import { injectSkill, loadSkillFromRegistry } from "../core/skill_loader";
-import { getToolsForAgent } from "../core/tool_registry";
 import { SKILL_CONTENTS } from "../skills";
 
 const AGENT_NAME = "Source Context Classifier Agent";
@@ -95,7 +94,7 @@ export async function classifySurface(
 			timeoutMs: 30000,
 			maxTokens: maxTokens ?? 2000,
 			sampling,
-			tools: getToolsForAgent("read_only"),
+			tools: [],
 		},
 		prompt,
 		messages,
@@ -183,7 +182,7 @@ export async function classifySurface(
 }
 
 function createModelAdapter(aiConfig: {
-	provider: string;
+	provider: AIProvider;
 	model: string;
 }): AgentModel {
 	const adapter = createLLMAdapter(aiConfig);

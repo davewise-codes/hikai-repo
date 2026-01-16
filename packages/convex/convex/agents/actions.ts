@@ -10,6 +10,18 @@ import {
 	PRODUCT_CONTEXT_PROMPT_VERSION,
 	TIMELINE_INTERPRETER_PROMPT_VERSION,
 } from "../ai/prompts";
+import {
+	executeAgentLoop,
+	type AgentMessage,
+	type AgentModel,
+	type StepResult,
+} from "./core/agent_loop";
+import {
+	createReadBaselineTool,
+	createReadContextInputsTool,
+	createReadSourcesTool,
+} from "./core/tools";
+import type { ToolResult } from "./core/tool_registry";
 import { helloWorldAgent, HELLO_WORLD_PROMPT_VERSION } from "./helloWorldAgent";
 import { productContextAgent } from "./productContextAgent";
 import { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
@@ -217,6 +229,44 @@ export const chat = action({
 
 			throw error;
 		}
+	},
+});
+
+export const runAgentLoopSmokeTest = action({
+	args: {
+		productId: v.id("products"),
+	},
+	handler: async (ctx, { productId }) => {
+		await ctx.runQuery(internal.lib.access.assertProductAccessInternal, {
+			productId,
+		});
+
+		const tools = [
+			createReadSourcesTool(ctx, productId),
+			createReadBaselineTool(ctx, productId),
+			createReadContextInputsTool(ctx, productId),
+		];
+		const steps: StepResult[] = [];
+		const model = createAgentLoopSmokeTestModel(productId);
+		const result = await executeAgentLoop(
+			model,
+			{
+				maxTurns: 3,
+				timeoutMs: 60000,
+				tools,
+				onStep: async (step) => {
+					steps.push(step);
+				},
+			},
+			"Run agent loop tool smoke test",
+		);
+
+		return {
+			status: result.status,
+			text: result.text,
+			steps,
+			metrics: result.metrics,
+		};
 	},
 });
 
@@ -637,6 +687,7 @@ export const refreshFeatureMap = action({
 		updated: boolean;
 		decisionSummary?: Record<string, unknown>;
 	}> => {
+		const aiConfig = getAgentAIConfig(FEATURE_MAP_AGENT_NAME);
 		const { organizationId, userId, product } = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
@@ -3512,4 +3563,98 @@ function decodeBase64(value: string): string | null {
 	}
 
 	return null;
+}
+
+function createAgentLoopSmokeTestModel(productId: Id<"products">): AgentModel {
+	return {
+		generate: async ({ messages }) => {
+			const toolResults = extractToolResults(messages);
+			if (!toolResults) {
+				return {
+					text: "Requesting tool outputs",
+					stopReason: "tool_use",
+					toolCalls: [
+						{
+							name: "read_sources",
+							input: { productId, limit: 10 },
+							id: "read_sources",
+						},
+						{
+							name: "read_baseline",
+							input: { productId },
+							id: "read_baseline",
+						},
+						{
+							name: "read_context_inputs",
+							input: { productId },
+							id: "read_context_inputs",
+						},
+					],
+					tokensIn: 0,
+					tokensOut: 0,
+					totalTokens: 0,
+				};
+			}
+
+			const summary = summarizeToolResults(toolResults);
+			return {
+				text: JSON.stringify(summary, null, 2),
+				stopReason: "end",
+				tokensIn: 0,
+				tokensOut: 0,
+				totalTokens: 0,
+			};
+		},
+	};
+}
+
+function extractToolResults(messages: AgentMessage[]): ToolResult[] | null {
+	const last = messages[messages.length - 1]?.content ?? "";
+	try {
+		const parsed = JSON.parse(last);
+		if (!Array.isArray(parsed)) return null;
+		const hasToolShape = parsed.every(
+			(entry) => entry && typeof entry.name === "string",
+		);
+		return hasToolShape ? (parsed as ToolResult[]) : null;
+	} catch {
+		return null;
+	}
+}
+
+function summarizeToolResults(results: ToolResult[]) {
+	const sourcesResult = results.find((result) => result.name === "read_sources");
+	const baselineResult = results.find((result) => result.name === "read_baseline");
+	const contextResult = results.find(
+		(result) => result.name === "read_context_inputs",
+	);
+
+	const sourcesCount = Array.isArray(sourcesResult?.output)
+		? sourcesResult?.output.length
+		: 0;
+	const baselineKeys =
+		baselineResult?.output && typeof baselineResult.output === "object"
+			? Object.keys(baselineResult.output as Record<string, unknown>).length
+			: 0;
+	const contextOutput =
+		contextResult?.output && typeof contextResult.output === "object"
+			? (contextResult.output as Record<string, unknown>)
+			: {};
+
+	return {
+		sourcesCount,
+		baselineKeys,
+		contextInputs: {
+			uiSitemap: Boolean(contextOutput.uiSitemap),
+			userFlows: Boolean(contextOutput.userFlows),
+			businessDataModel: Boolean(contextOutput.businessDataModel),
+			repoTopology: Boolean(contextOutput.repoTopology),
+		},
+		errors: results
+			.filter((result) => result.error)
+			.map((result) => ({
+				tool: result.name,
+				error: result.error,
+			})),
+	};
 }

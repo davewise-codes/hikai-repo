@@ -92,6 +92,31 @@ type ContextInputRun = {
 	hasRaw?: boolean;
 };
 
+type AgentLoopTestStep = {
+	turn: number;
+	toolCalls: Array<{ name: string; input: unknown; id?: string }>;
+	results: Array<{
+		name: string;
+		input: unknown;
+		output?: unknown;
+		error?: string;
+		toolCallId?: string;
+	}>;
+};
+
+type AgentLoopTestResult = {
+	status: "completed" | "max_turns_exceeded" | "timeout" | "error";
+	text: string;
+	steps: AgentLoopTestStep[];
+	metrics: {
+		turns: number;
+		tokensIn: number;
+		tokensOut: number;
+		totalTokens: number;
+		latencyMs: number;
+	};
+};
+
 const SURFACE_KEYS: SurfaceKey[] = [
 	"management",
 	"design",
@@ -110,10 +135,17 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 	const regenerateSurfaceSignals = useAction(
 		api.agents.actions.regenerateSurfaceSignals,
 	);
+	const runAgentLoopSmokeTest = useAction(
+		api.agents.actions.runAgentLoopSmokeTest,
+	);
 	const createAgentRun = useMutation(api.agents.agentRuns.createAgentRun);
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [agentRunId, setAgentRunId] = useState<Id<"agentRuns"> | null>(null);
+	const [isSmokeTestRunning, setIsSmokeTestRunning] = useState(false);
+	const [smokeTestResult, setSmokeTestResult] =
+		useState<AgentLoopTestResult | null>(null);
+	const [smokeTestError, setSmokeTestError] = useState<string | null>(null);
 	const { connections, isLoading } = useConnections(product._id);
 
 	const agentRun = useQuery(
@@ -245,6 +277,22 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 			setError(err instanceof Error ? err.message : t("errors.unknown"));
 		} finally {
 			setIsGenerating(false);
+		}
+	};
+
+	const handleRunSmokeTest = async () => {
+		setIsSmokeTestRunning(true);
+		setSmokeTestError(null);
+		try {
+			const result = await runAgentLoopSmokeTest({ productId: product._id });
+			setSmokeTestResult(result as AgentLoopTestResult);
+			toast.success(t("context.agentLoopTestSuccess"));
+		} catch (err) {
+			const message = err instanceof Error ? err.message : t("errors.unknown");
+			setSmokeTestError(message);
+			toast.error(t("context.agentLoopTestError"));
+		} finally {
+			setIsSmokeTestRunning(false);
 		}
 	};
 
@@ -399,10 +447,29 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 							t("context.regenerate")
 						)}
 					</Button>
+					<Button
+						variant="outline"
+						onClick={handleRunSmokeTest}
+						disabled={isSmokeTestRunning}
+					>
+						{isSmokeTestRunning ? (
+							<div className="flex items-center gap-2">
+								<span className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full inline-block animate-spin" />
+								<span>{t("context.agentLoopTestRunning")}</span>
+							</div>
+						) : (
+							t("context.agentLoopTest")
+						)}
+					</Button>
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{error && <p className="text-sm text-destructive">{error}</p>}
+				{smokeTestError && (
+					<p className="text-fontSize-sm text-destructive">
+						{smokeTestError}
+					</p>
+				)}
 				{!hasSources && !isLoading && (
 					<p className="text-fontSize-sm text-muted-foreground">
 						{t("context.noSources")}
@@ -416,6 +483,63 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 								? t("context.progressStep", { step: agentStep.step })
 								: t("context.progressRunning")}
 						</span>
+					</div>
+				)}
+				{smokeTestResult && (
+					<div className="rounded-md border border-border p-3 space-y-3">
+						<div className="flex items-center justify-between">
+							<div className="text-fontSize-sm font-medium">
+								{t("context.agentLoopTestTitle")}
+							</div>
+							<Badge variant="outline">{smokeTestResult.status}</Badge>
+						</div>
+						<div className="text-fontSize-xs text-muted-foreground">
+							{t("context.agentLoopTestMetrics", {
+								turns: smokeTestResult.metrics.turns,
+								latency: smokeTestResult.metrics.latencyMs,
+							})}
+						</div>
+						<div className="space-y-2">
+							<div className="text-fontSize-xs font-medium text-muted-foreground">
+								{t("context.agentLoopTestSteps")}
+							</div>
+							{smokeTestResult.steps.length === 0 ? (
+								<p className="text-fontSize-xs text-muted-foreground">
+									{t("context.agentLoopTestNoSteps")}
+								</p>
+							) : (
+								<div className="space-y-1">
+									{smokeTestResult.steps.map((step) => (
+										<div
+											key={`agent-loop-step-${step.turn}`}
+											className="flex flex-wrap items-center gap-2 text-fontSize-xs"
+										>
+											<span className="text-muted-foreground">
+												{t("context.agentLoopTestTurn", {
+													turn: step.turn + 1,
+												})}
+											</span>
+											<Badge variant="outline">
+												{t("context.agentLoopTestToolCount", {
+													count: step.toolCalls.length,
+												})}
+											</Badge>
+											<span className="text-muted-foreground">
+												{step.toolCalls.map((call) => call.name).join(", ")}
+											</span>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+						<details className="rounded-md border border-border px-3 py-2">
+							<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
+								{t("context.agentLoopTestOutput")}
+							</summary>
+							<pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap text-fontSize-xs text-muted-foreground">
+								{smokeTestResult.text}
+							</pre>
+						</details>
 					</div>
 				)}
 				<SurfaceSignalsTable rows={surfaceRows} />

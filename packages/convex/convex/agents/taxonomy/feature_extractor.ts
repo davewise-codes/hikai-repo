@@ -2,14 +2,13 @@ import type { ActionCtx } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import { Id } from "../../_generated/dataModel";
 import { getAgentAIConfig, getAgentTelemetryConfig } from "../../ai";
-import { createLLMAdapter } from "../../ai/config";
+import { createLLMAdapter, type AIProvider } from "../../ai/config";
 import {
 	executeAgentLoop,
 	type AgentMessage,
 	type AgentModel,
 } from "../core/agent_loop";
 import { injectSkill, loadSkillFromRegistry } from "../core/skill_loader";
-import { getToolsForAgent } from "../core/tool_registry";
 import { createPlan, renderPlan } from "../core/plan_manager";
 import { featureMapPrompt, FEATURE_MAP_PROMPT_VERSION } from "../../ai/prompts";
 import { SKILL_CONTENTS } from "../skills";
@@ -89,7 +88,7 @@ export async function extractFeatures(
 			timeoutMs: 60000,
 			maxTokens: maxTokens ?? 4500,
 			sampling,
-			tools: getToolsForAgent("generation"),
+			tools: [],
 		},
 		prompt,
 		messages,
@@ -254,7 +253,7 @@ export async function extractFeatures(
 }
 
 function createModelAdapter(aiConfig: {
-	provider: string;
+	provider: AIProvider;
 	model: string;
 }): AgentModel {
 	const adapter = createLLMAdapter(aiConfig);

@@ -2,14 +2,13 @@ import type { ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { getAgentAIConfig, getAgentTelemetryConfig } from "../ai";
-import { createLLMAdapter } from "../ai/config";
+import { createLLMAdapter, type AIProvider } from "../ai/config";
 import {
 	executeAgentLoop,
 	type AgentMessage,
 	type AgentModel,
 } from "./core/agent_loop";
 import { injectSkill, loadSkillFromRegistry } from "./core/skill_loader";
-import { getToolsForAgent } from "./core/tool_registry";
 import { SKILL_CONTENTS } from "./skills";
 
 const AGENT_NAME = "Surface Signal Mapper Agent";
@@ -86,7 +85,7 @@ export async function mapSurfaceSignals(
 			timeoutMs: 30000,
 			maxTokens: maxTokens ?? 2000,
 			sampling: { temperature: 0 },
-			tools: getToolsForAgent("analysis"),
+			tools: [],
 		},
 		prompt,
 		messages,
@@ -202,7 +201,7 @@ export async function mapSurfaceSignals(
 }
 
 function createModelAdapter(aiConfig: {
-	provider: string;
+	provider: AIProvider;
 	model: string;
 }): AgentModel {
 	const adapter = createLLMAdapter(aiConfig);

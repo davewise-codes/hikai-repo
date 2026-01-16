@@ -1,11 +1,4 @@
-export const TOOL_SETS = {
-	read_only: ["read_file", "glob", "grep", "list_directory"],
-	analysis: ["read_file", "glob", "grep", "list_directory", "summarize_file"],
-	generation: ["read_file", "glob", "grep", "classify", "extract_features"],
-} as const;
-
-export type ToolSetName = keyof typeof TOOL_SETS;
-export type ToolName = (typeof TOOL_SETS)[ToolSetName][number];
+export type ToolName = string;
 
 export type ToolCall = {
 	name: ToolName;
@@ -27,13 +20,33 @@ export type ToolDefinition = {
 	execute?: (input: unknown) => Promise<unknown>;
 };
 
-export type ToolRegistry = Partial<Record<ToolName, ToolDefinition>>;
-
-const createStubTool = (name: ToolName): ToolDefinition => ({ name });
-
-export function getToolsForAgent(
-	setName: ToolSetName,
-	registry: ToolRegistry = {},
-): ToolDefinition[] {
-	return TOOL_SETS[setName].map((name) => registry[name] ?? createStubTool(name));
+export async function executeToolCall(
+	tools: ToolDefinition[],
+	call: ToolCall,
+): Promise<ToolResult> {
+	const tool = tools.find((candidate) => candidate.name === call.name);
+	if (!tool?.execute) {
+		return {
+			name: call.name,
+			input: call.input,
+			error: `Tool ${call.name} not found or has no execute`,
+			toolCallId: call.id,
+		};
+	}
+	try {
+		const output = await tool.execute(call.input);
+		return {
+			name: call.name,
+			input: call.input,
+			output,
+			toolCallId: call.id,
+		};
+	} catch (error) {
+		return {
+			name: call.name,
+			input: call.input,
+			error: error instanceof Error ? error.message : "Unknown tool error",
+			toolCallId: call.id,
+		};
+	}
 }
