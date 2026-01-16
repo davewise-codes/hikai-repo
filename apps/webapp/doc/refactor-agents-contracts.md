@@ -1,204 +1,105 @@
-# Refactor Agents - Contratos F0.0
+# Refactor Agents - Contratos F0.0 (Actualizado)
 
-Este documento define los contratos y decisiones base para la refactorizacion del sistema de agentes. Mantiene los shapes actuales y solo agrega metadatos compatibles (versionado y validacion).
+Documento consolidado del planteamiento base para agentes autonomos.
+Reemplaza el contenido anterior y evita duplicacion con docs nuevas.
 
-Referencia principal: `apps/webapp/webapp-plans/2026-01-11-refactor-agents.md`.
+Referencias:
+- apps/webapp/doc/agents/tools.md
+- apps/webapp/doc/agents/domain-map.md
 
 ---
 
 ## Alcance
 
-- Definir schemas Zod estrictos para outputs actuales.
-- Definir versionado de outputs sin romper compatibilidad.
-- Definir checkpoints por fase en tabla Convex dedicada.
-- Definir summarizeSurfaces determinista.
-- Definir politica de retry/backoff y estado blocked.
+- Definir contratos y criterios minimos de autonomia.
+- Definir mitigaciones tecnicas obligatorias.
+- Definir convenciones de paths para el refactor.
+- Validar coherencia documental antes de tocar codigo.
 
 ---
 
-## Outputs (shapes actuales)
+## Contratos de tools
 
-### 1) Source Context Classification
+Ver detalle en `apps/webapp/doc/agents/tools.md`.
 
-**Output actual**:
+Puntos clave:
+- Interface `ToolDefinition` se mantiene: `execute(input)` sin ctx.
+- Patron closure: factories `createTool(ctx, productId) -> ToolDefinition`.
+- Tool inexistente debe retornar `ToolResult` con `error` (fail fast).
+
+---
+
+## Contratos de Domain Map
+
+Ver schema, taxonomia y reglas en `apps/webapp/doc/agents/domain-map.md`.
+
+Restriccion de superficies:
+- Solo usar señales de sources clasificados como `product_front` y `platform`.
+- Ignorar marketing, admin u observabilidad para el domain map.
+
+---
+
+## Criterios de autonomia (minimo)
+
+1. El agente realiza >= 1 tool call antes de generar output.
+2. Si la validacion falla, reintenta (no falla inmediatamente).
+3. Termina con status != `max_turns_exceeded`.
+
+Metricas a capturar:
+- Turns usados vs maxTurns.
+- Tool calls por turn.
+- Validation passes/failures.
+
+---
+
+## Mitigaciones obligatorias
+
+- Pagination en tools (limit, cursor).
+- Timeout y budget: maxTurns 10, timeoutMs 480000.
+- Outputs grandes (> 10KB): guardar en storage y referenciar en logs.
+
+---
+
+## Subagentes como principio base
+
+Todo agente debe registrar entrypoint invocable en `agent_entrypoints.ts`:
+
 ```
 {
-  "classification": "product_core|marketing_surface|infra|docs|experiments|mixed|unknown",
-  "notes": "short evidence-based reason"
-}
-```
-
-**Versionado**:
-- `outputVersion` opcional en root (string, e.g. "v1.0").
-- Validacion Zod estricta (no keys adicionales).
-
-**Regla de superficies**:
-- No usar `mixed`. La clasificacion debe ser concreta.
-- Si hay multiples superficies en una fuente, se debe generar un **mapa de buckets** por ruta:
-  - Cada bucket define `surface`, `pathPrefix` y evidencia minima.
-  - Ejemplo: `apps/website` -> `marketing_surface`, `apps/app` -> `product_core`.
-- La clasificacion principal debe reflejar la superficie dominante, pero los buckets explicitan el split.
-```
-{
-  "classification": "product_core",
-  "notes": "Monorepo con app principal + marketing site",
-  "surfaceBuckets": [
-    { "surface": "product_core", "pathPrefix": "apps/app", "signalCount": 120 },
-    { "surface": "marketing_surface", "pathPrefix": "apps/website", "signalCount": 40 }
-  ]
-}
-```
-
-**Zod (strict)**:
-```
-const sourceContextSchema = z.object({
-  classification: z.enum([
-    "product_core",
-    "marketing_surface",
-    "infra",
-    "docs",
-    "experiments",
-    "unknown",
-  ]),
-  notes: z.string(),
-  outputVersion: z.string().optional(),
-  surfaceBuckets: z
-    .array(
-      z.object({
-        surface: z.enum([
-          "product_core",
-          "marketing_surface",
-          "infra",
-          "docs",
-          "experiments",
-          "unknown",
-        ]),
-        pathPrefix: z.string().min(1),
-        signalCount: z.number().int().nonnegative().optional(),
-      })
-    )
-    .optional(),
-}).strict();
-```
-
----
-
-### 2) Product Context
-
-**Output actual**: `ProductContextPayload` + metadatos en snapshot.
-- `packages/convex/convex/ai/prompts/productContext.ts` define el shape.
-
-**Versionado**:
-- Mantener `version` y `createdAt` como existen.
-- Agregar `outputVersion` opcional en root (string).
-- Validacion Zod estricta con defaults existentes ("" / []).
-
----
-
-### 3) Feature Map
-
-**Output actual**: `FeatureMapPayload` (domains, domainMap, decisionSummary, features).
-- `packages/convex/convex/ai/prompts/featureMap.ts` define el shape.
-
-**Versionado**:
-- Mantener `generatedAt` y `sourcesUsed`.
-- Agregar `outputVersion` opcional en root (string).
-- Validacion Zod estricta.
-
----
-
-### 4) Timeline Interpretation
-
-**Output actual**: `TimelineInterpretationOutput` con `narratives`.
-- `packages/convex/convex/ai/prompts/timelineInterpretation.ts` define el shape.
-
-**Versionado**:
-- Agregar `outputVersion` opcional en root (string).
-- Validacion Zod estricta.
-
----
-
-## Zod Schemas (lineamientos)
-
-- Cada output tiene su schema Zod estricto (no unknown keys).
-- Validar antes de persistir y antes de pasar a la siguiente fase.
-- Si el schema falla: reintento con correccion; si supera el limite, marcar blocked.
-- La validacion no reescribe contenido (solo normaliza enums cuando ya existe un normalizador actual).
-
----
-
-## Checkpoints por fase (Convex table)
-
-**Tabla sugerida**: `agentPhaseCheckpoints`
-
-**Campos base**:
-- `productId`: Id<"products">
-- `phase`: string (e.g. "surface-classification" | "domain-mapping" | "feature-extraction" | "narrative")
-- `status`: "pending" | "in_progress" | "completed" | "blocked"
-- `checkpointVersion`: string (e.g. "v1.0")
-- `payload`: any (datos minimos necesarios para rollback)
-- `createdAt`: number (ms)
-- `updatedAt`: number (ms)
-- `runId`: optional Id<"agentRuns"> (si aplica)
-- `errorMessage`: optional string
-
-**Reglas**:
-- Un checkpoint por producto + fase + ejecucion.
-- `payload` debe ser serializable y compacto (sin raw data completa).
-- Rollback usa el ultimo checkpoint `completed` de la fase anterior.
-
----
-
-## Summaries deterministas
-
-### summarizeSurfaces
-
-**Objetivo**: pasar a fase siguiente solo un resumen compacto, estable y repetible.
-
-**Reglas**:
-- Ordenamiento estable por `sourceId` (asc) y luego por `classification`.
-- Dedupe por `sourceId`.
-- `samplePaths` limitados a N (N=5) ordenados lexicograficamente.
-- `signalCount` recalculado de forma determinista (sin LLM).
-- Texto y enums normalizados a lower-case cuando aplique.
-
-**Shape sugerido**:
-```
-{
-  "surfaces": [
-    {
-      "sourceId": "org/repo",
-      "classification": "product_core",
-      "confidence": 0.85,
-      "notes": "..."
-    }
-  ],
-  "summary": [
-    { "surface": "product_core", "signalCount": 24, "samplePaths": ["..."] }
-  ]
+	name: string
+	skill: SkillDefinition
+	defaultConfig: AgentConfig
 }
 ```
 
 ---
 
-## Retry + Backoff
+## Convenciones de paths
 
-**Politica base**:
-- Reintentos maximos: 3.
-- Backoff exponencial: 500ms, 1500ms, 3000ms.
-- Si falla el schema tras reintentos: `status="blocked"` y `errorMessage`.
-- Guardar checkpoint de error con metadata para debugging.
-
----
-
-## Criterios de salida de F0.0
-
-- [ ] Schemas Zod definidos para outputs actuales.
-- [ ] OutputVersion documentado y opcional.
-- [ ] Tabla de checkpoints definida.
-- [ ] summarizeSurfaces determinista especificado.
-- [ ] Politica de retry/backoff definida.
+| Ruta | Proposito |
+| --- | --- |
+| agents/core/tools/ | Factories de tools ejecutables |
+| agents/skills/source/ | Skills .md fuente (nuevos) |
+| agents/skills/*.skill.md | Skills legacy (no mover) |
+| agents/skills/index.ts | Registry compilado |
+| agents/actions/ | Actions por dominio |
+| agents/actions/index.ts | Re-exports publicos |
+| agents/core/validators/ | Funciones de validacion |
+| agents/core/agent_entrypoints.ts | Registry de agentes invocables |
 
 ---
 
-# Fin del documento
+## Validacion documental (checklist F0.0)
+
+- [ ] Contratos de tools definidos y documentados.
+- [ ] Schema de domain map documentado.
+- [ ] Criterios de autonomia especificados.
+- [ ] Mitigaciones acordadas.
+- [ ] Requisito de entrypoint por agente documentado.
+- [ ] Docs creados en `apps/webapp/doc/agents/`.
+
+---
+
+## Nota de compatibilidad
+
+Este documento sustituye la version anterior con contratos legacy.
