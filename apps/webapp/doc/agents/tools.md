@@ -131,8 +131,16 @@ Input:
 {
 	"action": "create",
 	"items": [
-		{ "id": "1", "content": "Gather context", "status": "pending" },
-		{ "id": "2", "content": "Map domains", "status": "pending" }
+		{
+			"content": "Gather context",
+			"activeForm": "Gathering context",
+			"status": "pending"
+		},
+		{
+			"content": "Map domains",
+			"activeForm": "Mapping domains",
+			"status": "pending"
+		}
 	]
 }
 ```
@@ -142,11 +150,33 @@ Output:
 ```json
 {
 	"items": [
-		{ "id": "1", "content": "Gather context", "status": "in_progress" },
-		{ "id": "2", "content": "Map domains", "status": "pending" }
-	]
+		{
+			"id": "step-1",
+			"content": "Gather context",
+			"activeForm": "Gathering context",
+			"status": "in_progress"
+		},
+		{
+			"id": "step-2",
+			"content": "Map domains",
+			"activeForm": "Mapping domains",
+			"status": "pending"
+		}
+	],
+	"maxItems": 15,
+	"currentItem": {
+		"id": "step-1",
+		"content": "Gather context",
+		"activeForm": "Gathering context",
+		"status": "in_progress"
+	}
 }
 ```
+
+Notas:
+- action admite: create | update | complete | list
+- update/complete/list fallan si no hay plan creado
+- activeForm es obligatorio y debe estar en presente
 
 ### validate_output
 
@@ -173,7 +203,7 @@ Output:
 
 ## Mitigaciones
 
-- Pagination: `limit` y `cursor` en tools de lectura.
+- Pagination: `limit` en tools de lectura.
 - Outputs grandes (> 10KB): almacenar en storage y referenciar en logs.
 - Timeouts y budget: maxTurns y timeoutMs configurables por agente.
 
