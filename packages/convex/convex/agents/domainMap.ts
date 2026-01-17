@@ -29,7 +29,7 @@ const PROMPT_VERSION = "v1.0";
 const SKILL_NAME = "domain-map-agent";
 const MAX_TURNS = 10;
 const MAX_TOKENS_PER_TURN = 2000;
-const MAX_TOTAL_TOKENS = 12000;
+const MAX_TOTAL_TOKENS = 1_000_000;
 const TIMEOUT_MS = 8 * 60 * 1000;
 
 export const generateDomainMap = action({
@@ -88,7 +88,11 @@ export const generateDomainMap = action({
 				tools,
 				validation: {
 					validate: validateDomainMap,
-					onValidation: async (validation) => {
+					onValidation: async (validation, _output, rawText, hadExtraText) => {
+						const preview =
+							typeof rawText === "string"
+								? rawText.slice(0, 2000)
+								: undefined;
 						await ctx.runMutation(internal.agents.agentRuns.appendStep, {
 							productId,
 							runId,
@@ -96,9 +100,31 @@ export const generateDomainMap = action({
 							status: validation.valid ? "success" : "warn",
 							metadata: {
 								validation,
+								rawTextPreview: preview,
+								hadExtraText,
 							},
 						});
 					},
+				},
+				onModelResponse: async ({ response, turn }) => {
+					const preview =
+						typeof response.text === "string"
+							? response.text.slice(0, 2000)
+							: "";
+					await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+						productId,
+						runId,
+						step: `Model output (turn ${turn + 1})`,
+						status: "info",
+						metadata: {
+							modelOutputPreview: preview,
+							stopReason: response.stopReason,
+							toolCalls: response.toolCalls?.map((call) => ({
+								name: call.name,
+								id: call.id,
+							})),
+						},
+					});
 				},
 				onStep: async (step) => {
 					await persistToolSteps(ctx, productId, runId, step);
@@ -194,8 +220,27 @@ function buildDomainMapPrompt(productId: Id<"products">): string {
 		"Ignore marketing, admin, and observability sources.",
 		"Always call todo_manager first to create your plan.",
 		"Use read_sources, read_baseline, and read_context_inputs to gather context.",
-		"Validate your output with validate_output before finishing.",
+		"You MUST call validate_output before final output.",
+		"Do NOT return a final output until you have called tools.",
+		"Final output must be ONLY the JSON schema (no extra text).",
+		"Tool input rules:",
+		'- todo_manager input: { "action": "create", "items": [{ "content": "...", "activeForm": "...", "status": "in_progress" | "pending" | "completed" }] }',
+		'- read_sources input: { "productId": "' + productId + '", "limit": 50 }',
+		'- read_baseline input: { "productId": "' + productId + '" }',
+		'- read_context_inputs input: { "productId": "' + productId + '" }',
+		'- validate_output input: { "outputType": "domain_map", "data": <your json> }',
+		"Do NOT nest tool calls inside todo_manager. Call each tool directly.",
+		"Example tool call block:",
+		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"todo_manager","input":{"action":"create","items":[{"content":"Gather context","activeForm":"Gathering context","status":"in_progress"}]}},{"id":"call-2","name":"read_sources","input":{"productId":"' +
+			productId +
+			'","limit":50}},{"id":"call-3","name":"read_baseline","input":{"productId":"' +
+			productId +
+			'"}},{"id":"call-4","name":"read_context_inputs","input":{"productId":"' +
+			productId +
+			'"}}]}',
 		`Use productId: ${productId} when calling tools.`,
+		"Plan update rule:",
+		'- After finishing a phase, call todo_manager with action "update" to mark the current item as completed and the next item as in_progress (only 1 in_progress).',
 	].join("\n");
 }
 

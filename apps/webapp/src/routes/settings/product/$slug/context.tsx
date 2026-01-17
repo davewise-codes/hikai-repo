@@ -2,7 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { SettingsLayout, SettingsHeader } from "@/domains/shared";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
-import { useGetProductBySlug, ProductContextCard } from "@/domains/products";
+import {
+	DomainMapCard,
+	ProductContextCard,
+	useGetProductBySlug,
+} from "@/domains/products";
 
 export const Route = createFileRoute("/settings/product/$slug/context")({
 	component: ProductContextPage,
@@ -32,6 +36,7 @@ function ProductContextPage() {
 			/>
 			<div className="space-y-6">
 				<ProductContextCard product={product} />
+				<DomainMapCard domainMap={product.domainMap} />
 			</div>
 		</SettingsLayout>
 	);

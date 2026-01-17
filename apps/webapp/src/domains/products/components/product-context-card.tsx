@@ -94,16 +94,15 @@ const SURFACE_KEYS: SurfaceKey[] = [
 	"docs",
 ];
 
-const SMOKE_TEST_USE_CASE = "agent_loop_smoke_test";
+const DOMAIN_MAP_USE_CASE = "domain_map";
 
 export function ProductContextCard({ product }: ProductContextCardProps) {
 	const { t } = useTranslation("products");
-	const runAgentLoopSmokeTest = useAction(
-		api.agents.actions.runAgentLoopSmokeTest,
-	);
+	const generateDomainMap = useAction(api.agents.domainMap.generateDomainMap);
 	const [agentRunId, setAgentRunId] = useState<Id<"agentRuns"> | null>(null);
-	const [isSmokeTestRunning, setIsSmokeTestRunning] = useState(false);
-	const [smokeTestError, setSmokeTestError] = useState<string | null>(null);
+	const [isDomainMapRunning, setIsDomainMapRunning] = useState(false);
+	const [domainMapError, setDomainMapError] = useState<string | null>(null);
+	const [triggerStartedAt, setTriggerStartedAt] = useState<number | null>(null);
 	const { connections, isLoading } = useConnections(product._id);
 
 	const agentRun = useQuery(
@@ -119,10 +118,16 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 		api.agents.agentRuns.getLatestRunForUseCase,
 		{
 			productId: product._id,
-			useCase: SMOKE_TEST_USE_CASE,
+			useCase: DOMAIN_MAP_USE_CASE,
 		},
 	);
-	const activeRun = agentRun ?? latestRun;
+	const activeRun = agentRunId
+		? agentRun
+		: latestRun && triggerStartedAt
+			? latestRun.startedAt >= triggerStartedAt
+				? latestRun
+				: null
+			: latestRun;
 
 	const latestSurfaceRun = useQuery(
 		api.agents.surfaceSignals.getLatestSurfaceSignalRun,
@@ -199,34 +204,37 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 		];
 	}, [latestContextInputsRun, t]);
 
-	const showAgentProgress = activeRun?.status === "running";
+	const showAgentProgress = Boolean(activeRun);
+	const isRunActive = activeRun?.status === "running";
 	const hasSources = (connections?.length ?? 0) > 0;
 
-	const handleRunSmokeTest = async () => {
-		setIsSmokeTestRunning(true);
-		setSmokeTestError(null);
+	const handleGenerateDomainMap = async () => {
+		setIsDomainMapRunning(true);
+		setDomainMapError(null);
+		setAgentRunId(null);
+		setTriggerStartedAt(Date.now());
 		try {
-			const result = await runAgentLoopSmokeTest({ productId: product._id });
+			const result = await generateDomainMap({ productId: product._id });
 			if (result?.runId) {
 				setAgentRunId(result.runId as Id<"agentRuns">);
+			} else {
+				setAgentRunId(null);
 			}
-			toast.success(t("context.agentLoopTestSuccess"));
+			toast.success(t("context.domainMapGenerateSuccess"));
 		} catch (err) {
 			const message = err instanceof Error ? err.message : t("errors.unknown");
-			setSmokeTestError(message);
-			toast.error(t("context.agentLoopTestError"));
+			setDomainMapError(message);
+			toast.error(t("context.domainMapGenerateError"));
 		} finally {
-			setIsSmokeTestRunning(false);
+			setIsDomainMapRunning(false);
 		}
 	};
 
 	useEffect(() => {
-		if (!activeRun || activeRun.status === "running") return;
-		const timer = window.setTimeout(() => {
+		return () => {
 			setAgentRunId(null);
-		}, 3000);
-		return () => window.clearTimeout(timer);
-	}, [activeRun]);
+		};
+	}, []);
 
 	return (
 		<Card>
@@ -367,24 +375,24 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 					</Sheet>
 					<Button
 						variant="outline"
-						onClick={handleRunSmokeTest}
-						disabled={isSmokeTestRunning || showAgentProgress}
+						onClick={handleGenerateDomainMap}
+						disabled={isDomainMapRunning}
 					>
-						{isSmokeTestRunning ? (
+						{isDomainMapRunning ? (
 							<div className="flex items-center gap-2">
 								<span className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full inline-block animate-spin" />
-								<span>{t("context.agentLoopTestRunning")}</span>
+								<span>{t("context.domainMapGenerateRunning")}</span>
 							</div>
 						) : (
-							t("context.agentLoopTest")
+							t("context.domainMapGenerate")
 						)}
 					</Button>
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				{smokeTestError && (
+				{domainMapError && (
 					<p className="text-fontSize-sm text-destructive">
-						{smokeTestError}
+						{domainMapError}
 					</p>
 				)}
 				{!hasSources && !isLoading && (
@@ -392,9 +400,9 @@ export function ProductContextCard({ product }: ProductContextCardProps) {
 						{t("context.noSources")}
 					</p>
 				)}
-				{agentRunId && (
-					<AgentProgress productId={product._id} runId={agentRunId} />
-				)}
+				{showAgentProgress && activeRun ? (
+					<AgentProgress productId={product._id} runId={activeRun._id} />
+				) : null}
 				<SurfaceSignalsTable rows={surfaceRows} />
 				<ContextInputsSummary rows={contextSummaryRows} />
 			</CardContent>

@@ -46,6 +46,8 @@ export type AgentLoopValidationConfig = {
 	onValidation?: (
 		result: AgentLoopValidationResult,
 		output: unknown | null,
+		rawText?: string,
+		hadExtraText?: boolean,
 	) => Promise<void>;
 	buildFeedback?: (result: AgentLoopValidationResult) => string;
 };
@@ -58,6 +60,7 @@ export interface AgentLoopConfig {
 	tools?: ToolDefinition[];
 	sampling?: AgentLoopSampling;
 	onStep?: (step: StepResult) => Promise<void>;
+	onModelResponse?: (step: ModelResponseStep) => Promise<void>;
 	validation?: AgentLoopValidationConfig;
 }
 
@@ -91,6 +94,11 @@ export type StepResult = {
 	turn: number;
 	toolCalls: ToolCall[];
 	results: ToolResult[];
+};
+
+export type ModelResponseStep = {
+	turn: number;
+	response: AgentModelResponse;
 };
 
 const DEFAULT_SAMPLING: AgentLoopSampling = {};
@@ -176,6 +184,10 @@ export async function executeAgentLoop(
 		tokensOut += response.tokensOut ?? 0;
 		totalTokens += response.totalTokens ?? 0;
 
+		if (config.onModelResponse) {
+			await config.onModelResponse({ turn: turns, response });
+		}
+
 		if (
 			config.maxTotalTokens !== undefined &&
 			totalTokens > config.maxTotalTokens
@@ -203,7 +215,12 @@ export async function executeAgentLoop(
 				: null;
 
 			if (config.validation && validationResult) {
-				await config.validation.onValidation?.(validationResult, output);
+				await config.validation.onValidation?.(
+					validationResult,
+					output,
+					response.text,
+					parsed?.hadExtraText ?? false,
+				);
 				if (!validationResult.valid) {
 					messages.push({ role: "assistant", content: normalizedText });
 					messages.push({

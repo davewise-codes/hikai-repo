@@ -30,6 +30,7 @@ Construir un mapa estructurado de dominios de producto basado en evidencia real 
 3. Usar evidencia de tools, nunca inventar.
 4. Validar output antes de terminar.
 5. Si validacion falla, corregir y reintentar.
+6. Tras completar cada fase, actualizar el plan con `todo_manager` (action "update" o "complete") para marcar el item actual como completed y mover el siguiente a in_progress. Solo puede haber 1 item in_progress.
 6. Preferir pocos dominios con evidencia fuerte.
 7. Ignorar inputs de marketing, admin u observabilidad.
 8. Los dominios agregan señales de product_front y platform (no separarlos por superficie).

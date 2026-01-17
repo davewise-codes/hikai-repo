@@ -42,12 +42,12 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | F1.1    | Conectar tools al loop y habilitar maxTurns > 1                           | ✅     | Loop usa executeToolCall + UI provisional de smoke test                 | packages/convex/convex/agents/core/tool_registry.ts; packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/actions.ts; apps/webapp/src/domains/products/components/product-context-card.tsx; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json; apps/webapp/doc/agents/architecture.md |
 | F2.0    | TodoManager como tool del agente                                          | ✅     | Tool todo_manager creado con activeForm obligatorio                     | packages/convex/convex/agents/core/tools/todo_manager.ts; packages/convex/convex/agents/core/tools/index.ts; apps/webapp/doc/agents/tools.md                                                                                                                             |
 | F2.1    | UI de progreso de agente (AgentProgress component)                        | ✅     | Componente AgentProgress con polling/backoff y plan                      | apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/src/domains/products/components/index.ts; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
-| F2.2    | Integracion de AgentProgress en ProductContextCard                        | ✅     | Smoke test como unica accion + AgentProgress integrado                   | apps/webapp/src/domains/products/components/product-context-card.tsx; packages/convex/convex/agents/actions.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
+| F2.2    | Integracion de AgentProgress en ProductContextCard                        | ✅     | AgentProgress integrado en ProductContextCard                            | apps/webapp/src/domains/products/components/product-context-card.tsx; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.0    | Skill domain-map-agent con taxonomia y reglas                             | ✅     | Skill nuevo alineado a domain-map.md                                    | packages/convex/convex/agents/skills/source/domain-map-agent.skill.md; packages/convex/convex/agents/skills/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.1    | Tool validate_output con validators                                       | ✅     | Tool validate_output + validator domain_map                              | packages/convex/convex/agents/core/tools/validate.ts; packages/convex/convex/agents/core/validators/domain_map.ts; packages/convex/convex/agents/core/validators/index.ts; apps/webapp/doc/agents/validation.md; packages/convex/convex/agents/core/tools/index.ts |
 | F3.2    | Action generateDomainMap con loop completo                                | ✅     | Action en archivo nuevo + persistencia domainMap                         | packages/convex/convex/agents/domainMap.ts; packages/convex/convex/agents/domainMapData.ts; packages/convex/convex/schema.ts; packages/convex/convex/agents/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.2.1  | Loop autonomo con budget y control de output                              | ✅     | Loop basado en tools + reintentos por validacion + budget visible         | packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/core/tool_prompt_model.ts; packages/convex/convex/agents/core/json_utils.ts; packages/convex/convex/agents/domainMap.ts; apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/doc/agents/architecture.md; apps/webapp/doc/agents/tools.md; apps/webapp/doc/agents/validation.md; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
-| F3.3    | UI trigger y visualizacion de Domain Map                                  | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
+| F3.3    | UI trigger y visualizacion de Domain Map                                  | ✅     | Domain map card + trigger con progreso visible                          | apps/webapp/src/domains/products/components/domain-map-card.tsx; apps/webapp/src/domains/products/components/product-context-card.tsx; apps/webapp/src/domains/products/components/index.ts; apps/webapp/src/routes/settings/product/$slug/context.tsx; packages/convex/convex/agents/actions.ts; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F4.0    | Subagentes: delegate tool y agent_entrypoints                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F5.0    | Eliminar flujos legacy de skills (domain-taxonomy, feature-extraction)    | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 
@@ -871,7 +871,7 @@ PARTE 8: VALIDACION
 **Validacion**:
 - [ ] Action en actions/domainMap.ts
 - [ ] Re-exports en actions/index.ts y agents/index.ts
-- [ ] api.agents.generateDomainMap accesible desde webapp
+- [ ] api.agents.domainMap.generateDomainMap accesible desde webapp
 - [ ] Action crea run y ejecuta loop
 - [ ] Tools se ejecutan realmente
 - [ ] Domain map persiste en products.domainMap
@@ -977,6 +977,7 @@ PARTE 5: DOCUMENTACION
 **Archivos**:
 - `apps/webapp/src/domains/products/components/domain-map-card.tsx` (crear)
 - `apps/webapp/src/routes/settings/product/$slug/context.tsx` (modificar)
+- `apps/webapp/src/domains/products/components/product-context-card.tsx` (modificar)
 
 **Prompt**:
 
@@ -986,7 +987,7 @@ F3.3: UI Domain Map
 
 PARTE 1: BOTON TRIGGER
 
-- Boton "Generate Domain Map" en la pagina de contexto
+- Boton "Generate Domain Map" reemplaza el smoke test en ProductContextCard
 - Disabled si hay run activo
 - onClick llama a generateDomainMap action
 
@@ -999,20 +1000,15 @@ PARTE 3: VISUALIZACION
 
 - Card que muestra el domain map generado
 - Estructura:
-  - Columnas por kind (product, technical, internal)
-  - Cada domain como Card con:
-    - Name y weight (progress bar)
-    - Lista de surfaces (badges)
-    - Evidence colapsable
+  - Lista de domains con nombre, weight y evidence colapsable
 - Summary section:
-  - Total domains, confidence level
+  - Total domains
   - Warnings si existen
 
 PARTE 4: STYLING
 
 - Usar Card, Badge, Progress de @hikai/ui
-- Grid responsive (1 col mobile, 3 cols desktop)
-- Colores semanticos segun kind
+- Layout simple y legible
 
 PARTE 5: VALIDACION
 
@@ -1037,9 +1033,8 @@ PARTE 5: VALIDACION
    - [ ] Tool calls (read_sources, read_baseline, etc.)
    - [ ] Step de validacion
 4. **Ver Domain Map Card con**:
-   - [ ] Dominios organizados por tipo
-   - [ ] Evidence real de sources
-   - [ ] Summary con confidence
+   - [ ] Dominios con evidence real de sources
+   - [ ] Summary con total y warnings si aplica
 5. **Verificacion empirica de principios**:
    - [ ] Agent Loop: Multiples turns visibles
    - [ ] Tools: Tool calls con datos del producto
