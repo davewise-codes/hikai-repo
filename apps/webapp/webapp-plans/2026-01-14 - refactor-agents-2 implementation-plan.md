@@ -48,6 +48,7 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | F3.2    | Action generateDomainMap con loop completo                                | ✅     | Action en archivo nuevo + persistencia domainMap                         | packages/convex/convex/agents/domainMap.ts; packages/convex/convex/agents/domainMapData.ts; packages/convex/convex/schema.ts; packages/convex/convex/agents/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.2.1  | Loop autonomo con budget y control de output                              | ✅     | Loop basado en tools + reintentos por validacion + budget visible         | packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/core/tool_prompt_model.ts; packages/convex/convex/agents/core/json_utils.ts; packages/convex/convex/agents/domainMap.ts; apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/doc/agents/architecture.md; apps/webapp/doc/agents/tools.md; apps/webapp/doc/agents/validation.md; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
 | F3.3    | UI trigger y visualizacion de Domain Map                                  | ✅     | Domain map card + trigger con progreso visible                          | apps/webapp/src/domains/products/components/domain-map-card.tsx; apps/webapp/src/domains/products/components/product-context-card.tsx; apps/webapp/src/domains/products/components/index.ts; apps/webapp/src/routes/settings/product/$slug/context.tsx; packages/convex/convex/agents/actions.ts; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
+| F3.3.1  | Plan management aligned con learn-claude-code                             | ⏳     | todo_manager simple + plan visible + nag system                         | - |
 | F4.0    | Subagentes: delegate tool y agent_entrypoints                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F5.0    | Eliminar flujos legacy de skills (domain-taxonomy, feature-extraction)    | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 
@@ -1042,6 +1043,64 @@ PARTE 5: VALIDACION
    - [ ] Verificacion: Step de validacion presente
    - [ ] Criterio: status "success", no "max_turns_exceeded"
    - [ ] Observabilidad: Todo visible mientras trabaja
+
+---
+
+### F3.3.1: Plan management aligned con learn-claude-code
+
+**Objetivo**: El agente actualiza y ve su plan en cada turno (modelo 80%). Simplificar todo_manager y añadir nag.
+
+**Convex**: core loop + tools + skill/prompt
+
+**Archivos**:
+- `packages/convex/convex/agents/core/tools/todo_manager.ts` (breaking change)
+- `packages/convex/convex/agents/core/agent_loop.ts` (plan render + nag hook)
+- `packages/convex/convex/agents/domainMap.ts` (nag logic + inject plan)
+- `packages/convex/convex/agents/skills/source/domain-map-agent.skill.md` (reglas)
+- `apps/webapp/doc/agents/tools.md` (contrato tool)
+
+**Prompt**:
+
+```
+
+F3.3.1: Plan management
+
+PARTE 1: TODO MANAGER (BREAKING)
+
+- Simplificar input: { items: [...] } (reemplazo total)
+- Validar max 15 items y 1 in_progress
+- Actualizar description del tool
+
+PARTE 2: PLAN VISIBLE EN CADA TURNO
+
+- Renderizar plan en cada turn y enviarlo al modelo
+- Formato tipo learn-claude-code: [x]/[>]/[ ]
+
+PARTE 3: NAG SYSTEM
+
+- Contar turnos sin update de plan
+- Si >= 2 turnos, inyectar reminder en siguiente turno
+
+PARTE 4: SKILL
+
+- Reforzar reglas: create plan primero, update plan tras cada fase, validate_output antes de final
+
+```
+
+**Validacion**:
+- [ ] todo_manager acepta solo items (sin action/itemId)
+- [ ] Plan renderizado se ve en los turnos del modelo
+- [ ] Plan se actualiza tras cada fase (modelo)
+- [ ] Nag aparece tras 2 turnos sin plan update
+- [ ] validate_output usado antes de output final
+
+**Principios verificados**: Descomposicion, Observabilidad
+
+**Pruebas funcionales**:
+1. Ejecutar generateDomainMap
+2. Ver plan renderizado en outputs del modelo
+3. Ver plan avanzar (update/complete) tras fases
+4. Forzar 2 turnos sin update → ver reminder inyectado
 
 ---
 
