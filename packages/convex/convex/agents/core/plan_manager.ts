@@ -9,6 +9,15 @@ export type PlanItem = {
 	checkpoint?: unknown;
 };
 
+export type PlanItemInput = {
+	id?: string;
+	content: string;
+	activeForm: string;
+	status?: PlanStatus;
+	evidence?: string[];
+	checkpoint?: unknown;
+};
+
 export type PlanManager = {
 	items: PlanItem[];
 	maxItems: number;
@@ -16,6 +25,8 @@ export type PlanManager = {
 };
 
 const MAX_ITEMS = 15;
+
+export const PLAN_MAX_ITEMS = MAX_ITEMS;
 
 export function createPlan(
 	items: Array<{ content: string; activeForm: string }>,
@@ -34,6 +45,24 @@ export function createPlan(
 		items: trimmedItems,
 		maxItems: MAX_ITEMS,
 		currentItem: trimmedItems.find((item) => item.status === "in_progress") ?? null,
+	};
+}
+
+export function createPlanFromItems(items: PlanItemInput[]): PlanManager {
+	const trimmedItems = items.slice(0, MAX_ITEMS).map((item, index) => ({
+		id: item.id ?? `step-${index + 1}`,
+		content: item.content,
+		activeForm: item.activeForm,
+		status: item.status ?? "pending",
+		evidence: item.evidence,
+		checkpoint: item.checkpoint,
+	}));
+	const normalized = normalizePlan(trimmedItems);
+
+	return {
+		items: normalized,
+		maxItems: MAX_ITEMS,
+		currentItem: normalized.find((item) => item.status === "in_progress") ?? null,
 	};
 }
 

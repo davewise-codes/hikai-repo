@@ -5,6 +5,7 @@ import {
 	type ToolResult,
 } from "./tool_registry";
 import { extractJsonPayload } from "./json_utils";
+import { renderPlan, type PlanManager } from "./plan_manager";
 
 export type AgentMessage = {
 	role: "user" | "assistant";
@@ -62,6 +63,10 @@ export interface AgentLoopConfig {
 	onStep?: (step: StepResult) => Promise<void>;
 	onModelResponse?: (step: ModelResponseStep) => Promise<void>;
 	validation?: AgentLoopValidationConfig;
+	planNag?: {
+		threshold: number;
+		message: string;
+	};
 }
 
 export type AgentLoopStatus =
@@ -120,6 +125,8 @@ export async function executeAgentLoop(
 	let tokensOut = 0;
 	let totalTokens = 0;
 	let turns = 0;
+	let lastPlan: PlanManager | null = null;
+	let turnsSincePlanUpdate = 0;
 
 	while (turns < config.maxTurns) {
 		if (
@@ -252,8 +259,25 @@ export async function executeAgentLoop(
 		}
 
 		const results = await executeToolCalls(response.toolCalls, tools);
+		const planUpdated = updatePlanState(results, (plan) => {
+			lastPlan = plan;
+		});
+		if (planUpdated) {
+			turnsSincePlanUpdate = 0;
+		} else {
+			turnsSincePlanUpdate += 1;
+		}
+
+		const reminder =
+			config.planNag &&
+			turnsSincePlanUpdate >= config.planNag.threshold
+				? config.planNag.message
+				: null;
 		messages.push({ role: "assistant", content: response.text });
-		messages.push({ role: "user", content: formatToolResults(results) });
+		messages.push({
+			role: "user",
+			content: formatToolResults(results, lastPlan, reminder),
+		});
 
 		if (config.onStep) {
 			await config.onStep({ turn: turns, toolCalls: response.toolCalls, results });
@@ -281,10 +305,6 @@ async function executeToolCalls(
 	return results;
 }
 
-function formatToolResults(results: ToolResult[]): string {
-	return JSON.stringify(results);
-}
-
 function buildMetrics(
 	startMs: number,
 	turns: number,
@@ -302,6 +322,48 @@ function buildMetrics(
 		maxTurns: config.maxTurns,
 		maxTotalTokens: config.maxTotalTokens,
 	};
+}
+
+function updatePlanState(
+	results: ToolResult[],
+	setPlan: (plan: PlanManager) => void,
+): boolean {
+	const planResult = results.find((result) => result.name === "todo_manager");
+	if (!planResult || planResult.error) {
+		return false;
+	}
+	if (isPlanManager(planResult.output)) {
+		setPlan(planResult.output);
+		return true;
+	}
+	return false;
+}
+
+function isPlanManager(output: unknown): output is PlanManager {
+	if (!output || typeof output !== "object") return false;
+	const plan = output as PlanManager;
+	return Array.isArray(plan.items) && typeof plan.maxItems === "number";
+}
+
+function formatToolResults(
+	results: ToolResult[],
+	plan: PlanManager | null,
+	reminder: string | null,
+): string {
+	const blocks = [JSON.stringify(results)];
+	if (plan) {
+		const rendered = renderPlan(plan);
+		const completed = plan.items.filter(
+			(item) => item.status === "completed",
+		).length;
+		blocks.push(
+			`<current-plan>\n${rendered}\n(${completed}/${plan.items.length} completed)\n</current-plan>`,
+		);
+	}
+	if (reminder) {
+		blocks.push(reminder);
+	}
+	return blocks.join("\n\n");
 }
 
 function validateOutput(

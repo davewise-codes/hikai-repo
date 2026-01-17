@@ -231,15 +231,16 @@ Construir un mapa estructurado de dominios de producto basado en evidencia real 
 
 ## Reglas
 
-1. SIEMPRE empezar con todo_manager para crear plan.
-2. Leer TODAS las sources antes de mapear.
-3. Usar evidencia de tools, nunca inventar.
-4. Validar output antes de terminar.
-5. Si validacion falla, corregir y reintentar.
-6. Preferir pocos dominios con evidencia fuerte.
-7. Ignorar inputs de marketing, admin u observabilidad.
-8. Los dominios agregan señales de product_front y platform (no separarlos por superficie).
-9. Trabajo fundacional (infra, refactors, tooling) es evidencia secundaria, no dominio dedicado salvo capacidad clara.
+1. OBLIGATORIO: Tu PRIMERA accion debe ser llamar a `todo_manager` para establecer tu plan. NO generes output final sin haber creado un plan primero.
+2. Tras completar cada fase, actualizar el plan con `todo_manager` enviando la lista COMPLETA y marcando el item actual como completed y el siguiente como in_progress. Solo puede haber 1 item in_progress.
+3. Leer TODAS las sources antes de mapear.
+4. Usar evidencia de tools, nunca inventar.
+5. Validar output antes de terminar.
+6. Si validacion falla, corregir y reintentar.
+7. Preferir pocos dominios con evidencia fuerte.
+8. Ignorar inputs de marketing, admin u observabilidad.
+9. Los dominios agregan señales de product_front y platform (no separarlos por superficie).
+10. Trabajo fundacional (infra, refactors, tooling) es evidencia secundaria, no dominio dedicado salvo capacidad clara.
 
 ## Output Schema
 

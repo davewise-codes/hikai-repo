@@ -45,7 +45,7 @@ ToolResult:
 | read_sources | { productId, limit? } | SourceContext[] | max 50 por defecto |
 | read_baseline | { productId } | ProductBaseline | solo baseline (no todo el producto) |
 | read_context_inputs | { productId } | ContextInputs | retorna nulls si no hay run previo |
-| todo_manager | { action, items?, itemId? } | Plan | max 15 items |
+| todo_manager | { items } | Plan | max 15 items |
 | validate_output | { outputType, data } | ValidationResult | warnings no bloquean v1 |
 
 ---
@@ -129,7 +129,6 @@ Input:
 
 ```json
 {
-	"action": "create",
 	"items": [
 		{
 			"content": "Gather context",
@@ -174,9 +173,9 @@ Output:
 ```
 
 Notas:
-- action admite: create | update | complete | list
-- update/complete/list fallan si no hay plan creado
+- items siempre es la lista completa (reemplazo total)
 - activeForm es obligatorio y debe estar en presente
+- solo 1 item puede estar in_progress
 
 ### validate_output
 
