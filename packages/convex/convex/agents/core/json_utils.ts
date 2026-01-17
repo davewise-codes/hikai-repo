@@ -1,0 +1,88 @@
+export type ExtractedJson = {
+	data: unknown;
+	normalizedText: string;
+	hadExtraText: boolean;
+};
+
+const CODE_FENCE_REGEX = /```[a-zA-Z]*\n([\s\S]*?)```/g;
+
+export function extractJsonPayload(text: string): ExtractedJson | null {
+	if (!text) return null;
+	const trimmed = text.trim();
+	const stripped = trimmed.replace(CODE_FENCE_REGEX, "$1").trim();
+	if (!stripped) return null;
+
+	const startIndex = findJsonStart(stripped);
+	if (startIndex === -1) return null;
+
+	const endIndex = findJsonEnd(stripped, startIndex);
+	if (endIndex === -1) return null;
+
+	const slice = stripped.slice(startIndex, endIndex + 1);
+	try {
+		const data = JSON.parse(slice) as unknown;
+		const normalizedText = JSON.stringify(data, null, 2);
+		const hadExtraText =
+			stripped.slice(0, startIndex).trim().length > 0 ||
+			stripped.slice(endIndex + 1).trim().length > 0;
+		return { data, normalizedText, hadExtraText };
+	} catch {
+		return null;
+	}
+}
+
+function findJsonStart(text: string): number {
+	for (let i = 0; i < text.length; i += 1) {
+		const char = text[i];
+		if (char === "{" || char === "[") {
+			return i;
+		}
+	}
+	return -1;
+}
+
+function findJsonEnd(text: string, startIndex: number): number {
+	const stack: string[] = [];
+	let inString = false;
+	let escaped = false;
+	for (let i = startIndex; i < text.length; i += 1) {
+		const char = text[i];
+		if (inString) {
+			if (escaped) {
+				escaped = false;
+				continue;
+			}
+			if (char === "\\") {
+				escaped = true;
+				continue;
+			}
+			if (char === "\"") {
+				inString = false;
+			}
+			continue;
+		}
+
+		if (char === "\"") {
+			inString = true;
+			continue;
+		}
+
+		if (char === "{" || char === "[") {
+			stack.push(char);
+			continue;
+		}
+
+		if (char === "}" || char === "]") {
+			const last = stack.pop();
+			if (!last) {
+				return -1;
+			}
+			if (last === "{" && char !== "}") return -1;
+			if (last === "[" && char !== "]") return -1;
+			if (stack.length === 0) {
+				return i;
+			}
+		}
+	}
+	return -1;
+}

@@ -50,6 +50,16 @@ const MAX_POLL_MS = 5000;
 const POLL_FACTOR = 1.5;
 const PLAN_COLLAPSE_THRESHOLD = 6;
 
+type BudgetInfo = {
+	turns: number;
+	maxTurns: number;
+	tokensIn: number;
+	tokensOut: number;
+	totalTokens: number;
+	maxTotalTokens?: number;
+	status?: string;
+};
+
 export function AgentProgress({
 	productId,
 	runId,
@@ -73,6 +83,7 @@ export function AgentProgress({
 	const plan = useMemo(() => extractPlan(steps), [steps]);
 	const planItems = plan?.items ?? [];
 	const showPlanToggle = planItems.length > PLAN_COLLAPSE_THRESHOLD;
+	const budget = useMemo(() => extractBudget(steps), [steps]);
 
 	useEffect(() => {
 		let isActive = true;
@@ -142,6 +153,34 @@ export function AgentProgress({
 					<div className="flex items-center gap-2 text-fontSize-sm text-muted-foreground">
 						<RefreshCw className="h-4 w-4 animate-spin" />
 						<span>{latestStep.step}</span>
+					</div>
+				) : null}
+				{budget ? (
+					<div className="space-y-1 rounded-md border border-border px-3 py-2 text-fontSize-xs">
+						<div className="font-medium text-muted-foreground">
+							{t("context.agentProgressBudgetTitle")}
+						</div>
+						<div className="flex flex-wrap items-center gap-2 text-muted-foreground">
+							<span>
+								{t("context.agentProgressBudgetTurns", {
+									turns: budget.turns,
+									maxTurns: budget.maxTurns,
+								})}
+							</span>
+							<span>·</span>
+							<span>
+								{t("context.agentProgressBudgetTokens", {
+									total: budget.totalTokens,
+									max: budget.maxTotalTokens ?? "-",
+								})}
+							</span>
+						</div>
+						{budget.status === "budget_exceeded" ? (
+							<div className="flex items-center gap-2 text-warning">
+								<AlertCircle className="h-3.5 w-3.5" />
+								<span>{t("context.agentProgressBudgetExceeded")}</span>
+							</div>
+						) : null}
 					</div>
 				) : null}
 				{planItems.length > 0 ? (
@@ -266,4 +305,20 @@ function getToolCount(metadata?: Record<string, unknown>): number {
 	if (!metadata || typeof metadata !== "object") return 0;
 	const toolCalls = (metadata as { toolCalls?: unknown }).toolCalls;
 	return Array.isArray(toolCalls) ? toolCalls.length : 0;
+}
+
+function extractBudget(steps: AgentRunStep[]): BudgetInfo | null {
+	for (let i = steps.length - 1; i >= 0; i -= 1) {
+		const step = steps[i];
+		if (step.step !== "Budget") continue;
+		const metadata = step.metadata as BudgetInfo | undefined;
+		if (
+			typeof metadata?.turns !== "number" ||
+			typeof metadata?.maxTurns !== "number"
+		) {
+			return null;
+		}
+		return metadata;
+	}
+	return null;
 }

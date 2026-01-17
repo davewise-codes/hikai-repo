@@ -9,7 +9,6 @@ import {
 	executeAgentLoop,
 	type AgentLoopStatus,
 	type AgentMessage,
-	type AgentModel,
 	type StepResult,
 } from "./core/agent_loop";
 import { injectSkill, loadSkillFromRegistry } from "./core/skill_loader";
@@ -22,13 +21,17 @@ import {
 } from "./core/tools";
 import { createPlan } from "./core/plan_manager";
 import { validateDomainMap } from "./core/validators";
-import type { ToolResult } from "./core/tool_registry";
+import { createToolPromptModel } from "./core/tool_prompt_model";
 import { SKILL_CONTENTS } from "./skills";
 
 const AGENT_NAME = "Domain Map Agent";
 const USE_CASE = "domain_map";
 const PROMPT_VERSION = "v1.0";
 const SKILL_NAME = "domain-map-agent";
+const MAX_TURNS = 10;
+const MAX_TOKENS_PER_TURN = 2000;
+const MAX_TOTAL_TOKENS = 12000;
+const TIMEOUT_MS = 8 * 60 * 1000;
 
 export const generateDomainMap = action({
 	args: {
@@ -62,9 +65,11 @@ export const generateDomainMap = action({
 
 		const aiConfig = getAgentAIConfig(AGENT_NAME);
 		const telemetryConfig = getAgentTelemetryConfig(AGENT_NAME);
-		const model = createDomainMapModel(productId, aiConfig);
+		const model = createToolPromptModel(createLLMAdapter(aiConfig), {
+			protocol: buildToolProtocol(productId),
+		});
 		const skill = loadSkillFromRegistry(SKILL_NAME, SKILL_CONTENTS);
-		const prompt = buildDomainMapPrompt();
+		const prompt = buildDomainMapPrompt(productId);
 		const messages: AgentMessage[] = [injectSkill(skill), { role: "user", content: prompt }];
 		const defaultPlan = createPlan([
 			{ content: "Gather context", activeForm: "Gathering context" },
@@ -85,9 +90,25 @@ export const generateDomainMap = action({
 		const result = await executeAgentLoop(
 			model,
 			{
-				maxTurns: 10,
-				timeoutMs: 8 * 60 * 1000,
+				maxTurns: MAX_TURNS,
+				maxTokens: MAX_TOKENS_PER_TURN,
+				maxTotalTokens: MAX_TOTAL_TOKENS,
+				timeoutMs: TIMEOUT_MS,
 				tools,
+				validation: {
+					validate: validateDomainMap,
+					onValidation: async (validation) => {
+						await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+							productId,
+							runId,
+							step: "Validation: domain_map",
+							status: validation.valid ? "success" : "warn",
+							metadata: {
+								validation,
+							},
+						});
+					},
+				},
 				onStep: async (step) => {
 					if (step.turn === 0 && !includesTool(step, "todo_manager")) {
 						await ctx.runMutation(internal.agents.agentRuns.appendStep, {
@@ -121,39 +142,10 @@ export const generateDomainMap = action({
 			});
 		}
 
-		let domainMap: Record<string, unknown> | null = null;
-		if (result.status === "completed" && result.text) {
-			try {
-				domainMap = JSON.parse(result.text) as Record<string, unknown>;
-			} catch (error) {
-				await ctx.runMutation(internal.ai.telemetry.recordError, {
-					organizationId,
-					productId,
-					userId,
-					useCase: USE_CASE,
-					agentName: AGENT_NAME,
-					threadId: undefined,
-					provider: aiConfig.provider,
-					model: aiConfig.model,
-					errorMessage:
-						error instanceof Error ? error.message : "Invalid JSON response",
-					prompt,
-					metadata: { source: "domain-map-agent" },
-				});
-			}
-		}
-
-		let validation = null;
-		if (domainMap) {
-			validation = validateDomainMap(domainMap);
-			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
-				productId,
-				runId,
-				step: "Validation: domain_map",
-				status: validation.valid ? "success" : "warn",
-				metadata: validation,
-			});
-		}
+		const domainMap =
+			result.status === "completed" && result.output
+				? (result.output as Record<string, unknown>)
+				: null;
 
 		if (domainMap) {
 			await ctx.runMutation(internal.agents.domainMapData.saveDomainMap, {
@@ -171,7 +163,7 @@ export const generateDomainMap = action({
 				agentName: AGENT_NAME,
 				promptVersion: PROMPT_VERSION,
 				prompt,
-				response: result.text,
+				response: result.rawText ?? result.text,
 				provider: aiConfig.provider,
 				model: aiConfig.model,
 				tokensIn: result.metrics.tokensIn,
@@ -180,10 +172,36 @@ export const generateDomainMap = action({
 				latencyMs: result.metrics.latencyMs,
 				metadata: {
 					source: "domain-map-agent",
-					validation,
+					status: result.status,
+					turns: result.metrics.turns,
+					maxTurns: result.metrics.maxTurns,
+					maxTotalTokens: result.metrics.maxTotalTokens,
 				},
 			});
 		}
+
+		const budgetStepStatus =
+			result.status === "completed"
+				? "success"
+				: result.status === "budget_exceeded"
+					? "error"
+					: "warn";
+
+		await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+			productId,
+			runId,
+			step: "Budget",
+			status: budgetStepStatus,
+			metadata: {
+				turns: result.metrics.turns,
+				maxTurns: result.metrics.maxTurns,
+				tokensIn: result.metrics.tokensIn,
+				tokensOut: result.metrics.tokensOut,
+				totalTokens: result.metrics.totalTokens,
+				maxTotalTokens: result.metrics.maxTotalTokens,
+				status: result.status,
+			},
+		});
 
 		const finalStatus = result.status === "completed" ? "success" : "error";
 		await ctx.runMutation(internal.agents.agentRuns.finishRun, {
@@ -202,114 +220,31 @@ export const generateDomainMap = action({
 	},
 });
 
-function createDomainMapModel(
-	productId: Id<"products">,
-	aiConfig: { provider: "openai" | "anthropic"; model: string },
-): AgentModel {
-	const adapter = createLLMAdapter(aiConfig);
-
-	return {
-		generate: async ({ messages, maxTokens, temperature, topP }) => {
-			const toolResults = extractToolResults(messages);
-			if (!toolResults) {
-				return {
-					text: "Requesting tool outputs",
-					stopReason: "tool_use",
-					toolCalls: [
-						{
-							name: "todo_manager",
-							input: {
-								action: "create",
-								items: [
-									{
-										content: "Gather context",
-										activeForm: "Gathering context",
-										status: "in_progress",
-									},
-									{
-										content: "Analyze surfaces",
-										activeForm: "Analyzing surfaces",
-										status: "pending",
-									},
-									{
-										content: "Map domains",
-										activeForm: "Mapping domains",
-										status: "pending",
-									},
-									{
-										content: "Validate output",
-										activeForm: "Validating output",
-										status: "pending",
-									},
-								],
-							},
-							id: "todo_manager",
-						},
-						{
-							name: "read_sources",
-							input: { productId, limit: 50 },
-							id: "read_sources",
-						},
-						{
-							name: "read_baseline",
-							input: { productId },
-							id: "read_baseline",
-						},
-						{
-							name: "read_context_inputs",
-							input: { productId },
-							id: "read_context_inputs",
-						},
-					],
-					tokensIn: 0,
-					tokensOut: 0,
-					totalTokens: 0,
-				};
-			}
-
-			const prompt = buildDomainMapPrompt(toolResults);
-			const response = await adapter.generateText({
-				prompt,
-				maxTokens,
-				temperature,
-				topP,
-			});
-
-			return {
-				text: response.text,
-				stopReason: "end",
-				tokensIn: response.tokensIn,
-				tokensOut: response.tokensOut,
-				totalTokens: response.totalTokens,
-			};
-		},
-	};
+function buildDomainMapPrompt(productId: Id<"products">): string {
+	return [
+		"You are the Domain Map Agent.",
+		"Goal: produce a product domain map using evidence from tools.",
+		"Use ONLY evidence from sources classified as product_front or platform.",
+		"Ignore marketing, admin, and observability sources.",
+		"Always call todo_manager first to create your plan.",
+		"Use read_sources, read_baseline, and read_context_inputs to gather context.",
+		"Validate your output with validate_output before finishing.",
+		`Use productId: ${productId} when calling tools.`,
+	].join("\n");
 }
 
-function extractToolResults(messages: AgentMessage[]): ToolResult[] | null {
-	const last = messages[messages.length - 1]?.content ?? "";
-	try {
-		const parsed = JSON.parse(last);
-		if (!Array.isArray(parsed)) return null;
-		const hasToolShape = parsed.every(
-			(entry) => entry && typeof entry.name === "string",
-		);
-		return hasToolShape ? (parsed as ToolResult[]) : null;
-	} catch {
-		return null;
-	}
-}
-
-function buildDomainMapPrompt(toolResults?: ToolResult[]): string {
-	const sources = toolResults?.find((result) => result.name === "read_sources")
-		?.output;
-	const baseline = toolResults?.find((result) => result.name === "read_baseline")
-		?.output;
-	const contextInputs = toolResults?.find(
-		(result) => result.name === "read_context_inputs",
-	)?.output;
-
-	return `You are the Domain Map Agent.\n\nUse only evidence from product_front and platform sources.\n\nReturn ONLY valid JSON matching the schema.\n\nBaseline:\n${JSON.stringify(baseline ?? {}, null, 2)}\n\nSources:\n${JSON.stringify(sources ?? [], null, 2)}\n\nContext inputs:\n${JSON.stringify(contextInputs ?? {}, null, 2)}\n`;
+function buildToolProtocol(productId: Id<"products">): string {
+	return [
+		"You are an autonomous agent.",
+		"You must respond with a single JSON object and no extra text.",
+		"Use this schema for tool calls:",
+		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"tool_name","input":{}}]}',
+		"Use this schema for final output:",
+		'{"type":"final","output":{}}',
+		"Only call tools listed in the tool catalog.",
+		"Tool inputs must include the productId when required.",
+		`Use productId: ${productId}.`,
+	].join("\n");
 }
 
 function includesTool(step: StepResult, toolName: string): boolean {

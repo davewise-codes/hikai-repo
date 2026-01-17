@@ -4,6 +4,7 @@ import {
 	type ToolDefinition,
 	type ToolResult,
 } from "./tool_registry";
+import { extractJsonPayload } from "./json_utils";
 
 export type AgentMessage = {
 	role: "user" | "assistant";
@@ -34,18 +35,36 @@ export type AgentLoopSampling = {
 	topP?: number;
 };
 
+export type AgentLoopValidationResult = {
+	valid: boolean;
+	errors: string[];
+	warnings: string[];
+};
+
+export type AgentLoopValidationConfig = {
+	validate: (output: unknown) => AgentLoopValidationResult;
+	onValidation?: (
+		result: AgentLoopValidationResult,
+		output: unknown | null,
+	) => Promise<void>;
+	buildFeedback?: (result: AgentLoopValidationResult) => string;
+};
+
 export interface AgentLoopConfig {
 	maxTurns: number;
 	maxTokens?: number;
+	maxTotalTokens?: number;
 	timeoutMs: number;
 	tools?: ToolDefinition[];
 	sampling?: AgentLoopSampling;
 	onStep?: (step: StepResult) => Promise<void>;
+	validation?: AgentLoopValidationConfig;
 }
 
 export type AgentLoopStatus =
 	| "completed"
 	| "max_turns_exceeded"
+	| "budget_exceeded"
 	| "timeout"
 	| "error";
 
@@ -55,10 +74,14 @@ export type AgentLoopMetrics = {
 	tokensOut: number;
 	totalTokens: number;
 	latencyMs: number;
+	maxTurns: number;
+	maxTotalTokens?: number;
 };
 
 export type AgentLoopResult = {
 	text: string;
+	rawText?: string;
+	output?: unknown;
 	status: AgentLoopStatus;
 	metrics: AgentLoopMetrics;
 	errorMessage?: string;
@@ -91,11 +114,36 @@ export async function executeAgentLoop(
 	let turns = 0;
 
 	while (turns < config.maxTurns) {
+		if (
+			config.maxTotalTokens !== undefined &&
+			totalTokens >= config.maxTotalTokens
+		) {
+			return {
+				text: "",
+				status: "budget_exceeded",
+				metrics: buildMetrics(
+					startMs,
+					turns,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					config,
+				),
+			};
+		}
+
 		if (Date.now() - startMs > config.timeoutMs) {
 			return {
 				text: "",
 				status: "timeout",
-				metrics: buildMetrics(startMs, turns, tokensIn, tokensOut, totalTokens),
+				metrics: buildMetrics(
+					startMs,
+					turns,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					config,
+				),
 			};
 		}
 
@@ -112,7 +160,14 @@ export async function executeAgentLoop(
 			return {
 				text: "",
 				status: "error",
-				metrics: buildMetrics(startMs, turns, tokensIn, tokensOut, totalTokens),
+				metrics: buildMetrics(
+					startMs,
+					turns,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					config,
+				),
 				errorMessage: error instanceof Error ? error.message : "Unknown error",
 			};
 		}
@@ -121,11 +176,61 @@ export async function executeAgentLoop(
 		tokensOut += response.tokensOut ?? 0;
 		totalTokens += response.totalTokens ?? 0;
 
-		if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
+		if (
+			config.maxTotalTokens !== undefined &&
+			totalTokens > config.maxTotalTokens
+		) {
 			return {
 				text: response.text,
+				status: "budget_exceeded",
+				metrics: buildMetrics(
+					startMs,
+					turns + 1,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					config,
+				),
+			};
+		}
+
+		if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
+			const parsed = extractJsonPayload(response.text);
+			const normalizedText = parsed?.normalizedText ?? response.text;
+			const output = parsed?.data ?? null;
+			const validationResult = config.validation
+				? validateOutput(config.validation, output)
+				: null;
+
+			if (config.validation && validationResult) {
+				await config.validation.onValidation?.(validationResult, output);
+				if (!validationResult.valid) {
+					messages.push({ role: "assistant", content: normalizedText });
+					messages.push({
+						role: "user",
+						content: buildValidationFeedback(
+							validationResult,
+							config.validation,
+						),
+					});
+					turns += 1;
+					continue;
+				}
+			}
+
+			return {
+				text: normalizedText,
+				rawText: response.text,
+				output: output ?? undefined,
 				status: "completed",
-				metrics: buildMetrics(startMs, turns + 1, tokensIn, tokensOut, totalTokens),
+				metrics: buildMetrics(
+					startMs,
+					turns + 1,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					config,
+				),
 			};
 		}
 
@@ -143,7 +248,7 @@ export async function executeAgentLoop(
 	return {
 		text: "",
 		status: "max_turns_exceeded",
-		metrics: buildMetrics(startMs, turns, tokensIn, tokensOut, totalTokens),
+		metrics: buildMetrics(startMs, turns, tokensIn, tokensOut, totalTokens, config),
 	};
 }
 
@@ -169,6 +274,7 @@ function buildMetrics(
 	tokensIn: number,
 	tokensOut: number,
 	totalTokens: number,
+	config: AgentLoopConfig,
 ): AgentLoopMetrics {
 	return {
 		turns,
@@ -176,5 +282,36 @@ function buildMetrics(
 		tokensOut,
 		totalTokens,
 		latencyMs: Date.now() - startMs,
+		maxTurns: config.maxTurns,
+		maxTotalTokens: config.maxTotalTokens,
 	};
+}
+
+function validateOutput(
+	validation: AgentLoopValidationConfig,
+	output: unknown | null,
+): AgentLoopValidationResult {
+	if (output === null || output === undefined) {
+		return {
+			valid: false,
+			errors: ["Invalid JSON output"],
+			warnings: [],
+		};
+	}
+	return validation.validate(output);
+}
+
+function buildValidationFeedback(
+	result: AgentLoopValidationResult,
+	validation: AgentLoopValidationConfig,
+): string {
+	if (validation.buildFeedback) {
+		return validation.buildFeedback(result);
+	}
+	return [
+		"Validation failed.",
+		"Errors:",
+		...result.errors.map((error) => `- ${error}`),
+		"Return ONLY valid JSON that fixes the errors.",
+	].join("\n");
 }

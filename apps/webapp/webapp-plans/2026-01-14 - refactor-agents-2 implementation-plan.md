@@ -46,6 +46,7 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | F3.0    | Skill domain-map-agent con taxonomia y reglas                             | ✅     | Skill nuevo alineado a domain-map.md                                    | packages/convex/convex/agents/skills/source/domain-map-agent.skill.md; packages/convex/convex/agents/skills/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.1    | Tool validate_output con validators                                       | ✅     | Tool validate_output + validator domain_map                              | packages/convex/convex/agents/core/tools/validate.ts; packages/convex/convex/agents/core/validators/domain_map.ts; packages/convex/convex/agents/core/validators/index.ts; apps/webapp/doc/agents/validation.md; packages/convex/convex/agents/core/tools/index.ts |
 | F3.2    | Action generateDomainMap con loop completo                                | ✅     | Action en archivo nuevo + persistencia domainMap                         | packages/convex/convex/agents/domainMap.ts; packages/convex/convex/agents/domainMapData.ts; packages/convex/convex/schema.ts; packages/convex/convex/agents/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
+| F3.2.1  | Loop autonomo con budget y control de output                              | ✅     | Loop basado en tools + reintentos por validacion + budget visible         | packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/core/tool_prompt_model.ts; packages/convex/convex/agents/core/json_utils.ts; packages/convex/convex/agents/domainMap.ts; apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/doc/agents/architecture.md; apps/webapp/doc/agents/tools.md; apps/webapp/doc/agents/validation.md; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
 | F3.3    | UI trigger y visualizacion de Domain Map                                  | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F4.0    | Subagentes: delegate tool y agent_entrypoints                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F5.0    | Eliminar flujos legacy de skills (domain-taxonomy, feature-extraction)    | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
@@ -81,7 +82,6 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 - Tools deben tener pagination/limits para evitar outputs masivos
 - No migrar datos existentes; cambios solo para nuevos datos
 - Commits con formato `feat(agents): [F#.#] descripcion`
-- Pruebas minimas: `pnpm --filter @hikai/convex exec tsc --noEmit` y `pnpm --filter @hikai/webapp exec tsc --noEmit`
 
 ### Convex: separacion de responsabilidades
 
@@ -765,8 +765,8 @@ PARTE 2: VALIDATOR domain_map
 
 PARTE 3: NIVELES DE VALIDACION
 
-- v1: warnings only (no bloquea)
-- v2 (futuro): strict mode (bloquea si falla)
+- v1: warnings only (telemetria)
+- v1.1 (F3.2.1): errores bloquean el cierre del loop
 - Loggear validation results en telemetria
 
 PARTE 4: DOCUMENTACION
@@ -889,6 +889,82 @@ PARTE 8: VALIDACION
 3. Verificar domain map persistido en products.domainMap:
    - [ ] Tiene domains con evidence real?
    - [ ] Evidence viene de las sources (no inventada)?
+
+---
+
+### F3.2.1: Loop autonomo con budget y control de output
+
+**Objetivo**: Cerrar gap de autonomia. El modelo decide tools y reintenta hasta pasar validacion. Controlar presupuesto (turns + tokens) y recortar output a JSON valido.
+
+**Convex**: elevar capacidades al core para reutilizar en otros agentes
+
+**Archivos**:
+- `packages/convex/convex/agents/core/agent_loop.ts` (actualizar)
+- `packages/convex/convex/agents/core/tool_prompt_model.ts` (crear)
+- `packages/convex/convex/agents/core/json_utils.ts` (crear)
+- `packages/convex/convex/agents/domainMap.ts` (actualizar)
+- `apps/webapp/src/domains/products/components/agent-progress.tsx` (actualizar)
+- `apps/webapp/doc/agents/architecture.md` (actualizar)
+- `apps/webapp/doc/agents/tools.md` (actualizar)
+- `apps/webapp/doc/agents/validation.md` (actualizar)
+
+**Prompt**:
+
+```
+
+F3.2.1: Loop autonomo con budget
+
+PARTE 1: CORE LOOP
+
+- Agregar maxTotalTokens al agent_loop
+- Nuevo status: budget_exceeded
+- Recortar output a JSON valido si hay texto extra
+- Si validate_output falla, reintentar hasta pasar o agotar budget
+
+PARTE 2: TOOL PROMPT MODEL
+
+- Crear model wrapper que permita tool calls via JSON protocol
+- El modelo decide tool_use vs final en cada turno
+
+PARTE 3: DOMAIN MAP ACTION
+
+- Usar el nuevo tool prompt model
+- Eliminar el primer turno forzado
+- El loop debe iterar hasta validar output
+- Registrar step de validation por intento
+- Registrar step de budget con turns/tokens/maxTokens
+
+PARTE 4: UI
+
+- Mostrar budget (turns/tokens) en AgentProgress
+- Mostrar status budget_exceeded si aplica
+
+PARTE 5: DOCUMENTACION
+
+- Actualizar docs para:
+  - budget_exceeded
+  - reintentos por validacion
+  - recorte de output a JSON
+
+```
+
+**Validacion**:
+- [ ] El agente decide tools (no primer turno forzado)
+- [ ] Hay reintentos cuando la validacion falla
+- [ ] budget_exceeded existe y se reporta
+- [ ] Output final es JSON valido aunque el modelo incluya texto extra
+
+**Principios verificados**: Agent Loop, Verificacion, Criterio de finalizacion, Observabilidad
+
+**Pruebas funcionales**:
+1. Ejecutar generateDomainMap en producto con sources
+2. Verificar en agentRuns:
+   - [ ] Hay multiples turns con tools
+   - [ ] Hay al menos un step de validacion
+   - [ ] Hay step de budget con turns/tokens
+3. Forzar invalid JSON (prompt alterado o inputs vacios) y confirmar:
+   - [ ] El agente reintenta hasta validar
+   - [ ] status != "completed" si excede budget
 
 ---
 

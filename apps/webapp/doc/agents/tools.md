@@ -205,7 +205,8 @@ Output:
 
 - Pagination: `limit` en tools de lectura.
 - Outputs grandes (> 10KB): almacenar en storage y referenciar en logs.
-- Timeouts y budget: maxTurns y timeoutMs configurables por agente.
+- Timeouts y budget: maxTurns + maxTotalTokens (status `budget_exceeded`).
+- Output control: recortar respuesta a JSON valido si hay texto extra.
 
 ---
 

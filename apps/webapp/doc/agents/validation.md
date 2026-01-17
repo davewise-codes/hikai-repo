@@ -29,5 +29,5 @@ Reglas de validacion objetivas para outputs de agentes.
 
 ### Notas
 
-- En v1, los errores no bloquean la ejecucion del agente.
+- Los errores bloquean el cierre del loop (el agente reintenta hasta pasar).
 - Los warnings se propagan para trazabilidad.
