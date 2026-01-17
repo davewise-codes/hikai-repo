@@ -43,11 +43,12 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | F2.0    | TodoManager como tool del agente                                          | ✅     | Tool todo_manager creado con activeForm obligatorio                     | packages/convex/convex/agents/core/tools/todo_manager.ts; packages/convex/convex/agents/core/tools/index.ts; apps/webapp/doc/agents/tools.md                                                                                                                             |
 | F2.1    | UI de progreso de agente (AgentProgress component)                        | ✅     | Componente AgentProgress con polling/backoff y plan                      | apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/src/domains/products/components/index.ts; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
 | F2.2    | Integracion de AgentProgress en ProductContextCard                        | ✅     | Smoke test como unica accion + AgentProgress integrado                   | apps/webapp/src/domains/products/components/product-context-card.tsx; packages/convex/convex/agents/actions.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
-| F3.0    | Skill domain-map-agent con taxonomia y reglas                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
+| F3.0    | Skill domain-map-agent con taxonomia y reglas                             | ✅     | Skill nuevo alineado a domain-map.md                                    | packages/convex/convex/agents/skills/source/domain-map-agent.skill.md; packages/convex/convex/agents/skills/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.1    | Tool validate_output con validators                                       | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F3.2    | Action generateDomainMap con loop completo                                | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F3.3    | UI trigger y visualizacion de Domain Map                                  | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F4.0    | Subagentes: delegate tool y agent_entrypoints                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
+| F5.0    | Eliminar flujos legacy de skills (domain-taxonomy, feature-extraction)    | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -666,27 +667,14 @@ PARTE 5: PLAN TEMPLATE
 4. Generate layout: crear estructura de grid
 5. Validate: verificar campos requeridos y evidencia
 
-PARTE 6: TAXONOMIA DE DOMINIOS
-Product domains (requieren product_front o platform evidence):
+PARTE 6: TAXONOMIA (ABIERTA)
 
-- Core Experience: Funcionalidad principal
-- Data Management: CRUD, storage, sync
-- Automation: Workflows, AI features
-- Analytics: Dashboards, reports
-- Collaboration: Sharing, permissions
-
-Technical domains:
-
-- Platform: Auth, API, infra
-
-Internal domains:
-
-- Marketing: Landing, campaigns
-- Docs: Help, guides
+- El mapa no usa taxonomia cerrada.
+- Puede incluir ejemplos habituales, pero no imponer lista fija.
 
 PARTE 7: OUTPUT SCHEMA
 
-- Documentar estructura JSON esperada
+- Estructura JSON esperada (segun apps/webapp/doc/agents/domain-map.md)
 - Ejemplos de outputs validos
 
 PARTE 8: REGLAS
@@ -697,6 +685,9 @@ PARTE 8: REGLAS
 4. Validar output antes de terminar
 5. Si validacion falla, corregir y reintentar
 6. Preferir menos dominios con evidencia fuerte
+7. Ignorar inputs de marketing, admin u observabilidad
+8. Dominios agregan product_front + platform (no separar por superficie)
+9. Trabajo fundacional es evidencia secundaria, no dominio dedicado salvo capacidad clara
 
 PARTE 9: REGISTRAR EN INDEX.TS
 
@@ -718,7 +709,7 @@ PARTE 10: VALIDACION
 ```
 
 **Documentacion a actualizar**:
-- `apps/webapp/doc/agents/domain-map.md` (taxonomia referenciada)
+- `apps/webapp/doc/agents/domain-map.md` (taxonomia abierta y reglas)
 
 **Validacion**:
 - [ ] Skill source creado en skills/source/
@@ -1122,3 +1113,34 @@ Verificar que el agente:
 
 # Fin del documento
 ```
+
+### F5.0: Eliminar flujos legacy de skills
+
+**Objetivo**: Eliminar el uso de skills legacy y migrar a los nuevos skills source.
+
+**Prompt**:
+
+```
+F5.0: Eliminar flujos legacy
+
+PARTE 1: INVENTARIO
+- Listar skills legacy en skills/*.skill.md
+- Identificar usages en agents/taxonomy/*
+
+PARTE 2: MIGRACION
+- Migrar acciones y agentes al nuevo skill domain-map-agent
+- Eliminar referencias a domain-taxonomy y feature-extraction en runtime
+
+PARTE 3: CLEANUP
+- Deprecar skills legacy no usados
+- Actualizar registry skills/index.ts
+
+PARTE 4: VALIDACION
+- tsc convex sin errores
+- Flujo de dominio usa solo skills nuevos
+```
+
+**Validacion**:
+- [ ] No hay referencias a skills legacy en agents/taxonomy
+- [ ] SKILL_CONTENTS solo expone skills nuevos para el domain map
+- [ ] Agents usan domain-map-agent
