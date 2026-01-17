@@ -41,8 +41,8 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | F1.0    | Tools ejecutables core (read_sources, read_baseline, read_context_inputs) | ✅     | Factories creadas y docs actualizadas                                   | packages/convex/convex/agents/core/tools/read_sources.ts; packages/convex/convex/agents/core/tools/read_baseline.ts; packages/convex/convex/agents/core/tools/read_context_inputs.ts; packages/convex/convex/agents/core/tools/index.ts; apps/webapp/doc/agents/tools.md |
 | F1.1    | Conectar tools al loop y habilitar maxTurns > 1                           | ✅     | Loop usa executeToolCall + UI provisional de smoke test                 | packages/convex/convex/agents/core/tool_registry.ts; packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/actions.ts; apps/webapp/src/domains/products/components/product-context-card.tsx; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json; apps/webapp/doc/agents/architecture.md |
 | F2.0    | TodoManager como tool del agente                                          | ✅     | Tool todo_manager creado con activeForm obligatorio                     | packages/convex/convex/agents/core/tools/todo_manager.ts; packages/convex/convex/agents/core/tools/index.ts; apps/webapp/doc/agents/tools.md                                                                                                                             |
-| F2.1    | UI de progreso de agente (AgentProgress component)                        | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
-| F2.2    | Integracion de AgentProgress en ProductContextCard                        | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
+| F2.1    | UI de progreso de agente (AgentProgress component)                        | ✅     | Componente AgentProgress con polling/backoff y plan                      | apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/src/domains/products/components/index.ts; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
+| F2.2    | Integracion de AgentProgress en ProductContextCard                        | ✅     | Smoke test como unica accion + AgentProgress integrado                   | apps/webapp/src/domains/products/components/product-context-card.tsx; packages/convex/convex/agents/actions.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.0    | Skill domain-map-agent con taxonomia y reglas                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F3.1    | Tool validate_output con validators                                       | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F3.2    | Action generateDomainMap con loop completo                                | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
@@ -526,7 +526,7 @@ PARTE 4: STYLING
 
 - Usar tokens semanticos (text-muted-foreground, bg-muted, etc.)
 - Usar Badge de @hikai/ui para tool counts
-- Usar iconos de @hikai/ui (Check, X, AlertCircle, Loader2)
+- Usar iconos de @hikai/ui (Check, X, AlertCircle, RefreshCw)
 - Responsive: funciona en mobile
 
 PARTE 5: VALIDACION
@@ -567,23 +567,23 @@ PARTE 5: VALIDACION
 
 ```
 
-F2.2: Integracion AgentProgress
+F2.2: Integracion AgentProgress (solo smoke test)
 
 PARTE 1: ESTADO
 
-- Mantener agentRunId en estado local cuando se inicia refresh
-- Obtener runId del resultado de generateProductContext
+- Mantener agentRunId en estado local cuando se lanza el smoke test
+- Obtener runId del resultado de runAgentLoopSmokeTest
 
 PARTE 2: UI
 
-- Mostrar AgentProgress debajo del boton de refresh cuando hay run activo
+- Mostrar AgentProgress debajo del boton del smoke test cuando hay run activo
 - Ocultar cuando el run termina (despues de 3 segundos de completed)
 - Mostrar error inline si el run falla
 
 PARTE 3: UX
 
-- Deshabilitar boton de refresh mientras hay run activo
-- Mostrar "Refreshing..." con spinner mientras corre
+- Deshabilitar boton del smoke test mientras hay run activo
+- Mostrar "Running..." con spinner mientras corre
 - Notificacion toast cuando completa o falla
 
 PARTE 4: VALIDACION
@@ -594,7 +594,7 @@ PARTE 4: VALIDACION
 ```
 
 **Validacion**:
-- [ ] AgentProgress aparece al hacer refresh
+- [ ] AgentProgress aparece al lanzar el smoke test
 - [ ] Steps visibles durante ejecucion
 - [ ] Estado final se muestra correctamente
 
@@ -602,7 +602,7 @@ PARTE 4: VALIDACION
 
 **Pruebas funcionales**:
 1. Ir a Settings > Product > Context
-2. Click en "Refresh context"
+2. Click en "Lanzar agent smoke test"
 3. Ver AgentProgress aparecer con steps
 4. Ver plan items si el agente los crea
 5. Ver mensaje de completado o error al final

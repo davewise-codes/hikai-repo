@@ -12,6 +12,7 @@ import {
 } from "../ai/prompts";
 import {
 	executeAgentLoop,
+	type AgentLoopStatus,
 	type AgentMessage,
 	type AgentModel,
 	type StepResult,
@@ -236,9 +237,20 @@ export const runAgentLoopSmokeTest = action({
 	args: {
 		productId: v.id("products"),
 	},
-	handler: async (ctx, { productId }) => {
-		await ctx.runQuery(internal.lib.access.assertProductAccessInternal, {
+	handler: async (
+		ctx,
+		{ productId },
+	): Promise<{ runId: Id<"agentRuns">; status: AgentLoopStatus; text: string }> => {
+		const { organizationId, userId } = await ctx.runQuery(
+			internal.lib.access.assertProductAccessInternal,
+			{
+				productId,
+			},
+		);
+		const { runId } = await ctx.runMutation(api.agents.agentRuns.createAgentRun, {
 			productId,
+			useCase: "agent_loop_smoke_test",
+			agentName: "Agent Loop Smoke Test",
 		});
 
 		const tools = [
@@ -246,7 +258,6 @@ export const runAgentLoopSmokeTest = action({
 			createReadBaselineTool(ctx, productId),
 			createReadContextInputsTool(ctx, productId),
 		];
-		const steps: StepResult[] = [];
 		const model = createAgentLoopSmokeTestModel(productId);
 		const result = await executeAgentLoop(
 			model,
@@ -255,18 +266,38 @@ export const runAgentLoopSmokeTest = action({
 				timeoutMs: 60000,
 				tools,
 				onStep: async (step) => {
-					steps.push(step);
+					await persistToolSteps(ctx, productId, runId, step);
 				},
 			},
 			"Run agent loop tool smoke test",
 		);
 
-		return {
-			status: result.status,
-			text: result.text,
-			steps,
-			metrics: result.metrics,
-		};
+		await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+			productId,
+			runId,
+			status: result.status === "completed" ? "success" : "error",
+			errorMessage: result.errorMessage,
+		});
+
+		await ctx.runMutation(internal.ai.telemetry.recordUsage, {
+			organizationId,
+			productId,
+			userId,
+			useCase: "agent_loop_smoke_test",
+			agentName: "Agent Loop Smoke Test",
+			result: {
+				text: result.text ?? "",
+				tokensIn: result.metrics.tokensIn,
+				tokensOut: result.metrics.tokensOut,
+				totalTokens: result.metrics.totalTokens,
+				model: "local",
+				provider: "internal",
+				latencyMs: result.metrics.latencyMs,
+			},
+			metadata: { source: "agent-loop-smoke-test" },
+		});
+
+		return { runId, status: result.status, text: result.text };
 	},
 });
 
@@ -3563,6 +3594,56 @@ function decodeBase64(value: string): string | null {
 	}
 
 	return null;
+}
+
+async function persistToolSteps(
+	ctx: ActionCtx,
+	productId: Id<"products">,
+	runId: Id<"agentRuns">,
+	step: StepResult,
+) {
+	const toolCalls = step.toolCalls ?? [];
+	for (const result of step.results) {
+		const call =
+			toolCalls.find((toolCall) => toolCall.id === result.toolCallId) ??
+			toolCalls.find((toolCall) => toolCall.name === result.name) ??
+			{ name: result.name, input: result.input };
+
+		const outputPayload =
+			result.output !== undefined ? JSON.stringify(result.output) : null;
+		const outputSize = outputPayload ? byteLength(outputPayload) : 0;
+		let outputRef: { fileId: Id<"_storage">; sizeBytes: number } | null = null;
+		let output = result.output;
+
+		if (outputPayload && outputSize >= 10 * 1024) {
+			const fileId = await ctx.storage.store(
+				new Blob([outputPayload], { type: "application/json" }),
+			);
+			outputRef = { fileId, sizeBytes: outputSize };
+			output = undefined;
+		}
+
+		await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+			productId,
+			runId,
+			step: `Tool: ${result.name}`,
+			status: result.error ? "error" : "info",
+			metadata: {
+				toolCalls: [call],
+				result: {
+					name: result.name,
+					input: result.input,
+					output,
+					error: result.error,
+					outputRef,
+				},
+			},
+		});
+	}
+}
+
+function byteLength(value: string): number {
+	return new TextEncoder().encode(value).length;
 }
 
 function createAgentLoopSmokeTestModel(productId: Id<"products">): AgentModel {
