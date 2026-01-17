@@ -25,7 +25,7 @@ Construir un mapa estructurado de dominios de producto basado en evidencia real 
 
 ## Reglas
 
-1. SIEMPRE empezar con todo_manager para crear plan.
+1. OBLIGATORIO: Tu PRIMERA accion debe ser llamar a `todo_manager` con action "create" para establecer tu plan. NO generes output final sin haber creado un plan primero.
 2. Leer TODAS las sources antes de mapear.
 3. Usar evidencia de tools, nunca inventar.
 4. Validar output antes de terminar.

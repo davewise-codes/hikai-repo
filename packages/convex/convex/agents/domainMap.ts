@@ -19,7 +19,6 @@ import {
 	createTodoManagerTool,
 	createValidateTool,
 } from "./core/tools";
-import { createPlan } from "./core/plan_manager";
 import { validateDomainMap } from "./core/validators";
 import { createToolPromptModel } from "./core/tool_prompt_model";
 import { SKILL_CONTENTS } from "./skills";
@@ -71,13 +70,6 @@ export const generateDomainMap = action({
 		const skill = loadSkillFromRegistry(SKILL_NAME, SKILL_CONTENTS);
 		const prompt = buildDomainMapPrompt(productId);
 		const messages: AgentMessage[] = [injectSkill(skill), { role: "user", content: prompt }];
-		const defaultPlan = createPlan([
-			{ content: "Gather context", activeForm: "Gathering context" },
-			{ content: "Analyze surfaces", activeForm: "Analyzing surfaces" },
-			{ content: "Map domains", activeForm: "Mapping domains" },
-			{ content: "Validate output", activeForm: "Validating output" },
-		]);
-
 		const tools = [
 			createTodoManagerTool(ctx, productId, runId),
 			createReadSourcesTool(ctx, productId),
@@ -86,7 +78,6 @@ export const generateDomainMap = action({
 			createValidateTool(),
 		];
 
-		let planLogged = false;
 		const result = await executeAgentLoop(
 			model,
 			{
@@ -110,37 +101,12 @@ export const generateDomainMap = action({
 					},
 				},
 				onStep: async (step) => {
-					if (step.turn === 0 && !includesTool(step, "todo_manager")) {
-						await ctx.runMutation(internal.agents.agentRuns.appendStep, {
-							productId,
-							runId,
-							step: "plan_update",
-							status: "info",
-							metadata: { plan: defaultPlan },
-						});
-						planLogged = true;
-					}
-
-					if (includesTool(step, "todo_manager")) {
-						planLogged = true;
-					}
-
 					await persistToolSteps(ctx, productId, runId, step);
 				},
 			},
 			prompt,
 			messages,
 		);
-
-		if (!planLogged) {
-			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
-				productId,
-				runId,
-				step: "plan_update",
-				status: "info",
-				metadata: { plan: defaultPlan },
-			});
-		}
 
 		const domainMap =
 			result.status === "completed" && result.output

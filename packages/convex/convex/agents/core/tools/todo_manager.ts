@@ -23,6 +23,8 @@ type TodoManagerInput = {
 	itemId?: string;
 };
 
+const MAX_PLAN_ITEMS = 15;
+
 export function createTodoManagerTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -100,9 +102,22 @@ function parseTodoManagerInput(input: unknown): TodoManagerInput {
 		throw new Error("todo_manager action is required");
 	}
 	if (raw.items) {
+		if (raw.items.length > MAX_PLAN_ITEMS) {
+			throw new Error(
+				`todo_manager: plan cannot exceed ${MAX_PLAN_ITEMS} items`,
+			);
+		}
+		const inProgressCount = raw.items.filter(
+			(item) => item.status === "in_progress",
+		).length;
+		if (inProgressCount > 1) {
+			throw new Error("todo_manager: only one item can be in_progress");
+		}
 		for (const item of raw.items) {
 			if (!item?.activeForm || item.activeForm.trim().length === 0) {
-				throw new Error("todo_manager items require activeForm in present tense");
+				throw new Error(
+					"todo_manager: items require activeForm in present tense",
+				);
 			}
 		}
 	}
