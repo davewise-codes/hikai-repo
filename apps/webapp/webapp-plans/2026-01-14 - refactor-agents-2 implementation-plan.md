@@ -45,7 +45,7 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | F2.2    | Integracion de AgentProgress en ProductContextCard                        | ✅     | Smoke test como unica accion + AgentProgress integrado                   | apps/webapp/src/domains/products/components/product-context-card.tsx; packages/convex/convex/agents/actions.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.0    | Skill domain-map-agent con taxonomia y reglas                             | ✅     | Skill nuevo alineado a domain-map.md                                    | packages/convex/convex/agents/skills/source/domain-map-agent.skill.md; packages/convex/convex/agents/skills/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.1    | Tool validate_output con validators                                       | ✅     | Tool validate_output + validator domain_map                              | packages/convex/convex/agents/core/tools/validate.ts; packages/convex/convex/agents/core/validators/domain_map.ts; packages/convex/convex/agents/core/validators/index.ts; apps/webapp/doc/agents/validation.md; packages/convex/convex/agents/core/tools/index.ts |
-| F3.2    | Action generateDomainMap con loop completo                                | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
+| F3.2    | Action generateDomainMap con loop completo                                | ✅     | Action en archivo nuevo + persistencia domainMap                         | packages/convex/convex/agents/domainMap.ts; packages/convex/convex/agents/domainMapData.ts; packages/convex/convex/schema.ts; packages/convex/convex/agents/index.ts; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.3    | UI trigger y visualizacion de Domain Map                                  | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F4.0    | Subagentes: delegate tool y agent_entrypoints                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F5.0    | Eliminar flujos legacy de skills (domain-taxonomy, feature-extraction)    | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
@@ -804,9 +804,8 @@ PARTE 5: VALIDACION
 **Convex**: action orquesta, mutation persiste domainMap, query lee estado
 
 **Archivos**:
-- `packages/convex/convex/agents/actions/domainMap.ts` (crear)
-- `packages/convex/convex/agents/actions/index.ts` (crear/actualizar re-exports)
-- `packages/convex/convex/agents/domainMapAgent.ts` (crear si necesario)
+- `packages/convex/convex/agents/domainMap.ts` (crear)
+- `packages/convex/convex/agents/domainMapData.ts` (crear)
 
 **Prompt**:
 
@@ -816,10 +815,8 @@ F3.2: Action generateDomainMap
 
 PARTE 1: ESTRUCTURA DE ACTIONS
 
-- Crear carpeta agents/actions/ si no existe
-- Crear actions/domainMap.ts con la action
-- Crear actions/index.ts para re-exports
-- Mantener actions.ts legacy con re-exports para compatibilidad
+- Crear action aislada en agents/domainMap.ts
+- Evitar agregar acciones nuevas en agents/actions.ts (legacy)
 
 PARTE 2: SETUP
 
@@ -861,9 +858,8 @@ PARTE 6: FINALIZACION
 
 PARTE 7: REGISTRO DE ACTION
 
-- Export en agents/actions/index.ts
-- Re-export en agents/index.ts para API pública
-- Verificar: api.agents.generateDomainMap accesible desde webapp
+- Export en agents/index.ts
+- Verificar: api.agents.domainMap.generateDomainMap accesible desde webapp
 
 PARTE 8: VALIDACION
 

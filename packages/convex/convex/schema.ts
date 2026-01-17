@@ -190,6 +190,7 @@ const schema = defineSchema({
 		languagePreference: v.optional(v.string()),
 		releaseCadence: v.optional(v.string()),
 		productBaseline: v.optional(productBaseline),
+		domainMap: v.optional(v.any()),
 		currentContextSnapshotId: v.optional(v.id("productContextSnapshots")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
