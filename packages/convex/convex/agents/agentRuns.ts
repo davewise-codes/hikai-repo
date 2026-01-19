@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "../_generated/server";
+import { action, internalMutation, mutation, query } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { assertProductAccess } from "../lib/access";
 
 const stepStatus = v.union(
@@ -144,6 +145,69 @@ export const getRunsForUseCase = query({
 			.filter((run) => run.useCase === useCase)
 			.sort((a, b) => b.startedAt - a.startedAt)
 			.slice(0, limit ?? 10);
+	},
+});
+
+export const exportRunTrace = action({
+	args: {
+		productId: v.id("products"),
+		runId: v.id("agentRuns"),
+	},
+	handler: async (ctx, { productId, runId }) => {
+		await ctx.runQuery(internal.lib.access.assertProductAccessInternal, {
+			productId,
+		});
+
+		const run = await ctx.runQuery(internal.agents.agentRuns.getRunById, {
+			productId,
+			runId,
+		});
+		if (!run) {
+			return null;
+		}
+
+		const expandedSteps = await Promise.all(
+			run.steps.map(async (step, index) => {
+				const expanded: Record<string, unknown> = { ...step };
+				const outputRef = (
+					step.metadata as { result?: { outputRef?: { fileId?: string } } }
+				)?.result?.outputRef;
+				if (outputRef?.fileId) {
+					try {
+						const file = await ctx.storage.get(outputRef.fileId);
+						if (file) {
+							const content = await file.text();
+							try {
+								expanded._expandedOutput = JSON.parse(content);
+							} catch {
+								expanded._expandedOutput = content;
+							}
+						}
+					} catch (error) {
+						expanded._expandedOutputError =
+							error instanceof Error ? error.message : String(error);
+					}
+				}
+
+				return {
+					index,
+					...expanded,
+				};
+			}),
+		);
+
+		return {
+			runId: run._id,
+			productId: run.productId,
+			useCase: run.useCase,
+			agentName: run.agentName,
+			status: run.status,
+			startedAt: run.startedAt,
+			finishedAt: run.finishedAt,
+			errorMessage: run.errorMessage,
+			stepsCount: run.steps.length,
+			steps: expandedSteps,
+		};
 	},
 });
 

@@ -56,6 +56,30 @@ export const listByProduct = query({
 	},
 });
 
+export const listByProductInternal = internalQuery({
+	args: { productId: v.id("products") },
+	handler: async (ctx, { productId }) => {
+		await assertProductAccess(ctx, productId);
+
+		const connections = await ctx.db
+			.query("connections")
+			.withIndex("by_product", (q) => q.eq("productId", productId))
+			.collect();
+
+		const enriched = await Promise.all(
+			connections.map(async (connection) => {
+				const connectorType = await ctx.db.get(connection.connectorTypeId);
+				return {
+					...connection,
+					connectorType,
+				};
+			})
+		);
+
+		return enriched;
+	},
+});
+
 export const getById = query({
 	args: { connectionId: v.id("connections") },
 	handler: async (ctx, { connectionId }) => {

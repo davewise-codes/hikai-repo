@@ -19,7 +19,7 @@ ToolDefinition:
 Patron de factory (closure):
 
 ```
-createReadSourcesTool(ctx, productId) -> ToolDefinition
+createListFilesTool(ctx, productId) -> ToolDefinition
 ```
 
 Regla de error (tool inexistente):
@@ -42,9 +42,10 @@ ToolResult:
 
 | Tool | Input | Output | Notas |
 | --- | --- | --- | --- |
-| read_sources | { productId, limit? } | SourceContext[] | max 50 por defecto |
-| read_baseline | { productId } | ProductBaseline | solo baseline (no todo el producto) |
-| read_context_inputs | { productId } | ContextInputs | retorna nulls si no hay run previo |
+| list_dirs | { path?, depth?, limit? } | { dirs: DirEntry[], truncated? } | solo directorios, depth limitado |
+| list_files | { path?, pattern?, limit? } | { files: FileEntry[], truncated? } | no recursivo, solo un directorio |
+| read_file | { path } | ReadFileOutput | contenido del archivo (trunca > 100KB) |
+| search_code | { query, filePattern?, limit? } | SearchMatch[] | busqueda segura sobre archivos listados |
 | todo_manager | { items } | Plan | max 15 items |
 | validate_output | { outputType, data } | ValidationResult | warnings no bloquean v1 |
 
@@ -52,14 +53,98 @@ ToolResult:
 
 ## Detalle de inputs/outputs
 
-### read_sources
+### list_dirs
 
 Input:
 
 ```json
 {
-	"productId": "prod_123",
+	"path": "apps/webapp/src",
+	"depth": 2,
 	"limit": 50
+}
+```
+
+Output:
+
+```json
+{
+	"dirs": [
+		{ "path": "apps/webapp/src/domains", "depth": 1 },
+		{ "path": "apps/webapp/src/routes", "depth": 1 }
+	],
+	"truncated": false
+}
+```
+
+Notas:
+- Solo devuelve directorios.
+- `depth` maximo 3.
+
+### list_files
+
+Input:
+
+```json
+{
+	"path": "apps/webapp/src",
+	"pattern": "*.tsx",
+	"limit": 50
+}
+```
+
+Output:
+
+```json
+{
+	"files": [
+		{
+			"path": "apps/webapp/src/main.tsx",
+			"name": "main.tsx",
+			"size": 1020
+		}
+	],
+	"truncated": false
+}
+```
+
+Notas:
+- No recursivo: solo archivos del directorio indicado.
+- Si no hay conexion GitHub activa, retorna `{ "error": "No active GitHub connection found" }`.
+
+### read_file
+
+Input:
+
+```json
+{
+	"path": "src/components/button.tsx"
+}
+```
+
+Output:
+
+```json
+{
+	"path": "src/components/button.tsx",
+	"content": "export function Button() { ... }",
+	"size": 2048
+}
+```
+
+Notas:
+- Si el archivo supera 100KB, `content` se trunca.
+- Si no hay acceso al repo, retorna `{ "error": "No active GitHub connection found" }`.
+
+### search_code
+
+Input:
+
+```json
+{
+	"query": "auth",
+	"filePattern": "*.ts",
+	"limit": 20
 }
 ```
 
@@ -68,60 +153,15 @@ Output:
 ```json
 [
 	{
-		"sourceId": "github:org/repo",
-		"classification": "product_core",
-		"signals": ["/apps/webapp", "/packages/ui"],
-		"notes": "Monorepo con app principal"
+		"path": "src/auth/login.tsx",
+		"snippet": "export function LoginForm() {"
 	}
 ]
 ```
 
-### read_baseline
-
-Input:
-
-```json
-{
-	"productId": "prod_123"
-}
-```
-
-Output:
-
-```json
-{
-	"name": "Hikai",
-	"type": "SaaS",
-	"valueProposition": "Product intelligence hub",
-	"primaryUsers": ["PM", "Design"],
-	"coreJobs": ["decision support"]
-}
-```
-
-Nota: si no hay baseline, retorna objeto vacio.
-
-### read_context_inputs
-
-Input:
-
-```json
-{
-	"productId": "prod_123"
-}
-```
-
-Output:
-
-```json
-{
-	"uiSitemap": ["/settings/product", "/dashboard"],
-	"userFlows": ["Create project", "Invite member"],
-	"businessDataModel": ["project", "milestone"],
-	"repoTopology": ["apps/webapp", "packages/convex"]
-}
-```
-
-Nota: si no hay run previo o el output no existe, retorna nulls.
+Notas:
+- Implementacion segura: lista archivos y busca texto en contenido.
+- Si no hay conexion activa, retorna `{ "error": "No active GitHub connection found" }`.
 
 ### todo_manager
 

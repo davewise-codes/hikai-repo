@@ -13,15 +13,14 @@ import {
 } from "./core/agent_loop";
 import { injectSkill, loadSkillFromRegistry } from "./core/skill_loader";
 import {
-	createReadBaselineTool,
-	createReadContextInputsTool,
-	createReadSourcesTool,
+	createListFilesTool,
+	createListDirsTool,
+	createReadFileTool,
 	createTodoManagerTool,
-	createValidateTool,
 } from "./core/tools";
-import { validateDomainMap } from "./core/validators";
 import { createToolPromptModel } from "./core/tool_prompt_model";
 import { SKILL_CONTENTS } from "./skills";
+import { getActiveGithubConnection } from "./core/tools/github_helpers";
 
 const AGENT_NAME = "Domain Map Agent";
 const USE_CASE = "domain_map";
@@ -69,14 +68,49 @@ export const generateDomainMap = action({
 		});
 		const skill = loadSkillFromRegistry(SKILL_NAME, SKILL_CONTENTS);
 		const prompt = buildDomainMapPrompt(productId);
-		const messages: AgentMessage[] = [injectSkill(skill), { role: "user", content: prompt }];
+		const initialReminder =
+			"<reminder>Call todo_manager FIRST to create your plan.</reminder>";
+		const messages: AgentMessage[] = [
+			injectSkill(skill),
+			{ role: "user", content: `${initialReminder}\n\n${prompt}` },
+		];
 		const tools = [
 			createTodoManagerTool(ctx, productId, runId),
-			createReadSourcesTool(ctx, productId),
-			createReadBaselineTool(ctx, productId),
-			createReadContextInputsTool(ctx, productId),
-			createValidateTool(),
+			createListDirsTool(ctx, productId),
+			createListFilesTool(ctx, productId),
+			createReadFileTool(ctx, productId),
 		];
+
+		const githubConnection = await getActiveGithubConnection(ctx, productId);
+		if (!githubConnection || githubConnection.repos.length === 0) {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId,
+				step: "GitHub connection",
+				status: "error",
+				metadata: {
+					error: "No active GitHub connection or repositories available",
+				},
+			});
+			await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+				productId,
+				runId,
+				status: "error",
+				errorMessage: "No active GitHub connection for this product",
+			});
+			return {
+				runId,
+				status: "error",
+				domainMap: null,
+				metrics: {
+					turns: 0,
+					tokensIn: 0,
+					tokensOut: 0,
+					totalTokens: 0,
+					latencyMs: 0,
+				},
+			};
+		}
 
 		const result = await executeAgentLoop(
 			model,
@@ -86,30 +120,16 @@ export const generateDomainMap = action({
 				maxTotalTokens: MAX_TOTAL_TOKENS,
 				timeoutMs: TIMEOUT_MS,
 				tools,
+				emptyResponseReminder:
+					"<reminder>Your last response was empty. Continue with tool calls or provide your final output.</reminder>",
+				toolUseExtraTextReminder:
+					"<reminder>Do not include any extra text with tool calls. Resend ONLY the JSON tool call block. Provide final output in a separate response.</reminder>",
+				finalOutputOnlyReminder:
+					"<reminder>Your plan is completed. Do NOT call tools. Return your final output only.</reminder>",
 				planNag: {
 					threshold: 2,
 					message:
 						"<reminder>Update your plan with todo_manager to reflect progress.</reminder>",
-				},
-				validation: {
-					validate: validateDomainMap,
-					onValidation: async (validation, _output, rawText, hadExtraText) => {
-						const preview =
-							typeof rawText === "string"
-								? rawText.slice(0, 2000)
-								: undefined;
-						await ctx.runMutation(internal.agents.agentRuns.appendStep, {
-							productId,
-							runId,
-							step: "Validation: domain_map",
-							status: validation.valid ? "success" : "warn",
-							metadata: {
-								validation,
-								rawTextPreview: preview,
-								hadExtraText,
-							},
-						});
-					},
 				},
 				onModelResponse: async ({ response, turn }) => {
 					const preview =
@@ -128,6 +148,13 @@ export const generateDomainMap = action({
 								name: call.name,
 								id: call.id,
 							})),
+							_debug: response._debug
+								? {
+										rawText: response._debug.rawText?.slice(0, 10000),
+										extracted: response._debug.extracted,
+										hadExtraction: Boolean(response._debug.extracted),
+									}
+								: null,
 						},
 					});
 				},
@@ -143,13 +170,6 @@ export const generateDomainMap = action({
 			result.status === "completed" && result.output
 				? (result.output as Record<string, unknown>)
 				: null;
-
-		if (domainMap) {
-			await ctx.runMutation(internal.agents.domainMapData.saveDomainMap, {
-				productId,
-				domainMap,
-			});
-		}
 
 		if (telemetryConfig.persistInferenceLogs) {
 			await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
@@ -219,44 +239,56 @@ export const generateDomainMap = action({
 
 function buildDomainMapPrompt(productId: Id<"products">): string {
 	return [
-		"You are the Domain Map Agent.",
-		"Goal: produce a product domain map using evidence from tools.",
-		"Use ONLY evidence from sources classified as product_front or platform.",
-		"Ignore marketing, admin, and observability sources.",
-		"Always call todo_manager first to create your plan.",
-		"Use read_sources, read_baseline, and read_context_inputs to gather context.",
-		"You MUST call validate_output before final output.",
-		"Do NOT return a final output until you have called tools.",
-		"Final output must be ONLY the JSON schema (no extra text).",
+		"Analyze this codebase and identify the main product domains.",
+		"",
+		"A domain = a distinct area of functionality in the code.",
+		"Look at: folder names, feature modules, page routes, main components.",
+		"",
+		"EXPLORATION STRATEGY (follow this order):",
+		"1. Use list_dirs to see the project structure (depth 2).",
+		"2. Identify interesting directories (src/, domains/, features/, pages/, components/).",
+		"3. Use list_dirs with a specific path to go deeper (depth 2).",
+		"4. Use list_files on a specific directory to see files (non-recursive).",
+		"5. Use read_file on key files (README, index, routes, main entries).",
+		"",
+		"IMPORTANT:",
+		"- Start broad (list_dirs) then narrow down (list_files, read_file).",
+		"- Do NOT read everything; be selective.",
+		"- Use ACTUAL folder/file names from the code as domain names.",
+		"- Every domain must have a real file path as evidence.",
+		"",
+		"OUTPUT: list each domain with its file path evidence.",
+		"Use ONLY evidence from product_front and platform code (UI + backend services).",
+		"Ignore marketing, admin, observability, CI/CD, tests, and config-only files.",
+		"Always call todo_manager first to create your plan, and update it as you progress.",
+		"Use list_dirs to explore structure, list_files to inspect folders, and read_file to gather evidence.",
+		"Any output format is acceptable for now.",
 		"Tool input rules:",
 		'- todo_manager input: { "items": [{ "content": "...", "activeForm": "...", "status": "in_progress" | "pending" | "completed" }] }',
-		'- read_sources input: { "productId": "' + productId + '", "limit": 50 }',
-		'- read_baseline input: { "productId": "' + productId + '" }',
-		'- read_context_inputs input: { "productId": "' + productId + '" }',
-		'- validate_output input: { "outputType": "domain_map", "data": <your json> }',
+		'- list_dirs input: { "path"?: "apps/webapp/src", "depth"?: 2, "limit"?: 50 }',
+		'- list_files input: { "path"?: "apps/webapp/src", "pattern"?: "*.tsx", "limit"?: 50 }',
+		'- read_file input: { "path": "path/to/file.tsx" }',
 		"Do NOT nest tool calls inside todo_manager. Call each tool directly.",
 		"Example tool call block:",
-		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"todo_manager","input":{"items":[{"content":"Gather context","activeForm":"Gathering context","status":"in_progress"},{"content":"Analyze surfaces","activeForm":"Analyzing surfaces","status":"pending"}]}},{"id":"call-2","name":"read_sources","input":{"productId":"' +
-			productId +
-			'","limit":50}},{"id":"call-3","name":"read_baseline","input":{"productId":"' +
-			productId +
-			'"}},{"id":"call-4","name":"read_context_inputs","input":{"productId":"' +
-			productId +
-			'"}}]}',
+		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"todo_manager","input":{"items":[{"content":"Explore repo structure","activeForm":"Exploring repo","status":"in_progress"},{"content":"Inspect key files","activeForm":"Inspecting files","status":"pending"},{"content":"Map domains","activeForm":"Mapping domains","status":"pending"}]}},{"id":"call-2","name":"list_dirs","input":{"path":"","depth":2,"limit":50}}]}',
 		`Use productId: ${productId} when calling tools.`,
-		"Plan update rule:",
-		'- After finishing a phase, call todo_manager again with the FULL items list, marking the current item as completed and the next item as in_progress (only 1 in_progress).',
 	].join("\n");
 }
 
 function buildToolProtocol(productId: Id<"products">): string {
 	return [
 		"You are an autonomous agent.",
-		"You must respond with a single JSON object and no extra text.",
-		"Use this schema for tool calls:",
+		"",
+		"Your loop: plan -> act -> update plan -> repeat.",
+		"",
+		"Rules:",
+		"- Call todo_manager FIRST to create your plan",
+		"- After each phase, update plan with todo_manager",
+		"- Only one task in_progress at a time",
+		"",
+		"Tool calls must use JSON only:",
 		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"tool_name","input":{}}]}',
-		"Use this schema for final output:",
-		'{"type":"final","output":{}}',
+		"Final output can be plain text and does not need JSON.",
 		"Only call tools listed in the tool catalog.",
 		"Tool inputs must include the productId when required.",
 		`Use productId: ${productId}.`,
@@ -286,12 +318,14 @@ async function persistToolSteps(
 		let outputRef: { fileId: Id<"_storage">; sizeBytes: number } | null = null;
 		let output = result.output;
 
-		if (outputPayload && outputSize >= 10 * 1024) {
+		if (outputPayload) {
 			const fileId = await ctx.storage.store(
 				new Blob([outputPayload], { type: "application/json" }),
 			);
 			outputRef = { fileId, sizeBytes: outputSize };
-			output = undefined;
+			if (outputSize >= 5 * 1024) {
+				output = { _truncated: true, sizeBytes: outputSize };
+			}
 		}
 
 		await ctx.runMutation(internal.agents.agentRuns.appendStep, {

@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useConvex, useQuery } from "convex/react";
+import { useAction, useConvex, useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import {
 	Badge,
+	Button,
 	Card,
 	CardContent,
 	CardHeader,
@@ -95,12 +96,17 @@ export function AgentProgress({
 }) {
 	const { t, i18n } = useTranslation("products");
 	const convex = useConvex();
+	const exportRunTrace = useAction(api.agents.agentRuns.exportRunTrace);
 	const run = useQuery(api.agents.agentRuns.getRunById, { productId, runId }) as
 		| AgentRun
 		| null
 		| undefined;
 	const [polledRun, setPolledRun] = useState<AgentRun | null>(null);
+	const [copyState, setCopyState] = useState<"idle" | "copying" | "copied" | "error">(
+		"idle",
+	);
 	const timeoutRef = useRef<number | null>(null);
+	const copyTimeoutRef = useRef<number | null>(null);
 	const pollDelayRef = useRef(INITIAL_POLL_MS);
 
 	const activeRun = polledRun ?? run ?? null;
@@ -151,6 +157,9 @@ export function AgentProgress({
 			if (timeoutRef.current) {
 				window.clearTimeout(timeoutRef.current);
 			}
+			if (copyTimeoutRef.current) {
+				window.clearTimeout(copyTimeoutRef.current);
+			}
 		};
 	}, [convex, productId, runId, activeRun?.status]);
 
@@ -164,6 +173,36 @@ export function AgentProgress({
 			: activeRun.status === "error"
 				? t("context.agentProgressFailed")
 				: t("context.agentProgressRunning");
+	const canCopy = activeRun.status !== "running";
+	const copyLabel =
+		copyState === "copied"
+			? t("context.agentProgressCopySuccess")
+			: copyState === "error"
+				? t("context.agentProgressCopyError")
+				: t("context.agentProgressCopyTrace");
+
+	const handleCopy = async () => {
+		if (!canCopy || copyState === "copying") return;
+		setCopyState("copying");
+		try {
+			const trace = await exportRunTrace({ productId, runId });
+			if (!trace) {
+				setCopyState("error");
+				return;
+			}
+			const payload = JSON.stringify(trace, null, 2);
+			await navigator.clipboard.writeText(payload);
+			setCopyState("copied");
+			if (copyTimeoutRef.current) {
+				window.clearTimeout(copyTimeoutRef.current);
+			}
+			copyTimeoutRef.current = window.setTimeout(() => {
+				setCopyState("idle");
+			}, 2000);
+		} catch {
+			setCopyState("error");
+		}
+	};
 
 	return (
 		<Card>
@@ -176,7 +215,17 @@ export function AgentProgress({
 						{statusLabel}
 					</p>
 				</div>
-				<StatusBadge status={activeRun.status} />
+				<div className="flex items-center gap-2">
+					<StatusBadge status={activeRun.status} />
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleCopy}
+						disabled={!canCopy || copyState === "copying"}
+					>
+						{copyLabel}
+					</Button>
+				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{latestStep && activeRun.status === "running" ? (

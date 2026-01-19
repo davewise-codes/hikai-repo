@@ -68,6 +68,10 @@ function parseResponse(
 	},
 ): AgentModelResponse {
 	const extracted = extractJsonPayload(text);
+	const _debug = {
+		rawText: text,
+		extracted,
+	};
 	if (extracted && extracted.data && typeof extracted.data === "object") {
 		const data = extracted.data as Record<string, unknown>;
 		if (data.type === "tool_use" && Array.isArray(data.toolCalls)) {
@@ -78,6 +82,7 @@ function parseResponse(
 				tokensIn: meta.tokensIn,
 				tokensOut: meta.tokensOut,
 				totalTokens: meta.totalTokens,
+				_debug,
 			};
 		}
 
@@ -88,6 +93,7 @@ function parseResponse(
 				tokensIn: meta.tokensIn,
 				tokensOut: meta.tokensOut,
 				totalTokens: meta.totalTokens,
+				_debug,
 			};
 		}
 
@@ -99,6 +105,7 @@ function parseResponse(
 				tokensIn: meta.tokensIn,
 				tokensOut: meta.tokensOut,
 				totalTokens: meta.totalTokens,
+				_debug,
 			};
 		}
 	}
@@ -109,6 +116,7 @@ function parseResponse(
 		tokensIn: meta.tokensIn,
 		tokensOut: meta.tokensOut,
 		totalTokens: meta.totalTokens,
+		_debug,
 	};
 }
 

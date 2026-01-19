@@ -19,6 +19,10 @@ export type AgentModelResponse = {
 	tokensIn?: number;
 	tokensOut?: number;
 	totalTokens?: number;
+	_debug?: {
+		rawText: string;
+		extracted: unknown;
+	};
 };
 
 export type AgentModel = {
@@ -67,6 +71,9 @@ export interface AgentLoopConfig {
 		threshold: number;
 		message: string;
 	};
+	emptyResponseReminder?: string;
+	toolUseExtraTextReminder?: string;
+	finalOutputOnlyReminder?: string;
 }
 
 export type AgentLoopStatus =
@@ -213,13 +220,32 @@ export async function executeAgentLoop(
 			};
 		}
 
-		if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
+	if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
+			if (!response.text.trim() && config.emptyResponseReminder) {
+				messages.push({ role: "assistant", content: response.text });
+				messages.push({
+					role: "user",
+					content: config.emptyResponseReminder,
+				});
+				turns += 1;
+				continue;
+			}
 			const parsed = extractJsonPayload(response.text);
 			const normalizedText = parsed?.normalizedText ?? response.text;
 			const output = parsed?.data ?? null;
-			const validationResult = config.validation
+			let validationResult = config.validation
 				? validateOutput(config.validation, output)
 				: null;
+			if (validationResult && lastPlan && !isPlanCompleted(lastPlan)) {
+				validationResult = {
+					...validationResult,
+					valid: false,
+					errors: [
+						"Plan is not completed. Update with todo_manager before final output.",
+						...validationResult.errors,
+					],
+				};
+			}
 
 			if (config.validation && validationResult) {
 				await config.validation.onValidation?.(
@@ -235,6 +261,7 @@ export async function executeAgentLoop(
 						content: buildValidationFeedback(
 							validationResult,
 							config.validation,
+							lastPlan,
 						),
 					});
 					turns += 1;
@@ -256,9 +283,31 @@ export async function executeAgentLoop(
 					config,
 				),
 			};
-		}
+	}
 
-		const results = await executeToolCalls(response.toolCalls, tools);
+	const hadExtraText =
+		typeof response._debug?.extracted === "object" &&
+		response._debug?.extracted !== null &&
+		"hadExtraText" in response._debug.extracted &&
+		Boolean(
+			(response._debug.extracted as { hadExtraText?: boolean }).hadExtraText,
+		);
+
+	if (lastPlan && isPlanCompleted(lastPlan) && config.finalOutputOnlyReminder) {
+		messages.push({ role: "assistant", content: response.text });
+		messages.push({ role: "user", content: config.finalOutputOnlyReminder });
+		turns += 1;
+		continue;
+	}
+
+	if (hadExtraText && config.toolUseExtraTextReminder) {
+		messages.push({ role: "assistant", content: response.text });
+		messages.push({ role: "user", content: config.toolUseExtraTextReminder });
+		turns += 1;
+		continue;
+	}
+
+	const results = await executeToolCalls(response.toolCalls, tools);
 		const planUpdated = updatePlanState(results, (plan) => {
 			lastPlan = plan;
 		});
@@ -345,6 +394,10 @@ function isPlanManager(output: unknown): output is PlanManager {
 	return Array.isArray(plan.items) && typeof plan.maxItems === "number";
 }
 
+function isPlanCompleted(plan: PlanManager): boolean {
+	return plan.items.every((item) => item.status === "completed");
+}
+
 function formatToolResults(
 	results: ToolResult[],
 	plan: PlanManager | null,
@@ -383,14 +436,29 @@ function validateOutput(
 function buildValidationFeedback(
 	result: AgentLoopValidationResult,
 	validation: AgentLoopValidationConfig,
+	plan: PlanManager | null,
 ): string {
 	if (validation.buildFeedback) {
 		return validation.buildFeedback(result);
 	}
-	return [
+	const lines = [
 		"Validation failed.",
 		"Errors:",
 		...result.errors.map((error) => `- ${error}`),
-		"Return ONLY valid JSON that fixes the errors.",
-	].join("\n");
+	];
+	if (plan) {
+		const pending = plan.items.filter((item) => item.status !== "completed");
+		if (pending.length > 0) {
+			lines.push("Plan is not completed yet.");
+			lines.push(
+				"Update your plan with todo_manager: mark completed items and set the next item to in_progress.",
+			);
+			lines.push("Do NOT return final output until all plan items are completed.");
+		}
+	} else {
+		lines.push("Reminder: call todo_manager to create/update your plan.");
+		lines.push("Call required tools before attempting final output.");
+	}
+	lines.push("Return ONLY valid JSON that fixes the errors.");
+	return lines.join("\n");
 }

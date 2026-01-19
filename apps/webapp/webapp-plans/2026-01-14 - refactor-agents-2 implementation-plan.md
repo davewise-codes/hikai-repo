@@ -38,7 +38,7 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | Subfase | Descripcion                                                               | Estado | Outcome                                                                 | Archivos creados/eliminados                                                                                                                                                                                                                                              |
 | ------- | ------------------------------------------------------------------------- | ------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | F0.0    | Contratos y criterios de verificacion                                     | ✅     | Docs consolidadas en agents/ + refactor-agents-contracts.md actualizado | apps/webapp/doc/agents/tools.md; apps/webapp/doc/agents/domain-map.md; apps/webapp/doc/refactor-agents-contracts.md                                                                                                                                                      |
-| F1.0    | Tools ejecutables core (read_sources, read_baseline, read_context_inputs) | ✅     | Factories creadas y docs actualizadas                                   | packages/convex/convex/agents/core/tools/read_sources.ts; packages/convex/convex/agents/core/tools/read_baseline.ts; packages/convex/convex/agents/core/tools/read_context_inputs.ts; packages/convex/convex/agents/core/tools/index.ts; apps/webapp/doc/agents/tools.md |
+| F1.0    | Tools ejecutables core (list_files, read_file, search_code)               | ✅     | Tools composables conectadas a GitHub + docs actualizadas               | packages/convex/convex/agents/core/tools/github_helpers.ts; packages/convex/convex/agents/core/tools/github_list_files.ts; packages/convex/convex/agents/core/tools/github_read_file.ts; packages/convex/convex/agents/core/tools/github_search_code.ts; packages/convex/convex/agents/core/tools/index.ts; apps/webapp/doc/agents/tools.md |
 | F1.1    | Conectar tools al loop y habilitar maxTurns > 1                           | ✅     | Loop usa executeToolCall + UI provisional de smoke test                 | packages/convex/convex/agents/core/tool_registry.ts; packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/actions.ts; apps/webapp/src/domains/products/components/product-context-card.tsx; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json; apps/webapp/doc/agents/architecture.md |
 | F2.0    | TodoManager como tool del agente                                          | ✅     | Tool todo_manager creado con activeForm obligatorio                     | packages/convex/convex/agents/core/tools/todo_manager.ts; packages/convex/convex/agents/core/tools/index.ts; apps/webapp/doc/agents/tools.md                                                                                                                             |
 | F2.1    | UI de progreso de agente (AgentProgress component)                        | ✅     | Componente AgentProgress con polling/backoff y plan                      | apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/src/domains/products/components/index.ts; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
@@ -49,6 +49,7 @@ Hikai tiene agentes que actualmente funcionan como **wrappers de una llamada LLM
 | F3.2.1  | Loop autonomo con budget y control de output                              | ✅     | Loop basado en tools + reintentos por validacion + budget visible         | packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/core/tool_prompt_model.ts; packages/convex/convex/agents/core/json_utils.ts; packages/convex/convex/agents/domainMap.ts; apps/webapp/src/domains/products/components/agent-progress.tsx; apps/webapp/doc/agents/architecture.md; apps/webapp/doc/agents/tools.md; apps/webapp/doc/agents/validation.md; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json |
 | F3.3    | UI trigger y visualizacion de Domain Map                                  | ✅     | Domain map card + trigger con progreso visible                          | apps/webapp/src/domains/products/components/domain-map-card.tsx; apps/webapp/src/domains/products/components/product-context-card.tsx; apps/webapp/src/domains/products/components/index.ts; apps/webapp/src/routes/settings/product/$slug/context.tsx; packages/convex/convex/agents/actions.ts; apps/webapp/src/i18n/locales/en/products.json; apps/webapp/src/i18n/locales/es/products.json; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
 | F3.3.1  | Plan management aligned con learn-claude-code                             | ✅     | todo_manager simple + plan visible + nag system                         | packages/convex/convex/agents/core/tools/todo_manager.ts; packages/convex/convex/agents/core/agent_loop.ts; packages/convex/convex/agents/domainMap.ts; packages/convex/convex/agents/core/plan_manager.ts; packages/convex/convex/agents/skills/source/domain-map-agent.skill.md; packages/convex/convex/agents/skills/index.ts; apps/webapp/doc/agents/tools.md; apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md |
+| F3.3.2  | Tools composables GitHub para domain map                                  | 🔄     | list_files/read_file/search_code como base de exploracion autonoma      | packages/convex/convex/agents/core/tools/github_helpers.ts; packages/convex/convex/agents/core/tools/github_list_files.ts; packages/convex/convex/agents/core/tools/github_read_file.ts; packages/convex/convex/agents/core/tools/github_search_code.ts; packages/convex/convex/agents/core/tools/index.ts; packages/convex/convex/agents/domainMap.ts; packages/convex/convex/agents/skills/source/domain-map-agent.skill.md; packages/convex/convex/agents/skills/index.ts; apps/webapp/doc/agents/tools.md |
 | F4.0    | Subagentes: delegate tool y agent_entrypoints                             | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 | F5.0    | Eliminar flujos legacy de skills (domain-taxonomy, feature-extraction)    | ⏳     | -                                                                       | -                                                                                                                                                                                                                                                                        |
 
@@ -142,9 +143,9 @@ PARTE 1: CONTRATOS DE TOOLS
 - Mantener interface ToolDefinition actual: execute(input) sin ctx
 - Usar patron closure: createTool(ctx, productId) retorna tool con execute(input)
 - Contratos de input/output:
-  - read_sources: { productId } → SourceContext[]
-  - read_baseline: { productId } → ProductBaseline
-  - read_context_inputs: { productId } → ContextInputs
+  - list_files: { path?, pattern?, limit? } → FileEntry[]
+  - read_file: { path } → ReadFileOutput
+  - search_code: { query, filePattern?, limit? } → SearchMatch[]
   - todo_manager: { items } → Plan
   - validate_output: { outputType, data } → ValidationResult
 - Comportamiento si tool no existe: fail fast con error en ToolResult
@@ -221,95 +222,67 @@ PARTE 8: VALIDACION
 
 ### F1.0: Tools ejecutables core
 
-**Objetivo**: Implementar tools que lean datos reales del sistema.
+**Objetivo**: Implementar tools composables que accedan al repositorio GitHub como fuente de verdad.
 
-**Convex**: queries existentes (listSourceContexts, getProductWithContext, getLatestContextInputRun)
+**Convex**: conexiones (listByProductInternal), GitHub token (getInstallationTokenForConnection)
 
 **Archivos**:
 
-- `packages/convex/convex/agents/core/tools/read_sources.ts` (crear)
-- `packages/convex/convex/agents/core/tools/read_baseline.ts` (crear)
-- `packages/convex/convex/agents/core/tools/read_context_inputs.ts` (crear)
-- `packages/convex/convex/agents/core/tools/index.ts` (crear)
+- `packages/convex/convex/agents/core/tools/github_helpers.ts` (crear)
+- `packages/convex/convex/agents/core/tools/github_list_files.ts` (crear)
+- `packages/convex/convex/agents/core/tools/github_read_file.ts` (crear)
+- `packages/convex/convex/agents/core/tools/github_search_code.ts` (crear)
+- `packages/convex/convex/agents/core/tools/index.ts` (actualizar)
 
 **Prompt**:
 
 ````
-F1.0: Tools ejecutables core
+F1.0: Tools ejecutables core (GitHub composables)
 
-PARTE 1: ESTRUCTURA
-- Crear carpeta agents/core/tools/
-- Patron closure para inyectar contexto:
-  ```ts
-  // createReadSourcesTool(ctx, productId) retorna ToolDefinition
-  export function createReadSourcesTool(
-    ctx: ActionCtx,
-    productId: Id<"products">
-  ): ToolDefinition {
-    return {
-      name: "read_sources",
-      description: "Get classified sources for the product",
-      execute: async (input) => {
-        // ctx y productId capturados en closure
-        return ctx.runQuery(internal.agents.sourceContextData.listSourceContexts, {
-          productId,
-          limit: input.limit ?? 50
-        });
-      }
-    };
-  }
-````
+PARTE 1: HELPERS
+- Crear helper para conexion GitHub activa por producto.
+- Si no hay acceso al repo, retornar error claro.
 
-- Mantener ToolDefinition actual: { name, description?, execute(input) }
+PARTE 2: list_files
+- Factory: createListFilesTool(ctx, productId)
+- Input: { path?, pattern?, limit? }
+- Output: FileEntry[] (path, type, size?)
+- Usa GitHub tree (recursive) y filtra por path/pattern
 
-PARTE 2: IMPLEMENTAR read_sources
+PARTE 3: read_file
+- Factory: createReadFileTool(ctx, productId)
+- Input: { path }
+- Output: { path, content, size } o { error }
+- Truncar content > 100KB
 
-- Factory: createReadSourcesTool(ctx, productId)
-- Output: SourceContext[] (usando listSourceContexts existente)
-- La query ya valida acceso internamente
-- Limite de resultados (max 50 sources, configurable)
-
-PARTE 3: IMPLEMENTAR read_baseline
-
-- Factory: createReadBaselineTool(ctx, productId)
-- Output: ProductBaseline (name, type, valueProposition, etc.)
-- Usar getProductWithContext existente
-- Filtrar solo campos de baseline (no todo el product)
-
-PARTE 4: IMPLEMENTAR read_context_inputs
-
-- Factory: createReadContextInputsTool(ctx, productId)
-- Output: { uiSitemap, userFlows, businessDataModel, repoTopology }
-- Usar getLatestContextInputRun existente
-- Manejar caso donde no existe run previo (retornar null fields)
+PARTE 4: search_code
+- Factory: createSearchCodeTool(ctx, productId)
+- Input: { query, filePattern?, limit? }
+- Output: SearchMatch[] (path, snippet)
+- Enfoque seguro: listar archivos y buscar texto en contenido (sin GitHub Search API)
 
 PARTE 5: DOCUMENTACION
-
-- Actualizar apps/webapp/doc/agents/tools.md con implementacion real
-- Anadir ejemplos de output reales
+- Actualizar apps/webapp/doc/agents/tools.md con nuevos contratos
 
 PARTE 6: VALIDACION
-
 - tsc convex sin errores
-
-```
+````
 
 **Documentacion a actualizar**:
-- `apps/webapp/doc/agents/tools.md` (ejemplos reales)
+- `apps/webapp/doc/agents/tools.md` (contratos y ejemplos)
 
 **Validacion**:
-- [ ] Carpeta tools/ creada con 3 factories
-- [ ] Cada factory retorna tool con execute() implementado
-- [ ] Tools usan queries existentes (no duplican logica)
-- [ ] Patron closure documentado
+- [ ] Tools list_files/read_file/search_code registradas
+- [ ] Error claro cuando no hay conexion GitHub
+- [ ] Limites de output (limit, truncado)
 - [ ] Docs actualizados
 
-**Principios verificados**: Tools como interfaz con la realidad
+**Principios verificados**: Tools como primitives composables
 
 **Pruebas funcionales**:
-1. Ejecutar manualmente cada tool desde una action de test
-2. Verificar que retorna datos reales del producto
-3. Verificar que falla correctamente si el usuario no tiene acceso
+1. list_files devuelve estructura del repo conectado
+2. read_file devuelve contenido de archivo existente
+3. search_code encuentra coincidencias simples
 
 ---
 
@@ -654,19 +627,17 @@ PARTE 3: OBJETIVO
 PARTE 4: TOOLS DISPONIBLES
 
 - Documentar cada tool y cuando usarlo:
-  - read_sources: Obtener sources clasificados con surface signals
-  - read_baseline: Obtener baseline del producto (name, type, value proposition)
-  - read_context_inputs: Obtener UI sitemap, flows, data model extraidos
+  - list_files: Explorar estructura del repo
+  - read_file: Leer archivos clave
+  - search_code: Buscar patrones relacionados con dominios
   - todo_manager: Crear y actualizar plan de ejecucion
-  - validate_output: Validar output contra schema
 
 PARTE 5: PLAN TEMPLATE
 
-1. Gather context: read baseline + sources
-2. Analyze surfaces: agrupar por tipo, contar signals
-3. Map to domains: aplicar taxonomia
-4. Generate layout: crear estructura de grid
-5. Validate: verificar campos requeridos y evidencia
+1. Explore repo: list_files para layout general
+2. Inspect files: read_file en entrypoints y features
+3. Map domains: sintetizar dominios con evidencia
+4. Summarize: listar dominios y evidencia base
 
 PARTE 6: TAXONOMIA (ABIERTA)
 
@@ -681,14 +652,12 @@ PARTE 7: OUTPUT SCHEMA
 PARTE 8: REGLAS
 
 1. SIEMPRE empezar con todo_manager para crear plan
-2. Leer TODAS las sources antes de mapear
+2. Usar list_files/read_file/search_code para recopilar evidencia
 3. Usar evidencia de tools, nunca inventar
-4. Validar output antes de terminar
-5. Si validacion falla, corregir y reintentar
-6. Preferir menos dominios con evidencia fuerte
-7. Ignorar inputs de marketing, admin u observabilidad
-8. Dominios agregan product_front + platform (no separar por superficie)
-9. Trabajo fundacional es evidencia secundaria, no dominio dedicado salvo capacidad clara
+4. Preferir menos dominios con evidencia fuerte
+5. Ignorar inputs de marketing, admin u observabilidad
+6. Dominios agregan product_front + platform (no separar por superficie)
+7. Trabajo fundacional es evidencia secundaria, no dominio dedicado salvo capacidad clara
 
 PARTE 9: REGISTRAR EN INDEX.TS
 
@@ -1031,8 +1000,8 @@ PARTE 5: VALIDACION
 2. Click en "Generate Domain Map"
 3. **Ver AgentProgress con**:
    - [ ] Plan del agente (items con status)
-   - [ ] Tool calls (read_sources, read_baseline, etc.)
-   - [ ] Step de validacion
+   - [ ] Tool calls (list_files, read_file, search_code)
+   - [ ] Step de validacion (si aplica)
 4. **Ver Domain Map Card con**:
    - [ ] Dominios con evidence real de sources
    - [ ] Summary con total y warnings si aplica
@@ -1040,7 +1009,7 @@ PARTE 5: VALIDACION
    - [ ] Agent Loop: Multiples turns visibles
    - [ ] Tools: Tool calls con datos del producto
    - [ ] Descomposicion: Plan visible con items
-   - [ ] Verificacion: Step de validacion presente
+   - [ ] Verificacion: Step de validacion presente (si aplica)
    - [ ] Criterio: status "success", no "max_turns_exceeded"
    - [ ] Observabilidad: Todo visible mientras trabaja
 
@@ -1083,7 +1052,7 @@ PARTE 3: NAG SYSTEM
 
 PARTE 4: SKILL
 
-- Reforzar reglas: create plan primero, update plan tras cada fase, validate_output antes de final
+- Reforzar reglas: create plan primero, update plan tras cada fase
 
 ```
 
@@ -1092,7 +1061,6 @@ PARTE 4: SKILL
 - [ ] Plan renderizado se ve en los turnos del modelo
 - [ ] Plan se actualiza tras cada fase (modelo)
 - [ ] Nag aparece tras 2 turnos sin plan update
-- [ ] validate_output usado antes de output final
 
 **Principios verificados**: Descomposicion, Observabilidad
 
@@ -1101,6 +1069,62 @@ PARTE 4: SKILL
 2. Ver plan renderizado en outputs del modelo
 3. Ver plan avanzar (update/complete) tras fases
 4. Forzar 2 turnos sin update → ver reminder inyectado
+
+---
+
+### F3.3.2: Tools composables GitHub para domain map
+
+**Objetivo**: El agente explora el repo con primitives y usa evidencia real.
+
+**Convex**: conexiones + helpers GitHub
+
+**Archivos**:
+- `packages/convex/convex/agents/core/tools/github_helpers.ts` (crear)
+- `packages/convex/convex/agents/core/tools/github_list_files.ts` (crear)
+- `packages/convex/convex/agents/core/tools/github_read_file.ts` (crear)
+- `packages/convex/convex/agents/core/tools/github_search_code.ts` (crear)
+- `packages/convex/convex/agents/core/tools/index.ts` (actualizar)
+- `packages/convex/convex/agents/domainMap.ts` (usar tools nuevas)
+- `packages/convex/convex/agents/skills/source/domain-map-agent.skill.md` (actualizar)
+- `apps/webapp/doc/agents/tools.md` (actualizar)
+
+**Prompt**:
+
+```
+F3.3.2: Tools composables GitHub
+
+PARTE 1: ELIMINAR LEGACY
+- Eliminar read_sources/read_baseline/read_context_inputs y referencias
+
+PARTE 2: PRIMITIVAS GITHUB
+- list_files: explorar estructura del repo
+- read_file: leer archivos clave (truncate > 100KB)
+- search_code: buscar patrones usando lectura segura
+
+PARTE 3: ACCESO
+- Si no hay conexion GitHub activa, retornar error claro y finalizar run
+
+PARTE 4: PROMPT
+- El agente debe decidir que leer/usar
+- Basarse en evidencia de codebase
+- Output libre (no exigir JSON)
+
+PARTE 5: DOCS
+- Actualizar contratos en agents/tools.md
+```
+
+**Validacion**:
+- [ ] Sin referencias a tools legacy
+- [ ] Error claro cuando falta acceso GitHub
+- [ ] list_files/read_file/search_code funcionan
+- [ ] Prompt y skill reflejan nueva autonomia
+
+**Principios verificados**: Tools ejecutables + Autonomia
+
+**Pruebas funcionales**:
+1. Ejecutar domain map con repo conectado
+2. Ver tool calls list_files/read_file/search_code con outputs reales
+3. Sin JSON requerido en output
 
 ---
 

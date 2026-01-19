@@ -269,9 +269,9 @@ packages/
           validators/
             domain_map.ts             # Validación objetiva de Domain Map
           tools/
-            read_sources.ts           # Tool: lectura de sources clasificados
-            read_baseline.ts          # Tool: baseline de producto
-            read_context_inputs.ts    # Tool: inputs de contexto (UI, flows, model)
+            github_list_files.ts      # Tool: listar archivos del repo
+            github_read_file.ts       # Tool: leer archivo del repo
+            github_search_code.ts     # Tool: buscar patrones en codigo
             todo_manager.ts           # Tool: plan/todo tracking
             validate.ts               # Tool: validación de outputs
         skills/
@@ -579,40 +579,35 @@ Cada fase debe:
 ### 1.1 Implementar tools core
 
 ```typescript
-// agents/core/tools/read_sources.ts
-export const readSourcesTool: ToolDefinition = {
-	name: "read_sources",
-	description: "Get classified sources for the product",
-	execute: async (input: { productId: string }) => {
-		return await ctx.runQuery(
-			internal.agents.sourceContextData.listSourceContexts,
-			{
-				productId: input.productId as Id<"products">,
-			},
-		);
+// agents/core/tools/github_list_files.ts
+export const listFilesTool: ToolDefinition = {
+	name: "list_files",
+	description: "List files in the connected GitHub repo",
+	execute: async (input: { path?: string; pattern?: string; limit?: number }) => {
+		return await listFilesFromGithub(input);
 	},
 };
 ```
 
 **Tools a implementar (Fase 1)**:
 
-| Tool                  | Query/Mutation subyacente  | Input           |
-| --------------------- | -------------------------- | --------------- |
-| `read_sources`        | `listSourceContexts`       | `{ productId }` |
-| `read_baseline`       | `getProductWithContext`    | `{ productId }` |
-| `read_context_inputs` | `getLatestContextInputRun` | `{ productId }` |
+| Tool          | Fuente | Input                               |
+| ------------- | ------ | ----------------------------------- |
+| `list_files`  | GitHub | `{ path?, pattern?, limit? }`       |
+| `read_file`   | GitHub | `{ path }`                          |
+| `search_code` | GitHub | `{ query, filePattern?, limit? }`   |
 
 ### 1.2 Conectar tools al loop
 
 ```diff
 // agents/core/tool_registry.ts
 - const createStubTool = (name: ToolName): ToolDefinition => ({ name });
-+ import { readSourcesTool, readBaselineTool, readContextInputsTool } from "./tools";
++ import { listFilesTool, readFileTool, searchCodeTool } from "./tools";
 +
 + const TOOL_IMPLEMENTATIONS: Partial<Record<ToolName, ToolDefinition>> = {
-+   read_sources: readSourcesTool,
-+   read_baseline: readBaselineTool,
-+   read_context_inputs: readContextInputsTool,
++   list_files: listFilesTool,
++   read_file: readFileTool,
++   search_code: searchCodeTool,
 + };
 ```
 
@@ -765,9 +760,9 @@ Build a structured domain map for a product by:
 
 ## Available Tools
 
-- `read_sources`: Get classified sources with surface signals
-- `read_baseline`: Get product baseline (name, type, value proposition)
-- `read_context_inputs`: Get extracted UI sitemap, flows, and data model
+- `list_files`: List repo structure to locate key areas
+- `read_file`: Read specific files for evidence
+- `search_code`: Find patterns and features in code
 - `todo_manager`: Create and update execution plan
 - `validate_output`: Validate output against schema
 

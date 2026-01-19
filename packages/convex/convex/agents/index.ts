@@ -8,3 +8,4 @@ export { interpretTimelineEvents } from "./actions";
 export { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
 export { sourceContextAgent } from "./sourceContextAgent";
 export { generateDomainMap } from "./domainMap";
+export { exportRunTrace } from "./agentRuns";

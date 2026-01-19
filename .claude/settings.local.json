@@ -127,7 +127,8 @@
       "Bash(timeout 30s pnpm:*)",
       "Bash(git fetch:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "WebFetch(domain:stack.convex.dev)"
+      "WebFetch(domain:stack.convex.dev)",
+      "Bash(wc:*)"
     ],
     "deny": [],
     "ask": [],
