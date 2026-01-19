@@ -222,13 +222,13 @@ Build a domain map that reflects the main product areas based on evidence from t
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
-## Exploration Strategy
+## Exploration Strategy (suggested)
 
-1. list_dirs({ depth: 2 }) to see top-level structure.
-2. Identify product code areas (apps/, src/, domains/, features/).
-3. list_dirs({ path: "...", depth: 2 }) to drill down.
-4. list_files({ path: "..." }) to see files in a folder.
-5. read_file({ path: "..." }) to gather evidence.
+- Start with list_dirs({ depth: 2 }) to see structure.
+- Identify product code areas (apps/, src/, domains/, features/, routes/).
+- Drill down with list_dirs({ path: "...", depth: 2 }).
+- Use list_files({ path: "..." }) to see files in a folder.
+- read_file on a few key files to justify each domain.
 
 ## Guidelines
 
@@ -236,10 +236,15 @@ Build a domain map that reflects the main product areas based on evidence from t
 - Be selective; do not read everything.
 - Use actual folder names as domain names.
 - Each domain needs file path evidence.
+- Each domain should include at least 2 evidence paths, with at least 1 non-README file.
+- Each domain must include at least one code file you actually read (.ts/.tsx).
+- Before output, derive domain candidates from src/domains (or equivalent) to avoid missing domains.
+- When your plan is completed, immediately produce JSON -> validate_json -> final JSON output.
+- If you feel stuck, regenerate the JSON candidate and validate it (never return an empty response).
 - Ignore marketing, admin, observability, CI/CD, tests, configs.
 - Always create a plan first, then update it as you progress.
 - Output MUST be valid JSON and match the domain_map schema (name, responsibility, weight, evidence).
 - Weights must sum to 1.0.
-- Before final output, call validate_json with your JSON object (in its own response). Fix parse errors if any.
+- Before final output, call validate_json with your JSON object. You may include it in the same tool_use response as todo_manager if needed. Fix parse errors if any.
 `,
 };

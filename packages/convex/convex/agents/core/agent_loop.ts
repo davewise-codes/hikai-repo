@@ -226,6 +226,14 @@ export async function executeAgentLoop(
 		}
 
 		if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
+			const parsed = extractJsonPayload(response.text);
+			const looksLikeToolUse = response.text.includes("\"type\":\"tool_use\"");
+			if (!parsed && looksLikeToolUse && config.toolUseExtraTextReminder) {
+				messages.push({ role: "assistant", content: response.text });
+				messages.push({ role: "user", content: config.toolUseExtraTextReminder });
+				turns += 1;
+				continue;
+			}
 			if (config.requireValidateJson && !hasValidatedJson) {
 				messages.push({ role: "assistant", content: response.text });
 				messages.push({
@@ -246,7 +254,6 @@ export async function executeAgentLoop(
 				turns += 1;
 				continue;
 			}
-			const parsed = extractJsonPayload(response.text);
 			const normalizedText = parsed?.normalizedText ?? response.text;
 			const output = parsed?.data ?? null;
 			let validationResult = config.validation
@@ -348,7 +355,7 @@ export async function executeAgentLoop(
 			}
 			return true;
 		});
-		hasValidatedJson = nonValidateTools.length === 0 && validatedThisTurn;
+		hasValidatedJson = hasValidatedJson || validatedThisTurn;
 		const planUpdated = updatePlanState(results, (plan) => {
 			lastPlan = plan;
 		});
@@ -375,7 +382,7 @@ export async function executeAgentLoop(
 
 		if (
 			config.autoFinalizeOnValidateJson &&
-			hasValidatedJson &&
+			validatedThisTurn &&
 			lastValidatedJson &&
 			lastPlan &&
 			isPlanCompleted(lastPlan)

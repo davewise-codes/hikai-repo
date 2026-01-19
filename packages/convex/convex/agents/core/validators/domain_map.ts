@@ -31,6 +31,9 @@ export function validateDomainMap(output: unknown): ValidationResult {
 	} else {
 		const weightValues: number[] = [];
 		for (const domain of map.domains) {
+			const evidenceItems = Array.isArray(domain?.evidence)
+				? domain.evidence
+				: [];
 			if (!domain?.name) {
 				errors.push("Domain missing 'name'");
 			}
@@ -48,6 +51,21 @@ export function validateDomainMap(output: unknown): ValidationResult {
 			}
 			if (!Array.isArray(domain?.evidence) || domain.evidence.length === 0) {
 				errors.push(`Domain '${domain?.name ?? "unknown"}' has no evidence`);
+			}
+			if (evidenceItems.length > 0 && evidenceItems.length < 2) {
+				warnings.push(
+					`Domain '${domain?.name ?? "unknown"}' has limited evidence (<2 paths)`,
+				);
+			}
+			const hasNonReadme = evidenceItems.some(
+				(path) =>
+					typeof path === "string" &&
+					!path.toLowerCase().endsWith("readme.md"),
+			);
+			if (evidenceItems.length > 0 && !hasNonReadme) {
+				warnings.push(
+					`Domain '${domain?.name ?? "unknown"}' evidence relies only on README files`,
+				);
 			}
 		}
 		if (weightValues.length > 0) {

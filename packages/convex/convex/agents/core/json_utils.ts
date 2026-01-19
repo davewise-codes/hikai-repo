@@ -27,6 +27,10 @@ export function extractJsonPayload(text: string): ExtractedJson | null {
 			stripped.slice(endIndex + 1).trim().length > 0;
 		return { data, normalizedText, hadExtraText };
 	} catch {
+		const fallbackToolUse = extractToolCallsFallback(stripped);
+		if (fallbackToolUse) {
+			return fallbackToolUse;
+		}
 		return fallbackParseJson(stripped);
 	}
 }
@@ -55,6 +59,28 @@ function fallbackParseJson(text: string): ExtractedJson | null {
 		return null;
 	}
 	return null;
+}
+
+function extractToolCallsFallback(text: string): ExtractedJson | null {
+	const toolCallsIndex = text.indexOf("\"toolCalls\"");
+	if (toolCallsIndex === -1) return null;
+	const arrayStart = text.indexOf("[", toolCallsIndex);
+	if (arrayStart === -1) return null;
+	const arrayEnd = findJsonEnd(text, arrayStart);
+	if (arrayEnd === -1) return null;
+	const arraySlice = text.slice(arrayStart, arrayEnd + 1);
+	try {
+		const toolCalls = JSON.parse(arraySlice) as unknown;
+		if (!Array.isArray(toolCalls)) return null;
+		const data = { type: "tool_use", toolCalls };
+		return {
+			data,
+			normalizedText: JSON.stringify(data, null, 2),
+			hadExtraText: true,
+		};
+	} catch {
+		return null;
+	}
 }
 
 function findJsonStart(text: string): number {
