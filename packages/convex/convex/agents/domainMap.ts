@@ -207,6 +207,23 @@ export const generateDomainMap = action({
 				productId,
 				domainMap,
 			});
+			const serialized = JSON.stringify(domainMap, null, 2);
+			const fileId = await ctx.storage.store(
+				new Blob([serialized], { type: "application/json" }),
+			);
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId,
+				step: "Domain map saved",
+				status: "success",
+				metadata: {
+					preview: serialized.slice(0, 2000),
+					outputRef: {
+						fileId,
+						sizeBytes: serialized.length,
+					},
+				},
+			});
 		}
 
 		if (telemetryConfig.persistInferenceLogs) {

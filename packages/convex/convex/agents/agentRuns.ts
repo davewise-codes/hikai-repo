@@ -169,9 +169,13 @@ export const exportRunTrace = action({
 		const expandedSteps = await Promise.all(
 			run.steps.map(async (step, index) => {
 				const expanded: Record<string, unknown> = { ...step };
-				const outputRef = (
-					step.metadata as { result?: { outputRef?: { fileId?: string } } }
-				)?.result?.outputRef;
+				const outputRef =
+					(
+						step.metadata as { result?: { outputRef?: { fileId?: string } } }
+					)?.result?.outputRef ??
+					(
+						step.metadata as { outputRef?: { fileId?: string } }
+					)?.outputRef;
 				if (outputRef?.fileId) {
 					try {
 						const file = await ctx.storage.get(outputRef.fileId);
