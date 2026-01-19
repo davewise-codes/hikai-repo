@@ -17,10 +17,12 @@ import {
 	createListDirsTool,
 	createReadFileTool,
 	createTodoManagerTool,
+	createValidateJsonTool,
 } from "./core/tools";
 import { createToolPromptModel } from "./core/tool_prompt_model";
 import { SKILL_CONTENTS } from "./skills";
 import { getActiveGithubConnection } from "./core/tools/github_helpers";
+import { validateDomainMap } from "./core/validators";
 
 const AGENT_NAME = "Domain Map Agent";
 const USE_CASE = "domain_map";
@@ -79,6 +81,7 @@ export const generateDomainMap = action({
 			createListDirsTool(ctx, productId),
 			createListFilesTool(ctx, productId),
 			createReadFileTool(ctx, productId),
+			createValidateJsonTool(),
 		];
 
 		const githubConnection = await getActiveGithubConnection(ctx, productId);
@@ -126,6 +129,10 @@ export const generateDomainMap = action({
 					"<reminder>Do not include any extra text with tool calls. Resend ONLY the JSON tool call block. Provide final output in a separate response.</reminder>",
 				finalOutputOnlyReminder:
 					"<reminder>Your plan is completed. Do NOT call tools. Return your final output only.</reminder>",
+				requireValidateJson: true,
+				validateJsonReminder:
+					"<reminder>Call validate_json with your final JSON (and ensure it returns valid:true) before submitting the final output.</reminder>",
+				autoFinalizeOnValidateJson: true,
 				planNag: {
 					threshold: 2,
 					message:
@@ -161,6 +168,30 @@ export const generateDomainMap = action({
 				onStep: async (step) => {
 					await persistToolSteps(ctx, productId, runId, step);
 				},
+				validation: {
+					validate: (output) => {
+						if (!output || typeof output !== "object") {
+							return { valid: false, errors: ["Invalid JSON output"], warnings: [] };
+						}
+						const result = validateDomainMap(output);
+						return {
+							valid: true,
+							errors: [],
+							warnings: [...result.errors, ...result.warnings],
+						};
+					},
+					onValidation: async (result) => {
+						await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+							productId,
+							runId,
+							step: "Validation: domain_map",
+							status: result.warnings.length > 0 ? "warn" : "info",
+							metadata: {
+								validation: result,
+							},
+						});
+					},
+				},
 			},
 			prompt,
 			messages,
@@ -168,8 +199,15 @@ export const generateDomainMap = action({
 
 		const domainMap =
 			result.status === "completed" && result.output
-				? (result.output as Record<string, unknown>)
+				? normalizeDomainMapOutput(result.output as Record<string, unknown>)
 				: null;
+
+		if (domainMap) {
+			await ctx.runMutation(internal.agents.domainMapData.saveDomainMap, {
+				productId,
+				domainMap,
+			});
+		}
 
 		if (telemetryConfig.persistInferenceLogs) {
 			await ctx.runMutation(internal.ai.telemetry.recordInferenceLog, {
@@ -257,17 +295,28 @@ function buildDomainMapPrompt(productId: Id<"products">): string {
 		"- Use ACTUAL folder/file names from the code as domain names.",
 		"- Every domain must have a real file path as evidence.",
 		"",
-		"OUTPUT: list each domain with its file path evidence.",
+		"OUTPUT: list each domain with its file path evidence and responsibility.",
 		"Use ONLY evidence from product_front and platform code (UI + backend services).",
 		"Ignore marketing, admin, observability, CI/CD, tests, and config-only files.",
 		"Always call todo_manager first to create your plan, and update it as you progress.",
 		"Use list_dirs to explore structure, list_files to inspect folders, and read_file to gather evidence.",
-		"Any output format is acceptable for now.",
+		"Output MUST be valid JSON that matches this schema:",
+		'{"domains":[{"name":"<string>","responsibility":"<string>","weight":0.0,"evidence":["path/one","path/two"]}],"summary":{"totalDomains":0,"warnings":[]}}',
+		"Rules for JSON:",
+		"- responsibility is a short sentence describing what the domain owns",
+		"- weight is a number between 0 and 1",
+		"- weights must sum to 1.0",
+		"- summary.totalDomains equals domains.length",
+		"Before final output, call validate_json with your JSON object (not a string).",
+		"If parsing fails, fix the JSON and validate again.",
+		"After JSON is valid, ensure it matches the schema above.",
+		"Call validate_json in its own response immediately before the final output.",
 		"Tool input rules:",
 		'- todo_manager input: { "items": [{ "content": "...", "activeForm": "...", "status": "in_progress" | "pending" | "completed" }] }',
 		'- list_dirs input: { "path"?: "apps/webapp/src", "depth"?: 2, "limit"?: 50 }',
 		'- list_files input: { "path"?: "apps/webapp/src", "pattern"?: "*.tsx", "limit"?: 50 }',
 		'- read_file input: { "path": "path/to/file.tsx" }',
+		'- validate_json input: { "json": { ... } }',
 		"Do NOT nest tool calls inside todo_manager. Call each tool directly.",
 		"Example tool call block:",
 		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"todo_manager","input":{"items":[{"content":"Explore repo structure","activeForm":"Exploring repo","status":"in_progress"},{"content":"Inspect key files","activeForm":"Inspecting files","status":"pending"},{"content":"Map domains","activeForm":"Mapping domains","status":"pending"}]}},{"id":"call-2","name":"list_dirs","input":{"path":"","depth":2,"limit":50}}]}',
@@ -286,13 +335,96 @@ function buildToolProtocol(productId: Id<"products">): string {
 		"- After each phase, update plan with todo_manager",
 		"- Only one task in_progress at a time",
 		"",
-		"Tool calls must use JSON only:",
-		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"tool_name","input":{}}]}',
-		"Final output can be plain text and does not need JSON.",
+		"CRITICAL - Response format:",
+		"- Tool calls: ONLY JSON, nothing else in the response",
+		'  {"type":"tool_use","toolCalls":[...]}',
+		"- Final output: ONLY JSON, no tool calls",
+		'  {"type":"final","output":{...}}',
+		"",
+		"CRITICAL - Finishing sequence:",
+		"1. FIRST: Call todo_manager to mark ALL items as completed",
+		"2. WAIT for the tool result",
+		"3. Call validate_json with your final JSON object (as a tool call in its own response)",
+		"4. THEN: Return your final output (JSON only, no tool calls)",
+		"Never combine tool calls and final output in the same response.",
 		"Only call tools listed in the tool catalog.",
 		"Tool inputs must include the productId when required.",
 		`Use productId: ${productId}.`,
 	].join("\n");
+}
+
+function normalizeDomainMapOutput(
+	output: Record<string, unknown>,
+): Record<string, unknown> {
+	if (!output || typeof output !== "object") return output;
+	const rawDomains = Array.isArray((output as { domains?: unknown }).domains)
+		? ((output as { domains: Array<Record<string, unknown>> }).domains ?? [])
+		: [];
+	if (!rawDomains.length) return output;
+
+	const normalized = rawDomains
+		.map((domain) => {
+			const name =
+				typeof domain.name === "string" ? domain.name.trim() : "";
+			const responsibility =
+				typeof domain.responsibility === "string"
+					? domain.responsibility.trim()
+					: "";
+			const weight =
+				typeof domain.weight === "number" && !Number.isNaN(domain.weight)
+					? domain.weight
+					: 0;
+			const evidence = Array.isArray(domain.evidence)
+				? domain.evidence.filter((item): item is string => typeof item === "string")
+				: [];
+			return {
+				name,
+				responsibility,
+				weight,
+				evidence,
+			};
+		})
+		.filter((domain) => domain.name);
+
+	if (!normalized.length) return output;
+
+	const totalWeight = normalized.reduce((sum, domain) => sum + domain.weight, 0);
+	let warnings = Array.isArray((output as { summary?: { warnings?: unknown } }).summary?.warnings)
+		? (((output as { summary?: { warnings?: unknown } }).summary?.warnings ??
+				[]) as string[])
+		: [];
+
+	let adjustedDomains = normalized;
+	if (totalWeight > 0) {
+		adjustedDomains = normalized.map((domain) => ({
+			...domain,
+			weight: Number((domain.weight / totalWeight).toFixed(4)),
+		}));
+		if (Math.abs(totalWeight - 1) > 0.01) {
+			warnings = [
+				...warnings,
+				`Weights normalized to sum to 1 (was ${totalWeight.toFixed(2)}).`,
+			];
+		}
+	} else {
+		const evenWeight = Number((1 / normalized.length).toFixed(4));
+		adjustedDomains = normalized.map((domain) => ({
+			...domain,
+			weight: evenWeight,
+		}));
+		warnings = [
+			...warnings,
+			"Weights were missing or zero; evenly distributed.",
+		];
+	}
+
+	return {
+		domains: adjustedDomains,
+		summary: {
+			totalDomains: adjustedDomains.length,
+			warnings,
+		},
+	};
 }
 
 function includesTool(step: StepResult, toolName: string): boolean {

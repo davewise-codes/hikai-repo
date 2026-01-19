@@ -219,6 +219,7 @@ Build a domain map that reflects the main product areas based on evidence from t
 - list_dirs: See directory structure (depth-limited). Use first.
 - list_files: List files in a specific directory (non-recursive).
 - read_file: Read specific files to gather evidence.
+- validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
 ## Exploration Strategy
@@ -237,5 +238,8 @@ Build a domain map that reflects the main product areas based on evidence from t
 - Each domain needs file path evidence.
 - Ignore marketing, admin, observability, CI/CD, tests, configs.
 - Always create a plan first, then update it as you progress.
+- Output MUST be valid JSON and match the domain_map schema (name, responsibility, weight, evidence).
+- Weights must sum to 1.0.
+- Before final output, call validate_json with your JSON object (in its own response). Fix parse errors if any.
 `,
 };

@@ -1,5 +1,6 @@
 export { createTodoManagerTool } from "./todo_manager";
 export { createValidateTool } from "./validate";
+export { createValidateJsonTool } from "./validate_json";
 export { createListDirsTool } from "./github_list_dirs";
 export { createListFilesTool } from "./github_list_files";
 export { createReadFileTool } from "./github_read_file";

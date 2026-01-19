@@ -28,6 +28,7 @@ import type * as agents_core_tools_github_search_code from "../agents/core/tools
 import type * as agents_core_tools_index from "../agents/core/tools/index.js";
 import type * as agents_core_tools_todo_manager from "../agents/core/tools/todo_manager.js";
 import type * as agents_core_tools_validate from "../agents/core/tools/validate.js";
+import type * as agents_core_tools_validate_json from "../agents/core/tools/validate_json.js";
 import type * as agents_core_validators_domain_map from "../agents/core/validators/domain_map.js";
 import type * as agents_core_validators_index from "../agents/core/validators/index.js";
 import type * as agents_domainMap from "../agents/domainMap.js";
@@ -112,6 +113,7 @@ declare const fullApi: ApiFromModules<{
   "agents/core/tools/index": typeof agents_core_tools_index;
   "agents/core/tools/todo_manager": typeof agents_core_tools_todo_manager;
   "agents/core/tools/validate": typeof agents_core_tools_validate;
+  "agents/core/tools/validate_json": typeof agents_core_tools_validate_json;
   "agents/core/validators/domain_map": typeof agents_core_validators_domain_map;
   "agents/core/validators/index": typeof agents_core_validators_index;
   "agents/domainMap": typeof agents_domainMap;

@@ -74,6 +74,9 @@ export interface AgentLoopConfig {
 	emptyResponseReminder?: string;
 	toolUseExtraTextReminder?: string;
 	finalOutputOnlyReminder?: string;
+	requireValidateJson?: boolean;
+	validateJsonReminder?: string;
+	autoFinalizeOnValidateJson?: boolean;
 }
 
 export type AgentLoopStatus =
@@ -134,6 +137,8 @@ export async function executeAgentLoop(
 	let turns = 0;
 	let lastPlan: PlanManager | null = null;
 	let turnsSincePlanUpdate = 0;
+	let hasValidatedJson = false;
+	let lastValidatedJson: Record<string, unknown> | null = null;
 
 	while (turns < config.maxTurns) {
 		if (
@@ -220,7 +225,18 @@ export async function executeAgentLoop(
 			};
 		}
 
-	if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
+		if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
+			if (config.requireValidateJson && !hasValidatedJson) {
+				messages.push({ role: "assistant", content: response.text });
+				messages.push({
+					role: "user",
+					content:
+						config.validateJsonReminder ??
+						"<reminder>Call validate_json with your final JSON before submitting the final output.</reminder>",
+				});
+				turns += 1;
+				continue;
+			}
 			if (!response.text.trim() && config.emptyResponseReminder) {
 				messages.push({ role: "assistant", content: response.text });
 				messages.push({
@@ -293,7 +309,15 @@ export async function executeAgentLoop(
 			(response._debug.extracted as { hadExtraText?: boolean }).hadExtraText,
 		);
 
-	if (lastPlan && isPlanCompleted(lastPlan) && config.finalOutputOnlyReminder) {
+	const hasOnlyValidateJsonCalls =
+		response.toolCalls?.length &&
+		response.toolCalls.every((call) => call.name === "validate_json");
+	if (
+		lastPlan &&
+		isPlanCompleted(lastPlan) &&
+		config.finalOutputOnlyReminder &&
+		!hasOnlyValidateJsonCalls
+	) {
 		messages.push({ role: "assistant", content: response.text });
 		messages.push({ role: "user", content: config.finalOutputOnlyReminder });
 		turns += 1;
@@ -307,7 +331,24 @@ export async function executeAgentLoop(
 		continue;
 	}
 
-	const results = await executeToolCalls(response.toolCalls, tools);
+		const results = await executeToolCalls(response.toolCalls, tools);
+		const nonValidateTools = response.toolCalls.filter(
+			(call) => call.name !== "validate_json",
+		);
+		const validatedThisTurn = results.some((result) => {
+			if (result.name !== "validate_json") return false;
+			if (!result.output || typeof result.output !== "object") return false;
+			const output = result.output as {
+				valid?: boolean;
+				parsed?: Record<string, unknown>;
+			};
+			if (!output.valid) return false;
+			if (output.parsed && typeof output.parsed === "object") {
+				lastValidatedJson = output.parsed;
+			}
+			return true;
+		});
+		hasValidatedJson = nonValidateTools.length === 0 && validatedThisTurn;
 		const planUpdated = updatePlanState(results, (plan) => {
 			lastPlan = plan;
 		});
@@ -330,6 +371,30 @@ export async function executeAgentLoop(
 
 		if (config.onStep) {
 			await config.onStep({ turn: turns, toolCalls: response.toolCalls, results });
+		}
+
+		if (
+			config.autoFinalizeOnValidateJson &&
+			hasValidatedJson &&
+			lastValidatedJson &&
+			lastPlan &&
+			isPlanCompleted(lastPlan)
+		) {
+			const serialized = JSON.stringify(lastValidatedJson, null, 2);
+			return {
+				text: serialized,
+				rawText: serialized,
+				output: lastValidatedJson,
+				status: "completed",
+				metrics: buildMetrics(
+					startMs,
+					turns + 1,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					config,
+				),
+			};
 		}
 
 		turns += 1;

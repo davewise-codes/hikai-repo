@@ -5,6 +5,7 @@ import { Badge, Card, CardContent, CardHeader, CardTitle } from "@hikai/ui";
 type DomainMap = {
 	domains?: Array<{
 		name?: string;
+		responsibility?: string;
 		weight?: number;
 		evidence?: string[];
 	}>;
@@ -16,7 +17,13 @@ type DomainMap = {
 
 const DEFAULT_WEIGHT = 0;
 
-export function DomainMapCard({ domainMap }: { domainMap?: DomainMap | null }) {
+export function DomainMapCard({
+	domainMap,
+	isRefreshing,
+}: {
+	domainMap?: DomainMap | null;
+	isRefreshing?: boolean;
+}) {
 	const { t } = useTranslation("products");
 	const domains = domainMap?.domains ?? [];
 	const summary = useMemo(() => {
@@ -36,7 +43,11 @@ export function DomainMapCard({ domainMap }: { domainMap?: DomainMap | null }) {
 				</p>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				{domains.length === 0 ? (
+				{isRefreshing ? (
+					<p className="text-fontSize-sm text-muted-foreground">
+						{t("context.domainMapRefreshing")}
+					</p>
+				) : domains.length === 0 ? (
 					<p className="text-fontSize-sm text-muted-foreground">
 						{t("context.domainMapEmpty")}
 					</p>
@@ -58,6 +69,13 @@ export function DomainMapCard({ domainMap }: { domainMap?: DomainMap | null }) {
 											})}
 										</Badge>
 									</div>
+									{domain.responsibility ? (
+										<p className="mt-1 text-fontSize-xs text-muted-foreground">
+											{t("context.domainMapResponsibility", {
+												value: domain.responsibility,
+											})}
+										</p>
+									) : null}
 									<EvidenceList evidence={domain.evidence} />
 								</div>
 							))}

@@ -14,10 +14,7 @@ import {
 	CheckCircle,
 	Circle,
 	RefreshCw,
-	X,
 } from "@hikai/ui";
-import { formatRelativeDate } from "@/domains/shared/utils/date-utils";
-
 type AgentRunStep = {
 	step: string;
 	status: "info" | "success" | "warn" | "error";
@@ -61,32 +58,6 @@ type BudgetInfo = {
 	status?: string;
 };
 
-type ValidationPreview = {
-	rawTextPreview?: string;
-	hadExtraText?: boolean;
-};
-
-type StepMetadata = {
-	result?: {
-		error?: string;
-		output?: unknown;
-		outputRef?: {
-			fileId?: string;
-			sizeBytes?: number;
-		};
-	};
-	modelOutputPreview?: string;
-	stopReason?: string;
-	toolCalls?: Array<{ name?: string }>;
-	validation?: {
-		valid?: boolean;
-		errors?: string[];
-		warnings?: string[];
-	};
-	rawTextPreview?: string;
-	hadExtraText?: boolean;
-};
-
 export function AgentProgress({
 	productId,
 	runId,
@@ -94,7 +65,7 @@ export function AgentProgress({
 	productId: Id<"products">;
 	runId: Id<"agentRuns">;
 }) {
-	const { t, i18n } = useTranslation("products");
+	const { t } = useTranslation("products");
 	const convex = useConvex();
 	const exportRunTrace = useAction(api.agents.agentRuns.exportRunTrace);
 	const run = useQuery(api.agents.agentRuns.getRunById, { productId, runId }) as
@@ -111,15 +82,28 @@ export function AgentProgress({
 
 	const activeRun = polledRun ?? run ?? null;
 	const steps = activeRun?.steps ?? [];
-	const latestStep = steps.length ? steps[steps.length - 1] : null;
 	const plan = useMemo(() => extractPlan(steps), [steps]);
-	const planItems = plan?.items ?? [];
+	const planItems = useMemo(() => {
+		const items = plan?.items ?? [];
+		if (
+			activeRun?.status === "running" &&
+			items.length > 0 &&
+			items.every((item) => item.status === "completed")
+		) {
+			return [
+				...items,
+				{
+					id: "finalizing",
+					content: t("context.agentProgressFinalizing"),
+					activeForm: t("context.agentProgressFinalizing"),
+					status: "in_progress" as const,
+				},
+			];
+		}
+		return items;
+	}, [plan?.items, activeRun?.status, t]);
 	const showPlanToggle = planItems.length > PLAN_COLLAPSE_THRESHOLD;
 	const budget = useMemo(() => extractBudget(steps), [steps]);
-	const validationPreview = useMemo(
-		() => extractValidationPreview(steps),
-		[steps],
-	);
 
 	useEffect(() => {
 		let isActive = true;
@@ -228,12 +212,6 @@ export function AgentProgress({
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				{latestStep && activeRun.status === "running" ? (
-					<div className="flex items-center gap-2 text-fontSize-sm text-muted-foreground">
-						<RefreshCw className="h-4 w-4 animate-spin" />
-						<span>{latestStep.step}</span>
-					</div>
-				) : null}
 				{budget ? (
 					<div className="space-y-1 rounded-md border border-border px-3 py-2 text-fontSize-xs">
 						<div className="font-medium text-muted-foreground">
@@ -262,21 +240,6 @@ export function AgentProgress({
 						) : null}
 					</div>
 				) : null}
-				{validationPreview?.rawTextPreview ? (
-					<details className="rounded-md border border-border px-3 py-2 text-fontSize-xs">
-						<summary className="cursor-pointer font-medium text-muted-foreground">
-							{t("context.agentProgressValidationPreview")}
-						</summary>
-						<p className="mt-2 whitespace-pre-wrap text-muted-foreground">
-							{validationPreview.rawTextPreview}
-						</p>
-						{validationPreview.hadExtraText ? (
-							<p className="mt-2 text-warning">
-								{t("context.agentProgressValidationExtra")}
-							</p>
-						) : null}
-					</details>
-				) : null}
 				{planItems.length > 0 ? (
 					<div className="space-y-2">
 						<div className="text-fontSize-xs font-medium text-muted-foreground">
@@ -304,39 +267,6 @@ export function AgentProgress({
 						)}
 					</div>
 				) : null}
-				<div className="space-y-2">
-					<div className="text-fontSize-xs font-medium text-muted-foreground">
-						{t("context.agentProgressStepsTitle")}
-					</div>
-					{steps.length === 0 ? (
-						<p className="text-fontSize-xs text-muted-foreground">
-							{t("context.agentProgressNoSteps")}
-						</p>
-					) : (
-						<div className="space-y-2">
-							{steps.map((step, index) => (
-								<div
-									key={`${step.step}-${index}`}
-									className="flex flex-wrap items-center gap-2 rounded-md border border-border px-3 py-2 text-fontSize-xs"
-								>
-									<StepStatusIcon status={step.status} />
-									<span>{step.step}</span>
-									<span className="text-muted-foreground">
-										{formatRelativeDate(step.timestamp, i18n.language)}
-									</span>
-									{getToolCount(step.metadata) > 0 ? (
-										<Badge variant="outline">
-											{t("context.agentProgressTools", {
-												count: getToolCount(step.metadata),
-											})}
-										</Badge>
-									) : null}
-									{renderStepDetails(step, t)}
-								</div>
-							))}
-						</div>
-					)}
-				</div>
 			</CardContent>
 		</Card>
 	);
@@ -345,23 +275,6 @@ export function AgentProgress({
 function StatusBadge({ status }: { status: "running" | "success" | "error" }) {
 	const variant = status === "error" ? "destructive" : "outline";
 	return <Badge variant={variant}>{status}</Badge>;
-}
-
-function StepStatusIcon({
-	status,
-}: {
-	status: "info" | "success" | "warn" | "error";
-}) {
-	if (status === "success") {
-		return <CheckCircle className="h-4 w-4 text-success" />;
-	}
-	if (status === "warn") {
-		return <AlertCircle className="h-4 w-4 text-warning" />;
-	}
-	if (status === "error") {
-		return <X className="h-4 w-4 text-destructive" />;
-	}
-	return <Circle className="h-4 w-4 text-muted-foreground" />;
 }
 
 function PlanRow({ item }: { item: PlanItem }) {
@@ -396,183 +309,6 @@ function extractPlan(steps: AgentRunStep[]): PlanManager | null {
 	return null;
 }
 
-function getToolCount(metadata?: Record<string, unknown>): number {
-	if (!metadata || typeof metadata !== "object") return 0;
-	const toolCalls = (metadata as { toolCalls?: unknown }).toolCalls;
-	return Array.isArray(toolCalls) ? toolCalls.length : 0;
-}
-
-function renderStepDetails(
-	step: AgentRunStep,
-	t: (key: string, options?: Record<string, unknown>) => string,
-) {
-	if (!step.metadata || typeof step.metadata !== "object") return null;
-	const meta = step.metadata as StepMetadata;
-	if (meta.result?.error) {
-		return (
-			<span className="text-destructive">{meta.result.error}</span>
-		);
-	}
-	if (step.step.startsWith("Tool:")) {
-		return (
-			<ToolOutputDetails
-				output={meta.result?.output}
-				outputRef={meta.result?.outputRef}
-				t={t}
-			/>
-		);
-	}
-	if (step.step.startsWith("Validation:")) {
-		return (
-			<ValidationDetails
-				validation={meta.validation}
-				rawTextPreview={meta.rawTextPreview}
-				hadExtraText={meta.hadExtraText}
-				t={t}
-			/>
-		);
-	}
-	if (meta.modelOutputPreview) {
-		return (
-			<details className="basis-full rounded-md border border-border px-3 py-2">
-				<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
-					{t("context.agentProgressModelOutput")}
-				</summary>
-				<p className="mt-2 whitespace-pre-wrap text-muted-foreground">
-					{meta.modelOutputPreview}
-				</p>
-			</details>
-		);
-	}
-	return null;
-}
-
-function ToolOutputDetails({
-	output,
-	outputRef,
-	t,
-}: {
-	output: unknown;
-	outputRef?: { fileId?: string; sizeBytes?: number };
-	t: (key: string, options?: Record<string, unknown>) => string;
-}) {
-	if (outputRef?.fileId) {
-		return (
-			<details className="basis-full rounded-md border border-border px-3 py-2">
-				<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
-					{t("context.agentProgressToolOutput")}
-				</summary>
-				<p className="mt-2 text-fontSize-xs text-muted-foreground">
-					{t("context.agentProgressToolOutputStored", {
-						size: outputRef.sizeBytes ?? "-",
-					})}
-				</p>
-			</details>
-		);
-	}
-	if (output === undefined) {
-		return (
-			<span className="text-muted-foreground">
-				{t("context.agentProgressToolOutputEmpty")}
-			</span>
-		);
-	}
-	const serialized = safeStringify(output);
-	return (
-		<details className="basis-full rounded-md border border-border px-3 py-2">
-			<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
-				{t("context.agentProgressToolOutput")}
-			</summary>
-			<p className="mt-2 whitespace-pre-wrap text-muted-foreground">
-				{serialized}
-			</p>
-		</details>
-	);
-}
-
-function ValidationDetails({
-	validation,
-	rawTextPreview,
-	hadExtraText,
-	t,
-}: {
-	validation?: StepMetadata["validation"];
-	rawTextPreview?: string;
-	hadExtraText?: boolean;
-	t: (key: string, options?: Record<string, unknown>) => string;
-}) {
-	if (!validation && !rawTextPreview) {
-		return (
-			<span className="text-muted-foreground">
-				{t("context.agentProgressValidationNone")}
-			</span>
-		);
-	}
-	const errors = validation?.errors ?? [];
-	const warnings = validation?.warnings ?? [];
-
-	return (
-		<details className="basis-full rounded-md border border-border px-3 py-2">
-			<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
-				{t("context.agentProgressValidationDetails")}
-			</summary>
-			<div className="mt-2 space-y-2 text-fontSize-xs text-muted-foreground">
-				{rawTextPreview ? (
-					<div>
-						<div className="font-medium text-muted-foreground">
-							{t("context.agentProgressValidationOutput")}
-						</div>
-						<p className="mt-1 whitespace-pre-wrap text-muted-foreground">
-							{rawTextPreview}
-						</p>
-						{hadExtraText ? (
-							<p className="mt-2 text-warning">
-								{t("context.agentProgressValidationExtra")}
-							</p>
-						) : null}
-					</div>
-				) : null}
-				<div>
-					<div className="font-medium text-muted-foreground">
-						{t("context.agentProgressValidationErrors")}
-					</div>
-					{errors.length === 0 ? (
-						<p>{t("context.agentProgressValidationNone")}</p>
-					) : (
-						<ul className="mt-1 space-y-1 text-destructive">
-							{errors.map((error, index) => (
-								<li key={`${error}-${index}`}>• {error}</li>
-							))}
-						</ul>
-					)}
-				</div>
-				<div>
-					<div className="font-medium text-muted-foreground">
-						{t("context.agentProgressValidationWarnings")}
-					</div>
-					{warnings.length === 0 ? (
-						<p>{t("context.agentProgressValidationNone")}</p>
-					) : (
-						<ul className="mt-1 space-y-1 text-warning">
-							{warnings.map((warning, index) => (
-								<li key={`${warning}-${index}`}>• {warning}</li>
-							))}
-						</ul>
-					)}
-				</div>
-			</div>
-		</details>
-	);
-}
-
-function safeStringify(value: unknown) {
-	try {
-		return JSON.stringify(value, null, 2);
-	} catch {
-		return String(value);
-	}
-}
-
 function extractBudget(steps: AgentRunStep[]): BudgetInfo | null {
 	for (let i = steps.length - 1; i >= 0; i -= 1) {
 		const step = steps[i];
@@ -583,19 +319,6 @@ function extractBudget(steps: AgentRunStep[]): BudgetInfo | null {
 			typeof metadata?.maxTurns !== "number"
 		) {
 			return null;
-		}
-		return metadata;
-	}
-	return null;
-}
-
-function extractValidationPreview(steps: AgentRunStep[]): ValidationPreview | null {
-	for (let i = steps.length - 1; i >= 0; i -= 1) {
-		const step = steps[i];
-		if (!step.step.startsWith("Validation:")) continue;
-		const metadata = step.metadata as ValidationPreview | undefined;
-		if (!metadata?.rawTextPreview) {
-			continue;
 		}
 		return metadata;
 	}

@@ -8,6 +8,7 @@ type DomainMap = {
 	domains?: Array<{
 		name?: string;
 		weight?: number;
+		responsibility?: string;
 		evidence?: string[];
 	}>;
 	summary?: {
@@ -28,6 +29,7 @@ export function validateDomainMap(output: unknown): ValidationResult {
 	if (!Array.isArray(map.domains) || map.domains.length === 0) {
 		errors.push("Missing 'domains' array");
 	} else {
+		const weightValues: number[] = [];
 		for (const domain of map.domains) {
 			if (!domain?.name) {
 				errors.push("Domain missing 'name'");
@@ -36,9 +38,22 @@ export function validateDomainMap(output: unknown): ValidationResult {
 				errors.push(`Domain '${domain?.name ?? "unknown"}' missing 'weight'`);
 			} else if (domain.weight < 0 || domain.weight > 1) {
 				errors.push(`Domain '${domain?.name ?? "unknown"}' weight out of range`);
+			} else {
+				weightValues.push(domain.weight);
+			}
+			if (typeof domain?.responsibility !== "string" || !domain.responsibility.trim()) {
+				errors.push(
+					`Domain '${domain?.name ?? "unknown"}' missing 'responsibility'`,
+				);
 			}
 			if (!Array.isArray(domain?.evidence) || domain.evidence.length === 0) {
 				errors.push(`Domain '${domain?.name ?? "unknown"}' has no evidence`);
+			}
+		}
+		if (weightValues.length > 0) {
+			const total = weightValues.reduce((sum, value) => sum + value, 0);
+			if (Math.abs(total - 1) > 0.01) {
+				errors.push(`Domain weights must sum to 1 (got ${total.toFixed(2)})`);
 			}
 		}
 	}

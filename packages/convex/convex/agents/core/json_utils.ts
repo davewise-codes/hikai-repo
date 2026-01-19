@@ -27,8 +27,34 @@ export function extractJsonPayload(text: string): ExtractedJson | null {
 			stripped.slice(endIndex + 1).trim().length > 0;
 		return { data, normalizedText, hadExtraText };
 	} catch {
+		return fallbackParseJson(stripped);
+	}
+}
+
+function fallbackParseJson(text: string): ExtractedJson | null {
+	try {
+		const parsed = JSON.parse(text) as unknown;
+		if (parsed && typeof parsed === "object") {
+			return {
+				data: parsed,
+				normalizedText: JSON.stringify(parsed, null, 2),
+				hadExtraText: false,
+			};
+		}
+		if (typeof parsed === "string") {
+			const nested = JSON.parse(parsed) as unknown;
+			if (nested && typeof nested === "object") {
+				return {
+					data: nested,
+					normalizedText: JSON.stringify(nested, null, 2),
+					hadExtraText: false,
+				};
+			}
+		}
+	} catch {
 		return null;
 	}
+	return null;
 }
 
 function findJsonStart(text: string): number {
