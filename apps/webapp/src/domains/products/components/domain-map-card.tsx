@@ -20,9 +20,11 @@ const DEFAULT_WEIGHT = 0;
 export function DomainMapCard({
 	domainMap,
 	isRefreshing,
+	isError,
 }: {
 	domainMap?: DomainMap | null;
 	isRefreshing?: boolean;
+	isError?: boolean;
 }) {
 	const { t } = useTranslation("products");
 	const domains = domainMap?.domains ?? [];
@@ -43,7 +45,11 @@ export function DomainMapCard({
 				</p>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				{isRefreshing ? (
+				{isError ? (
+					<p className="text-fontSize-sm text-destructive">
+						{t("context.domainMapFailed")}
+					</p>
+				) : isRefreshing ? (
 					<p className="text-fontSize-sm text-muted-foreground">
 						{t("context.domainMapRefreshing")}
 					</p>

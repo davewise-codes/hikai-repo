@@ -40,6 +40,7 @@ function ProductContextPage() {
 		}
 		return true;
 	}, [latestRun, refreshStartedAt]);
+	const hasLatestError = latestRun?.status === "error";
 
 	useEffect(() => {
 		if (!refreshStartedAt || !latestRun?.startedAt) return;
@@ -73,8 +74,9 @@ function ProductContextPage() {
 					}}
 				/>
 				<DomainMapCard
-					domainMap={isRefreshing ? null : product.domainMap}
+					domainMap={isRefreshing || hasLatestError ? null : product.domainMap}
 					isRefreshing={isRefreshing}
+					isError={hasLatestError}
 				/>
 			</div>
 		</SettingsLayout>

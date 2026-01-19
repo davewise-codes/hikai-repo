@@ -83,6 +83,10 @@ export function AgentProgress({
 	const activeRun = polledRun ?? run ?? null;
 	const steps = activeRun?.steps ?? [];
 	const plan = useMemo(() => extractPlan(steps), [steps]);
+	const planDurations = useMemo(
+		() => extractPlanDurations(steps, activeRun?.finishedAt),
+		[steps, activeRun?.finishedAt],
+	);
 	const planItems = useMemo(() => {
 		const items = plan?.items ?? [];
 		if (
@@ -157,6 +161,9 @@ export function AgentProgress({
 			: activeRun.status === "error"
 				? t("context.agentProgressFailed")
 				: t("context.agentProgressRunning");
+	const totalDurationMs = activeRun.startedAt
+		? (activeRun.finishedAt ?? Date.now()) - activeRun.startedAt
+		: null;
 	const canCopy = activeRun.status !== "running";
 	const copyLabel =
 		copyState === "copied"
@@ -238,6 +245,13 @@ export function AgentProgress({
 								<span>{t("context.agentProgressBudgetExceeded")}</span>
 							</div>
 						) : null}
+						{totalDurationMs !== null ? (
+							<div className="text-muted-foreground">
+								{t("context.agentProgressDurationTotal", {
+									value: formatDuration(totalDurationMs),
+								})}
+							</div>
+						) : null}
 					</div>
 				) : null}
 				{planItems.length > 0 ? (
@@ -254,14 +268,22 @@ export function AgentProgress({
 								</summary>
 								<div className="mt-3 space-y-2">
 									{planItems.map((item) => (
-										<PlanRow key={item.id} item={item} />
+										<PlanRow
+											key={item.id}
+											item={item}
+											durationMs={planDurations[item.id]}
+										/>
 									))}
 								</div>
 							</details>
 						) : (
 							<div className="space-y-2">
 								{planItems.map((item) => (
-									<PlanRow key={item.id} item={item} />
+									<PlanRow
+										key={item.id}
+										item={item}
+										durationMs={planDurations[item.id]}
+									/>
 								))}
 							</div>
 						)}
@@ -277,7 +299,13 @@ function StatusBadge({ status }: { status: "running" | "success" | "error" }) {
 	return <Badge variant={variant}>{status}</Badge>;
 }
 
-function PlanRow({ item }: { item: PlanItem }) {
+function PlanRow({
+	item,
+	durationMs,
+}: {
+	item: PlanItem;
+	durationMs?: number;
+}) {
 	const label =
 		item.status === "in_progress" ? item.activeForm : item.content;
 
@@ -293,6 +321,11 @@ function PlanRow({ item }: { item: PlanItem }) {
 				<Circle className="h-3.5 w-3.5 text-muted-foreground" />
 			)}
 			<span className="text-muted-foreground">{label}</span>
+			{durationMs !== undefined ? (
+				<span className="text-muted-foreground/70">
+					{formatDuration(durationMs)}
+				</span>
+			) : null}
 		</div>
 	);
 }
@@ -323,4 +356,50 @@ function extractBudget(steps: AgentRunStep[]): BudgetInfo | null {
 		return metadata;
 	}
 	return null;
+}
+
+function extractPlanDurations(
+	steps: AgentRunStep[],
+	finishedAt?: number,
+): Record<string, number> {
+	const durations: Record<string, number> = {};
+	const startedAtById: Record<string, number> = {};
+	let lastPlan: PlanManager | null = null;
+
+	for (const step of steps) {
+		if (step.step !== "plan_update") continue;
+		const metadata = step.metadata as { plan?: PlanManager } | undefined;
+		const plan = metadata?.plan;
+		if (!plan?.items?.length) continue;
+
+		plan.items.forEach((item) => {
+			const prev = lastPlan?.items?.find((prevItem) => prevItem.id === item.id);
+			if (item.status === "in_progress" && !startedAtById[item.id]) {
+				startedAtById[item.id] = step.timestamp;
+			}
+			if (prev?.status !== "completed" && item.status === "completed") {
+				const start = startedAtById[item.id] ?? step.timestamp;
+				durations[item.id] = Math.max(0, step.timestamp - start);
+				delete startedAtById[item.id];
+			}
+		});
+
+		lastPlan = plan;
+	}
+
+	const endTime = finishedAt ?? Date.now();
+	Object.entries(startedAtById).forEach(([id, start]) => {
+		durations[id] = Math.max(0, endTime - start);
+	});
+
+	return durations;
+}
+
+function formatDuration(durationMs: number): string {
+	if (!Number.isFinite(durationMs)) return "-";
+	const totalSeconds = Math.max(0, Math.round(durationMs / 1000));
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+	if (minutes === 0) return `${seconds}s`;
+	return `${minutes}m ${seconds}s`;
 }
