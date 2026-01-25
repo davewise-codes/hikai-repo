@@ -47,6 +47,7 @@ ToolResult:
 | read_file | { path } | ReadFileOutput | contenido del archivo (trunca > 100KB) |
 | search_code | { query, filePattern?, limit? } | SearchMatch[] | busqueda segura sobre archivos listados |
 | todo_manager | { items } | Plan | max 15 items |
+| delegate | { agentType, task, context? } | { subRunId, status, output, metrics } | sub-run con parentRunId |
 | validate_output | { outputType, data } | ValidationResult | warnings no bloquean v1 |
 
 ---
@@ -211,6 +212,45 @@ Output:
 	}
 }
 ```
+
+### delegate
+
+Input:
+
+```json
+{
+	"agentType": "surface_classifier",
+	"task": "Extract key concepts for domain naming",
+	"context": {
+		"focus": "apps/webapp/src",
+		"notes": "Prefer UI terms and route names"
+	}
+}
+```
+
+Output:
+
+```json
+{
+	"subRunId": "agentRuns:xyz",
+	"agentType": "surface_classifier",
+	"status": "completed",
+	"output": {
+		"concepts": [{ "term": "Domain Map", "definition": "...", "evidence": ["path: ..."] }]
+	},
+	"metrics": {
+		"turns": 3,
+		"tokensIn": 1200,
+		"tokensOut": 800,
+		"totalTokens": 2000,
+		"latencyMs": 15000
+	}
+}
+```
+
+Notas:
+- Crea un sub-run en `agentRuns` con `parentRunId`.
+- El output completo se guarda en storage si es grande y se referencia en `outputRef`.
 
 Notas:
 - items siempre es la lista completa (reemplazo total)

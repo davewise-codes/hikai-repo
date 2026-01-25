@@ -15,9 +15,16 @@ export const createAgentRun = mutation({
 		productId: v.id("products"),
 		useCase: v.string(),
 		agentName: v.string(),
+		parentRunId: v.optional(v.id("agentRuns")),
 	},
-	handler: async (ctx, { productId, useCase, agentName }) => {
+	handler: async (ctx, { productId, useCase, agentName, parentRunId }) => {
 		const { organization, userId } = await assertProductAccess(ctx, productId);
+		if (parentRunId) {
+			const parent = await ctx.db.get(parentRunId);
+			if (!parent || parent.productId !== productId) {
+				throw new Error("Parent agent run not found for this product");
+			}
+		}
 
 		const now = Date.now();
 		const runId = await ctx.db.insert("agentRuns", {
@@ -26,6 +33,7 @@ export const createAgentRun = mutation({
 			userId,
 			useCase,
 			agentName,
+			parentRunId,
 			status: "running",
 			startedAt: now,
 			steps: [],
@@ -148,6 +156,23 @@ export const getRunsForUseCase = query({
 	},
 });
 
+export const getChildRuns = query({
+	args: {
+		productId: v.id("products"),
+		parentRunId: v.id("agentRuns"),
+	},
+	handler: async (ctx, { productId, parentRunId }) => {
+		await assertProductAccess(ctx, productId);
+
+		const runs = await ctx.db
+			.query("agentRuns")
+			.withIndex("by_parent", (q) => q.eq("parentRunId", parentRunId))
+			.collect();
+
+		return runs.sort((a, b) => (a.startedAt ?? 0) - (b.startedAt ?? 0));
+	},
+});
+
 export const exportRunTrace = action({
 	args: {
 		productId: v.id("products"),
@@ -200,17 +225,33 @@ export const exportRunTrace = action({
 			}),
 		);
 
+		const childRuns = await ctx.runQuery(internal.agents.agentRuns.getChildRuns, {
+			productId,
+			parentRunId: runId,
+		});
+
 		return {
 			runId: run._id,
 			productId: run.productId,
 			useCase: run.useCase,
 			agentName: run.agentName,
+			parentRunId: run.parentRunId ?? null,
 			status: run.status,
 			startedAt: run.startedAt,
 			finishedAt: run.finishedAt,
 			errorMessage: run.errorMessage,
 			stepsCount: run.steps.length,
 			steps: expandedSteps,
+			childRuns: childRuns.map((child) => ({
+				runId: child._id,
+				useCase: child.useCase,
+				agentName: child.agentName,
+				status: child.status,
+				startedAt: child.startedAt,
+				finishedAt: child.finishedAt,
+				errorMessage: child.errorMessage,
+				stepsCount: child.steps.length,
+			})),
 		};
 	},
 });

@@ -13,6 +13,7 @@ Build a domain map that reflects the main product areas based on evidence from t
 - list_dirs: See directory structure (depth-limited). Use first.
 - list_files: List files in a specific directory (non-recursive).
 - read_file: Read specific files to gather evidence.
+- delegate: Run sub-agent for structure scouting.
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
@@ -28,6 +29,7 @@ Build a domain map that reflects the main product areas based on evidence from t
 
 - Start broad (directories) and narrow down (files, content).
 - Be selective; do not read everything.
+- Use delegate for structure_scout when you need a fast structure summary.
 - Use actual folder names as domain names.
 - Each domain needs file path evidence and a responsibility sentence.
 - Each domain should include at least 2 evidence paths, with at least 1 non-README file.

@@ -219,6 +219,7 @@ Build a domain map that reflects the main product areas based on evidence from t
 - list_dirs: See directory structure (depth-limited). Use first.
 - list_files: List files in a specific directory (non-recursive).
 - read_file: Read specific files to gather evidence.
+- delegate: Run sub-agent for structure scouting.
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
@@ -234,6 +235,7 @@ Build a domain map that reflects the main product areas based on evidence from t
 
 - Start broad (directories) and narrow down (files, content).
 - Be selective; do not read everything.
+- Use delegate for structure_scout when you need a fast structure summary.
 - Use actual folder names as domain names.
 - Each domain needs file path evidence.
 - Each domain should include at least 2 evidence paths, with at least 1 non-README file.
@@ -246,5 +248,97 @@ Build a domain map that reflects the main product areas based on evidence from t
 - Output MUST be valid JSON and match the domain_map schema (name, responsibility, weight, evidence).
 - Weights must sum to 1.0.
 - Before final output, call validate_json with your JSON object. You may include it in the same tool_use response as todo_manager if needed. Fix parse errors if any.
+`,
+	"structure-scout": `---
+name: structure-scout
+version: v1.0
+description: Reconnaissance agent that maps repository structure, identifies tech stack, and locates business entry points.
+---
+
+## Mission
+
+Produce a structural map of a codebase that answers:
+1. What kind of project is this? (shape)
+2. What technologies does it use? (stack)
+3. Where does business logic live? (tiles)
+4. Where do user flows start? (entry points)
+
+Do NOT infer domains or business meaning. Only structure and location.
+
+## Tools
+
+- list_dirs: Directory structure (use depth parameter). Start here.
+- list_files: Files in a specific directory. Use to inspect tiles.
+- read_file: Read specific files. Budget: max 10 reads total.
+- validate_json: Validate JSON syntax and return parsed data.
+
+## Planning (recommended but optional)
+
+If you use todo_manager, create a simple plan:
+1. Wide scan (list_dirs depth 2)
+2. Identify tiles (apps/ and packages/)
+3. Detect entry points (routes/ or registries)
+
+If you skip todo_manager, proceed directly and call validate_json when done.
+
+## Output Schema
+
+{
+  "repoShape": "monorepo | single-app | microservices | hybrid",
+  "techStack": {
+    "language": "typescript | python | go | java | ...",
+    "framework": "next | react | fastapi | express | ...",
+    "runtime": "node | bun | deno | python | ...",
+    "buildTool": "turbo | nx | pnpm | npm | gradle | ..."
+  },
+  "tiles": [
+    {
+      "path": "apps/webapp",
+      "type": "product | marketing | docs | infra | packages | unknown",
+      "signals": ["routes/", "domains/", "components/"],
+      "estimatedSize": "small | medium | large",
+      "priority": "high | medium | low"
+    }
+  ],
+  "entryPoints": [
+    {
+      "path": "apps/webapp/src/routes",
+      "type": "router | handler | registry | api-gateway | background-jobs",
+      "pattern": "file-based | explicit | decorator-based",
+      "coverage": "high | medium | low"
+    }
+  ],
+  "configFiles": {
+    "root": ["package.json", "turbo.json", "tsconfig.json"],
+    "notable": ["convex/schema.ts", ".env.example"]
+  },
+  "explorationPlan": [
+    "apps/webapp/src/domains/",
+    "packages/convex/convex/"
+  ],
+  "confidence": 0,
+  "limitations": ["Could not access private packages"]
+}
+
+## Exploration Strategy
+
+Phase 1: Wide Scan (1-2 reads max)
+- list_dirs({ depth: 2 })
+- Read config files only if needed for stack.
+
+Phase 2: Tile Identification (2-3 reads max)
+- list_dirs({ path: "apps/webapp", depth: 2 })
+- list_files({ path: "apps/webapp/src" })
+
+Phase 3: Entry Point Detection (4-5 reads max)
+- Focus on routes/, pages/, app/, router files.
+- Read files to confirm routing pattern.
+
+Stop exploration when:
+- Repo shape is identified
+- Tech stack is known
+- At least 1 tile is found
+- At least 1 entry point is located OR limitations explain why not
+- Budget (10 reads) is not exceeded
 `,
 };

@@ -191,6 +191,7 @@ const schema = defineSchema({
 		releaseCadence: v.optional(v.string()),
 		productBaseline: v.optional(productBaseline),
 		domainMap: v.optional(v.any()),
+		structureScout: v.optional(v.any()),
 		currentContextSnapshotId: v.optional(v.id("productContextSnapshots")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
@@ -553,6 +554,7 @@ const schema = defineSchema({
 		userId: v.id("users"),
 		useCase: v.string(),
 		agentName: v.string(),
+		parentRunId: v.optional(v.id("agentRuns")),
 		status: v.union(
 			v.literal("running"),
 			v.literal("success"),
@@ -578,7 +580,8 @@ const schema = defineSchema({
 		.index("by_product", ["productId"])
 		.index("by_org", ["organizationId"])
 		.index("by_status", ["status"])
-		.index("by_finished", ["finishedAt"]),
+		.index("by_finished", ["finishedAt"])
+		.index("by_parent", ["parentRunId"]),
 });
 
 export default schema;

@@ -25,6 +25,8 @@ type AgentRunStep = {
 type AgentRun = {
 	_id: Id<"agentRuns">;
 	status: "running" | "success" | "error";
+	agentName?: string;
+	useCase?: string;
 	steps: AgentRunStep[];
 	errorMessage?: string;
 	startedAt?: number;
@@ -72,6 +74,15 @@ export function AgentProgress({
 		| AgentRun
 		| null
 		| undefined;
+	const childRuns = useQuery(
+		api.agents.agentRuns.getChildRuns,
+		runId
+			? {
+					productId,
+					parentRunId: runId,
+				}
+			: "skip",
+	) as AgentRun[] | null | undefined;
 	const [polledRun, setPolledRun] = useState<AgentRun | null>(null);
 	const [copyState, setCopyState] = useState<"idle" | "copying" | "copied" | "error">(
 		"idle",
@@ -108,6 +119,7 @@ export function AgentProgress({
 	}, [plan?.items, activeRun?.status, t]);
 	const showPlanToggle = planItems.length > PLAN_COLLAPSE_THRESHOLD;
 	const budget = useMemo(() => extractBudget(steps), [steps]);
+	const subRuns = childRuns ?? [];
 
 	useEffect(() => {
 		let isActive = true;
@@ -289,6 +301,44 @@ export function AgentProgress({
 						)}
 					</div>
 				) : null}
+				{subRuns.length > 0 ? (
+					<div className="space-y-2">
+						<div className="text-fontSize-xs font-medium text-muted-foreground">
+							{t("context.agentProgressSubrunsTitle")}
+						</div>
+						<div className="space-y-2">
+							{subRuns.map((subRun) => (
+								<details
+									key={subRun._id}
+									className="rounded-md border border-border px-3 py-2"
+								>
+									<summary className="cursor-pointer text-fontSize-xs font-medium text-muted-foreground">
+										<span className="mr-2 inline-flex items-center gap-2">
+											<StatusBadge status={subRun.status} />
+											<span>{subRun.agentName ?? subRun._id}</span>
+										</span>
+										<span className="text-muted-foreground/70">
+											{t("context.agentProgressSubrunsToggle", {
+												count: subRun.steps?.length ?? 0,
+											})}
+										</span>
+									</summary>
+									{subRun.steps?.length ? (
+										<div className="mt-3 space-y-2">
+											{subRun.steps.map((step, index) => (
+												<StepRow key={`${subRun._id}-${index}`} step={step} />
+											))}
+										</div>
+									) : (
+										<div className="mt-3 text-fontSize-xs text-muted-foreground">
+											{t("context.agentProgressNoSteps")}
+										</div>
+									)}
+								</details>
+							))}
+						</div>
+					</div>
+				) : null}
 			</CardContent>
 		</Card>
 	);
@@ -297,6 +347,26 @@ export function AgentProgress({
 function StatusBadge({ status }: { status: "running" | "success" | "error" }) {
 	const variant = status === "error" ? "destructive" : "outline";
 	return <Badge variant={variant}>{status}</Badge>;
+}
+
+function StepRow({ step }: { step: AgentRunStep }) {
+	const icon =
+		step.status === "success" ? (
+			<CheckCircle className="h-3.5 w-3.5 text-success" />
+		) : step.status === "warn" ? (
+			<AlertCircle className="h-3.5 w-3.5 text-warning" />
+		) : step.status === "error" ? (
+			<AlertCircle className="h-3.5 w-3.5 text-destructive" />
+		) : (
+			<Circle className="h-3.5 w-3.5 text-muted-foreground" />
+		);
+
+	return (
+		<div className="flex items-center gap-2 text-fontSize-xs text-muted-foreground">
+			{icon}
+			<span>{step.step}</span>
+		</div>
+	);
 }
 
 function PlanRow({

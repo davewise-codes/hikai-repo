@@ -8,4 +8,5 @@ export { interpretTimelineEvents } from "./actions";
 export { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
 export { sourceContextAgent } from "./sourceContextAgent";
 export { generateDomainMap } from "./domainMap";
+export { generateStructureScout } from "./structureScout";
 export { exportRunTrace } from "./agentRuns";

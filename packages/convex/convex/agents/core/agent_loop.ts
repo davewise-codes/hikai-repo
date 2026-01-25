@@ -384,8 +384,7 @@ export async function executeAgentLoop(
 			config.autoFinalizeOnValidateJson &&
 			validatedThisTurn &&
 			lastValidatedJson &&
-			lastPlan &&
-			isPlanCompleted(lastPlan)
+			(!lastPlan || isPlanCompleted(lastPlan))
 		) {
 			const serialized = JSON.stringify(lastValidatedJson, null, 2);
 			return {

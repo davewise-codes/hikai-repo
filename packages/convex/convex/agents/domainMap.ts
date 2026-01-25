@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import type { ActionCtx } from "../_generated/server";
 import { action } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -9,8 +8,8 @@ import {
 	executeAgentLoop,
 	type AgentLoopStatus,
 	type AgentMessage,
-	type StepResult,
 } from "./core/agent_loop";
+import { persistToolSteps } from "./core/agent_run_steps";
 import { injectSkill, loadSkillFromRegistry } from "./core/skill_loader";
 import {
 	createListFilesTool,
@@ -18,6 +17,7 @@ import {
 	createReadFileTool,
 	createTodoManagerTool,
 	createValidateJsonTool,
+	createDelegateTool,
 } from "./core/tools";
 import { createToolPromptModel } from "./core/tool_prompt_model";
 import { SKILL_CONTENTS } from "./skills";
@@ -29,7 +29,7 @@ const USE_CASE = "domain_map";
 const PROMPT_VERSION = "v1.0";
 const SKILL_NAME = "domain-map-agent";
 const MAX_TURNS = 12;
-const MAX_TOKENS_PER_TURN = 2000;
+const MAX_TOKENS_PER_TURN = 20000;
 const MAX_TOTAL_TOKENS = 1_000_000;
 const TIMEOUT_MS = 8 * 60 * 1000;
 
@@ -78,6 +78,7 @@ export const generateDomainMap = action({
 		];
 		const tools = [
 			createTodoManagerTool(ctx, productId, runId),
+			createDelegateTool(ctx, productId, runId),
 			createListDirsTool(ctx, productId),
 			createListFilesTool(ctx, productId),
 			createReadFileTool(ctx, productId),
@@ -309,6 +310,8 @@ function buildDomainMapPrompt(productId: Id<"products">): string {
 		"IMPORTANT:",
 		"- Start broad (list_dirs) then narrow down (list_files, read_file).",
 		"- Do NOT read everything; be selective.",
+		"- Use delegate to run the structure_scout sub-agent when you need a fast structure summary.",
+		"- Incorporate structure_scout output to refine domain naming and responsibilities.",
 		"- Use ACTUAL folder/file names from the code as domain names.",
 		"- Every domain must have real file path evidence.",
 		"- Prefer code files over README-only evidence.",
@@ -342,6 +345,7 @@ function buildDomainMapPrompt(productId: Id<"products">): string {
 		'- list_dirs input: { "path"?: "apps/webapp/src", "depth"?: 2, "limit"?: 50 }',
 		'- list_files input: { "path"?: "apps/webapp/src", "pattern"?: "*.tsx", "limit"?: 50 }',
 		'- read_file input: { "path": "path/to/file.tsx" }',
+		'- delegate input: { "agentType": "structure_scout", "task": "string", "context"?: { ... } }',
 		'- validate_json input: { "json": { ... } }',
 		"Do NOT nest tool calls inside todo_manager. Call each tool directly.",
 		"Example tool call block:",
@@ -451,60 +455,4 @@ function normalizeDomainMapOutput(
 			warnings,
 		},
 	};
-}
-
-function includesTool(step: StepResult, toolName: string): boolean {
-	return step.toolCalls.some((call) => call.name === toolName);
-}
-
-async function persistToolSteps(
-	ctx: ActionCtx,
-	productId: Id<"products">,
-	runId: Id<"agentRuns">,
-	step: StepResult,
-) {
-	const toolCalls = step.toolCalls ?? [];
-	for (const result of step.results) {
-		const call =
-			toolCalls.find((toolCall) => toolCall.id === result.toolCallId) ??
-			toolCalls.find((toolCall) => toolCall.name === result.name) ??
-			{ name: result.name, input: result.input };
-
-		const outputPayload =
-			result.output !== undefined ? JSON.stringify(result.output) : null;
-		const outputSize = outputPayload ? byteLength(outputPayload) : 0;
-		let outputRef: { fileId: Id<"_storage">; sizeBytes: number } | null = null;
-		let output = result.output;
-
-		if (outputPayload) {
-			const fileId = await ctx.storage.store(
-				new Blob([outputPayload], { type: "application/json" }),
-			);
-			outputRef = { fileId, sizeBytes: outputSize };
-			if (outputSize >= 5 * 1024) {
-				output = { _truncated: true, sizeBytes: outputSize };
-			}
-		}
-
-		await ctx.runMutation(internal.agents.agentRuns.appendStep, {
-			productId,
-			runId,
-			step: `Tool: ${result.name}`,
-			status: result.error ? "error" : "info",
-			metadata: {
-				toolCalls: [call],
-				result: {
-					name: result.name,
-					input: result.input,
-					output,
-					error: result.error,
-					outputRef,
-				},
-			},
-		});
-	}
-}
-
-function byteLength(value: string): number {
-	return new TextEncoder().encode(value).length;
 }

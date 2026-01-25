@@ -4,7 +4,21 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { useConnections } from "@/domains/connectors/hooks";
-import { Button, Card, CardContent, CardHeader, CardTitle, toast } from "@hikai/ui";
+import {
+	Button,
+	ButtonGroup,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	DropdownIcon,
+	CheckmarkIcon,
+	toast,
+} from "@hikai/ui";
 import { AgentProgress } from "./agent-progress";
 
 type ProductContextCardProps = {
@@ -17,6 +31,9 @@ type ProductContextCardProps = {
 };
 
 const DOMAIN_MAP_USE_CASE = "domain_map";
+const STRUCTURE_SCOUT_USE_CASE = "structure_scout";
+
+type AgentSelection = "domain_map" | "structure_scout";
 
 export function ProductContextCard({
 	product,
@@ -24,10 +41,15 @@ export function ProductContextCard({
 }: ProductContextCardProps) {
 	const { t } = useTranslation("products");
 	const generateDomainMap = useAction(api.agents.domainMap.generateDomainMap);
+	const generateStructureScout = useAction(
+		api.agents.structureScout.generateStructureScout,
+	);
 	const [agentRunId, setAgentRunId] = useState<Id<"agentRuns"> | null>(null);
-	const [isDomainMapRunning, setIsDomainMapRunning] = useState(false);
-	const [domainMapError, setDomainMapError] = useState<string | null>(null);
+	const [isAgentRunning, setIsAgentRunning] = useState(false);
+	const [agentError, setAgentError] = useState<string | null>(null);
 	const [triggerStartedAt, setTriggerStartedAt] = useState<number | null>(null);
+	const [selectedAgent, setSelectedAgent] =
+		useState<AgentSelection>("domain_map");
 	const { connections, isLoading } = useConnections(product._id);
 
 	const agentRun = useQuery(
@@ -43,7 +65,10 @@ export function ProductContextCard({
 		api.agents.agentRuns.getLatestRunForUseCase,
 		{
 			productId: product._id,
-			useCase: DOMAIN_MAP_USE_CASE,
+			useCase:
+				selectedAgent === "domain_map"
+					? DOMAIN_MAP_USE_CASE
+					: STRUCTURE_SCOUT_USE_CASE,
 		},
 	);
 	const activeRun = agentRunId
@@ -57,29 +82,44 @@ export function ProductContextCard({
 	const showAgentProgress = Boolean(activeRun);
 	const hasSources = (connections?.length ?? 0) > 0;
 
-	const handleGenerateDomainMap = async () => {
+	const handleRunAgent = async () => {
 		const startedAt = Date.now();
-		setIsDomainMapRunning(true);
-		setDomainMapError(null);
+		setIsAgentRunning(true);
+		setAgentError(null);
 		setAgentRunId(null);
 		setTriggerStartedAt(startedAt);
-		onRunStart?.({ startedAt, runId: null });
+		if (selectedAgent === "domain_map") {
+			onRunStart?.({ startedAt, runId: null });
+		}
 		try {
-			const result = await generateDomainMap({ productId: product._id });
+			const result =
+				selectedAgent === "domain_map"
+					? await generateDomainMap({ productId: product._id })
+					: await generateStructureScout({ productId: product._id });
 			if (result?.runId) {
 				const nextRunId = result.runId as Id<"agentRuns">;
 				setAgentRunId(nextRunId);
-				onRunStart?.({ startedAt, runId: nextRunId });
+				if (selectedAgent === "domain_map") {
+					onRunStart?.({ startedAt, runId: nextRunId });
+				}
 			} else {
 				setAgentRunId(null);
 			}
-			toast.success(t("context.domainMapGenerateSuccess"));
+			toast.success(
+				selectedAgent === "domain_map"
+					? t("context.domainMapGenerateSuccess")
+					: t("context.structureScoutGenerateSuccess"),
+			);
 		} catch (err) {
 			const message = err instanceof Error ? err.message : t("errors.unknown");
-			setDomainMapError(message);
-			toast.error(t("context.domainMapGenerateError"));
+			setAgentError(message);
+			toast.error(
+				selectedAgent === "domain_map"
+					? t("context.domainMapGenerateError")
+					: t("context.structureScoutGenerateError"),
+			);
 		} finally {
-			setIsDomainMapRunning(false);
+			setIsAgentRunning(false);
 		}
 	};
 
@@ -101,27 +141,60 @@ export function ProductContextCard({
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
-					<Button
-						variant="outline"
-						onClick={handleGenerateDomainMap}
-						disabled={isDomainMapRunning}
-					>
-						{isDomainMapRunning ? (
-							<div className="flex items-center gap-2">
-								<span className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full inline-block animate-spin" />
-								<span>{t("context.domainMapGenerateRunning")}</span>
-							</div>
-						) : (
-							t("context.domainMapGenerate")
-						)}
-					</Button>
+					<ButtonGroup>
+						<Button
+							variant="outline"
+							onClick={handleRunAgent}
+							disabled={isAgentRunning}
+						>
+							{isAgentRunning ? (
+								<div className="flex items-center gap-2">
+									<span className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full inline-block animate-spin" />
+									<span>
+										{selectedAgent === "domain_map"
+											? t("context.domainMapGenerateRunning")
+											: t("context.structureScoutGenerateRunning")}
+									</span>
+								</div>
+							) : selectedAgent === "domain_map" ? (
+								t("context.domainMapGenerate")
+							) : (
+								t("context.structureScoutGenerate")
+							)}
+						</Button>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button variant="outline" size="icon" disabled={isAgentRunning}>
+									<DropdownIcon className="h-4 w-4" />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end">
+								<DropdownMenuItem
+									onClick={() => setSelectedAgent("domain_map")}
+									className="flex items-center justify-between gap-2"
+								>
+									<span>{t("context.agentOptionDomainMap")}</span>
+									{selectedAgent === "domain_map" ? (
+										<CheckmarkIcon className="h-4 w-4 text-primary" />
+									) : null}
+								</DropdownMenuItem>
+								<DropdownMenuItem
+									onClick={() => setSelectedAgent("structure_scout")}
+									className="flex items-center justify-between gap-2"
+								>
+									<span>{t("context.agentOptionStructureScout")}</span>
+									{selectedAgent === "structure_scout" ? (
+										<CheckmarkIcon className="h-4 w-4 text-primary" />
+									) : null}
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
+					</ButtonGroup>
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
-				{domainMapError && (
-					<p className="text-fontSize-sm text-destructive">
-						{domainMapError}
-					</p>
+				{agentError && (
+					<p className="text-fontSize-sm text-destructive">{agentError}</p>
 				)}
 				{!hasSources && !isLoading && (
 					<p className="text-fontSize-sm text-muted-foreground">
