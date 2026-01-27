@@ -1032,7 +1032,7 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 | Subfase | Descripción                                                       | Estado | Causa raíz | Archivos tocados                                                   |
 | ------- | ----------------------------------------------------------------- | ------ | ---------- | ------------------------------------------------------------------ |
 | F0.0    | Paralelizar Phase 1 en contextAgent                               | ✅     | CR2        | `contextAgent.ts`                                                  |
-| F1.0    | Extender LLMPort con soporte native tools                         | ⏳     | CR1        | `llmPort.ts`, `anthropic.ts`, `openai.ts`                          |
+| F1.0    | Extender LLMPort con soporte native tools                         | ✅     | CR1        | `llmPort.ts`, `anthropic.ts`, `openai.ts`                          |
 | F1.1    | Añadir input schemas + validación de args                         | ⏳     | CR1        | `tools/*.ts`, `tool_registry.ts`                                   |
 | F1.2    | Refactorizar tool_prompt_model para native tool_use               | ⏳     | CR1        | `tool_prompt_model.ts`, `agent_loop.ts`                            |
 | F1.3    | Simplificar secuencia de finalización + manejo de mixed responses | ⏳     | CR3        | `agent_loop.ts`                                                    |

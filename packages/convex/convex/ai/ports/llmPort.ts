@@ -20,11 +20,53 @@ export interface LLMGenerateResult {
   latencyMs: number;
 }
 
+export interface LLMToolDefinition {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}
+
+export interface LLMToolCall {
+  toolCallId: string;
+  toolName: string;
+  args: Record<string, unknown>;
+}
+
+export interface LLMGenerateWithToolsParams {
+  messages: Array<{
+    role: "user" | "assistant" | "tool";
+    content: string | LLMToolCall[];
+  }>;
+  systemPrompt?: string;
+  tools: LLMToolDefinition[];
+  maxTokens?: number;
+  temperature?: number;
+}
+
+export interface LLMGenerateWithToolsResult {
+  text: string;
+  toolCalls: LLMToolCall[];
+  stopReason: "end_turn" | "tool_use" | "max_tokens";
+  tokensIn: number;
+  tokensOut: number;
+  totalTokens: number;
+  model: string;
+  provider: string;
+  latencyMs: number;
+}
+
 export interface LLMPort {
   /**
    * Genera texto a partir de un prompt.
    */
   generateText(params: LLMGenerateParams): Promise<LLMGenerateResult>;
+
+  /**
+   * Genera texto y tool calls usando herramientas nativas.
+   */
+  generateWithTools?(
+    params: LLMGenerateWithToolsParams
+  ): Promise<LLMGenerateWithToolsResult>;
 
   /**
    * Información del proveedor.
