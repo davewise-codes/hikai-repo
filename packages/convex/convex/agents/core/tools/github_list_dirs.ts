@@ -97,5 +97,6 @@ function parseInput(input: unknown): ListDirsInput {
 }
 
 function sanitizePath(value: string): string {
-	return value.replace(/^\/+|\/+$/g, "");
+	const cleaned = value.replace(/^\.\/+/g, "").replace(/^\/+|\/+$/g, "");
+	return cleaned === "." ? "" : cleaned;
 }

@@ -139,6 +139,8 @@ export async function executeAgentLoop(
 	let turnsSincePlanUpdate = 0;
 	let hasValidatedJson = false;
 	let lastValidatedJson: Record<string, unknown> | null = null;
+	let lastDraftOutput: unknown | null = null;
+	let lastDraftRawText: string | null = null;
 
 	while (turns < config.maxTurns) {
 		if (
@@ -146,7 +148,9 @@ export async function executeAgentLoop(
 			totalTokens >= config.maxTotalTokens
 		) {
 			return {
-				text: "",
+				text: lastDraftRawText ?? "",
+				rawText: lastDraftRawText ?? undefined,
+				output: lastDraftOutput ?? undefined,
 				status: "budget_exceeded",
 				metrics: buildMetrics(
 					startMs,
@@ -161,7 +165,9 @@ export async function executeAgentLoop(
 
 		if (Date.now() - startMs > config.timeoutMs) {
 			return {
-				text: "",
+				text: lastDraftRawText ?? "",
+				rawText: lastDraftRawText ?? undefined,
+				output: lastDraftOutput ?? undefined,
 				status: "timeout",
 				metrics: buildMetrics(
 					startMs,
@@ -186,6 +192,8 @@ export async function executeAgentLoop(
 		} catch (error) {
 			return {
 				text: "",
+				rawText: lastDraftRawText ?? undefined,
+				output: lastDraftOutput ?? undefined,
 				status: "error",
 				metrics: buildMetrics(
 					startMs,
@@ -207,12 +215,48 @@ export async function executeAgentLoop(
 			await config.onModelResponse({ turn: turns, response });
 		}
 
+		const draftCandidate =
+			typeof response._debug?.extracted === "object" &&
+			response._debug?.extracted !== null &&
+			"data" in response._debug.extracted
+				? (response._debug.extracted as { data?: unknown }).data
+				: null;
+		if (
+			draftCandidate &&
+			typeof draftCandidate === "object" &&
+			"type" in draftCandidate &&
+			(draftCandidate as { type?: string }).type === "final" &&
+			"output" in draftCandidate
+		) {
+			lastDraftOutput = (draftCandidate as { output?: unknown }).output ?? null;
+			if (lastDraftOutput) {
+				try {
+					lastDraftRawText = JSON.stringify(lastDraftOutput, null, 2);
+				} catch {
+					lastDraftRawText = response.text;
+				}
+			}
+		}
+		if (!lastDraftOutput && response._debug?.rawText) {
+			const embeddedFinal = extractFinalFromRawText(response._debug.rawText);
+			if (embeddedFinal && embeddedFinal.output) {
+				lastDraftOutput = embeddedFinal.output;
+				try {
+					lastDraftRawText = JSON.stringify(embeddedFinal.output, null, 2);
+				} catch {
+					lastDraftRawText = response.text;
+				}
+			}
+		}
+
 		if (
 			config.maxTotalTokens !== undefined &&
 			totalTokens > config.maxTotalTokens
 		) {
 			return {
-				text: response.text,
+				text: lastDraftRawText ?? response.text,
+				rawText: lastDraftRawText ?? response.text,
+				output: lastDraftOutput ?? undefined,
 				status: "budget_exceeded",
 				metrics: buildMetrics(
 					startMs,
@@ -319,6 +363,30 @@ export async function executeAgentLoop(
 	const hasOnlyValidateJsonCalls =
 		response.toolCalls?.length &&
 		response.toolCalls.every((call) => call.name === "validate_json");
+	const hasOnlyTodoManagerCalls =
+		response.toolCalls?.length &&
+		response.toolCalls.every((call) => call.name === "todo_manager");
+	if (
+		lastPlan &&
+		isPlanCompleted(lastPlan) &&
+		hasOnlyTodoManagerCalls &&
+		!hasOnlyValidateJsonCalls
+	) {
+		messages.push({ role: "assistant", content: response.text });
+		const reminders = [
+			"Plan already completed. Do NOT call todo_manager again.",
+			config.requireValidateJson
+				? config.validateJsonReminder ??
+					"<reminder>Call validate_json with your final JSON before submitting the final output.</reminder>"
+				: "Return your final JSON output now.",
+		];
+		if (config.finalOutputOnlyReminder) {
+			reminders.push(config.finalOutputOnlyReminder);
+		}
+		messages.push({ role: "user", content: reminders.join("\n") });
+		turns += 1;
+		continue;
+	}
 	if (
 		lastPlan &&
 		isPlanCompleted(lastPlan) &&
@@ -407,7 +475,9 @@ export async function executeAgentLoop(
 	}
 
 	return {
-		text: "",
+		text: lastDraftRawText ?? "",
+		rawText: lastDraftRawText ?? undefined,
+		output: lastDraftOutput ?? undefined,
 		status: "max_turns_exceeded",
 		metrics: buildMetrics(startMs, turns, tokensIn, tokensOut, totalTokens, config),
 	};
@@ -532,4 +602,24 @@ function buildValidationFeedback(
 	}
 	lines.push("Return ONLY valid JSON that fixes the errors.");
 	return lines.join("\n");
+}
+
+function extractFinalFromRawText(text: string): { output: unknown } | null {
+	const marker = "\"type\":\"final\"";
+	const index = text.lastIndexOf(marker);
+	if (index === -1) return null;
+	const slice = text.slice(index);
+	const extracted = extractJsonPayload(slice);
+	if (
+		extracted &&
+		extracted.data &&
+		typeof extracted.data === "object" &&
+		"type" in (extracted.data as Record<string, unknown>)
+	) {
+		const data = extracted.data as { type?: string; output?: unknown };
+		if (data.type === "final") {
+			return { output: data.output };
+		}
+	}
+	return null;
 }

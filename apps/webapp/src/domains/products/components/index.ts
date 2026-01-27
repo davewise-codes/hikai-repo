@@ -8,5 +8,6 @@ export { ProductSwitcher } from "./product-switcher";
 export { ProductContextCard } from "./product-context-card";
 export { AgentProgress } from "./agent-progress";
 export { DomainMapCard } from "./domain-map-card";
+export { ContextSnapshotCard } from "./context-snapshot-card";
 export { BaselineEditor } from "./baseline-editor";
 export { BaselineWizard } from "./baseline-wizard";

@@ -33,7 +33,7 @@ export function createDelegateTool(
 	return {
 		name: "delegate",
 		description:
-			"Delegate a focused subtask to a specialized sub-agent (structure_scout).",
+			"Delegate a focused subtask to a specialized sub-agent (structure_scout, glossary_scout, domain_mapper, feature_scout).",
 		execute: async (input) => {
 			const parsed = parseInput(input);
 			const entrypoint = getAgentEntrypoint(parsed.agentType);

@@ -219,7 +219,6 @@ Build a domain map that reflects the main product areas based on evidence from t
 - list_dirs: See directory structure (depth-limited). Use first.
 - list_files: List files in a specific directory (non-recursive).
 - read_file: Read specific files to gather evidence.
-- delegate: Run sub-agent for structure scouting.
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
@@ -235,7 +234,8 @@ Build a domain map that reflects the main product areas based on evidence from t
 
 - Start broad (directories) and narrow down (files, content).
 - Be selective; do not read everything.
-- Use delegate for structure_scout when you need a fast structure summary.
+- Use repoStructure + glossary inputs for naming consistency when available.
+- Do not delegate to other agents.
 - Use actual folder names as domain names.
 - Each domain needs file path evidence.
 - Each domain should include at least 2 evidence paths, with at least 1 non-README file.
@@ -248,6 +248,117 @@ Build a domain map that reflects the main product areas based on evidence from t
 - Output MUST be valid JSON and match the domain_map schema (name, responsibility, weight, evidence).
 - Weights must sum to 1.0.
 - Before final output, call validate_json with your JSON object. You may include it in the same tool_use response as todo_manager if needed. Fix parse errors if any.
+`,
+	"glossary-scout": `---
+name: glossary-scout
+version: v1.0
+description: Extracts a glossary of product terms from baseline + code + docs.
+---
+
+## Inputs
+
+- baseline: user-provided product description
+- sources: repo/docs sources and paths
+- marketingSurfaces: optional marketing surfaces for customer-facing terms
+
+## Tools
+
+- list_dirs: Use to locate docs folders and surface entry points.
+- list_files: List files in a directory.
+- read_file: Read key docs or source files for terminology.
+- validate_json: Validate JSON syntax and return parsed data.
+- todo_manager: Track the execution plan.
+
+## Output Schema
+
+{
+  "terms": [
+    {
+      "term": "string",
+      "definition": "string",
+      "sources": [
+        { "type": "baseline|code|docs|marketing", "path"?: "string", "excerpt"?: "string" }
+      ],
+      "confidence": 0.0
+    }
+  ],
+  "conflicts": [
+    { "terms": ["string"], "resolution": "string", "rationale": "string" }
+  ],
+  "generatedAt": 0
+}
+
+## Guidelines
+
+- Prefer terms used in baseline, UI labels, routes, and docs.
+- Normalize synonyms into a single canonical term.
+- Include evidence for every term; avoid invented definitions.
+- Keep conflicts only when two terms refer to the same concept.
+`,
+	"feature-scout": `---
+name: feature-scout
+version: v1.0
+description: Extracts product features and links them to domains with evidence.
+---
+
+## Inputs
+
+- domainMap: domains to explore
+- repoStructure: entry points and tiles
+- glossary: terms for naming consistency
+
+## Tools
+
+- list_dirs: Use to navigate product surfaces.
+- list_files: List files in a directory.
+- read_file: Read key routes/components for feature evidence.
+- validate_json: Validate JSON syntax and return parsed data.
+- todo_manager: Track the execution plan.
+
+## Output Schema
+
+{
+  "features": [
+    {
+      "id": "string",
+      "name": "string",
+      "domain": "string",
+      "description": "string",
+      "visibility": "public|internal",
+      "confidence": 0.0,
+      "evidence": [
+        { "type": "route|component|api|docs", "path": "string", "excerpt"?: "string" }
+      ]
+    }
+  ],
+  "generatedAt": 0
+}
+
+## Guidelines
+
+- Favor user-facing flows and stable feature names.
+- Link each feature to a domain from the domain map.
+- Include evidence for every feature.
+`,
+	"context-agent": `---
+name: context-agent
+version: v1.0
+description: Orchestrates sub-agents to build product context snapshots.
+---
+
+## Mission
+
+Coordinate structure, glossary, domain, and feature agents in dependency order.
+
+## Phases
+
+1) structure_scout + glossary_scout (parallel)
+2) domain_mapper
+3) feature_scout
+
+## Output
+
+Return a snapshot object that aggregates all sub-agent outputs.
 `,
 	"structure-scout": `---
 name: structure-scout

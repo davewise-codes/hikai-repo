@@ -17,7 +17,6 @@ import {
 	createReadFileTool,
 	createTodoManagerTool,
 	createValidateJsonTool,
-	createDelegateTool,
 } from "./core/tools";
 import { createToolPromptModel } from "./core/tool_prompt_model";
 import { SKILL_CONTENTS } from "./skills";
@@ -28,21 +27,38 @@ const AGENT_NAME = "Domain Map Agent";
 const USE_CASE = "domain_map";
 const PROMPT_VERSION = "v1.0";
 const SKILL_NAME = "domain-map-agent";
-const MAX_TURNS = 12;
+const MAX_TURNS = 16;
 const MAX_TOKENS_PER_TURN = 20000;
-const MAX_TOTAL_TOKENS = 1_000_000;
+const MAX_TOTAL_TOKENS = 1_200_000;
 const TIMEOUT_MS = 8 * 60 * 1000;
 
 export const generateDomainMap = action({
 	args: {
 		productId: v.id("products"),
+		snapshotId: v.optional(v.id("productContextSnapshots")),
+		parentRunId: v.optional(v.id("agentRuns")),
+		inputs: v.optional(
+			v.object({
+				baseline: v.optional(v.any()),
+				repoStructure: v.optional(v.any()),
+				glossary: v.optional(v.any()),
+			}),
+		),
+		triggerReason: v.optional(
+			v.union(
+				v.literal("initial_setup"),
+				v.literal("source_change"),
+				v.literal("manual_refresh"),
+			),
+		),
 	},
 	handler: async (
 		ctx,
-		{ productId },
+		{ productId, snapshotId: requestedSnapshotId, parentRunId, inputs, triggerReason },
 	): Promise<{
 		runId: Id<"agentRuns">;
 		status: AgentLoopStatus;
+		errorMessage?: string;
 		domainMap: Record<string, unknown> | null;
 		metrics: {
 			turns: number;
@@ -52,7 +68,7 @@ export const generateDomainMap = action({
 			latencyMs: number;
 		};
 	}> => {
-		const { organizationId, userId } = await ctx.runQuery(
+		const { organizationId, userId, product } = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
 		);
@@ -61,6 +77,7 @@ export const generateDomainMap = action({
 			productId,
 			useCase: USE_CASE,
 			agentName: AGENT_NAME,
+			parentRunId,
 		});
 
 		const aiConfig = getAgentAIConfig(AGENT_NAME);
@@ -69,7 +86,11 @@ export const generateDomainMap = action({
 			protocol: buildToolProtocol(productId),
 		});
 		const skill = loadSkillFromRegistry(SKILL_NAME, SKILL_CONTENTS);
-		const prompt = buildDomainMapPrompt(productId);
+		const prompt = buildDomainMapPrompt(productId, {
+			baseline: inputs?.baseline ?? product.baseline ?? {},
+			repoStructure: inputs?.repoStructure ?? null,
+			glossary: inputs?.glossary ?? null,
+		});
 		const initialReminder =
 			"<reminder>Call todo_manager FIRST to create your plan.</reminder>";
 		const messages: AgentMessage[] = [
@@ -78,12 +99,25 @@ export const generateDomainMap = action({
 		];
 		const tools = [
 			createTodoManagerTool(ctx, productId, runId),
-			createDelegateTool(ctx, productId, runId),
 			createListDirsTool(ctx, productId),
 			createListFilesTool(ctx, productId),
 			createReadFileTool(ctx, productId),
 			createValidateJsonTool(),
 		];
+
+		const createdAt = Date.now();
+		const { snapshotId } = requestedSnapshotId
+			? { snapshotId: requestedSnapshotId }
+			: await ctx.runMutation(internal.agents.productContextData.createContextSnapshot, {
+					productId,
+					createdAt,
+					generatedBy: "manual",
+					triggerReason: triggerReason ?? "manual_refresh",
+					status: "in_progress",
+					completedPhases: [],
+					errors: [],
+					agentRuns: { domainMapper: runId },
+				});
 
 		const githubConnection = await getActiveGithubConnection(ctx, productId);
 		if (!githubConnection || githubConnection.repos.length === 0) {
@@ -102,6 +136,20 @@ export const generateDomainMap = action({
 				status: "error",
 				errorMessage: "No active GitHub connection for this product",
 			});
+			if (!requestedSnapshotId) {
+				await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
+					snapshotId,
+					status: "failed",
+					completedPhases: [],
+					errors: [
+						{
+							phase: "domains",
+							error: "No active GitHub connection for this product",
+							timestamp: Date.now(),
+						},
+					],
+				});
+			}
 			return {
 				runId,
 				status: "error",
@@ -207,6 +255,7 @@ export const generateDomainMap = action({
 			await ctx.runMutation(internal.agents.domainMapData.saveDomainMap, {
 				productId,
 				domainMap,
+				snapshotId,
 			});
 			const serialized = JSON.stringify(domainMap, null, 2);
 			const fileId = await ctx.storage.store(
@@ -284,18 +333,55 @@ export const generateDomainMap = action({
 			errorMessage: result.errorMessage,
 		});
 
+		if (!requestedSnapshotId) {
+			await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
+				snapshotId,
+				status: domainMap ? "partial" : "failed",
+				completedPhases: domainMap ? ["domains"] : [],
+				errors: domainMap
+					? []
+					: [
+							{
+								phase: "domains",
+								error: result.errorMessage ?? "Domain map failed",
+								timestamp: Date.now(),
+							},
+						],
+			});
+			await ctx.runMutation(internal.agents.productContextData.setCurrentProductSnapshot, {
+				productId,
+				snapshotId,
+				updatedAt: Date.now(),
+			});
+		}
+
 		return {
 			runId,
 			status: result.status,
+			errorMessage: result.errorMessage,
 			domainMap,
 			metrics: result.metrics,
 		};
 	},
 });
 
-function buildDomainMapPrompt(productId: Id<"products">): string {
+function buildDomainMapPrompt(
+	productId: Id<"products">,
+	inputs: {
+		baseline: Record<string, unknown>;
+		repoStructure: Record<string, unknown> | null;
+		glossary: Record<string, unknown> | null;
+	},
+): string {
+	const inputPayload = JSON.stringify(inputs, null, 2);
 	return [
 		"Analyze this codebase and identify the main product domains.",
+		"",
+		"INPUTS (use these first):",
+		inputPayload,
+		"",
+		"Use glossary terms for consistent naming when applicable.",
+		"If repoStructure.explorationPlan exists, prioritize those paths.",
 		"",
 		"A domain = a distinct area of functionality in the code.",
 		"Look at: folder names, feature modules, page routes, main components.",
@@ -310,8 +396,8 @@ function buildDomainMapPrompt(productId: Id<"products">): string {
 		"IMPORTANT:",
 		"- Start broad (list_dirs) then narrow down (list_files, read_file).",
 		"- Do NOT read everything; be selective.",
-		"- Use delegate to run the structure_scout sub-agent when you need a fast structure summary.",
-		"- Incorporate structure_scout output to refine domain naming and responsibilities.",
+		"- Do NOT delegate to other agents.",
+		"- Incorporate repoStructure and glossary to refine domain naming and responsibilities.",
 		"- Use ACTUAL folder/file names from the code as domain names.",
 		"- Every domain must have real file path evidence.",
 		"- Prefer code files over README-only evidence.",
@@ -345,7 +431,6 @@ function buildDomainMapPrompt(productId: Id<"products">): string {
 		'- list_dirs input: { "path"?: "apps/webapp/src", "depth"?: 2, "limit"?: 50 }',
 		'- list_files input: { "path"?: "apps/webapp/src", "pattern"?: "*.tsx", "limit"?: 50 }',
 		'- read_file input: { "path": "path/to/file.tsx" }',
-		'- delegate input: { "agentType": "structure_scout", "task": "string", "context"?: { ... } }',
 		'- validate_json input: { "json": { ... } }',
 		"Do NOT nest tool calls inside todo_manager. Call each tool directly.",
 		"Example tool call block:",

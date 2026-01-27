@@ -27,6 +27,33 @@ const ENTRYPOINTS: Record<string, AgentEntrypoint> = {
 			maxTokens: 1800,
 		},
 	},
+	glossary_scout: {
+		name: "glossary_scout",
+		skill: loadSkillFromRegistry("glossary-scout", SKILL_CONTENTS),
+		defaultConfig: {
+			maxTurns: 8,
+			timeoutMs: 120_000,
+			maxTokens: 2400,
+		},
+	},
+	domain_mapper: {
+		name: "domain_mapper",
+		skill: loadSkillFromRegistry("domain-map-agent", SKILL_CONTENTS),
+		defaultConfig: {
+			maxTurns: 10,
+			timeoutMs: 180_000,
+			maxTokens: 3000,
+		},
+	},
+	feature_scout: {
+		name: "feature_scout",
+		skill: loadSkillFromRegistry("feature-scout", SKILL_CONTENTS),
+		defaultConfig: {
+			maxTurns: 10,
+			timeoutMs: 180_000,
+			maxTokens: 3000,
+		},
+	},
 };
 
 export function getAgentEntrypoint(agentType: string): AgentEntrypoint {

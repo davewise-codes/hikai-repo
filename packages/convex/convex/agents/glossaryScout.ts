@@ -23,16 +23,16 @@ import { SKILL_CONTENTS } from "./skills";
 import { getActiveGithubConnection } from "./core/tools/github_helpers";
 import { extractJsonPayload } from "./core/json_utils";
 
-const AGENT_NAME = "Structure Scout Agent";
-const USE_CASE = "structure_scout";
+const AGENT_NAME = "Glossary Scout Agent";
+const USE_CASE = "glossary_scout";
 const PROMPT_VERSION = "v1.0";
-const SKILL_NAME = "structure-scout";
-const MAX_TURNS = 12;
-const MAX_TOKENS_PER_TURN = 30000;
-const MAX_TOTAL_TOKENS = 400_000;
+const SKILL_NAME = "glossary-scout";
+const MAX_TURNS = 16;
+const MAX_TOKENS_PER_TURN = 20000;
+const MAX_TOTAL_TOKENS = 300_000;
 const TIMEOUT_MS = 5 * 60 * 1000;
 
-export const generateStructureScout = action({
+export const generateGlossaryScout = action({
 	args: {
 		productId: v.id("products"),
 		snapshotId: v.optional(v.id("productContextSnapshots")),
@@ -52,7 +52,7 @@ export const generateStructureScout = action({
 		runId: Id<"agentRuns">;
 		status: AgentLoopStatus;
 		errorMessage?: string;
-		structureScout: Record<string, unknown> | null;
+		glossary: Record<string, unknown> | null;
 		metrics: {
 			turns: number;
 			tokensIn: number;
@@ -61,7 +61,7 @@ export const generateStructureScout = action({
 			latencyMs: number;
 		};
 	}> => {
-		const { organizationId, userId } = await ctx.runQuery(
+		const { organizationId, userId, product } = await ctx.runQuery(
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
 		);
@@ -84,27 +84,8 @@ export const generateStructureScout = action({
 					status: "in_progress",
 					completedPhases: [],
 					errors: [],
-					agentRuns: { structureScout: runId },
+					agentRuns: { glossaryScout: runId },
 				});
-
-		const aiConfig = getAgentAIConfig(AGENT_NAME);
-		const telemetryConfig = getAgentTelemetryConfig(AGENT_NAME);
-		const model = createToolPromptModel(createLLMAdapter(aiConfig), {
-			protocol: buildToolProtocol(productId),
-		});
-		const skill = loadSkillFromRegistry(SKILL_NAME, SKILL_CONTENTS);
-		const prompt = buildStructureScoutPrompt(productId);
-		const messages: AgentMessage[] = [
-			injectSkill(skill),
-			{ role: "user", content: prompt },
-		];
-	const tools = [
-		createTodoManagerTool(ctx, productId, runId),
-		createListDirsTool(ctx, productId),
-		createListFilesTool(ctx, productId),
-		createReadFileTool(ctx, productId),
-		createValidateJsonTool(),
-	];
 
 		const githubConnection = await getActiveGithubConnection(ctx, productId);
 		if (!githubConnection || githubConnection.repos.length === 0) {
@@ -124,23 +105,26 @@ export const generateStructureScout = action({
 				errorMessage: "No active GitHub connection for this product",
 			});
 			if (!requestedSnapshotId) {
-				await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
-					snapshotId,
-					status: "failed",
-					completedPhases: [],
-					errors: [
-						{
-							phase: "structure",
-							error: "No active GitHub connection for this product",
-							timestamp: Date.now(),
-						},
-					],
-				});
+				await ctx.runMutation(
+					internal.agents.productContextData.updateContextSnapshot,
+					{
+						snapshotId,
+						status: "failed",
+						completedPhases: [],
+						errors: [
+							{
+								phase: "glossary",
+								error: "No active GitHub connection for this product",
+								timestamp: Date.now(),
+							},
+						],
+					},
+				);
 			}
 			return {
 				runId,
 				status: "error",
-				structureScout: null,
+				glossary: null,
 				metrics: {
 					turns: 0,
 					tokensIn: 0,
@@ -150,6 +134,29 @@ export const generateStructureScout = action({
 				},
 			};
 		}
+
+		const aiConfig = getAgentAIConfig(AGENT_NAME);
+		const telemetryConfig = getAgentTelemetryConfig(AGENT_NAME);
+		const model = createToolPromptModel(createLLMAdapter(aiConfig), {
+			protocol: buildToolProtocol(productId),
+		});
+		const skill = loadSkillFromRegistry(SKILL_NAME, SKILL_CONTENTS);
+		const prompt = buildGlossaryPrompt({
+			productId,
+			baseline: product.baseline ?? {},
+			repos: githubConnection.repos.map((repo) => repo.fullName),
+		});
+		const messages: AgentMessage[] = [
+			injectSkill(skill),
+			{ role: "user", content: prompt },
+		];
+		const tools = [
+			createTodoManagerTool(ctx, productId, runId),
+			createListDirsTool(ctx, productId),
+			createListFilesTool(ctx, productId),
+			createReadFileTool(ctx, productId),
+			createValidateJsonTool(),
+		];
 
 		const result = await executeAgentLoop(
 			model,
@@ -204,36 +211,16 @@ export const generateStructureScout = action({
 				onStep: async (step) => {
 					await persistToolSteps(ctx, productId, runId, step);
 				},
-				validation: {
-					validate: (output) => validateStructureScout(output),
-					onValidation: async (validation) => {
-						await ctx.runMutation(internal.agents.agentRuns.appendStep, {
-							productId,
-							runId,
-							step: "Validation: structure_scout",
-							status: validation.valid ? "info" : "warn",
-							metadata: {
-								validation,
-							},
-						});
-					},
-				},
 			},
 			prompt,
 			messages,
 		);
 
-		let structureScout: Record<string, unknown> | null =
+		let glossary =
 			result.output && typeof result.output === "object"
-				? (result.output as Record<string, unknown>)
+				? normalizeGlossaryOutput(result.output as Record<string, unknown>)
 				: null;
-		if (structureScout) {
-			const validation = validateStructureScout(structureScout);
-			if (!validation.valid) {
-				structureScout = null;
-			}
-		}
-		if (!structureScout && result.rawText) {
+		if (!glossary && result.rawText) {
 			const extracted = extractJsonPayload(result.rawText);
 			const candidate = extracted?.data;
 			const candidateOutput =
@@ -242,33 +229,36 @@ export const generateStructureScout = action({
 				"output" in candidate
 					? (candidate as { output: unknown }).output
 					: candidate;
-			const validation = validateStructureScout(candidateOutput);
-			if (validation.valid && candidateOutput && typeof candidateOutput === "object") {
-				structureScout = candidateOutput as Record<string, unknown>;
+			if (
+				candidateOutput &&
+				typeof candidateOutput === "object" &&
+				Array.isArray((candidateOutput as { terms?: unknown }).terms)
+			) {
+				glossary = normalizeGlossaryOutput(
+					candidateOutput as Record<string, unknown>,
+				);
 				await ctx.runMutation(internal.agents.agentRuns.appendStep, {
 					productId,
 					runId,
 					step: "Recovered output (no validate_json)",
 					status: "warn",
-					metadata: { validation },
 				});
 			}
 		}
 
-		if (structureScout) {
-			await ctx.runMutation(internal.agents.structureScoutData.saveStructureScout, {
-				productId,
+		if (glossary) {
+			await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
 				snapshotId,
-				structureScout,
+				glossary,
 			});
-			const serialized = JSON.stringify(structureScout, null, 2);
+			const serialized = JSON.stringify(glossary, null, 2);
 			const fileId = await ctx.storage.store(
 				new Blob([serialized], { type: "application/json" }),
 			);
 			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
 				productId,
 				runId,
-				step: "Structure scout saved",
+				step: "Glossary saved",
 				status: "success",
 				metadata: {
 					preview: serialized.slice(0, 2000),
@@ -296,7 +286,7 @@ export const generateStructureScout = action({
 				tokensOut: result.metrics.tokensOut,
 				totalTokens: result.metrics.totalTokens,
 				latencyMs: result.metrics.latencyMs,
-				metadata: { source: "structure-scout" },
+				metadata: { source: "glossary-scout" },
 			});
 		}
 
@@ -318,76 +308,82 @@ export const generateStructureScout = action({
 			},
 			prompt,
 			response: result.rawText ?? result.text,
-			metadata: { source: "structure-scout" },
+			metadata: { source: "glossary-scout" },
 		});
 
-		const finalStatus = structureScout ? "success" : "error";
+		const finalStatus = glossary ? "success" : "error";
 		await ctx.runMutation(internal.agents.agentRuns.finishRun, {
 			productId,
 			runId,
 			status: finalStatus,
-			errorMessage: structureScout ? undefined : result.errorMessage,
+			errorMessage: glossary ? undefined : result.errorMessage,
 		});
 
 		if (!requestedSnapshotId) {
 			await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
 				snapshotId,
-				status: structureScout ? "partial" : "failed",
-				completedPhases: structureScout ? ["structure"] : [],
-				errors: structureScout
+				status: glossary ? "partial" : "failed",
+				completedPhases: glossary ? ["glossary"] : [],
+				errors: glossary
 					? []
 					: [
 							{
-								phase: "structure",
-								error: result.errorMessage ?? "Structure scout failed",
+								phase: "glossary",
+								error: result.errorMessage ?? "Glossary scout failed",
 								timestamp: Date.now(),
 							},
 						],
 			});
-			await ctx.runMutation(internal.agents.productContextData.setCurrentProductSnapshot, {
-				productId,
-				snapshotId,
-				updatedAt: Date.now(),
-			});
+			await ctx.runMutation(
+				internal.agents.productContextData.setCurrentProductSnapshot,
+				{
+					productId,
+					snapshotId,
+					updatedAt: Date.now(),
+				},
+			);
 		}
 
 		return {
 			runId,
 			status: result.status,
 			errorMessage: result.errorMessage,
-			structureScout,
+			glossary,
 			metrics: result.metrics,
 		};
 	},
 });
 
-function buildStructureScoutPrompt(productId: Id<"products">): string {
+function buildGlossaryPrompt({
+	productId,
+	baseline,
+	repos,
+}: {
+	productId: Id<"products">;
+	baseline: Record<string, unknown>;
+	repos: string[];
+}): string {
+	const payload = JSON.stringify({ baseline, repos }, null, 2);
 	return [
-		"Analyze the repository structure and produce a structure scout report.",
+		"Extract a glossary of product terms with evidence from this codebase.",
 		"",
-		"Focus on:",
-		"- repoShape (monorepo, single-app, microservices, hybrid)",
-		"- techStack (language, framework, runtime, buildTool)",
-		"- tiles (major product/infra/docs areas)",
-		"- entryPoints (routers, handlers, registries)",
-		"- configFiles (root + notable)",
-		"- explorationPlan (next paths to inspect)",
-		"- confidence (0-100) and limitations",
+		"INPUTS:",
+		payload,
 		"",
-		"Rules:",
-		"- Use list_dirs first (depth 2).",
-		"- Max 10 read_file calls total.",
-		"- Do NOT infer domains or business meaning.",
-		"- Use only real paths from the repo.",
-		"- Output valid JSON only, no markdown.",
+		"Strategy:",
+		"- Start from baseline to seed terms.",
+		"- Scan docs/README and UI-facing code for terminology.",
+		"- Prefer stable names used in routes, components, or user copy.",
+		"- Add conflicts only when two terms describe the same concept.",
 		"",
-		"Output schema:",
-		'{"repoShape":"monorepo","techStack":{"language":"typescript","framework":"react","runtime":"node","buildTool":"pnpm"},"tiles":[],"entryPoints":[],"configFiles":{"root":[],"notable":[]},"explorationPlan":[],"confidence":0,"limitations":[]}',
+		"Output MUST match this schema:",
+		'{"terms":[{"term":"string","definition":"string","sources":[{"type":"baseline|code|docs|marketing","path":"string","excerpt":"string"}],"confidence":0.0}],"conflicts":[{"terms":["string"],"resolution":"string","rationale":"string"}],"generatedAt":0}',
 		"",
+		"Before final output, call validate_json with your JSON object.",
 		"Tool input rules:",
-		'- list_dirs input: { "path"?: "apps/webapp/src", "depth"?: 2, "limit"?: 50 }',
-		'- list_files input: { "path"?: "apps/webapp/src", "pattern"?: "*.ts", "limit"?: 50 }',
-		'- read_file input: { "path": "path/to/file.tsx" }',
+		'- list_dirs input: { "path"?: "", "depth"?: 2, "limit"?: 50 }',
+		'- list_files input: { "path"?: "", "pattern"?: "*.md", "limit"?: 50 }',
+		'- read_file input: { "path": "path/to/file" }',
 		'- validate_json input: { "json": { ... } }',
 		`Use productId: ${productId} when calling tools.`,
 	].join("\n");
@@ -416,45 +412,20 @@ function buildToolProtocol(productId: Id<"products">): string {
 		"3. Call validate_json with your final JSON object",
 		"4. THEN: Return your final output (JSON only, no tool calls)",
 		"Never combine tool calls and final output in the same response.",
+		"Only call tools listed in the tool catalog.",
+		"Tool inputs must include the productId when required.",
 		`Use productId: ${productId}.`,
 	].join("\n");
 }
 
-function validateStructureScout(output: unknown): {
-	valid: boolean;
-	errors: string[];
-	warnings: string[];
-} {
-	if (!output || typeof output !== "object") {
-		return { valid: false, errors: ["Output must be an object"], warnings: [] };
-	}
-	const record = output as Record<string, unknown>;
-	const errors: string[] = [];
-
-	if (typeof record.repoShape !== "string") {
-		errors.push("repoShape must be a string");
-	}
-	if (!record.techStack || typeof record.techStack !== "object") {
-		errors.push("techStack must be an object");
-	}
-	if (!Array.isArray(record.tiles)) {
-		errors.push("tiles must be an array");
-	}
-	if (!Array.isArray(record.entryPoints)) {
-		errors.push("entryPoints must be an array");
-	}
-	if (!record.configFiles || typeof record.configFiles !== "object") {
-		errors.push("configFiles must be an object");
-	}
-	if (!Array.isArray(record.explorationPlan)) {
-		errors.push("explorationPlan must be an array");
-	}
-	if (typeof record.confidence !== "number") {
-		errors.push("confidence must be a number");
-	}
-	if (!Array.isArray(record.limitations)) {
-		errors.push("limitations must be an array");
-	}
-
-	return { valid: errors.length === 0, errors, warnings: [] };
+function normalizeGlossaryOutput(output: Record<string, unknown>) {
+	if (!output || typeof output !== "object") return output;
+	const generatedAt =
+		typeof (output as { generatedAt?: unknown }).generatedAt === "number"
+			? (output as { generatedAt: number }).generatedAt
+			: Date.now();
+	return {
+		...output,
+		generatedAt,
+	};
 }

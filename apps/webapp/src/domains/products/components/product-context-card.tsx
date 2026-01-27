@@ -4,21 +4,7 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { useConnections } from "@/domains/connectors/hooks";
-import {
-	Button,
-	ButtonGroup,
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-	DropdownIcon,
-	CheckmarkIcon,
-	toast,
-} from "@hikai/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, toast } from "@hikai/ui";
 import { AgentProgress } from "./agent-progress";
 
 type ProductContextCardProps = {
@@ -27,29 +13,35 @@ type ProductContextCardProps = {
 		name: string;
 		userRole?: "admin" | "member";
 	};
+	snapshot?: {
+		_id: string;
+		status?: "in_progress" | "completed" | "failed" | "partial";
+		createdAt?: number;
+		generatedBy?: "manual" | "contextAgent" | "scheduled";
+		triggerReason?: "initial_setup" | "source_change" | "manual_refresh";
+		completedPhases?: Array<"structure" | "glossary" | "domains" | "features">;
+		errors?: Array<{ phase?: string; error?: string; timestamp?: number }>;
+	};
+	isDirty?: boolean;
 	onRunStart?: (payload: { startedAt: number; runId?: Id<"agentRuns"> | null }) => void;
 };
 
-const DOMAIN_MAP_USE_CASE = "domain_map";
-const STRUCTURE_SCOUT_USE_CASE = "structure_scout";
-
-type AgentSelection = "domain_map" | "structure_scout";
+const CONTEXT_AGENT_USE_CASE = "context_agent";
 
 export function ProductContextCard({
 	product,
+	snapshot,
+	isDirty,
 	onRunStart,
 }: ProductContextCardProps) {
 	const { t } = useTranslation("products");
-	const generateDomainMap = useAction(api.agents.domainMap.generateDomainMap);
-	const generateStructureScout = useAction(
-		api.agents.structureScout.generateStructureScout,
+	const generateContextSnapshot = useAction(
+		api.agents.contextAgent.generateContextSnapshot,
 	);
 	const [agentRunId, setAgentRunId] = useState<Id<"agentRuns"> | null>(null);
 	const [isAgentRunning, setIsAgentRunning] = useState(false);
 	const [agentError, setAgentError] = useState<string | null>(null);
 	const [triggerStartedAt, setTriggerStartedAt] = useState<number | null>(null);
-	const [selectedAgent, setSelectedAgent] =
-		useState<AgentSelection>("domain_map");
 	const { connections, isLoading } = useConnections(product._id);
 
 	const agentRun = useQuery(
@@ -65,10 +57,7 @@ export function ProductContextCard({
 		api.agents.agentRuns.getLatestRunForUseCase,
 		{
 			productId: product._id,
-			useCase:
-				selectedAgent === "domain_map"
-					? DOMAIN_MAP_USE_CASE
-					: STRUCTURE_SCOUT_USE_CASE,
+			useCase: CONTEXT_AGENT_USE_CASE,
 		},
 	);
 	const activeRun = agentRunId
@@ -88,36 +77,25 @@ export function ProductContextCard({
 		setAgentError(null);
 		setAgentRunId(null);
 		setTriggerStartedAt(startedAt);
-		if (selectedAgent === "domain_map") {
-			onRunStart?.({ startedAt, runId: null });
-		}
+		onRunStart?.({ startedAt, runId: null });
 		try {
-			const result =
-				selectedAgent === "domain_map"
-					? await generateDomainMap({ productId: product._id })
-					: await generateStructureScout({ productId: product._id });
+			const result = await generateContextSnapshot({
+				productId: product._id,
+				triggerReason: "manual_refresh",
+				forceRefresh: true,
+			});
 			if (result?.runId) {
 				const nextRunId = result.runId as Id<"agentRuns">;
 				setAgentRunId(nextRunId);
-				if (selectedAgent === "domain_map") {
-					onRunStart?.({ startedAt, runId: nextRunId });
-				}
+				onRunStart?.({ startedAt, runId: nextRunId });
 			} else {
 				setAgentRunId(null);
 			}
-			toast.success(
-				selectedAgent === "domain_map"
-					? t("context.domainMapGenerateSuccess")
-					: t("context.structureScoutGenerateSuccess"),
-			);
+			toast.success(t("context.contextAgentGenerateSuccess"));
 		} catch (err) {
 			const message = err instanceof Error ? err.message : t("errors.unknown");
 			setAgentError(message);
-			toast.error(
-				selectedAgent === "domain_map"
-					? t("context.domainMapGenerateError")
-					: t("context.structureScoutGenerateError"),
-			);
+			toast.error(t("context.contextAgentGenerateError"));
 		} finally {
 			setIsAgentRunning(false);
 		}
@@ -134,62 +112,27 @@ export function ProductContextCard({
 			<CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
 				<div>
 					<CardTitle className="text-fontSize-lg">
-						{t("context.domainMapTitle")}
+						{t("context.contextAgentTitle")}
 					</CardTitle>
 					<p className="text-fontSize-sm text-muted-foreground">
-						{t("context.domainMapSubtitle")}
+						{t("context.contextAgentSubtitle")}
 					</p>
 				</div>
 				<div className="flex flex-wrap items-center gap-2">
-					<ButtonGroup>
-						<Button
-							variant="outline"
-							onClick={handleRunAgent}
-							disabled={isAgentRunning}
-						>
-							{isAgentRunning ? (
-								<div className="flex items-center gap-2">
-									<span className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full inline-block animate-spin" />
-									<span>
-										{selectedAgent === "domain_map"
-											? t("context.domainMapGenerateRunning")
-											: t("context.structureScoutGenerateRunning")}
-									</span>
-								</div>
-							) : selectedAgent === "domain_map" ? (
-								t("context.domainMapGenerate")
-							) : (
-								t("context.structureScoutGenerate")
-							)}
-						</Button>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="outline" size="icon" disabled={isAgentRunning}>
-									<DropdownIcon className="h-4 w-4" />
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end">
-								<DropdownMenuItem
-									onClick={() => setSelectedAgent("domain_map")}
-									className="flex items-center justify-between gap-2"
-								>
-									<span>{t("context.agentOptionDomainMap")}</span>
-									{selectedAgent === "domain_map" ? (
-										<CheckmarkIcon className="h-4 w-4 text-primary" />
-									) : null}
-								</DropdownMenuItem>
-								<DropdownMenuItem
-									onClick={() => setSelectedAgent("structure_scout")}
-									className="flex items-center justify-between gap-2"
-								>
-									<span>{t("context.agentOptionStructureScout")}</span>
-									{selectedAgent === "structure_scout" ? (
-										<CheckmarkIcon className="h-4 w-4 text-primary" />
-									) : null}
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</ButtonGroup>
+					<Button
+						variant="outline"
+						onClick={handleRunAgent}
+						disabled={isAgentRunning}
+					>
+						{isAgentRunning ? (
+							<div className="flex items-center gap-2">
+								<span className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full inline-block animate-spin" />
+								<span>{t("context.contextAgentGenerateRunning")}</span>
+							</div>
+						) : (
+							t("context.contextAgentGenerate")
+						)}
+					</Button>
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
@@ -202,7 +145,12 @@ export function ProductContextCard({
 					</p>
 				)}
 				{showAgentProgress && activeRun ? (
-					<AgentProgress productId={product._id} runId={activeRun._id} />
+					<AgentProgress
+						productId={product._id}
+						runId={activeRun._id}
+						snapshot={snapshot}
+						isDirty={isDirty}
+					/>
 				) : null}
 			</CardContent>
 		</Card>

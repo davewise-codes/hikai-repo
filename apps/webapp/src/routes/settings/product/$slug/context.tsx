@@ -1,17 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { SettingsLayout, SettingsHeader } from "@/domains/shared";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import {
-	DomainMapCard,
+	ContextSnapshotCard,
 	ProductContextCard,
 	useGetProductBySlug,
 } from "@/domains/products";
 
-const DOMAIN_MAP_USE_CASE = "domain_map";
+const CONTEXT_AGENT_USE_CASE = "context_agent";
 
 export const Route = createFileRoute("/settings/product/$slug/context")({
 	component: ProductContextPage,
@@ -22,33 +22,23 @@ function ProductContextPage() {
 	const { slug } = Route.useParams();
 	const { currentOrg } = useCurrentOrg();
 	const product = useGetProductBySlug(currentOrg?._id, slug);
-	const [refreshStartedAt, setRefreshStartedAt] = useState<number | null>(null);
+	const currentSnapshot = useQuery(
+		api.products.products.getCurrentProductContextSnapshot,
+		product?._id ? { productId: product._id } : "skip",
+	);
 	const latestRun = useQuery(
 		api.agents.agentRuns.getLatestRunForUseCase,
 		product?._id
 			? {
 					productId: product._id,
-					useCase: DOMAIN_MAP_USE_CASE,
+					useCase: CONTEXT_AGENT_USE_CASE,
 				}
 			: "skip",
 	);
-	const isRefreshing = useMemo(() => {
-		if (!refreshStartedAt) return false;
-		if (!latestRun) return true;
-		if (latestRun.startedAt && latestRun.startedAt >= refreshStartedAt) {
-			return latestRun.status === "running";
-		}
-		return true;
-	}, [latestRun, refreshStartedAt]);
-	const hasLatestError = latestRun?.status === "error";
-
-	useEffect(() => {
-		if (!refreshStartedAt || !latestRun?.startedAt) return;
-		if (latestRun.startedAt < refreshStartedAt) return;
-		if (latestRun.status !== "running") {
-			setRefreshStartedAt(null);
-		}
-	}, [latestRun, refreshStartedAt]);
+	const isDirty = useMemo(() => {
+		if (!currentSnapshot?.createdAt || !latestRun?.startedAt) return false;
+		return latestRun.startedAt > currentSnapshot.createdAt;
+	}, [currentSnapshot?.createdAt, latestRun?.startedAt]);
 
 	if (!product) {
 		return (
@@ -69,15 +59,10 @@ function ProductContextPage() {
 			<div className="space-y-6">
 				<ProductContextCard
 					product={product}
-					onRunStart={({ startedAt, runId }) => {
-						setRefreshStartedAt(startedAt);
-					}}
+					snapshot={currentSnapshot ?? undefined}
+					isDirty={isDirty}
 				/>
-				<DomainMapCard
-					domainMap={isRefreshing || hasLatestError ? null : product.domainMap}
-					isRefreshing={isRefreshing}
-					isError={hasLatestError}
-				/>
+				<ContextSnapshotCard snapshot={currentSnapshot} isDirty={isDirty} />
 			</div>
 		</SettingsLayout>
 	);

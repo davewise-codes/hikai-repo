@@ -139,8 +139,12 @@ export const saveProductContext = internalMutation({
 
 		const snapshotId = await ctx.db.insert("productContextSnapshots", {
 			productId,
-			version: Number(context?.version ?? 0),
 			createdAt: Number(context?.createdAt ?? timestamp),
+			generatedBy: "manual",
+			status: "completed",
+			completedPhases: [],
+			errors: [],
+			version: Number(context?.version ?? 0),
 			createdBy: context?.createdBy,
 			baseline,
 			context,
@@ -150,7 +154,7 @@ export const saveProductContext = internalMutation({
 		});
 
 		await ctx.db.patch(productId, {
-			currentContextSnapshotId: snapshotId,
+			currentProductSnapshot: snapshotId,
 			languagePreference,
 			updatedAt: timestamp,
 		});
@@ -167,6 +171,132 @@ export const updateFeatureMapForSnapshot = internalMutation({
 	handler: async (ctx, { snapshotId, featureMap }) => {
 		await ctx.db.patch(snapshotId, {
 			featureMap,
+		});
+	},
+});
+
+export const createContextSnapshot = internalMutation({
+	args: {
+		productId: v.id("products"),
+		createdAt: v.number(),
+		generatedBy: v.union(
+			v.literal("manual"),
+			v.literal("contextAgent"),
+			v.literal("scheduled"),
+		),
+		triggerReason: v.optional(
+			v.union(
+				v.literal("initial_setup"),
+				v.literal("source_change"),
+				v.literal("manual_refresh"),
+			),
+		),
+		status: v.union(
+			v.literal("in_progress"),
+			v.literal("completed"),
+			v.literal("failed"),
+			v.literal("partial"),
+		),
+		completedPhases: v.array(
+			v.union(
+				v.literal("structure"),
+				v.literal("glossary"),
+				v.literal("domains"),
+				v.literal("features"),
+			),
+		),
+		errors: v.array(
+			v.object({
+				phase: v.string(),
+				error: v.string(),
+				timestamp: v.number(),
+			}),
+		),
+		agentRuns: v.optional(
+			v.object({
+				contextAgent: v.optional(v.id("agentRuns")),
+				structureScout: v.optional(v.id("agentRuns")),
+				glossaryScout: v.optional(v.id("agentRuns")),
+				domainMapper: v.optional(v.id("agentRuns")),
+				featureScout: v.optional(v.id("agentRuns")),
+			}),
+		),
+		repoStructure: v.optional(v.any()),
+		glossary: v.optional(v.any()),
+		domainMap: v.optional(v.any()),
+		features: v.optional(v.any()),
+	},
+	handler: async (ctx, args) => {
+		const { productId } = args;
+		const product = await ctx.db.get(productId);
+		if (!product) {
+			throw new Error("Producto no encontrado");
+		}
+		const snapshotId = await ctx.db.insert("productContextSnapshots", args);
+		return { snapshotId };
+	},
+});
+
+export const updateContextSnapshot = internalMutation({
+	args: {
+		snapshotId: v.id("productContextSnapshots"),
+		repoStructure: v.optional(v.any()),
+		glossary: v.optional(v.any()),
+		domainMap: v.optional(v.any()),
+		features: v.optional(v.any()),
+		agentRuns: v.optional(
+			v.object({
+				contextAgent: v.optional(v.id("agentRuns")),
+				structureScout: v.optional(v.id("agentRuns")),
+				glossaryScout: v.optional(v.id("agentRuns")),
+				domainMapper: v.optional(v.id("agentRuns")),
+				featureScout: v.optional(v.id("agentRuns")),
+			}),
+		),
+		status: v.optional(
+			v.union(
+				v.literal("in_progress"),
+				v.literal("completed"),
+				v.literal("failed"),
+				v.literal("partial"),
+			),
+		),
+		completedPhases: v.optional(
+			v.array(
+				v.union(
+					v.literal("structure"),
+					v.literal("glossary"),
+					v.literal("domains"),
+					v.literal("features"),
+				),
+			),
+		),
+		errors: v.optional(
+			v.array(
+				v.object({
+					phase: v.string(),
+					error: v.string(),
+					timestamp: v.number(),
+				}),
+			),
+		),
+	},
+	handler: async (ctx, args) => {
+		const { snapshotId, ...patch } = args;
+		await ctx.db.patch(snapshotId, patch);
+	},
+});
+
+export const setCurrentProductSnapshot = internalMutation({
+	args: {
+		productId: v.id("products"),
+		snapshotId: v.id("productContextSnapshots"),
+		updatedAt: v.number(),
+	},
+	handler: async (ctx, { productId, snapshotId, updatedAt }) => {
+		await ctx.db.patch(productId, {
+			currentProductSnapshot: snapshotId,
+			updatedAt,
 		});
 	},
 });

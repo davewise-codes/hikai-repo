@@ -6,12 +6,12 @@ export const saveDomainMap = internalMutation({
 	args: {
 		productId: v.id("products"),
 		domainMap: v.any(),
+		snapshotId: v.id("productContextSnapshots"),
 	},
-	handler: async (ctx, { productId, domainMap }) => {
+	handler: async (ctx, { productId, domainMap, snapshotId }) => {
 		await assertProductAccess(ctx, productId);
-		await ctx.db.patch(productId, {
+		await ctx.db.patch(snapshotId, {
 			domainMap,
-			updatedAt: Date.now(),
 		});
 	},
 });

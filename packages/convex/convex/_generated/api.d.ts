@@ -10,6 +10,7 @@
 
 import type * as agents_actions from "../agents/actions.js";
 import type * as agents_agentRuns from "../agents/agentRuns.js";
+import type * as agents_contextAgent from "../agents/contextAgent.js";
 import type * as agents_contextInputs from "../agents/contextInputs.js";
 import type * as agents_contextInputsData from "../agents/contextInputsData.js";
 import type * as agents_contextTools from "../agents/contextTools.js";
@@ -37,6 +38,8 @@ import type * as agents_core_validators_index from "../agents/core/validators/in
 import type * as agents_domainMap from "../agents/domainMap.js";
 import type * as agents_domainMapData from "../agents/domainMapData.js";
 import type * as agents_featureMapAgent from "../agents/featureMapAgent.js";
+import type * as agents_featureScout from "../agents/featureScout.js";
+import type * as agents_glossaryScout from "../agents/glossaryScout.js";
 import type * as agents_helloWorldAgent from "../agents/helloWorldAgent.js";
 import type * as agents_index from "../agents/index.js";
 import type * as agents_messages from "../agents/messages.js";
@@ -100,6 +103,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "agents/actions": typeof agents_actions;
   "agents/agentRuns": typeof agents_agentRuns;
+  "agents/contextAgent": typeof agents_contextAgent;
   "agents/contextInputs": typeof agents_contextInputs;
   "agents/contextInputsData": typeof agents_contextInputsData;
   "agents/contextTools": typeof agents_contextTools;
@@ -127,6 +131,8 @@ declare const fullApi: ApiFromModules<{
   "agents/domainMap": typeof agents_domainMap;
   "agents/domainMapData": typeof agents_domainMapData;
   "agents/featureMapAgent": typeof agents_featureMapAgent;
+  "agents/featureScout": typeof agents_featureScout;
+  "agents/glossaryScout": typeof agents_glossaryScout;
   "agents/helloWorldAgent": typeof agents_helloWorldAgent;
   "agents/index": typeof agents_index;
   "agents/messages": typeof agents_messages;

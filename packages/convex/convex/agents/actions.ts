@@ -243,10 +243,10 @@ export const generateProductContext = action({
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
 		);
-		const currentSnapshot = product.currentContextSnapshotId
+		const currentSnapshot = product.currentProductSnapshot
 			? await ctx.runQuery(
 					internal.agents.productContextData.getContextSnapshotById,
-					{ snapshotId: product.currentContextSnapshotId },
+					{ snapshotId: product.currentProductSnapshot },
 				)
 			: null;
 		let runId = agentRunId;
@@ -441,10 +441,10 @@ export const generateProductContext = action({
 		}
 
 		const currentVersion = currentSnapshot?.context?.version ?? 0;
-		const baselineSource = fetchedProduct.productBaseline ?? {};
+		const baselineSource = fetchedProduct.baseline ?? {};
 		const baseline = {
 			productName: fetchedProduct.name,
-			description: "",
+		description: baselineSource.description ?? "",
 			productCategory: "",
 			valueProposition: baselineSource.valueProposition ?? "",
 			problemSolved: baselineSource.problemSolved ?? "",
@@ -643,10 +643,10 @@ export const refreshFeatureMap = action({
 			{ productId },
 		);
 
-		const currentSnapshot = product.currentContextSnapshotId
+		const currentSnapshot = product.currentProductSnapshot
 			? await ctx.runQuery(
 					internal.agents.productContextData.getContextSnapshotById,
-					{ snapshotId: product.currentContextSnapshotId },
+					{ snapshotId: product.currentProductSnapshot },
 				)
 			: null;
 		if (!currentSnapshot) {
@@ -656,7 +656,7 @@ export const refreshFeatureMap = action({
 		const previousFeatureMap =
 			(currentSnapshot as { featureMap?: Record<string, unknown> }).featureMap ??
 			null;
-		const baseline = currentSnapshot.baseline ?? product.productBaseline ?? {};
+		const baseline = currentSnapshot.baseline ?? product.baseline ?? {};
 		const productContext = currentSnapshot.context ?? {};
 		const languagePreference = product.languagePreference ?? "en";
 
@@ -1040,14 +1040,14 @@ export const interpretTimelineEvents = action({
 			notes: item.notes,
 		}));
 
-		const currentSnapshot = product.currentContextSnapshotId
+		const currentSnapshot = product.currentProductSnapshot
 			? await ctx.runQuery(
 					internal.agents.productContextData.getContextSnapshotById,
-					{ snapshotId: product.currentContextSnapshotId },
+					{ snapshotId: product.currentProductSnapshot },
 				)
 			: null;
 
-		const baseline = currentSnapshot?.baseline ?? product.productBaseline ?? {};
+		const baseline = currentSnapshot?.baseline ?? product.baseline ?? {};
 		const context = currentSnapshot?.context ?? {};
 		const featureMap =
 			(currentSnapshot as { featureMap?: Record<string, unknown> })?.featureMap ??
@@ -1455,11 +1455,11 @@ export const classifySourceContext = action({
 			const promptInput = {
 				product: {
 					name: product.name,
-					productType: product.productBaseline?.productType ?? "",
-					valueProposition: product.productBaseline?.valueProposition ?? "",
-					targetMarket: product.productBaseline?.targetMarket ?? "",
-					audiences: product.productBaseline?.audiences ?? [],
-					stage: product.productBaseline?.stage ?? "",
+					productType: product.baseline?.productType ?? "",
+					valueProposition: product.baseline?.valueProposition ?? "",
+					targetMarket: product.baseline?.targetMarket ?? "",
+					audiences: product.baseline?.audiences ?? [],
+					stage: product.baseline?.stage ?? "",
 				},
 				repo: {
 					sourceType,

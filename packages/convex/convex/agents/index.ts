@@ -9,4 +9,7 @@ export { timelineContextInterpreterAgent } from "./timelineContextInterpreterAge
 export { sourceContextAgent } from "./sourceContextAgent";
 export { generateDomainMap } from "./domainMap";
 export { generateStructureScout } from "./structureScout";
+export { generateGlossaryScout } from "./glossaryScout";
+export { generateFeatureScout } from "./featureScout";
+export { generateContextSnapshot, migrateLegacyContextSnapshot } from "./contextAgent";
 export { exportRunTrace } from "./agentRuns";

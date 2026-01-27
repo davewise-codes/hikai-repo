@@ -126,13 +126,15 @@ function normalizeToolCalls(toolCalls: unknown[]): ToolCall[] {
 			if (!call || typeof call !== "object") return null;
 			const toolCall = call as {
 				name?: string;
+				tool?: string;
 				input?: unknown;
 				args?: unknown;
 				id?: string;
 			};
-			if (!toolCall.name) return null;
+			const name = toolCall.name ?? toolCall.tool;
+			if (!name) return null;
 			return {
-				name: toolCall.name,
+				name,
 				input: toolCall.input ?? toolCall.args ?? {},
 				id: toolCall.id ?? `call-${index + 1}`,
 			};

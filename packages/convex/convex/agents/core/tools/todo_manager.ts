@@ -15,6 +15,18 @@ type TodoManagerInput = {
 	items: PlanItemInput[];
 };
 
+type RawPlanItem = {
+	id?: string | number;
+	status?: string;
+	content?: string;
+	activeForm?: string;
+	task?: string;
+	title?: string;
+	notes?: string;
+	evidence?: string | string[];
+	checkpoint?: string;
+};
+
 export function createTodoManagerTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -66,13 +78,14 @@ function parseTodoManagerInput(input: unknown): TodoManagerInput {
 			`todo_manager: plan cannot exceed ${PLAN_MAX_ITEMS} items`,
 		);
 	}
-	const inProgressCount = raw.items.filter(
+	const normalized = raw.items.map((item) => normalizeItem(item));
+	const inProgressCount = normalized.filter(
 		(item) => item?.status === "in_progress",
 	).length;
 	if (inProgressCount > 1) {
 		throw new Error("todo_manager: only one item can be in_progress");
 	}
-	for (const item of raw.items) {
+	for (const item of normalized) {
 		if (
 			item?.status &&
 			item.status !== "pending" &&
@@ -92,6 +105,44 @@ function parseTodoManagerInput(input: unknown): TodoManagerInput {
 		}
 	}
 	return {
-		items: raw.items,
+		items: normalized,
 	};
+}
+
+function normalizeItem(input: PlanItemInput | RawPlanItem): PlanItemInput {
+	const raw = input as RawPlanItem;
+	const content = raw.content ?? raw.task ?? raw.title ?? "";
+	const activeForm = raw.activeForm ?? raw.notes ?? content;
+	const status = normalizeStatus(raw.status);
+	const evidence = raw.evidence;
+	return {
+		id: raw.id ? String(raw.id) : undefined,
+		content,
+		activeForm,
+		status,
+		evidence,
+		checkpoint: raw.checkpoint,
+	};
+}
+
+function normalizeStatus(status?: string): PlanItemInput["status"] {
+	if (!status) return "pending";
+	switch (status) {
+		case "pending":
+		case "in_progress":
+		case "completed":
+		case "blocked":
+			return status;
+		case "not_started":
+		case "todo":
+			return "pending";
+		case "doing":
+		case "in-progress":
+			return "in_progress";
+		case "done":
+		case "complete":
+			return "completed";
+		default:
+			return status as PlanItemInput["status"];
+	}
 }

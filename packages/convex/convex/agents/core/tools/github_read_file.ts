@@ -69,7 +69,15 @@ export function createReadFileTool(
 
 function parseInput(input: unknown): ReadFileInput {
 	if (!input || typeof input !== "object") return {};
-	return input as ReadFileInput;
+	const raw = input as ReadFileInput;
+	const path =
+		typeof raw.path === "string"
+			? raw.path.replace(/^\.\/+/g, "")
+			: raw.path;
+	return {
+		...raw,
+		path,
+	};
 }
 
 function resolveRepo(

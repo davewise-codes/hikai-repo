@@ -128,7 +128,8 @@
       "Bash(git fetch:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:stack.convex.dev)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "WebFetch(domain:api.github.com)"
     ],
     "deny": [],
     "ask": [],

@@ -49,12 +49,12 @@ export async function buildProductTaxonomy(
 		{ productId },
 	);
 
-	const currentSnapshot = product.currentContextSnapshotId
+	const currentSnapshot = product.currentProductSnapshot
 		? await ctx.runQuery(internal.agents.productContextData.getContextSnapshotById, {
-				snapshotId: product.currentContextSnapshotId,
+				snapshotId: product.currentProductSnapshot,
 			})
 		: null;
-	const baseline = currentSnapshot?.baseline ?? product.productBaseline ?? {};
+	const baseline = currentSnapshot?.baseline ?? product.baseline ?? {};
 	const productContext = currentSnapshot?.context ?? {};
 	const previousFeatureMap =
 		(currentSnapshot as { featureMap?: Record<string, unknown> })?.featureMap ??

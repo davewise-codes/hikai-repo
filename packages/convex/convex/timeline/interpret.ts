@@ -214,10 +214,10 @@ export const interpretPendingEvents = action({
 				internal.agents.productContextData.getProductWithContext,
 				{ productId },
 			);
-			const snapshot = product.currentContextSnapshotId
+			const snapshot = product.currentProductSnapshot
 				? await ctx.runQuery(
 						internal.agents.productContextData.getContextSnapshotById,
-						{ snapshotId: product.currentContextSnapshotId },
+						{ snapshotId: product.currentProductSnapshot },
 					)
 				: null;
 			const releaseCadence =
@@ -427,7 +427,7 @@ export const insertInterpretedEvent = internalMutation({
 	) => {
 		const now = createdAt;
 		const product = await ctx.db.get(productId);
-		const contextSnapshotId = product?.currentContextSnapshotId;
+		const contextSnapshotId = product?.currentProductSnapshot;
 
 		await ctx.db.insert("interpretedEvents", {
 			productId,

@@ -30,6 +30,7 @@ type PersonaProfile = {
 };
 
 type ProductBaseline = {
+	description?: string;
 	valueProposition?: string;
 	problemSolved?: string;
 	targetMarket?: string;
@@ -47,7 +48,7 @@ type ProductBaseline = {
 type BaselineEditorProps = {
 	product: {
 		_id: Id<"products">;
-		productBaseline?: ProductBaseline;
+		baseline?: ProductBaseline;
 	};
 	onSave?: () => void;
 };
@@ -586,7 +587,7 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 	);
 
 	useEffect(() => {
-		const baseline = product.productBaseline;
+		const baseline = product.baseline;
 		setValueProposition(baseline?.valueProposition ?? "");
 		setProblemSolved(baseline?.problemSolved ?? "");
 		setTargetMarket(baseline?.targetMarket ?? "");
@@ -668,7 +669,7 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 	);
 
 	const hasChanges = useMemo(() => {
-		const initialBaseline = buildBaselineFromProduct(product.productBaseline);
+		const initialBaseline = buildBaselineFromProduct(product.baseline);
 		const baselineChanged =
 			JSON.stringify(baselinePayload) !== JSON.stringify(initialBaseline);
 		return baselineChanged;

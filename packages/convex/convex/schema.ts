@@ -116,6 +116,7 @@ const productContextEntry = v.object({
 });
 
 const productBaseline = v.object({
+	description: v.optional(v.string()),
 	valueProposition: v.optional(v.string()),
 	problemSolved: v.optional(v.string()),
 	targetMarket: v.optional(v.string()),
@@ -189,10 +190,8 @@ const schema = defineSchema({
 		slug: v.string(),
 		languagePreference: v.optional(v.string()),
 		releaseCadence: v.optional(v.string()),
-		productBaseline: v.optional(productBaseline),
-		domainMap: v.optional(v.any()),
-		structureScout: v.optional(v.any()),
-		currentContextSnapshotId: v.optional(v.id("productContextSnapshots")),
+		baseline: v.optional(productBaseline),
+		currentProductSnapshot: v.optional(v.id("productContextSnapshots")),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
@@ -201,11 +200,58 @@ const schema = defineSchema({
 
 	productContextSnapshots: defineTable({
 		productId: v.id("products"),
-		version: v.number(),
 		createdAt: v.number(),
-		createdBy: v.id("users"),
-		baseline: v.any(),
-		context: v.any(),
+		generatedBy: v.union(
+			v.literal("manual"),
+			v.literal("contextAgent"),
+			v.literal("scheduled"),
+		),
+		triggerReason: v.optional(
+			v.union(
+				v.literal("initial_setup"),
+				v.literal("source_change"),
+				v.literal("manual_refresh"),
+			),
+		),
+		repoStructure: v.optional(v.any()),
+		glossary: v.optional(v.any()),
+		domainMap: v.optional(v.any()),
+		features: v.optional(v.any()),
+		agentRuns: v.optional(
+			v.object({
+				contextAgent: v.optional(v.id("agentRuns")),
+				structureScout: v.optional(v.id("agentRuns")),
+				glossaryScout: v.optional(v.id("agentRuns")),
+				domainMapper: v.optional(v.id("agentRuns")),
+				featureScout: v.optional(v.id("agentRuns")),
+			}),
+		),
+		status: v.union(
+			v.literal("in_progress"),
+			v.literal("completed"),
+			v.literal("failed"),
+			v.literal("partial"),
+		),
+		completedPhases: v.array(
+			v.union(
+				v.literal("structure"),
+				v.literal("glossary"),
+				v.literal("domains"),
+				v.literal("features"),
+			),
+		),
+		errors: v.array(
+			v.object({
+				phase: v.string(),
+				error: v.string(),
+				timestamp: v.number(),
+			}),
+		),
+		// Legacy fields (kept for backward compatibility)
+		version: v.optional(v.number()),
+		createdBy: v.optional(v.id("users")),
+		baseline: v.optional(v.any()),
+		context: v.optional(v.any()),
 		featureMap: v.optional(v.any()),
 		releaseCadence: v.optional(v.string()),
 		languagePreference: v.optional(v.string()),

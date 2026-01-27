@@ -173,10 +173,7 @@ export const getProductContextSnapshots = query({
       .order("desc")
       .take(limit ?? 25);
 
-    return records.map((record) => ({
-      ...record.context,
-      featureMap: record.featureMap ?? record.context?.featureMap,
-    }));
+    return records;
   },
 });
 
@@ -189,19 +186,16 @@ export const getCurrentProductContextSnapshot = query({
   handler: async (ctx, { productId }) => {
     const { product } = await assertProductAccess(ctx, productId);
 
-    if (!product.currentContextSnapshotId) {
+    if (!product.currentProductSnapshot) {
       return null;
     }
 
-    const snapshot = await ctx.db.get(product.currentContextSnapshotId);
+    const snapshot = await ctx.db.get(product.currentProductSnapshot);
     if (!snapshot || snapshot.productId !== productId) {
       return null;
     }
 
-    return {
-      ...snapshot.context,
-      featureMap: snapshot.featureMap ?? snapshot.context?.featureMap,
-    };
+    return snapshot;
   },
 });
 
@@ -448,6 +442,7 @@ export const createProduct = mutation({
     slug: v.string(),
     baseline: v.optional(
       v.object({
+        description: v.optional(v.string()),
         valueProposition: v.optional(v.string()),
         problemSolved: v.optional(v.string()),
         targetMarket: v.optional(v.string()),
@@ -517,7 +512,7 @@ export const createProduct = mutation({
       organizationId,
       name,
       slug,
-      productBaseline: baseline,
+      baseline,
       createdAt: now,
       updatedAt: now,
     });
@@ -544,8 +539,9 @@ export const updateProduct = mutation({
     name: v.optional(v.string()),
     languagePreference: v.optional(v.string()),
     releaseCadence: v.optional(v.string()),
-    productBaseline: v.optional(
+    baseline: v.optional(
       v.object({
+        description: v.optional(v.string()),
         valueProposition: v.optional(v.string()),
         problemSolved: v.optional(v.string()),
         targetMarket: v.optional(v.string()),
@@ -572,7 +568,7 @@ export const updateProduct = mutation({
   },
   handler: async (
     ctx,
-    { productId, name, productBaseline, languagePreference, releaseCadence }
+    { productId, name, baseline, languagePreference, releaseCadence }
   ) => {
     const { membership } = await assertProductAccess(ctx, productId);
 
@@ -587,7 +583,7 @@ export const updateProduct = mutation({
     if (name !== undefined) updates.name = name;
     if (languagePreference !== undefined) updates.languagePreference = languagePreference;
     if (releaseCadence !== undefined) updates.releaseCadence = releaseCadence;
-    if (productBaseline !== undefined) updates.productBaseline = productBaseline;
+    if (baseline !== undefined) updates.baseline = baseline;
 
     await ctx.db.patch(productId, updates);
     return productId;
@@ -602,6 +598,7 @@ export const updateBaseline = mutation({
   args: {
     productId: v.id("products"),
     baseline: v.object({
+      description: v.optional(v.string()),
       valueProposition: v.optional(v.string()),
       problemSolved: v.optional(v.string()),
       targetMarket: v.optional(v.string()),
@@ -634,13 +631,14 @@ export const updateBaseline = mutation({
     }
 
     await ctx.db.patch(productId, {
-      productBaseline: baseline,
+      baseline,
       updatedAt: Date.now(),
     });
 
     // Disparar regeneración de contexto en background
-    await ctx.scheduler.runAfter(0, api.agents.actions.generateProductContext, {
+    await ctx.scheduler.runAfter(0, api.agents.contextAgent.generateContextSnapshot, {
       productId,
+      triggerReason: "manual_refresh",
       forceRefresh: true,
     });
 

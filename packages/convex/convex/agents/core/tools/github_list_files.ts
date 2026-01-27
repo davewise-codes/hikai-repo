@@ -77,11 +77,19 @@ function parseInput(input: unknown): ListFilesInput {
 	if (!input || typeof input !== "object") return {};
 	const raw = input as Partial<ListFilesInput>;
 	return {
-		path: typeof raw.path === "string" ? raw.path.replace(/^\/+|\/+$/g, "") : undefined,
+		path:
+			typeof raw.path === "string"
+				? sanitizePath(raw.path)
+				: undefined,
 		pattern: raw.pattern,
 		limit: raw.limit,
 		repoFullName: raw.repoFullName,
 	};
+}
+
+function sanitizePath(value: string): string {
+	const cleaned = value.replace(/^\.\/+/g, "").replace(/^\/+|\/+$/g, "");
+	return cleaned === "." ? "" : cleaned;
 }
 
 function resolveRepo(
