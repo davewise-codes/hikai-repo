@@ -838,7 +838,7 @@ En contextAgent.ts, structure y glossary se ejecutan en serie:
 línea 157: structureResult = await ctx.runAction(structureScout...) // bloquea
 línea 177: glossaryResult = await ctx.runAction(glossaryScout...) // espera a que termine structure
 
-No hay Promise.allSettled. Cada scout tiene TIMEOUT_MS = 5 _ 60 _ 1000. En serie: 5min + 5min = 10min. El context agent tiene MAX_DURATION_MS = 9min. Nunca hay tiempo suficiente para las 4 fases.
+No hay Promise.allSettled. Cada scout tiene TIMEOUT*MS = 5 * 60 \_ 1000. En serie: 5min + 5min = 10min. El context agent tiene MAX_DURATION_MS = 9min. Nunca hay tiempo suficiente para las 4 fases.
 
 La bitácora lo confirma: "Feature se omite por guardia de timeout del Context Agent (snapshot partial)" y "Domain/Feature no llegaron a ejecutarse antes del timeout".
 
@@ -930,6 +930,30 @@ R4 — Auto-compaction (P1 original, sigue siendo útil)
 
 Después de R1, los prompts serán más eficientes pero el problema de crecimiento lineal persiste. Compaction sigue siendo necesaria para agentes con muchos turns.
 
+---
+
+Hallazgos adicionales (para incorporar al plan)
+
+1. Manejo explícito de respuestas mixtas (texto + tool calls)
+   - Incluso con native tool_use, el modelo puede devolver texto y tool calls en el mismo turno.
+   - Debe definirse una política clara: ejecutar tools primero y preservar/descartar el texto parcial, o permitir ambos (y cómo se valida).
+
+2. Control de tamaño de outputs de tools (antes de llegar al prompt)
+   - El problema de crecimiento de contexto no se resuelve solo con native tools.
+   - Falta una capa de truncación/resumen de tool results grandes (list_files, read_file, search_code) antes de reinyectar al loop.
+
+3. Compaction debe preservar estado crítico del loop
+   - El plan/todo_manager y las validaciones no pueden perderse en un resumen.
+   - Definir qué mensajes son “pinned” además del system prompt (plan state, últimos N tool results clave, validaciones recientes).
+
+4. Validación y schemas: manejo de argumentos inválidos
+   - Con tools nativos y schemas, aún pueden llegar args inválidos o incompletos.
+   - Debe existir una respuesta consistente del tool registry (errores de schema → mensaje claro al modelo + no crash del loop).
+
+5. Medición explícita de éxito por fase
+   - Definir métricas mínimas por fase (completion rate, turns promedio, latencia total).
+   - Esto evita “terminamos la fase” sin confirmar que resolvió CR1/CR3/CR4.
+
 Orden revisado
 
 Fase 0 (quick win, hoy)
@@ -937,11 +961,12 @@ R0 Paralelizar Phase 1 ············ ~10 líneas en contextAgent.ts
 
 Fase 1 (cambio estructural)
 R1 Native tool_use API ············ LLMPort + adapters + tool_prompt_model + agent_loop
-R2 Tool input schemas ·············· tool definitions + tool_prompt_model
-R3 Simplificar finalización ········ agent_loop + protocol
+R2 Tool input schemas + validación de args ··········· tool definitions + tool_registry
+R3 Simplificar finalización + manejo de mixed responses ········ agent_loop + protocol
 
 Fase 2 (robustez, los P originales que sí aportan)
-R4 Auto-compaction (=P1) ··········· compaction.ts + agent_loop
+R4 Auto-compaction (=P1) con pinned state ··········· compaction.ts + agent_loop
+R4b Control de tamaño de outputs de tools ··········· tool_registry + tools/\*
 R5 Retry con clasificación (=P2) ·· agent_loop catch block
 R6 GitHub retry (=P7) ·············· github_helpers.ts
 
@@ -983,40 +1008,41 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 
 ### Archivos clave del sistema actual
 
-| Archivo | Rol |
-|---------|-----|
-| `packages/convex/convex/ai/ports/llmPort.ts` | Interfaz LLMPort (solo texto hoy) |
-| `packages/convex/convex/ai/adapters/anthropic.ts` | Adapter Anthropic (usa `ai` SDK `generateText`) |
-| `packages/convex/convex/ai/adapters/openai.ts` | Adapter OpenAI |
-| `packages/convex/convex/agents/core/agent_loop.ts` | Loop agentic principal |
-| `packages/convex/convex/agents/core/tool_prompt_model.ts` | Construye prompt + parsea respuesta |
-| `packages/convex/convex/agents/core/json_utils.ts` | Extracción de JSON de texto |
-| `packages/convex/convex/agents/core/tool_registry.ts` | Ejecución de tools |
-| `packages/convex/convex/agents/core/agent_entrypoints.ts` | Registry de agentes + configs |
-| `packages/convex/convex/agents/core/plan_manager.ts` | Estado del plan |
-| `packages/convex/convex/agents/contextAgent.ts` | Orquestador de fases |
-| `packages/convex/convex/agents/structureScout.ts` | Scout de estructura |
-| `packages/convex/convex/agents/glossaryScout.ts` | Scout de glosario |
-| `packages/convex/convex/agents/domainMap.ts` | Agente domain map |
-| `packages/convex/convex/agents/featureScout.ts` | Scout de features |
+| Archivo                                                   | Rol                                             |
+| --------------------------------------------------------- | ----------------------------------------------- |
+| `packages/convex/convex/ai/ports/llmPort.ts`              | Interfaz LLMPort (solo texto hoy)               |
+| `packages/convex/convex/ai/adapters/anthropic.ts`         | Adapter Anthropic (usa `ai` SDK `generateText`) |
+| `packages/convex/convex/ai/adapters/openai.ts`            | Adapter OpenAI                                  |
+| `packages/convex/convex/agents/core/agent_loop.ts`        | Loop agentic principal                          |
+| `packages/convex/convex/agents/core/tool_prompt_model.ts` | Construye prompt + parsea respuesta             |
+| `packages/convex/convex/agents/core/json_utils.ts`        | Extracción de JSON de texto                     |
+| `packages/convex/convex/agents/core/tool_registry.ts`     | Ejecución de tools                              |
+| `packages/convex/convex/agents/core/agent_entrypoints.ts` | Registry de agentes + configs                   |
+| `packages/convex/convex/agents/core/plan_manager.ts`      | Estado del plan                                 |
+| `packages/convex/convex/agents/contextAgent.ts`           | Orquestador de fases                            |
+| `packages/convex/convex/agents/structureScout.ts`         | Scout de estructura                             |
+| `packages/convex/convex/agents/glossaryScout.ts`          | Scout de glosario                               |
+| `packages/convex/convex/agents/domainMap.ts`              | Agente domain map                               |
+| `packages/convex/convex/agents/featureScout.ts`           | Scout de features                               |
 
 ---
 
 ## Progreso
 
-| Subfase | Descripción | Estado | Causa raíz | Archivos tocados |
-|---------|-------------|--------|------------|------------------|
-| F0.0 | Paralelizar Phase 1 en contextAgent | ⏳ | CR2 | `contextAgent.ts` |
-| F1.0 | Extender LLMPort con soporte native tools | ⏳ | CR1 | `llmPort.ts`, `anthropic.ts`, `openai.ts` |
-| F1.1 | Añadir input schemas a tool definitions | ⏳ | CR1 | `tools/*.ts`, `tool_registry.ts` |
-| F1.2 | Refactorizar tool_prompt_model para native tool_use | ⏳ | CR1 | `tool_prompt_model.ts`, `agent_loop.ts` |
-| F1.3 | Simplificar secuencia de finalización | ⏳ | CR3 | `agent_loop.ts` |
-| F1.4 | Validar todos los scouts con native tool_use | ⏳ | CR1,CR3 | scouts, skills |
-| F2.0 | Auto-compaction de mensajes | ⏳ | CR4 | `compaction.ts` (nuevo), `agent_loop.ts`, `agent_entrypoints.ts` |
-| F2.1 | Clasificación de errores y retry con backoff | ⏳ | — | `agent_loop.ts`, `agent_run_steps.ts` |
-| F2.2 | Retry con backoff para GitHub API | ⏳ | — | `github_helpers.ts` |
-| F3.0 | Tool policies por agente | ⏳ | — | `agent_entrypoints.ts`, `tool_prompt_model.ts`, `tool_registry.ts` |
-| F3.1 | Model fallback | ⏳ | — | `agent_entrypoints.ts`, `agent_loop.ts` |
+| Subfase | Descripción                                                       | Estado | Causa raíz | Archivos tocados                                                   |
+| ------- | ----------------------------------------------------------------- | ------ | ---------- | ------------------------------------------------------------------ |
+| F0.0    | Paralelizar Phase 1 en contextAgent                               | ✅     | CR2        | `contextAgent.ts`                                                  |
+| F1.0    | Extender LLMPort con soporte native tools                         | ⏳     | CR1        | `llmPort.ts`, `anthropic.ts`, `openai.ts`                          |
+| F1.1    | Añadir input schemas + validación de args                         | ⏳     | CR1        | `tools/*.ts`, `tool_registry.ts`                                   |
+| F1.2    | Refactorizar tool_prompt_model para native tool_use               | ⏳     | CR1        | `tool_prompt_model.ts`, `agent_loop.ts`                            |
+| F1.3    | Simplificar secuencia de finalización + manejo de mixed responses | ⏳     | CR3        | `agent_loop.ts`                                                    |
+| F1.4    | Validar todos los scouts con native tool_use                      | ⏳     | CR1,CR3    | scouts, skills                                                     |
+| F2.0    | Auto-compaction de mensajes (pinned state)                        | ⏳     | CR4        | `compaction.ts` (nuevo), `agent_loop.ts`, `agent_entrypoints.ts`   |
+| F2.0b   | Control de tamaño de outputs de tools                             | ⏳     | CR4        | `tool_registry.ts`, `tools/*.ts`                                   |
+| F2.1    | Clasificación de errores y retry con backoff                      | ⏳     | —          | `agent_loop.ts`, `agent_run_steps.ts`                              |
+| F2.2    | Retry con backoff para GitHub API                                 | ⏳     | —          | `github_helpers.ts`                                                |
+| F3.0    | Tool policies por agente                                          | ⏳     | —          | `agent_entrypoints.ts`, `tool_prompt_model.ts`, `tool_registry.ts` |
+| F3.1    | Model fallback                                                    | ⏳     | —          | `agent_entrypoints.ts`, `agent_loop.ts`                            |
 
 **Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
 
@@ -1034,7 +1060,7 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 - No hagas asunciones, comparteme dudas y las debatimos antes de empezar el desarrollo
 - Asegurate de que cumples las reglas del repo (CLAUDE.md)
 - No hagas commit hasta confirmar pruebas OK
-- Una vez validado haz commit y actualiza el progreso en el documento
+- Una vez validado haz commit y actualiza el progreso en el documento (apartado ##Progreso)
 - Tras terminar de desarrollar cada subfase, indicame las pruebas funcionales con las que puedo validar la fase antes del commit
 - Máxima capacidad de ultrathink
 ```
@@ -1047,25 +1073,27 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 - Backend Convex: primera línea de queries/mutations/actions debe llamar a `assertProductAccess` o `assertOrgAccess`
 - No migrar datos existentes; cambios solo para nuevos datos
 - Commits con formato `feat(agents): [F#.#] descripcion`
-- **Backward compatibility**: los scouts/agentes existentes deben seguir compilando tras cada subfase. Los cambios en LLMPort y agent_loop son incrementales (nuevo método, no reemplazo de firma).
+- **Breaking changes permitidos**: no se requiere compatibilidad hacia atrás durante la migración (se prioriza simplicidad y reducción de turnos).
 
 ### Convex: separación de responsabilidades
 
-| Capa | Responsabilidad | Ejemplo |
-|------|-----------------|---------|
-| `action` | Orquesta agente, llama LLM, coordina tools | `generateDomainMap` |
-| `mutation` | Persiste resultados, actualiza estado | `saveDomainMap`, `appendStep` |
-| `query` | Lee datos para tools y UI | `getRunById`, `listSourceContexts` |
+| Capa       | Responsabilidad                            | Ejemplo                            |
+| ---------- | ------------------------------------------ | ---------------------------------- |
+| `action`   | Orquesta agente, llama LLM, coordina tools | `generateDomainMap`                |
+| `mutation` | Persiste resultados, actualiza estado      | `saveDomainMap`, `appendStep`      |
+| `query`    | Lee datos para tools y UI                  | `getRunById`, `listSourceContexts` |
 
 ### Principios a verificar
 
-| Principio | Cómo verificar |
-|-----------|----------------|
-| Los agentes terminan con `status: "completed"` | Ejecutar scout y verificar status en agentRuns |
-| Tiempo total < 3min para snapshot completo | Medir desde UI o logs |
-| Sin turns desperdiciados por formato | Revisar steps: no hay reminders de `toolUseExtraText` |
-| Tools con schemas nativos | Revisar API payload: `tools` parameter presente |
-| Phase 1 paralela | Logs muestran structure y glossary solapados en tiempo |
+| Principio                                      | Cómo verificar                                                                |
+| ---------------------------------------------- | ----------------------------------------------------------------------------- |
+| Los agentes terminan con `status: "completed"` | Ejecutar scout y verificar status en agentRuns                                |
+| Tiempo total < 3min para snapshot completo     | Medir desde UI o logs                                                         |
+| Sin turns desperdiciados por formato           | Revisar steps: no hay reminders de `toolUseExtraText`                         |
+| Tools con schemas nativos                      | Revisar API payload: `tools` parameter presente                               |
+| Phase 1 paralela                               | Logs muestran structure y glossary solapados en tiempo                        |
+| Outputs de tools acotados                      | Verificar truncación/resumen en `tool_registry` antes de reinyectar al prompt |
+| Mixed responses manejadas                      | Validar que texto + tool_calls no rompe el loop ni la validación              |
 
 ---
 
@@ -1078,6 +1106,7 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 **Causa raíz**: CR2
 
 **Archivos**:
+
 - `packages/convex/convex/agents/contextAgent.ts` (modificar)
 
 **Prompt**:
@@ -1106,6 +1135,7 @@ RESTRICCIONES:
 ```
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Structure y glossary se lanzan en paralelo
 - [ ] Si uno falla, el otro sigue ejecutándose
@@ -1113,6 +1143,7 @@ RESTRICCIONES:
 - [ ] Phase 2 recibe outputs de ambos scouts
 
 **Pruebas funcionales**:
+
 1. Ejecutar `generateContextSnapshot` en un producto con repo conectado
 2. Verificar en logs/steps que structure y glossary comienzan al mismo tiempo (no secuencial)
 3. Verificar que Phase 2 (domain map) se ejecuta — antes era imposible por timeout
@@ -1128,6 +1159,7 @@ RESTRICCIONES:
 **Causa raíz**: CR1
 
 **Archivos**:
+
 - `packages/convex/convex/ai/ports/llmPort.ts` (modificar)
 - `packages/convex/convex/ai/adapters/anthropic.ts` (modificar)
 - `packages/convex/convex/ai/adapters/openai.ts` (modificar)
@@ -1188,12 +1220,14 @@ RESTRICCIONES:
 ```
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] `generateText` sigue funcionando igual (sin cambios en callers)
 - [ ] `generateWithTools` existe en ambos adapters
 - [ ] Los tipos nuevos se exportan correctamente
 
 **Pruebas funcionales**:
+
 1. Verificar que `tsc` compila sin errores
 2. Crear un test ad-hoc en Convex dashboard que llame a `generateWithTools` con un tool simple (ej: un tool "echo" que devuelve su input)
 3. Verificar que la respuesta tiene `toolCalls` con el tool call nativo
@@ -1203,14 +1237,15 @@ RESTRICCIONES:
 
 ---
 
-### F1.1: Añadir input schemas a tool definitions
+### F1.1: Añadir input schemas + validación de args
 
-**Objetivo**: Cada tool declara su JSON Schema de input. Esto permite native tool_use y reduce errores de parámetros.
+**Objetivo**: Cada tool declara su JSON Schema de input y el registry valida args. Esto permite native tool_use y reduce errores de parámetros.
 
 **Causa raíz**: CR1
 
 **Archivos**:
-- `packages/convex/convex/agents/core/tool_registry.ts` (modificar ToolDefinition)
+
+- `packages/convex/convex/agents/core/tool_registry.ts` (modificar ToolDefinition + validación)
 - `packages/convex/convex/agents/core/tools/github_list_dirs.ts` (modificar)
 - `packages/convex/convex/agents/core/tools/github_list_files.ts` (modificar)
 - `packages/convex/convex/agents/core/tools/github_read_file.ts` (modificar)
@@ -1222,7 +1257,7 @@ RESTRICCIONES:
 **Prompt**:
 
 ```
-F1.1: Añadir input schemas a tool definitions
+F1.1: Añadir input schemas + validación de args
 
 CONTEXTO:
 - ToolDefinition actual: { name, description?, execute? }
@@ -1231,7 +1266,7 @@ CONTEXTO:
 
 PARTE 1: EXTENDER ToolDefinition
 - Añadir campo parameters: Record<string, unknown> (JSON Schema)
-- El campo es obligatorio para tools nuevos, opcional para backward compat
+- El campo es obligatorio para tools nuevos y para los tools existentes usados por el loop
 - Tipo: JSON Schema estándar (type, properties, required, etc.)
 
 PARTE 2: SCHEMAS POR TOOL
@@ -1250,23 +1285,27 @@ Ejemplo de referencia (no copiar, adaptar a cada tool):
     required: ["path"]
   }
 
-PARTE 3: VALIDACIÓN
-- No añadir runtime validation del schema (el AI SDK lo hará en F1.2)
-- Solo definir los schemas estáticos
+PARTE 3: VALIDACIÓN EN tool_registry
+- Antes de ejecutar un tool, validar args contra su schema
+- Si falla: devolver error estructurado al modelo (no throw)
+- El error debe indicar el campo inválido/ausente para facilitar el retry
 
 RESTRICCIONES:
 - NO cambiar la lógica de execute() de ningún tool
-- NO añadir runtime validation
-- Solo añadir el campo parameters a cada ToolDefinition
+- NO introducir dependencias nuevas
+- Añadir validación dentro del registry sin romper el flujo existente
 ```
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Todos los tools con execute() tienen parameters definidos
 - [ ] Los schemas coinciden con los parámetros reales de execute()
+- [ ] tool_registry rechaza args inválidos con error claro (sin romper el loop)
 - [ ] Agents existentes siguen funcionando (schemas no afectan el prompt-based flow actual)
 
 **Pruebas funcionales**:
+
 1. Verificar que `tsc` compila sin errores
 2. Ejecutar un scout existente (structure_scout) — debe funcionar idéntico (schemas no se usan aún)
 3. Inspeccionar los schemas definidos para cada tool y verificar coherencia con execute()
@@ -1280,6 +1319,7 @@ RESTRICCIONES:
 **Causa raíz**: CR1
 
 **Archivos**:
+
 - `packages/convex/convex/agents/core/tool_prompt_model.ts` (refactorizar)
 - `packages/convex/convex/agents/core/agent_loop.ts` (adaptar)
 
@@ -1341,6 +1381,7 @@ RESTRICCIONES:
 ```
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Agent loop detecta native tools y los usa
 - [ ] Tool calls llegan como nativos (no JSON parseado)
@@ -1348,6 +1389,7 @@ RESTRICCIONES:
 - [ ] El plan (todo_manager) funciona igual
 
 **Pruebas funcionales**:
+
 1. Ejecutar structure_scout con native tool_use
 2. Verificar en agentRuns steps:
    - [ ] Tool calls sin reminders de formato
@@ -1359,19 +1401,20 @@ RESTRICCIONES:
 
 ---
 
-### F1.3: Simplificar secuencia de finalización
+### F1.3: Simplificar secuencia de finalización + manejo de mixed responses
 
-**Objetivo**: Reducir el overhead de finalización de 2-3 turns a 0-1 turn. El modelo termina naturalmente con `stop_reason: "end_turn"`.
+**Objetivo**: Reducir el overhead de finalización de 2-3 turns a 0-1 turn y definir una política clara para respuestas mixtas (texto + tool calls).
 
 **Causa raíz**: CR3
 
 **Archivos**:
+
 - `packages/convex/convex/agents/core/agent_loop.ts` (modificar)
 
 **Prompt**:
 
 ```
-F1.3: Simplificar secuencia de finalización
+F1.3: Simplificar secuencia de finalización + manejo de mixed responses
 
 CONTEXTO:
 - Hoy el agente necesita 2-3 turns para terminar:
@@ -1401,6 +1444,13 @@ CAMBIO 3: LIMPIAR PATHS MUERTOS
   - requireValidateJson gate → inline validation
   - Plan completion gate → soft check
 
+CAMBIO 4: POLÍTICA DE RESPUESTAS MIXTAS
+- Si llegan tool calls + texto en el mismo turno:
+  - Ejecutar tool calls primero
+  - Ignorar el texto parcial en ese turno (no validarlo como output final)
+  - Registrar un step que indique que hubo texto parcial descartado
+- Si stopReason es end_turn y hay texto sin tool calls → tratar como output final normal
+
 RESTRICCIONES:
 - Mantener validate_json como tool disponible (el modelo puede elegir usarlo)
 - Mantener validación de schema del output final
@@ -1409,13 +1459,16 @@ RESTRICCIONES:
 ```
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Un agente puede terminar en el mismo turn que produce su output final
 - [ ] No hay turns perdidos por "plan not completed" cuando el output es válido
 - [ ] Validación de schema sigue funcionando inline
 - [ ] Steps registran si el plan estaba completo o no
+- [ ] Respuestas mixtas no rompen el loop ni se validan como output final
 
 **Pruebas funcionales**:
+
 1. Ejecutar structure_scout y contar turns totales — debe ser ~5-6 (antes ~8)
 2. Verificar que no hay steps con reminders de finalización
 3. Ejecutar glossary_scout — verificar que termina con output válido
@@ -1480,6 +1533,7 @@ AJUSTES:
 ```
 
 **Validación**:
+
 - [ ] Los 4 scouts terminan con `status: "completed"`
 - [ ] Context agent completo termina con `status: "completed"`
 - [ ] Tiempo total < 5 minutos
@@ -1487,6 +1541,7 @@ AJUSTES:
 - [ ] Cada scout produce output que pasa su validator
 
 **Pruebas funcionales**:
+
 1. Ejecutar cada scout individualmente desde Convex dashboard → todos `completed`
 2. Ejecutar `generateContextSnapshot` completo → `completed` (no `partial`)
 3. Verificar tiempos individuales en agentRuns steps
@@ -1495,13 +1550,14 @@ AJUSTES:
 
 ---
 
-### F2.0: Auto-compaction de mensajes
+### F2.0: Auto-compaction de mensajes (pinned state)
 
-**Objetivo**: Cuando el contexto crece demasiado, resumir mensajes viejos automáticamente para extender la capacidad del agente.
+**Objetivo**: Cuando el contexto crece demasiado, resumir mensajes viejos automáticamente preservando estado crítico del loop.
 
 **Causa raíz**: CR4
 
 **Archivos**:
+
 - `packages/convex/convex/agents/core/compaction.ts` (CREAR)
 - `packages/convex/convex/agents/core/agent_loop.ts` (modificar)
 - `packages/convex/convex/agents/core/agent_entrypoints.ts` (modificar)
@@ -1509,7 +1565,7 @@ AJUSTES:
 **Prompt**:
 
 ```
-F2.0: Auto-compaction de mensajes
+F2.0: Auto-compaction de mensajes (pinned state)
 
 CONTEXTO:
 - El prompt crece linealmente con cada turn (mensajes + tool results)
@@ -1519,7 +1575,7 @@ CONTEXTO:
 PARTE 1: MÓDULO compaction.ts
 - Función compactMessages(messages, adapter, options):
   - Recibe el array de messages actual
-  - Preserva: primer mensaje (skill/system), últimos N mensajes (ventana reciente)
+  - Preserva: primer mensaje (skill/system), últimos N mensajes (ventana reciente) y mensajes críticos (plan state + validaciones recientes)
   - Los mensajes intermedios se resumen en 1 mensaje sintético
   - El resumen lo genera una llamada LLM separada (con prompt de compaction)
   - Retorna nuevo array de messages compactado
@@ -1545,29 +1601,86 @@ RESTRICCIONES:
 - NO modificar el flujo happy path (solo actuar cuando se acerca al límite)
 - NO compactar si messages.length <= threshold
 - La llamada LLM de compaction usa el mismo adapter pero con prompt separado
-- Preservar siempre el plan actual (incluirlo en mensajes recientes, no compactarlo)
+- Preservar siempre el plan actual y validaciones recientes (no compactarlas)
 ```
 
 **Referencia Clawdbot**:
+
 - `clawdbot/src/agents/pi-embedded-runner/compact.ts`: `compactEmbeddedPiSessionDirect()`
 - `clawdbot/src/config/config.compaction-settings.test.ts`: configuración
 
 **Referencia learn-claude-code**:
+
 - `learn-claude-code/articles/上下文缓存经济学.md`: anti-patrones de compaction
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Compaction se activa solo cuando se supera el threshold
-- [ ] Messages compactados preservan skill + últimos N mensajes
+- [ ] Messages compactados preservan skill + últimos N mensajes + estado de plan/validaciones
 - [ ] Step "compaction" registrado en agentRuns
 - [ ] Agente continúa trabajando después de compaction
 
 **Pruebas funcionales**:
+
 1. Ejecutar domain_mapper (10 turns) en un repo con muchos archivos
 2. Verificar en steps que aparece un step "compaction" si se excede threshold
 3. Verificar que el agente sigue trabajando correctamente después de la compaction
 4. Verificar que el output final es correcto (la compaction no perdió info crítica)
 5. Forzar compaction bajando el threshold a 4 → verificar que funciona en agentes cortos
+
+---
+
+### F2.0b: Control de tamaño de outputs de tools
+
+**Objetivo**: Acotar el tamaño de los resultados de tools antes de reinyectarlos al prompt para evitar crecimiento explosivo del contexto.
+
+**Causa raíz**: CR4
+
+**Archivos**:
+
+- `packages/convex/convex/agents/core/tool_registry.ts` (modificar)
+- `packages/convex/convex/agents/core/tools/*` (ajustar outputs si aplica)
+
+**Prompt**:
+
+```
+F2.0b: Control de tamaño de outputs de tools
+
+CONTEXTO:
+- Tool results grandes (list_files, search_code, read_file) se acumulan en messages
+- Esto infla el prompt y provoca budget_exceeded aun con compaction
+
+CAMBIO 1: LÍMITE GLOBAL EN tool_registry
+- Definir un máximo de bytes/tokens por tool result (ej: 20k chars)
+- Si excede: truncar y añadir un sufijo claro indicando truncación
+
+CAMBIO 2: LÍMITES POR TOOL
+- Permitir overrides por tool (ej: read_file puede ser mayor que list_files)
+- Evitar truncar metadata crítica (ej: rutas/line numbers en search_code)
+
+CAMBIO 3: METADATA DE TRUNCACIÓN
+- Incluir en el resultado un campo que indique truncación aplicada (ej: truncated: true, originalSize)
+- Registrar un step opcional si hubo truncación fuerte
+
+RESTRICCIONES:
+- No cambiar la semántica principal del resultado (mantener estructura JSON)
+- Evitar truncar JSON de forma inválida
+- Mantener compatibilidad con los validators actuales
+```
+
+**Validación**:
+
+- [ ] `tsc` convex sin errores
+- [ ] Tool results grandes se truncaron antes de reinyectarse al prompt
+- [ ] El resultado sigue siendo JSON válido
+- [ ] Se reporta truncación con metadata clara
+
+**Pruebas funcionales**:
+
+1. Ejecutar search_code en un repo grande → verificar truncación y metadata
+2. Ejecutar read_file en un archivo grande → verificar límite aplicado
+3. Verificar que el agente sigue funcionando con outputs truncados
 
 ---
 
@@ -1578,6 +1691,7 @@ RESTRICCIONES:
 **Causa raíz**: Robustez (P2 original)
 
 **Archivos**:
+
 - `packages/convex/convex/agents/core/agent_loop.ts` (modificar catch block)
 - `packages/convex/convex/agents/core/agent_run_steps.ts` (modificar)
 
@@ -1615,10 +1729,12 @@ RESTRICCIONES:
 ```
 
 **Referencia Clawdbot**:
+
 - `clawdbot/src/agents/pi-embedded-helpers/errors.ts`: `classifyFailoverReason()`
 - `clawdbot/src/agents/failover-error.ts`: `FailoverError`
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Errores retryable se reintentan (hasta 2 veces)
 - [ ] Errores terminal terminan inmediatamente
@@ -1626,6 +1742,7 @@ RESTRICCIONES:
 - [ ] No hay infinite retry loop
 
 **Pruebas funcionales**:
+
 1. Verificar que `tsc` compila sin errores
 2. Simular un rate limit (mock o provocar con calls concurrentes) → verificar retry en steps
 3. Verificar que errores terminales (auth) no se reintentan
@@ -1640,6 +1757,7 @@ RESTRICCIONES:
 **Causa raíz**: Robustez (P7 original)
 
 **Archivos**:
+
 - `packages/convex/convex/agents/core/tools/github_helpers.ts` (modificar)
 
 **Prompt**:
@@ -1667,12 +1785,14 @@ RESTRICCIONES:
 ```
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Llamadas a GitHub API usan fetchWithRetry
 - [ ] Errores 429/5xx se reintentan (hasta 3 veces)
 - [ ] Errores 4xx se propagan inmediatamente
 
 **Pruebas funcionales**:
+
 1. Ejecutar un scout que haga read_file → funciona normalmente
 2. Verificar que el código de retry está en su lugar (code review)
 3. Si es posible, provocar un rate limit con calls concurrentes → verificar retry en logs
@@ -1686,6 +1806,7 @@ RESTRICCIONES:
 **Causa raíz**: Optimización (P5 original)
 
 **Archivos**:
+
 - `packages/convex/convex/agents/core/agent_entrypoints.ts` (modificar)
 - `packages/convex/convex/agents/core/tool_prompt_model.ts` (modificar)
 - `packages/convex/convex/agents/core/tool_registry.ts` (modificar)
@@ -1723,16 +1844,19 @@ RESTRICCIONES:
 ```
 
 **Referencia**:
+
 - `learn-claude-code/v3_subagent.py` → `AGENT_TYPES` (~línea 85), `get_tools_for_agent()` (~línea 240)
 - `clawdbot/src/agents/tool-policy.ts`: `TOOL_GROUPS`, `TOOL_PROFILES`
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Cada agente recibe solo sus tools permitidos
 - [ ] Tool no permitido retorna error (no crash)
 - [ ] todo_manager y validate_json siempre disponibles
 
 **Pruebas funcionales**:
+
 1. Ejecutar structure_scout → verificar que no tiene delegate ni search_code en sus tool calls
 2. Verificar en los inference logs que el payload a Anthropic solo incluye los tools permitidos
 3. Ejecutar un scout completo → funciona correctamente con subset de tools
@@ -1746,6 +1870,7 @@ RESTRICCIONES:
 **Causa raíz**: Robustez (P3 original)
 
 **Archivos**:
+
 - `packages/convex/convex/agents/core/agent_entrypoints.ts` (modificar)
 - `packages/convex/convex/agents/core/agent_loop.ts` (modificar)
 
@@ -1781,11 +1906,13 @@ RESTRICCIONES:
 ```
 
 **Referencia Clawdbot**:
+
 - `clawdbot/src/auto-reply/model.ts`: `extractModelDirective()`
 - `clawdbot/src/agents/auth-profiles/order.ts`: `resolveAuthProfileOrder()`
 - `clawdbot/src/agents/pi-embedded-runner/run.ts`: outer loop de failover
 
 **Validación**:
+
 - [ ] `tsc` convex sin errores
 - [ ] Si modelo principal falla → intenta fallback
 - [ ] Step "fallback" registrado con metadata
@@ -1793,6 +1920,7 @@ RESTRICCIONES:
 - [ ] Mensajes y plan se preservan al cambiar de modelo
 
 **Pruebas funcionales**:
+
 1. Configurar un agente con un modelo inexistente como principal y claude-sonnet como fallback
 2. Ejecutar → verificar que falla con principal, hace fallback, y completa con sonnet
 3. Verificar steps: retry (del principal) → fallback → tool calls (con sonnet) → completed
@@ -1805,22 +1933,26 @@ RESTRICCIONES:
 Tras completar todas las fases, verificar:
 
 ### Fiabilidad
+
 - [ ] Los 4 scouts terminan con `completed` en 3 de 3 ejecuciones
 - [ ] Context agent completo termina en < 5 minutos
 - [ ] No hay turns desperdiciados en reminders de formato
 
 ### Rendimiento
+
 - [ ] Phase 1 es paralela (structure + glossary simultáneos)
 - [ ] Turns promedio por scout: 4-6 (no 8-10)
 - [ ] Compaction se activa solo cuando es necesario
 
 ### Robustez
+
 - [ ] Rate limit en Anthropic → retry automático
 - [ ] Rate limit en GitHub → retry automático
 - [ ] Modelo principal caído → fallback funciona
 - [ ] Context overflow → compaction + continúa
 
 ### Observabilidad
+
 - [ ] Todos los events (retry, compaction, fallback) tienen steps en agentRuns
 - [ ] Tool calls registrados con input/output
 - [ ] Plan visible y actualizado en cada turn

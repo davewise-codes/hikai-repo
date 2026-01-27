@@ -153,18 +153,30 @@ export const generateContextSnapshot = action({
 			errorMessage?: string;
 			glossary?: Record<string, unknown> | null;
 		} | null = null;
-		try {
-			structureResult = await ctx.runAction(
-				api.agents.structureScout.generateStructureScout,
-				{
-					productId,
-					snapshotId,
-					parentRunId: runId,
-					triggerReason: normalizedTrigger,
+		const phase1Results = await Promise.allSettled([
+			ctx.runAction(api.agents.structureScout.generateStructureScout, {
+				productId,
+				snapshotId,
+				parentRunId: runId,
+				triggerReason: normalizedTrigger,
+			}),
+			ctx.runAction(api.agents.glossaryScout.generateGlossaryScout, {
+				productId,
+				snapshotId,
+				parentRunId: runId,
+				inputs: {
+					repoStructure: null,
 				},
-			);
+				triggerReason: normalizedTrigger,
+			}),
+		]);
+
+		const structureSettled = phase1Results[0];
+		if (structureSettled.status === "fulfilled") {
+			structureResult = structureSettled.value as typeof structureResult;
 			updateMetrics(structureResult as { metrics?: unknown });
-		} catch (error) {
+		} else {
+			const error = structureSettled.reason;
 			errors.push({
 				phase: "structure",
 				error: error instanceof Error ? error.message : "Structure scout failed",
@@ -172,25 +184,20 @@ export const generateContextSnapshot = action({
 			});
 		}
 
-		const repoStructure = structureResult?.structureScout ?? null;
-		try {
-			glossaryResult = await ctx.runAction(api.agents.glossaryScout.generateGlossaryScout, {
-				productId,
-				snapshotId,
-				parentRunId: runId,
-				inputs: {
-					repoStructure,
-				},
-				triggerReason: normalizedTrigger,
-			});
+		const glossarySettled = phase1Results[1];
+		if (glossarySettled.status === "fulfilled") {
+			glossaryResult = glossarySettled.value as typeof glossaryResult;
 			updateMetrics(glossaryResult as { metrics?: unknown });
-		} catch (error) {
+		} else {
+			const error = glossarySettled.reason;
 			errors.push({
 				phase: "glossary",
 				error: error instanceof Error ? error.message : "Glossary scout failed",
 				timestamp: Date.now(),
 			});
 		}
+
+		const repoStructure = structureResult?.structureScout ?? null;
 
 		agentRuns = {
 			...agentRuns,
