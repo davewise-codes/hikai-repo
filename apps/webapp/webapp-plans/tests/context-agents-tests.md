@@ -13,3 +13,4 @@
 - 2026-01-27: Persistía loop en `todo_manager` con plan completado → el loop ahora fuerza `validate_json`/final si plan está completo y se vuelve a llamar `todo_manager`.
 - 2026-01-27: Glossary seguía quedándose en `todo_manager` (plan completado) → se subió `MAX_TURNS` y se añadió recuperación de `final` embebido en rawText (tool_use + final concatenado) para no perder output.
 - 2026-01-27: Run estable: Structure + Glossary + Domain Map completan; Feature se omite por guardia de timeout del Context Agent (snapshot partial).
+- 2026-01-27: Run quedó “in_progress” con Structure+Glossary completadas (snapshot incluye outputs). Domain/Feature no llegaron a ejecutarse antes del timeout del Context Agent. Se registró snapshot con repoStructure + glossary y status in_progress.

@@ -37,6 +37,11 @@ export const generateGlossaryScout = action({
 		productId: v.id("products"),
 		snapshotId: v.optional(v.id("productContextSnapshots")),
 		parentRunId: v.optional(v.id("agentRuns")),
+		inputs: v.optional(
+			v.object({
+				repoStructure: v.optional(v.any()),
+			}),
+		),
 		triggerReason: v.optional(
 			v.union(
 				v.literal("initial_setup"),
@@ -47,7 +52,13 @@ export const generateGlossaryScout = action({
 	},
 	handler: async (
 		ctx,
-		{ productId, snapshotId: requestedSnapshotId, parentRunId, triggerReason },
+		{
+			productId,
+			snapshotId: requestedSnapshotId,
+			parentRunId,
+			inputs,
+			triggerReason,
+		},
 	): Promise<{
 		runId: Id<"agentRuns">;
 		status: AgentLoopStatus;
@@ -145,6 +156,7 @@ export const generateGlossaryScout = action({
 			productId,
 			baseline: product.baseline ?? {},
 			repos: githubConnection.repos.map((repo) => repo.fullName),
+			repoStructure: inputs?.repoStructure ?? null,
 		});
 		const messages: AgentMessage[] = [
 			injectSkill(skill),
@@ -358,12 +370,14 @@ function buildGlossaryPrompt({
 	productId,
 	baseline,
 	repos,
+	repoStructure,
 }: {
 	productId: Id<"products">;
 	baseline: Record<string, unknown>;
 	repos: string[];
+	repoStructure: Record<string, unknown> | null;
 }): string {
-	const payload = JSON.stringify({ baseline, repos }, null, 2);
+	const payload = JSON.stringify({ baseline, repos, repoStructure }, null, 2);
 	return [
 		"Extract a glossary of product terms with evidence from this codebase.",
 		"",

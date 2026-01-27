@@ -14,6 +14,14 @@ type SnapshotError = {
 	timestamp: number;
 };
 
+type GenerationMetrics = {
+	totalLatencyMs: number;
+	totalTokens: number;
+	tokensIn: number;
+	tokensOut: number;
+	totalTurns: number;
+};
+
 export const generateContextSnapshot = action({
 	args: {
 		productId: v.id("products"),
@@ -101,6 +109,29 @@ export const generateContextSnapshot = action({
 		const startedAt = Date.now();
 		const MAX_DURATION_MS = 9 * 60 * 1000;
 		const timeRemainingMs = () => MAX_DURATION_MS - (Date.now() - startedAt);
+		const metrics: GenerationMetrics = {
+			totalLatencyMs: 0,
+			totalTokens: 0,
+			tokensIn: 0,
+			tokensOut: 0,
+			totalTurns: 0,
+		};
+		const updateMetrics = (result?: {
+			metrics?: {
+				turns: number;
+				tokensIn: number;
+				tokensOut: number;
+				totalTokens: number;
+				latencyMs: number;
+			};
+		} | null) => {
+			if (!result?.metrics) return;
+			metrics.totalLatencyMs += result.metrics.latencyMs ?? 0;
+			metrics.totalTokens += result.metrics.totalTokens ?? 0;
+			metrics.tokensIn += result.metrics.tokensIn ?? 0;
+			metrics.tokensOut += result.metrics.tokensOut ?? 0;
+			metrics.totalTurns += result.metrics.turns ?? 0;
+		};
 		let agentRuns: {
 			contextAgent?: Id<"agentRuns">;
 			structureScout?: Id<"agentRuns">;
@@ -122,44 +153,41 @@ export const generateContextSnapshot = action({
 			errorMessage?: string;
 			glossary?: Record<string, unknown> | null;
 		} | null = null;
-
-		const phase1Results = await Promise.allSettled([
-			ctx.runAction(api.agents.structureScout.generateStructureScout, {
-				productId,
-				snapshotId,
-				parentRunId: runId,
-				triggerReason: normalizedTrigger,
-			}),
-			ctx.runAction(api.agents.glossaryScout.generateGlossaryScout, {
-				productId,
-				snapshotId,
-				parentRunId: runId,
-				triggerReason: normalizedTrigger,
-			}),
-		]);
-
-		const [structureSettled, glossarySettled] = phase1Results;
-		if (structureSettled.status === "fulfilled") {
-			structureResult = structureSettled.value;
-		} else {
+		try {
+			structureResult = await ctx.runAction(
+				api.agents.structureScout.generateStructureScout,
+				{
+					productId,
+					snapshotId,
+					parentRunId: runId,
+					triggerReason: normalizedTrigger,
+				},
+			);
+			updateMetrics(structureResult as { metrics?: unknown });
+		} catch (error) {
 			errors.push({
 				phase: "structure",
-				error:
-					structureSettled.reason instanceof Error
-						? structureSettled.reason.message
-						: "Structure scout failed",
+				error: error instanceof Error ? error.message : "Structure scout failed",
 				timestamp: Date.now(),
 			});
 		}
-		if (glossarySettled.status === "fulfilled") {
-			glossaryResult = glossarySettled.value;
-		} else {
+
+		const repoStructure = structureResult?.structureScout ?? null;
+		try {
+			glossaryResult = await ctx.runAction(api.agents.glossaryScout.generateGlossaryScout, {
+				productId,
+				snapshotId,
+				parentRunId: runId,
+				inputs: {
+					repoStructure,
+				},
+				triggerReason: normalizedTrigger,
+			});
+			updateMetrics(glossaryResult as { metrics?: unknown });
+		} catch (error) {
 			errors.push({
 				phase: "glossary",
-				error:
-					glossarySettled.reason instanceof Error
-						? glossarySettled.reason.message
-						: "Glossary scout failed",
+				error: error instanceof Error ? error.message : "Glossary scout failed",
 				timestamp: Date.now(),
 			});
 		}
@@ -198,7 +226,6 @@ export const generateContextSnapshot = action({
 			});
 		}
 
-		const repoStructure = structureResult?.structureScout ?? null;
 		const glossary = glossaryResult?.glossary ?? null;
 		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
 			snapshotId,
@@ -229,6 +256,7 @@ export const generateContextSnapshot = action({
 				},
 				triggerReason: normalizedTrigger,
 			});
+			updateMetrics(domainResult as { metrics?: unknown });
 		} catch (error) {
 			errors.push({
 				phase: "domains",
@@ -290,6 +318,7 @@ export const generateContextSnapshot = action({
 					},
 					triggerReason: normalizedTrigger,
 				});
+				updateMetrics(featureResult as { metrics?: unknown });
 			} catch (error) {
 				errors.push({
 					phase: "features",
@@ -348,6 +377,10 @@ export const generateContextSnapshot = action({
 			completedPhases,
 			errors,
 			agentRuns,
+			generationMetrics: {
+				...metrics,
+				totalLatencyMs: Date.now() - startedAt,
+			},
 		});
 
 		if (status !== "failed") {

@@ -217,6 +217,15 @@ const schema = defineSchema({
 		glossary: v.optional(v.any()),
 		domainMap: v.optional(v.any()),
 		features: v.optional(v.any()),
+		generationMetrics: v.optional(
+			v.object({
+				totalLatencyMs: v.optional(v.number()),
+				totalTokens: v.optional(v.number()),
+				tokensIn: v.optional(v.number()),
+				tokensOut: v.optional(v.number()),
+				totalTurns: v.optional(v.number()),
+			}),
+		),
 		agentRuns: v.optional(
 			v.object({
 				contextAgent: v.optional(v.id("agentRuns")),

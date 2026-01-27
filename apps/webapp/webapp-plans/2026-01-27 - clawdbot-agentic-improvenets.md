@@ -682,7 +682,7 @@ Patrón Clawdbot: Sistema multicapa de policies.
 ┌────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Archivo │ Qué mirar │
 ├────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ clawdbot/src/agents/tool-policy.ts │ TOOL_GROUPS (agrupaciones semánticas de tools), TOOL_PROFILES (conjuntos predefinidos), expandToolGroups() — cómo se resuelven aliases como "file_tools" → ["read", "write", "edit"] │
+│ clawdbot/src/agents/tool-policy.ts │ TOOL*GROUPS (agrupaciones semánticas de tools), TOOL_PROFILES (conjuntos predefinidos), expandToolGroups() — cómo se resuelven aliases como "file_tools" → ["read", "write", "edit"] │
 ├────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ clawdbot/src/agents/pi-tools.policy.ts │ Enforcement: cómo se aplican las policies en la creación de tools. Capas: global → agent → model → profile → group → sandbox. Cada capa puede override │
 ├────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
@@ -692,9 +692,9 @@ Patrón learn-claude-code: Filtering por tipo de agente (más simple).
 ┌───────────────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Archivo │ Qué mirar │
 ├───────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ learn-claude-code/v3_subagent.py → AGENT_TYPES (~línea 85) │ Definición directa: "explore": ["bash", "read_file"], "code": "_", "plan": ["bash", "read_file"]. Simple, declarativo, por tipo │
+│ learn-claude-code/v3_subagent.py → AGENT_TYPES (~línea 85) │ Definición directa: "explore": ["bash", "read_file"], "code": "*", "plan": ["bash", "read_file"]. Simple, declarativo, por tipo │
 ├───────────────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ learn-claude-code/v3_subagent.py → get_tools_for_agent() (~línea 240) │ Resolución: "_" → all tools, lista explícita → filtrar BASE_TOOLS por nombre. 8 líneas. Este patrón simple es suficiente para nuestro caso │
+│ learn-claude-code/v3*subagent.py → get_tools_for_agent() (~línea 240) │ Resolución: "*" → all tools, lista explícita → filtrar BASE_TOOLS por nombre. 8 líneas. Este patrón simple es suficiente para nuestro caso │
 └───────────────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ---
@@ -791,3 +791,1038 @@ learn-claude-code/
 └── docs/
 ├── v3-subagent-mechanism.md ······ P5 (tool isolation rationale)
 └── v4-skills-mechanism.md ········ P4 (lazy loading rationale)
+
+---
+
+Diagnóstico: por qué los agentes no terminan, tardan mucho, y provocan timeouts
+
+Causa raíz 1 — Protocolo de tools basado en texto, no en API nativa
+
+tool_prompt_model.ts construye un prompt de texto plano con todo embedido:
+
+Protocol (instrucciones JSON) + Tool catalog (JSON as text) + Conversation (USER/ASSISTANT as text)
+
+Esto se envía a adapter.generateText({ prompt }) — una llamada de texto simple. El adapter (Anthropic/OpenAI) no recibe parámetro tools. El LLMPort ni siquiera lo acepta en su interfaz.
+
+Consecuencias directas:
+
+- El modelo tiene que generar {"type":"tool_use","toolCalls":[...]} como texto raw → frecuentemente mete texto extra antes/después → trigger de toolUseExtraTextReminder → turn desperdiciado
+- El modelo a veces concatena tool_use + final output en la misma respuesta → trigger de extractFinalFromRawText recovery → a veces funciona, a veces no
+- No hay prompt caching: cada turn re-envía protocol + tool catalog + toda la conversación como texto. En el turn 8, el prompt ya incluye 7 turnos anteriores serializados
+- No hay schemas de input para tools (solo {name, description}) → el modelo inventa parámetros incorrectos (status: "not_started" en vez de "pending", campos task/notes que no existen)
+
+Cuántos turns se desperdician: Contando los paths en agent_loop.ts que consumen un turn sin progreso real:
+┌───────────────┬──────────────────────────────────────────────────┬────────────────────────┐
+│ Path │ Trigger │ Qué pasa │
+├───────────────┼──────────────────────────────────────────────────┼────────────────────────┤
+│ Línea 274-280 │ looksLikeToolUse pero no parsed │ Reminder, turn perdido │
+├───────────────┼──────────────────────────────────────────────────┼────────────────────────┤
+│ Línea 281-291 │ requireValidateJson && !hasValidatedJson │ Reminder, turn perdido │
+├───────────────┼──────────────────────────────────────────────────┼────────────────────────┤
+│ Línea 292-300 │ Respuesta vacía │ Reminder, turn perdido │
+├───────────────┼──────────────────────────────────────────────────┼────────────────────────┤
+│ Línea 324-336 │ Validación falla │ Feedback, turn perdido │
+├───────────────┼──────────────────────────────────────────────────┼────────────────────────┤
+│ Línea 369-389 │ Plan completado + llama todo_manager otra vez │ Reminder, turn perdido │
+├───────────────┼──────────────────────────────────────────────────┼────────────────────────┤
+│ Línea 390-400 │ Plan completado + tools que no son validate_json │ Reminder, turn perdido │
+├───────────────┼──────────────────────────────────────────────────┼────────────────────────┤
+│ Línea 402-407 │ Extra text con tool calls │ Reminder, turn perdido │
+└───────────────┴──────────────────────────────────────────────────┴────────────────────────┘
+En un agente con maxTurns: 8, perder 2-3 turns en reminders significa que solo quedan 5-6 turns para trabajo real. La bitácora confirma esto: "Scouts devolvían final sin validate_json y fallaban", "Persistía loop en todo_manager con plan completado".
+
+Causa raíz 2 — Phase 1 es secuencial, no paralela
+
+En contextAgent.ts, structure y glossary se ejecutan en serie:
+
+línea 157: structureResult = await ctx.runAction(structureScout...) // bloquea
+línea 177: glossaryResult = await ctx.runAction(glossaryScout...) // espera a que termine structure
+
+No hay Promise.allSettled. Cada scout tiene TIMEOUT_MS = 5 _ 60 _ 1000. En serie: 5min + 5min = 10min. El context agent tiene MAX_DURATION_MS = 9min. Nunca hay tiempo suficiente para las 4 fases.
+
+La bitácora lo confirma: "Feature se omite por guardia de timeout del Context Agent (snapshot partial)" y "Domain/Feature no llegaron a ejecutarse antes del timeout".
+
+Causa raíz 3 — Secuencia de finalización excesiva
+
+Para que un agente termine con éxito necesita:
+
+1. Llamar todo_manager marcando todo como completed → 1 turn
+2. Llamar validate_json con el output final → 1 turn
+3. Retornar {"type":"final","output":{...}} → 1 turn (aunque autoFinalizeOnValidateJson lo reduce a 0)
+
+Con autoFinalizeOnValidateJson: true, son 2 turns mínimos. Pero el modelo frecuentemente intercala otros calls entre estos pasos, o mete texto extra, lo que consume turns adicionales.
+
+Con maxTurns: 8 para structure_scout, la secuencia real observada es:
+Turn 1: todo_manager (plan)
+Turn 2: list_dirs
+Turn 3: list_files / read_file
+Turn 4: read_file
+Turn 5: todo_manager (update)
+Turn 6: read_file + texto extra → reminder (turn perdido)
+Turn 7: todo_manager (complete)
+Turn 8: validate_json → auto-finalize ← si llega aquí, ok
+
+Margen cero. Si hay un solo tropiezo, el agente no termina.
+
+Causa raíz 4 — Prompt crece sin límite
+
+tool_prompt_model.ts → buildPrompt() serializa TODOS los mensajes como texto plano cada turn:
+
+const conversation = messages
+.map((message) => `${message.role.toUpperCase()}: ${message.content}`)
+.join("\n\n");
+
+Cada tool result (que puede ser un JSON grande: directorio completo, contenido de archivo) se acumula. En el turn 8, el prompt incluye las 7 respuestas anteriores + 7 tool results. Sin compaction ni truncation.
+
+---
+
+Impacto en la propuesta P1-P8
+┌─────────────────────────┬─────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────┐
+│ Propuesta │ ¿Aborda causa raíz? │ Impacto real │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P1 Auto-compaction │ CR4 parcialmente │ Medio — reduce budget_exceeded pero no la causa de turns perdidos │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P2 Retry errores │ Ninguna directa │ Bajo — los errores de model.generate() son raros; el problema son los turns desperdiados │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P3 Model fallback │ Ninguna directa │ Bajo — misma razón │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P4 Lazy skills │ CR4 marginalmente │ Bajo — los skills son ~50 líneas, el problema es la conversación │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P5 Tool policies │ CR1 parcialmente │ Bajo — evita calls incorrectos pero no el formato │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P6 Thinking degradation │ Ninguna │ Nulo — thinking no está habilitado │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P7 GitHub retry │ Ninguna │ Bajo — errores GitHub son infrecuentes │
+├─────────────────────────┼─────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────┤
+│ P8 Snapshots históricos │ Ninguna │ Bajo — mejora calidad, no velocidad/completación │
+└─────────────────────────┴─────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────┘
+Ningún P1-P8 aborda las causas raíz principales. Son mejoras de robustez útiles pero secundarias.
+
+---
+
+Propuesta revisada: prioridades reales
+
+R0 — Paralelizar Phase 1 (impacto inmediato, cambio mínimo)
+
+contextAgent.ts: cambiar los dos await secuenciales por Promise.allSettled([structure, glossary]). Un cambio de ~10 líneas que corta el tiempo de Phase 1 a la mitad.
+
+R1 — Migrar a native tool_use API (impacto máximo, cambio estructural)
+
+Refactorizar LLMPort para aceptar tools como parámetro nativo. El adapter Anthropic los pasa como tools en la API. El modelo responde con stop_reason: "tool_use" y content[].type: "tool_use" nativos — sin parsing de JSON, sin extra text, sin reminders.
+
+Esto elimina de golpe:
+
+- Todos los "wasted turn" paths por formato
+- La necesidad de {"type":"tool_use"} / {"type":"final"} protocol
+- El extractJsonPayload y todos los fallbacks
+- La mayoría de reminders
+
+R2 — Añadir input schemas a tools (complementa R1)
+
+Cada tool debería declarar su schema de input (JSON Schema). Con native tool_use, Anthropic valida inputs automáticamente. Sin native, al menos el modelo ve qué parámetros espera cada tool.
+
+R3 — Simplificar secuencia de finalización (complementa R1)
+
+Con native tool_use, el modelo termina con stop_reason: "end_turn" naturalmente. Sin el protocolo JSON, no necesita el wrapper {"type":"final","output":{...}}. El validate_json tool puede seguir existiendo pero como validación inline, no como gate obligatorio de 1
+turn extra.
+
+R4 — Auto-compaction (P1 original, sigue siendo útil)
+
+Después de R1, los prompts serán más eficientes pero el problema de crecimiento lineal persiste. Compaction sigue siendo necesaria para agentes con muchos turns.
+
+Orden revisado
+
+Fase 0 (quick win, hoy)
+R0 Paralelizar Phase 1 ············ ~10 líneas en contextAgent.ts
+
+Fase 1 (cambio estructural)
+R1 Native tool_use API ············ LLMPort + adapters + tool_prompt_model + agent_loop
+R2 Tool input schemas ·············· tool definitions + tool_prompt_model
+R3 Simplificar finalización ········ agent_loop + protocol
+
+Fase 2 (robustez, los P originales que sí aportan)
+R4 Auto-compaction (=P1) ··········· compaction.ts + agent_loop
+R5 Retry con clasificación (=P2) ·· agent_loop catch block
+R6 GitHub retry (=P7) ·············· github_helpers.ts
+
+Fase 3 (optimización)
+R7 Tool policies (=P5) ············· entrypoints + tool_registry
+R8 Model fallback (=P3) ··········· entrypoints + agent_loop
+
+---
+
+# Plan de Implementación — Agentic Improvements
+
+Mejoras al sistema agentic de Hikai basadas en el análisis comparativo con Clawdbot y el diagnóstico de causas raíz.
+
+## Contexto
+
+Los agentes actuales tienen tres problemas observados en testing:
+
+1. **No terminan**: Incierto que devuelvan el output esperado
+2. **Tardan mucho**: Individualmente y en conjunto
+3. **Provocan timeouts**: Por budget y por desconexión de Convex
+
+Las causas raíz identificadas (ver diagnóstico arriba) son:
+
+- **CR1**: Protocolo de tools basado en texto (no native API tool_use)
+- **CR2**: Phase 1 (structure + glossary) se ejecuta en serie, no en paralelo
+- **CR3**: Secuencia de finalización excesiva (2-3 turns solo para terminar)
+- **CR4**: Prompt crece sin límite (sin compaction)
+
+Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras de robustez.
+
+## Referencias
+
+- Diagnóstico completo: secciones anteriores de este documento
+- Plan anterior de refactor: `apps/webapp/webapp-plans/2026-01-14 - refactor-agents-2 implementation-plan.md`
+- Bitácora de tests: `apps/webapp/webapp-plans/tests/context-agents-tests.md`
+- Repos de referencia:
+  - https://github.com/shareAI-lab/learn-claude-code (v0-v4, principios agentic)
+  - https://github.com/clawdbot/clawdbot (patrones de resiliencia)
+
+### Archivos clave del sistema actual
+
+| Archivo | Rol |
+|---------|-----|
+| `packages/convex/convex/ai/ports/llmPort.ts` | Interfaz LLMPort (solo texto hoy) |
+| `packages/convex/convex/ai/adapters/anthropic.ts` | Adapter Anthropic (usa `ai` SDK `generateText`) |
+| `packages/convex/convex/ai/adapters/openai.ts` | Adapter OpenAI |
+| `packages/convex/convex/agents/core/agent_loop.ts` | Loop agentic principal |
+| `packages/convex/convex/agents/core/tool_prompt_model.ts` | Construye prompt + parsea respuesta |
+| `packages/convex/convex/agents/core/json_utils.ts` | Extracción de JSON de texto |
+| `packages/convex/convex/agents/core/tool_registry.ts` | Ejecución de tools |
+| `packages/convex/convex/agents/core/agent_entrypoints.ts` | Registry de agentes + configs |
+| `packages/convex/convex/agents/core/plan_manager.ts` | Estado del plan |
+| `packages/convex/convex/agents/contextAgent.ts` | Orquestador de fases |
+| `packages/convex/convex/agents/structureScout.ts` | Scout de estructura |
+| `packages/convex/convex/agents/glossaryScout.ts` | Scout de glosario |
+| `packages/convex/convex/agents/domainMap.ts` | Agente domain map |
+| `packages/convex/convex/agents/featureScout.ts` | Scout de features |
+
+---
+
+## Progreso
+
+| Subfase | Descripción | Estado | Causa raíz | Archivos tocados |
+|---------|-------------|--------|------------|------------------|
+| F0.0 | Paralelizar Phase 1 en contextAgent | ⏳ | CR2 | `contextAgent.ts` |
+| F1.0 | Extender LLMPort con soporte native tools | ⏳ | CR1 | `llmPort.ts`, `anthropic.ts`, `openai.ts` |
+| F1.1 | Añadir input schemas a tool definitions | ⏳ | CR1 | `tools/*.ts`, `tool_registry.ts` |
+| F1.2 | Refactorizar tool_prompt_model para native tool_use | ⏳ | CR1 | `tool_prompt_model.ts`, `agent_loop.ts` |
+| F1.3 | Simplificar secuencia de finalización | ⏳ | CR3 | `agent_loop.ts` |
+| F1.4 | Validar todos los scouts con native tool_use | ⏳ | CR1,CR3 | scouts, skills |
+| F2.0 | Auto-compaction de mensajes | ⏳ | CR4 | `compaction.ts` (nuevo), `agent_loop.ts`, `agent_entrypoints.ts` |
+| F2.1 | Clasificación de errores y retry con backoff | ⏳ | — | `agent_loop.ts`, `agent_run_steps.ts` |
+| F2.2 | Retry con backoff para GitHub API | ⏳ | — | `github_helpers.ts` |
+| F3.0 | Tool policies por agente | ⏳ | — | `agent_entrypoints.ts`, `tool_prompt_model.ts`, `tool_registry.ts` |
+| F3.1 | Model fallback | ⏳ | — | `agent_entrypoints.ts`, `agent_loop.ts` |
+
+**Leyenda**: ⏳ Pendiente | 🔄 En progreso | ✅ Completado
+
+---
+
+## Prompt para arrancar subfases
+
+```
+- En apps/webapp/webapp-plans/2026-01-27 - clawdbot-agentic-improvenets.md está el plan de implementación (sección "Plan de Implementación — Agentic Improvements")
+- Lee el diagnóstico de causas raíz en ese mismo documento (secciones "Diagnóstico" y "Propuesta revisada") para entender el contexto completo
+- Lee la bitácora de tests en apps/webapp/webapp-plans/tests/context-agents-tests.md para entender los problemas observados
+- Vamos a proceder con la siguiente subfase pendiente
+- Usa el prompt de esa subfase como instrucción completa
+- Comparte el plan de implementación antes de ejecutar cambios
+- No hagas asunciones, comparteme dudas y las debatimos antes de empezar el desarrollo
+- Asegurate de que cumples las reglas del repo (CLAUDE.md)
+- No hagas commit hasta confirmar pruebas OK
+- Una vez validado haz commit y actualiza el progreso en el documento
+- Tras terminar de desarrollar cada subfase, indicame las pruebas funcionales con las que puedo validar la fase antes del commit
+- Máxima capacidad de ultrathink
+```
+
+---
+
+## Instrucciones generales
+
+- Seguir `CLAUDE.md` y la regla apps → packages
+- Backend Convex: primera línea de queries/mutations/actions debe llamar a `assertProductAccess` o `assertOrgAccess`
+- No migrar datos existentes; cambios solo para nuevos datos
+- Commits con formato `feat(agents): [F#.#] descripcion`
+- **Backward compatibility**: los scouts/agentes existentes deben seguir compilando tras cada subfase. Los cambios en LLMPort y agent_loop son incrementales (nuevo método, no reemplazo de firma).
+
+### Convex: separación de responsabilidades
+
+| Capa | Responsabilidad | Ejemplo |
+|------|-----------------|---------|
+| `action` | Orquesta agente, llama LLM, coordina tools | `generateDomainMap` |
+| `mutation` | Persiste resultados, actualiza estado | `saveDomainMap`, `appendStep` |
+| `query` | Lee datos para tools y UI | `getRunById`, `listSourceContexts` |
+
+### Principios a verificar
+
+| Principio | Cómo verificar |
+|-----------|----------------|
+| Los agentes terminan con `status: "completed"` | Ejecutar scout y verificar status en agentRuns |
+| Tiempo total < 3min para snapshot completo | Medir desde UI o logs |
+| Sin turns desperdiciados por formato | Revisar steps: no hay reminders de `toolUseExtraText` |
+| Tools con schemas nativos | Revisar API payload: `tools` parameter presente |
+| Phase 1 paralela | Logs muestran structure y glossary solapados en tiempo |
+
+---
+
+## Subfases
+
+### F0.0: Paralelizar Phase 1 en contextAgent
+
+**Objetivo**: Structure scout y glossary scout se ejecutan en paralelo. Corta el tiempo de Phase 1 a la mitad.
+
+**Causa raíz**: CR2
+
+**Archivos**:
+- `packages/convex/convex/agents/contextAgent.ts` (modificar)
+
+**Prompt**:
+
+```
+F0.0: Paralelizar Phase 1 en contextAgent
+
+CONTEXTO:
+- En contextAgent.ts, structure scout y glossary scout se ejecutan secuencialmente
+  con dos `await` separados (líneas ~157 y ~177)
+- Cada scout tiene TIMEOUT_MS hasta 5 minutos
+- En serie suman hasta 10min, pero el context agent tiene MAX_DURATION_MS de 9min
+- Esto causa que Phase 2 y Phase 3 rara vez se ejecuten
+
+CAMBIO:
+- Reemplazar los dos await secuenciales por Promise.allSettled([...])
+- Cada resultado se procesa individualmente (fulfilled vs rejected)
+- El manejo de errores por fase se mantiene igual (try/catch → errors array)
+- Los updates de snapshot entre fases se mantienen igual
+
+RESTRICCIONES:
+- NO cambiar la lógica interna de los scouts
+- NO cambiar timeouts ni budgets
+- NO tocar Phase 2 ni Phase 3
+- Mantener el tracking de completedPhases y errors
+```
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Structure y glossary se lanzan en paralelo
+- [ ] Si uno falla, el otro sigue ejecutándose
+- [ ] Snapshot se actualiza correctamente con resultados de ambos
+- [ ] Phase 2 recibe outputs de ambos scouts
+
+**Pruebas funcionales**:
+1. Ejecutar `generateContextSnapshot` en un producto con repo conectado
+2. Verificar en logs/steps que structure y glossary comienzan al mismo tiempo (no secuencial)
+3. Verificar que Phase 2 (domain map) se ejecuta — antes era imposible por timeout
+4. Verificar que si un scout falla, el snapshot es `partial` pero el otro scout sí contribuye su output
+5. Medir tiempo total de Phase 1: debe ser ~max(structure, glossary), no sum(structure, glossary)
+
+---
+
+### F1.0: Extender LLMPort con soporte native tools
+
+**Objetivo**: El adapter LLM puede recibir definiciones de tools y devolver tool calls nativos. Backward compatible: `generateText` sigue existiendo.
+
+**Causa raíz**: CR1
+
+**Archivos**:
+- `packages/convex/convex/ai/ports/llmPort.ts` (modificar)
+- `packages/convex/convex/ai/adapters/anthropic.ts` (modificar)
+- `packages/convex/convex/ai/adapters/openai.ts` (modificar)
+- `packages/convex/convex/ai/adapters/index.ts` (modificar si necesario)
+
+**Prompt**:
+
+```
+F1.0: Extender LLMPort con soporte native tools
+
+CONTEXTO:
+- LLMPort actual solo tiene generateText(prompt) — texto plano
+- Los adapters usan el Vercel AI SDK (`ai` package) con `generateText` de `ai`
+- El AI SDK ya soporta native tool calling via su parámetro `tools`
+- Referencia: https://sdk.vercel.ai/docs/ai-sdk-core/generating-text#tools
+
+PARTE 1: TIPOS NUEVOS EN llmPort.ts
+- Añadir interface LLMToolDefinition:
+  - name: string
+  - description: string
+  - parameters: Record<string, unknown> (JSON Schema del input)
+- Añadir interface LLMToolCall:
+  - toolCallId: string
+  - toolName: string
+  - args: Record<string, unknown>
+- Añadir interface LLMGenerateWithToolsParams:
+  - messages: Array<{ role: "user"|"assistant"|"tool", content: string | LLMToolCall[] }>
+    (formato messages del AI SDK)
+  - systemPrompt?: string
+  - tools: LLMToolDefinition[]
+  - maxTokens?: number
+  - temperature?: number
+- Añadir interface LLMGenerateWithToolsResult:
+  - text: string (texto generado, puede ser vacío si solo hay tool calls)
+  - toolCalls: LLMToolCall[] (puede estar vacío si solo hay texto)
+  - stopReason: "end_turn" | "tool_use" | "max_tokens"
+  - tokensIn, tokensOut, totalTokens, model, provider, latencyMs
+
+PARTE 2: EXTENDER LLMPort
+- Añadir método opcional: generateWithTools?(params): Promise<LLMGenerateWithToolsResult>
+- Mantener generateText intacto (backward compatible)
+
+PARTE 3: ADAPTER ANTHROPIC
+- Implementar generateWithTools usando generateText del AI SDK con parámetro tools
+- El AI SDK convierte tools a formato nativo Anthropic automáticamente
+- Usar `tool` de ai para definir tools con schema zod o JSON Schema
+- Manejar response.toolCalls para extraer calls nativos
+
+PARTE 4: ADAPTER OPENAI
+- Implementar generateWithTools de la misma manera
+- El AI SDK maneja la conversión a function calling de OpenAI
+
+RESTRICCIONES:
+- NO modificar generateText existente
+- NO romper código que usa generateText
+- Los nuevos tipos se exportan desde llmPort.ts
+- No crear nuevos archivos — extender los existentes
+```
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] `generateText` sigue funcionando igual (sin cambios en callers)
+- [ ] `generateWithTools` existe en ambos adapters
+- [ ] Los tipos nuevos se exportan correctamente
+
+**Pruebas funcionales**:
+1. Verificar que `tsc` compila sin errores
+2. Crear un test ad-hoc en Convex dashboard que llame a `generateWithTools` con un tool simple (ej: un tool "echo" que devuelve su input)
+3. Verificar que la respuesta tiene `toolCalls` con el tool call nativo
+4. Verificar que `stopReason` es `"tool_use"` cuando hay tool calls
+5. Verificar que `stopReason` es `"end_turn"` cuando no hay tool calls
+6. Verificar que los agents existentes (que usan `generateText`) siguen funcionando sin cambios
+
+---
+
+### F1.1: Añadir input schemas a tool definitions
+
+**Objetivo**: Cada tool declara su JSON Schema de input. Esto permite native tool_use y reduce errores de parámetros.
+
+**Causa raíz**: CR1
+
+**Archivos**:
+- `packages/convex/convex/agents/core/tool_registry.ts` (modificar ToolDefinition)
+- `packages/convex/convex/agents/core/tools/github_list_dirs.ts` (modificar)
+- `packages/convex/convex/agents/core/tools/github_list_files.ts` (modificar)
+- `packages/convex/convex/agents/core/tools/github_read_file.ts` (modificar)
+- `packages/convex/convex/agents/core/tools/github_search_code.ts` (modificar)
+- `packages/convex/convex/agents/core/tools/todo_manager.ts` (modificar)
+- `packages/convex/convex/agents/core/tools/validate_json.ts` (modificar)
+- `packages/convex/convex/agents/core/tools/delegate.ts` (modificar)
+
+**Prompt**:
+
+```
+F1.1: Añadir input schemas a tool definitions
+
+CONTEXTO:
+- ToolDefinition actual: { name, description?, execute? }
+- Sin schemas, el modelo inventa parámetros incorrectos
+- Los schemas se usarán con native tool_use (F1.2) y como documentación
+
+PARTE 1: EXTENDER ToolDefinition
+- Añadir campo parameters: Record<string, unknown> (JSON Schema)
+- El campo es obligatorio para tools nuevos, opcional para backward compat
+- Tipo: JSON Schema estándar (type, properties, required, etc.)
+
+PARTE 2: SCHEMAS POR TOOL
+- Revisar cada tool, leer su execute() para extraer los parámetros reales
+- Definir JSON Schema que coincida exactamente con lo que execute() espera
+- Incluir descriptions en cada property para guiar al modelo
+- Marcar required vs optional correctamente
+
+Ejemplo de referencia (no copiar, adaptar a cada tool):
+  parameters: {
+    type: "object",
+    properties: {
+      path: { type: "string", description: "Directory path relative to repo root" },
+      depth: { type: "number", description: "Max directory depth (default 2)" }
+    },
+    required: ["path"]
+  }
+
+PARTE 3: VALIDACIÓN
+- No añadir runtime validation del schema (el AI SDK lo hará en F1.2)
+- Solo definir los schemas estáticos
+
+RESTRICCIONES:
+- NO cambiar la lógica de execute() de ningún tool
+- NO añadir runtime validation
+- Solo añadir el campo parameters a cada ToolDefinition
+```
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Todos los tools con execute() tienen parameters definidos
+- [ ] Los schemas coinciden con los parámetros reales de execute()
+- [ ] Agents existentes siguen funcionando (schemas no afectan el prompt-based flow actual)
+
+**Pruebas funcionales**:
+1. Verificar que `tsc` compila sin errores
+2. Ejecutar un scout existente (structure_scout) — debe funcionar idéntico (schemas no se usan aún)
+3. Inspeccionar los schemas definidos para cada tool y verificar coherencia con execute()
+
+---
+
+### F1.2: Refactorizar tool_prompt_model para native tool_use
+
+**Objetivo**: El agent loop usa `generateWithTools` del adapter en vez de construir un prompt de texto con tools embedidos. Elimina el protocolo JSON basado en texto.
+
+**Causa raíz**: CR1
+
+**Archivos**:
+- `packages/convex/convex/agents/core/tool_prompt_model.ts` (refactorizar)
+- `packages/convex/convex/agents/core/agent_loop.ts` (adaptar)
+
+**Prompt**:
+
+```
+F1.2: Refactorizar tool_prompt_model para native tool_use
+
+CONTEXTO:
+- tool_prompt_model.ts hoy construye un prompt de texto con:
+  Protocol (instrucciones JSON) + Tool catalog (JSON as text) + Conversation (serializada)
+- Esto se envía a adapter.generateText({ prompt })
+- El modelo responde con JSON raw → se parsea con extractJsonPayload
+- Esto causa: extra text, JSON malformado, turns desperdiciados en reminders
+
+PARTE 1: NUEVO MÉTODO EN tool_prompt_model
+- Crear generateWithNativeTools() que:
+  - Recibe messages[], tools[], systemPrompt, adapter
+  - Convierte ToolDefinition[] a LLMToolDefinition[] (usando parameters de F1.1)
+  - Llama a adapter.generateWithTools({ messages, tools, systemPrompt })
+  - Devuelve resultado tipado: { text, toolCalls, stopReason, usage }
+- Mantener el método generate() actual como fallback (por si el adapter no soporta generateWithTools)
+
+PARTE 2: ADAPTAR FORMATO DE MESSAGES
+- El AI SDK espera messages en formato:
+  - { role: "user", content: "..." }
+  - { role: "assistant", content: [...tool_use blocks...] }
+  - { role: "tool", content: "...", toolCallId: "..." }
+- Mapear desde el formato actual de agent_loop (que es más simple)
+- El skill se inyecta como primer mensaje user (como hoy)
+- Los tool results se formatean como messages de rol "tool"
+
+PARTE 3: ADAPTAR agent_loop.ts
+- Detectar si el adapter soporta generateWithTools
+- Si sí: usar generateWithNativeTools, el loop:
+  - Si stopReason === "tool_use": ejecutar toolCalls, append results, continuar
+  - Si stopReason === "end_turn": tratar text como output final
+  - NO necesitar protocolo {"type":"tool_use"} ni {"type":"final"}
+  - NO necesitar extractJsonPayload para tool calls
+  - MANTENER validate_json como tool (el modelo lo llama nativamente)
+  - MANTENER todo_manager como tool
+- Si no: usar flujo actual (backward compat)
+
+PARTE 4: ELIMINAR REMINDERS INNECESARIOS
+- Con native tool_use, estos paths desaparecen:
+  - toolUseExtraTextReminder (no existe extra text con native)
+  - looksLikeToolUse pero no parsed (native siempre parsea)
+  - validateJsonReminder (el modelo llama validate_json como tool normal)
+- Mantener solo los reminders que siguen teniendo sentido:
+  - emptyResponseReminder (si text vacío y sin tool calls)
+  - validación de output final (si el output no pasa schema)
+
+RESTRICCIONES:
+- Mantener generate() original como fallback
+- NO eliminar json_utils.ts (sigue usándose para parsear outputs finales)
+- El plan (todo_manager) sigue funcionando igual
+- autoFinalizeOnValidateJson sigue funcionando
+- Steps y run tracking siguen funcionando
+```
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Agent loop detecta native tools y los usa
+- [ ] Tool calls llegan como nativos (no JSON parseado)
+- [ ] No hay reminders de toolUseExtraText en los steps
+- [ ] El plan (todo_manager) funciona igual
+
+**Pruebas funcionales**:
+1. Ejecutar structure_scout con native tool_use
+2. Verificar en agentRuns steps:
+   - [ ] Tool calls sin reminders de formato
+   - [ ] `stopReason` viene del adapter (no de parsing JSON)
+   - [ ] Los tool results se devuelven correctamente al modelo
+3. Verificar que el scout termina con `status: "completed"` (no `max_turns_exceeded`)
+4. Comparar turns usados vs turns con flujo anterior — debe ser menor
+5. Verificar que el API payload enviado a Anthropic incluye `tools` parameter (inspeccionar logs de inference)
+
+---
+
+### F1.3: Simplificar secuencia de finalización
+
+**Objetivo**: Reducir el overhead de finalización de 2-3 turns a 0-1 turn. El modelo termina naturalmente con `stop_reason: "end_turn"`.
+
+**Causa raíz**: CR3
+
+**Archivos**:
+- `packages/convex/convex/agents/core/agent_loop.ts` (modificar)
+
+**Prompt**:
+
+```
+F1.3: Simplificar secuencia de finalización
+
+CONTEXTO:
+- Hoy el agente necesita 2-3 turns para terminar:
+  1. todo_manager (mark all completed)
+  2. validate_json (validar output)
+  3. {"type":"final","output":{...}} (o auto-finalize)
+- Con native tool_use (F1.2), el modelo para naturalmente con end_turn
+- Pero el loop exige plan completado + validate_json antes de aceptar
+
+CAMBIO 1: HACER validate_json OPCIONAL
+- Si el output final (text cuando stopReason === "end_turn") es JSON válido
+  y pasa el validator de schema → aceptar directamente
+- validate_json sigue existiendo como tool para que el modelo lo use si quiere
+- Pero no es gate obligatorio — el loop valida inline
+
+CAMBIO 2: PLAN COMPLETADO COMO SOFT CHECK
+- Si todos los items del plan están completed → ok
+- Si hay items pending pero el modelo emitió end_turn con output válido →
+  marcar items remaining como "skipped" y aceptar
+- Mantener warning en el step si el plan no estaba completo
+- Rationale: el modelo decidió que terminó. Forzar más turns por plan
+  incompleto a menudo causa loops infinitos.
+
+CAMBIO 3: LIMPIAR PATHS MUERTOS
+- Eliminar o simplificar los paths de reminders que ya no aplican con native:
+  - finalOutputOnlyReminder → ya no necesario (no hay protocolo JSON)
+  - requireValidateJson gate → inline validation
+  - Plan completion gate → soft check
+
+RESTRICCIONES:
+- Mantener validate_json como tool disponible (el modelo puede elegir usarlo)
+- Mantener validación de schema del output final
+- NO cambiar plan_manager.ts ni todo_manager.ts
+- Los steps de validación se siguen registrando
+```
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Un agente puede terminar en el mismo turn que produce su output final
+- [ ] No hay turns perdidos por "plan not completed" cuando el output es válido
+- [ ] Validación de schema sigue funcionando inline
+- [ ] Steps registran si el plan estaba completo o no
+
+**Pruebas funcionales**:
+1. Ejecutar structure_scout y contar turns totales — debe ser ~5-6 (antes ~8)
+2. Verificar que no hay steps con reminders de finalización
+3. Ejecutar glossary_scout — verificar que termina con output válido
+4. Forzar un output inválido (ej: modificar skill para pedir schema imposible) → verificar que la validación inline rechaza y el agente reintenta
+5. Verificar que el plan queda como "completed" o "skipped" (no "pending")
+
+---
+
+### F1.4: Validar todos los scouts con native tool_use
+
+**Objetivo**: Ejecutar todos los scouts y el context agent completo para verificar que el stack funciona end-to-end.
+
+**Causa raíz**: CR1, CR3 (validación integral)
+
+**Archivos**: Ninguno (solo testing y ajustes menores si se encuentran bugs)
+
+**Prompt**:
+
+```
+F1.4: Validar todos los scouts con native tool_use
+
+CONTEXTO:
+- F0.0 paralelizó Phase 1
+- F1.0-F1.3 migraron a native tool_use
+- Esta fase es solo validación integral, no desarrollo
+
+VALIDAR:
+1. structure_scout:
+   - Ejecutar solo → completado en < 90s
+   - Output tiene repoShape, techStack, tiles, entryPoints
+   - Turns usados <= 6
+
+2. glossary_scout:
+   - Ejecutar solo → completado en < 120s
+   - Output tiene terms con evidence
+   - Turns usados <= 6
+
+3. domain_mapper:
+   - Ejecutar solo → completado en < 180s
+   - Output tiene domains con evidence real
+   - Turns usados <= 8
+
+4. feature_scout:
+   - Ejecutar solo → completado en < 180s
+   - Output tiene features mapped to domains
+   - Turns usados <= 8
+
+5. context agent (snapshot completo):
+   - Ejecutar generateContextSnapshot
+   - Phase 1 paralela (structure + glossary)
+   - Phase 2 ejecuta (domain map)
+   - Phase 3 ejecuta (features)
+   - Status final: "completed"
+   - Tiempo total < 5 min
+
+AJUSTES:
+- Si algún scout falla consistentemente, ajustar:
+  - maxTurns (subir si native es más eficiente y necesita más turns de trabajo)
+  - timeoutMs (ajustar a la realidad observada)
+  - Skill .md (clarificar instrucciones si el modelo se confunde)
+- Documentar ajustes en este documento
+```
+
+**Validación**:
+- [ ] Los 4 scouts terminan con `status: "completed"`
+- [ ] Context agent completo termina con `status: "completed"`
+- [ ] Tiempo total < 5 minutos
+- [ ] No hay turns desperdiciados en reminders de formato
+- [ ] Cada scout produce output que pasa su validator
+
+**Pruebas funcionales**:
+1. Ejecutar cada scout individualmente desde Convex dashboard → todos `completed`
+2. Ejecutar `generateContextSnapshot` completo → `completed` (no `partial`)
+3. Verificar tiempos individuales en agentRuns steps
+4. Verificar calidad: outputs tienen evidence de archivos reales del repo
+5. Repetir 3 veces → al menos 2 de 3 ejecuciones son `completed` (fiabilidad > 66%)
+
+---
+
+### F2.0: Auto-compaction de mensajes
+
+**Objetivo**: Cuando el contexto crece demasiado, resumir mensajes viejos automáticamente para extender la capacidad del agente.
+
+**Causa raíz**: CR4
+
+**Archivos**:
+- `packages/convex/convex/agents/core/compaction.ts` (CREAR)
+- `packages/convex/convex/agents/core/agent_loop.ts` (modificar)
+- `packages/convex/convex/agents/core/agent_entrypoints.ts` (modificar)
+
+**Prompt**:
+
+```
+F2.0: Auto-compaction de mensajes
+
+CONTEXTO:
+- El prompt crece linealmente con cada turn (mensajes + tool results)
+- Sin compaction, agentes con 8+ turns agotan el budget o el context window
+- Referencia: clawdbot/src/agents/pi-embedded-runner/compact.ts
+
+PARTE 1: MÓDULO compaction.ts
+- Función compactMessages(messages, adapter, options):
+  - Recibe el array de messages actual
+  - Preserva: primer mensaje (skill/system), últimos N mensajes (ventana reciente)
+  - Los mensajes intermedios se resumen en 1 mensaje sintético
+  - El resumen lo genera una llamada LLM separada (con prompt de compaction)
+  - Retorna nuevo array de messages compactado
+- Options: { preserveLastN: number, maxSummaryTokens: number }
+- El prompt de compaction debe ser conciso: "Resume los puntos clave de esta
+  conversación de agente, preservando: decisiones tomadas, archivos explorados,
+  datos recopilados, errores encontrados"
+
+PARTE 2: INTEGRACIÓN EN agent_loop.ts
+- Punto de inserción: después de appendear tool results, antes del siguiente generate
+- Trigger: si messages.length > threshold (configurable, default 12)
+  O si totalTokens > maxTotalTokens * 0.75
+- Cuando se activa: llamar compactMessages, reemplazar messages, registrar step
+- Solo compactar una vez por ejecución (flag compactionDone)
+- Registrar step tipo "compaction" con metadata: messages_before, messages_after
+
+PARTE 3: CONFIGURACIÓN EN agent_entrypoints.ts
+- Añadir al AgentConfig: compaction?: { enabled: boolean, messageThreshold: number, preserveLastN: number }
+- Defaults: { enabled: true, messageThreshold: 12, preserveLastN: 4 }
+- Cada agente puede override
+
+RESTRICCIONES:
+- NO modificar el flujo happy path (solo actuar cuando se acerca al límite)
+- NO compactar si messages.length <= threshold
+- La llamada LLM de compaction usa el mismo adapter pero con prompt separado
+- Preservar siempre el plan actual (incluirlo en mensajes recientes, no compactarlo)
+```
+
+**Referencia Clawdbot**:
+- `clawdbot/src/agents/pi-embedded-runner/compact.ts`: `compactEmbeddedPiSessionDirect()`
+- `clawdbot/src/config/config.compaction-settings.test.ts`: configuración
+
+**Referencia learn-claude-code**:
+- `learn-claude-code/articles/上下文缓存经济学.md`: anti-patrones de compaction
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Compaction se activa solo cuando se supera el threshold
+- [ ] Messages compactados preservan skill + últimos N mensajes
+- [ ] Step "compaction" registrado en agentRuns
+- [ ] Agente continúa trabajando después de compaction
+
+**Pruebas funcionales**:
+1. Ejecutar domain_mapper (10 turns) en un repo con muchos archivos
+2. Verificar en steps que aparece un step "compaction" si se excede threshold
+3. Verificar que el agente sigue trabajando correctamente después de la compaction
+4. Verificar que el output final es correcto (la compaction no perdió info crítica)
+5. Forzar compaction bajando el threshold a 4 → verificar que funciona en agentes cortos
+
+---
+
+### F2.1: Clasificación de errores y retry con backoff
+
+**Objetivo**: Los errores de `model.generate()` se clasifican y los transitorios se reintentan automáticamente.
+
+**Causa raíz**: Robustez (P2 original)
+
+**Archivos**:
+- `packages/convex/convex/agents/core/agent_loop.ts` (modificar catch block)
+- `packages/convex/convex/agents/core/agent_run_steps.ts` (modificar)
+
+**Prompt**:
+
+```
+F2.1: Clasificación de errores y retry
+
+CONTEXTO:
+- Hoy un error en model.generate() termina el loop completo
+- No distingue entre rate limit (retryable) y auth failure (terminal)
+- Referencia: clawdbot/src/agents/pi-embedded-helpers/errors.ts
+
+PARTE 1: CLASIFICACIÓN
+- Crear función classifyError(error): "retryable" | "recoverable" | "terminal"
+- retryable: rate limit (429), timeout, server error (5xx), "overloaded"
+- recoverable: context overflow (se resuelve con compaction de F2.0)
+- terminal: auth failure (401/403), invalid request (400), billing, unknown
+
+PARTE 2: RETRY
+- En el catch block de agent_loop:
+  - Si retryable y retries < 2: esperar backoff (1s, 3s), reintentar, no incrementar turns
+  - Si recoverable y compaction habilitada: triggear compaction, reintentar
+  - Si terminal: terminar como hoy
+- Registrar cada retry como step con metadata: error, intento, delay
+
+PARTE 3: STEP TYPE
+- Nuevo step status: "retry"
+- Metadata: { error: string, attempt: number, delayMs: number, classification: string }
+
+RESTRICCIONES:
+- Max 2 retries por error (no infinite loop)
+- Backoff: 1000ms primer retry, 3000ms segundo
+- No reintentar si el agente ya excedió maxTurns o timeout
+```
+
+**Referencia Clawdbot**:
+- `clawdbot/src/agents/pi-embedded-helpers/errors.ts`: `classifyFailoverReason()`
+- `clawdbot/src/agents/failover-error.ts`: `FailoverError`
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Errores retryable se reintentan (hasta 2 veces)
+- [ ] Errores terminal terminan inmediatamente
+- [ ] Steps de retry se registran con metadata
+- [ ] No hay infinite retry loop
+
+**Pruebas funcionales**:
+1. Verificar que `tsc` compila sin errores
+2. Simular un rate limit (mock o provocar con calls concurrentes) → verificar retry en steps
+3. Verificar que errores terminales (auth) no se reintentan
+4. Verificar que el agente completa correctamente después de un retry exitoso
+
+---
+
+### F2.2: Retry con backoff para GitHub API
+
+**Objetivo**: Las llamadas a GitHub API reintentan automáticamente en errores transitorios.
+
+**Causa raíz**: Robustez (P7 original)
+
+**Archivos**:
+- `packages/convex/convex/agents/core/tools/github_helpers.ts` (modificar)
+
+**Prompt**:
+
+```
+F2.2: Retry con backoff para GitHub API
+
+CONTEXTO:
+- github_helpers.ts tiene funciones que hacen fetch a GitHub API
+- Errores 429 (rate limit) y 5xx son transitorios
+- Hoy estos errores se pasan al modelo como tool error
+- El modelo no siempre sabe reintentar
+
+CAMBIO:
+- Crear wrapper fetchWithRetry(url, options) que envuelve fetch
+- 3 intentos, backoff exponencial: 1s, 2s, 4s
+- Retry solo para: 429, 500, 502, 503, 504
+- No retry para: 400, 401, 403, 404, 422
+- Usar este wrapper en todas las funciones que hacen fetch a GitHub
+
+RESTRICCIONES:
+- NO cambiar las firmas de las funciones de tools
+- NO cambiar la lógica de los tools individuales
+- Solo envolver el fetch subyacente
+```
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Llamadas a GitHub API usan fetchWithRetry
+- [ ] Errores 429/5xx se reintentan (hasta 3 veces)
+- [ ] Errores 4xx se propagan inmediatamente
+
+**Pruebas funcionales**:
+1. Ejecutar un scout que haga read_file → funciona normalmente
+2. Verificar que el código de retry está en su lugar (code review)
+3. Si es posible, provocar un rate limit con calls concurrentes → verificar retry en logs
+
+---
+
+### F3.0: Tool policies por agente
+
+**Objetivo**: Cada tipo de agente tiene un subset de tools definido, evitando calls incorrectos.
+
+**Causa raíz**: Optimización (P5 original)
+
+**Archivos**:
+- `packages/convex/convex/agents/core/agent_entrypoints.ts` (modificar)
+- `packages/convex/convex/agents/core/tool_prompt_model.ts` (modificar)
+- `packages/convex/convex/agents/core/tool_registry.ts` (modificar)
+
+**Prompt**:
+
+```
+F3.0: Tool policies por agente
+
+CONTEXTO:
+- Todos los agentes tienen acceso a todos los tools
+- Un structure_scout no debería poder llamar delegate
+- Referencia: learn-claude-code/v3_subagent.py → AGENT_TYPES + get_tools_for_agent()
+
+PARTE 1: POLICY EN ENTRYPOINTS
+- Añadir toolPolicy al AgentConfig: { allow?: string[], deny?: string[] }
+- Si allow definido: solo esos tools disponibles (más todo_manager y validate_json siempre)
+- Si deny definido: todos excepto esos
+- Definir policies por agente según tabla del diagnóstico
+
+PARTE 2: FILTRADO EN tool_prompt_model
+- Al construir la lista de tools para generateWithTools:
+  filtrar según toolPolicy del agente activo
+- Solo enviar tools permitidos al modelo
+
+PARTE 3: ENFORCEMENT EN tool_registry
+- Si el modelo llama un tool no permitido (edge case con native):
+  retornar error "Tool X not available for this agent"
+- No lanzar excepción, retornar como tool result
+
+RESTRICCIONES:
+- todo_manager y validate_json siempre disponibles (no filtrables)
+- NO cambiar la lógica de ejecución de tools
+- Policies son declarativas, no procedurales
+```
+
+**Referencia**:
+- `learn-claude-code/v3_subagent.py` → `AGENT_TYPES` (~línea 85), `get_tools_for_agent()` (~línea 240)
+- `clawdbot/src/agents/tool-policy.ts`: `TOOL_GROUPS`, `TOOL_PROFILES`
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Cada agente recibe solo sus tools permitidos
+- [ ] Tool no permitido retorna error (no crash)
+- [ ] todo_manager y validate_json siempre disponibles
+
+**Pruebas funcionales**:
+1. Ejecutar structure_scout → verificar que no tiene delegate ni search_code en sus tool calls
+2. Verificar en los inference logs que el payload a Anthropic solo incluye los tools permitidos
+3. Ejecutar un scout completo → funciona correctamente con subset de tools
+
+---
+
+### F3.1: Model fallback
+
+**Objetivo**: Si el modelo principal falla persistentemente, el agente puede continuar con un modelo alternativo.
+
+**Causa raíz**: Robustez (P3 original)
+
+**Archivos**:
+- `packages/convex/convex/agents/core/agent_entrypoints.ts` (modificar)
+- `packages/convex/convex/agents/core/agent_loop.ts` (modificar)
+
+**Prompt**:
+
+```
+F3.1: Model fallback
+
+CONTEXTO:
+- Si el modelo configurado falla (quota, downtime), el agente falla
+- Referencia: clawdbot/src/agents/pi-embedded-runner/run.ts (outer loop de failover)
+
+PARTE 1: CONFIGURACIÓN
+- Añadir modelFallbacks: string[] al AgentConfig
+- Ejemplo: domain_mapper tiene fallbacks: ["claude-sonnet-4-20250514"]
+- Los fallbacks se intentan en orden
+
+PARTE 2: INTEGRACIÓN EN agent_loop
+- Después de agotar retries (F2.1), si hay fallbacks:
+  - Crear nuevo adapter con el modelo fallback
+  - Reiniciar el loop con el nuevo adapter
+  - Preservar: messages, plan, turns gastados
+  - Registrar step "fallback" con metadata: original_model, fallback_model
+
+PARTE 3: LÍMITES
+- Max 1 fallback por ejecución (no cascada infinita)
+- Si el fallback también falla: terminar con error
+
+RESTRICCIONES:
+- NO cambiar el adapter en runtime — crear uno nuevo
+- Preservar todo el estado del agente al cambiar de modelo
+- Steps de retry y fallback son distintos (retry = mismo modelo, fallback = otro modelo)
+```
+
+**Referencia Clawdbot**:
+- `clawdbot/src/auto-reply/model.ts`: `extractModelDirective()`
+- `clawdbot/src/agents/auth-profiles/order.ts`: `resolveAuthProfileOrder()`
+- `clawdbot/src/agents/pi-embedded-runner/run.ts`: outer loop de failover
+
+**Validación**:
+- [ ] `tsc` convex sin errores
+- [ ] Si modelo principal falla → intenta fallback
+- [ ] Step "fallback" registrado con metadata
+- [ ] Si fallback también falla → error limpio
+- [ ] Mensajes y plan se preservan al cambiar de modelo
+
+**Pruebas funcionales**:
+1. Configurar un agente con un modelo inexistente como principal y claude-sonnet como fallback
+2. Ejecutar → verificar que falla con principal, hace fallback, y completa con sonnet
+3. Verificar steps: retry (del principal) → fallback → tool calls (con sonnet) → completed
+4. Verificar que el output final es correcto
+
+---
+
+## Checklist final
+
+Tras completar todas las fases, verificar:
+
+### Fiabilidad
+- [ ] Los 4 scouts terminan con `completed` en 3 de 3 ejecuciones
+- [ ] Context agent completo termina en < 5 minutos
+- [ ] No hay turns desperdiciados en reminders de formato
+
+### Rendimiento
+- [ ] Phase 1 es paralela (structure + glossary simultáneos)
+- [ ] Turns promedio por scout: 4-6 (no 8-10)
+- [ ] Compaction se activa solo cuando es necesario
+
+### Robustez
+- [ ] Rate limit en Anthropic → retry automático
+- [ ] Rate limit en GitHub → retry automático
+- [ ] Modelo principal caído → fallback funciona
+- [ ] Context overflow → compaction + continúa
+
+### Observabilidad
+- [ ] Todos los events (retry, compaction, fallback) tienen steps en agentRuns
+- [ ] Tool calls registrados con input/output
+- [ ] Plan visible y actualizado en cada turn
+
+---
