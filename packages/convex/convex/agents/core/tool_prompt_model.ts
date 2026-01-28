@@ -1,21 +1,14 @@
-import type { LLMPort } from "../../ai/ports/llmPort";
+import type {
+	LLMPort,
+	LLMToolCall,
+	LLMToolDefinition,
+} from "../../ai/ports/llmPort";
 import type { AgentMessage, AgentModel, AgentModelResponse } from "./agent_loop";
-import type { ToolDefinition, ToolCall } from "./tool_registry";
-import { extractJsonPayload } from "./json_utils";
+import type { ToolDefinition } from "./tool_registry";
 
 type ToolPromptModelOptions = {
 	protocol?: string;
 };
-
-const DEFAULT_PROTOCOL = [
-	"You are an autonomous agent.",
-	"You must respond with a single JSON object and no extra text.",
-	"Use this schema for tool calls:",
-	'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"tool_name","input":{}}]}',
-	"Use this schema for final output:",
-	'{"type":"final","output":{}}',
-	"Only call tools listed in the tool catalog.",
-].join("\n");
 
 export function createToolPromptModel(
 	adapter: LLMPort,
@@ -23,121 +16,58 @@ export function createToolPromptModel(
 ): AgentModel {
 	return {
 		generate: async ({ messages, tools, maxTokens, temperature, topP }) => {
-			const prompt = buildPrompt(messages, tools, options?.protocol);
-			const response = await adapter.generateText({
-				prompt,
+			if (!adapter.generateWithTools) {
+				throw new Error("LLM adapter does not support native tools");
+			}
+			const response = await adapter.generateWithTools({
+				messages,
+				systemPrompt: options?.protocol,
+				tools: buildToolDefinitions(tools),
 				maxTokens,
 				temperature,
-				topP,
 			});
-
-			return parseResponse(response.text, response);
+			return normalizeNativeResponse(response);
 		},
 	};
 }
 
-function buildPrompt(
-	messages: AgentMessage[],
-	tools: ToolDefinition[],
-	protocol?: string,
-): string {
-	const toolCatalog = tools.map((tool) => ({
+function buildToolDefinitions(tools: ToolDefinition[]): LLMToolDefinition[] {
+	return tools.map((tool) => ({
 		name: tool.name,
 		description: tool.description ?? "",
+		parameters:
+			tool.inputSchema ??
+			({ type: "object", additionalProperties: true } as const),
 	}));
-
-	const conversation = messages
-		.map((message) => `${message.role.toUpperCase()}: ${message.content}`)
-		.join("\n\n");
-
-	return [
-		protocol ?? DEFAULT_PROTOCOL,
-		"Tool catalog:",
-		JSON.stringify(toolCatalog, null, 2),
-		"Conversation:",
-		conversation,
-	].join("\n\n");
 }
 
-function parseResponse(
-	text: string,
-	meta: {
-		tokensIn: number;
-		tokensOut: number;
-		totalTokens: number;
-	},
-): AgentModelResponse {
-	const extracted = extractJsonPayload(text);
-	const _debug = {
-		rawText: text,
-		extracted,
-	};
-	if (extracted && extracted.data && typeof extracted.data === "object") {
-		const data = extracted.data as Record<string, unknown>;
-		if (data.type === "tool_use" && Array.isArray(data.toolCalls)) {
-			return {
-				text,
-				stopReason: "tool_use",
-				toolCalls: normalizeToolCalls(data.toolCalls),
-				tokensIn: meta.tokensIn,
-				tokensOut: meta.tokensOut,
-				totalTokens: meta.totalTokens,
-				_debug,
-			};
-		}
-
-		if (data.type === "final" && "output" in data) {
-			return {
-				text: JSON.stringify(data.output, null, 2),
-				stopReason: "end",
-				tokensIn: meta.tokensIn,
-				tokensOut: meta.tokensOut,
-				totalTokens: meta.totalTokens,
-				_debug,
-			};
-		}
-
-		if (Array.isArray(data.toolCalls)) {
-			return {
-				text,
-				stopReason: "tool_use",
-				toolCalls: normalizeToolCalls(data.toolCalls),
-				tokensIn: meta.tokensIn,
-				tokensOut: meta.tokensOut,
-				totalTokens: meta.totalTokens,
-				_debug,
-			};
-		}
-	}
+function normalizeNativeResponse(response: {
+	text: string;
+	toolCalls: LLMToolCall[];
+	stopReason: "tool_use" | "end_turn" | "max_tokens";
+	tokensIn: number;
+	tokensOut: number;
+	totalTokens: number;
+}): AgentModelResponse {
+	const toolCalls = response.toolCalls?.length
+		? response.toolCalls.map((call) => ({
+				id: call.toolCallId,
+				name: call.toolName,
+				input: call.args,
+			}))
+		: undefined;
+	const stopReason = response.stopReason === "tool_use" ? "tool_use" : "end";
 
 	return {
-		text,
-		stopReason: "end",
-		tokensIn: meta.tokensIn,
-		tokensOut: meta.tokensOut,
-		totalTokens: meta.totalTokens,
-		_debug,
+		text: response.text,
+		stopReason,
+		toolCalls,
+		tokensIn: response.tokensIn,
+		tokensOut: response.tokensOut,
+		totalTokens: response.totalTokens,
+		_debug: {
+			rawText: response.text,
+			extracted: toolCalls ?? null,
+		},
 	};
-}
-
-function normalizeToolCalls(toolCalls: unknown[]): ToolCall[] {
-	return toolCalls
-		.map((call, index) => {
-			if (!call || typeof call !== "object") return null;
-			const toolCall = call as {
-				name?: string;
-				tool?: string;
-				input?: unknown;
-				args?: unknown;
-				id?: string;
-			};
-			const name = toolCall.name ?? toolCall.tool;
-			if (!name) return null;
-			return {
-				name,
-				input: toolCall.input ?? toolCall.args ?? {},
-				id: toolCall.id ?? `call-${index + 1}`,
-			};
-		})
-		.filter((call): call is ToolCall => Boolean(call));
 }
