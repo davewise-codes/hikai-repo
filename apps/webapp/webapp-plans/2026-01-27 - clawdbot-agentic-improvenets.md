@@ -1036,7 +1036,7 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 | F1.1    | Añadir input schemas + validación de args                         | ✅     | CR1        | `tools/*.ts`, `tool_registry.ts`                                   |
 | F1.2    | Refactorizar tool_prompt_model para native tool_use               | ✅     | CR1        | `tool_prompt_model.ts`, `agent_loop.ts`                            |
 | F1.3    | Simplificar secuencia de finalización + manejo de mixed responses | ✅     | CR3        | `agent_loop.ts`, `todo_manager.ts`, skills/scouts                 |
-| F1.4    | Validar todos los scouts con native tool_use                      | ⏳     | CR1,CR3    | scouts, skills                                                     |
+| F1.4    | Validar todos los scouts con native tool_use                      | 🔄     | CR1,CR3    | scouts, skills                                                     |
 | F2.0    | Auto-compaction de mensajes (pinned state)                        | ⏳     | CR4        | `compaction.ts` (nuevo), `agent_loop.ts`, `agent_entrypoints.ts`   |
 | F2.0b   | Control de tamaño de outputs de tools                             | ⏳     | CR4        | `tool_registry.ts`, `tools/*.ts`                                   |
 | F2.1    | Clasificación de errores y retry con backoff                      | ⏳     | —          | `agent_loop.ts`, `agent_run_steps.ts`                              |

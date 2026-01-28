@@ -227,8 +227,7 @@ Build a domain map that reflects the main product areas based on evidence from t
 - todo_manager input MUST be:
   `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }`
 - Do NOT use `tasks` or `description` fields in todo_manager.
-- At most one item may be `in_progress` (0 or 1); if you set multiple, it is a mistake.
-- At most one item may be `in_progress` (0 or 1); if you set multiple, it is a mistake.
+- At most one item may be "in_progress" (0 or 1); if you set multiple, it is a mistake.
 
 ## Exploration Strategy (suggested)
 
@@ -282,7 +281,7 @@ description: Extracts a glossary of product terms from baseline + code + docs.
 - todo_manager input MUST be:
   `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }`
 - Do NOT use `tasks` or `description` fields in todo_manager.
-- At most one item may be `in_progress` (0 or 1); if you set multiple, it is a mistake.
+- At most one item may be "in_progress" (0 or 1); if you set multiple, it is a mistake.
 
 ## Output Schema
 
@@ -335,7 +334,7 @@ description: Extracts product features and links them to domains with evidence.
 - todo_manager input MUST be:
   `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }`
 - Do NOT use `tasks` or `description` fields in todo_manager.
-- At most one item may be `in_progress` (0 or 1); if you set multiple, it is a mistake.
+- At most one item may be "in_progress" (0 or 1); if you set multiple, it is a mistake.
 
 ## Output Schema
 
