@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAction, useConvex, useQuery } from "convex/react";
+import { useAction, useConvex, useMutation, useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { formatRelativeDate, formatShortDate } from "@/domains/shared/utils";
@@ -93,6 +93,7 @@ export function AgentProgress({
 	const locale = i18n.language ?? "en";
 	const convex = useConvex();
 	const exportRunTrace = useAction(api.agents.agentRuns.exportRunTrace);
+	const cancelRun = useMutation(api.agents.agentRuns.cancelRun);
 	const run = useQuery(api.agents.agentRuns.getRunById, { productId, runId }) as
 		| AgentRun
 		| null
@@ -142,6 +143,10 @@ export function AgentProgress({
 	}, [plan?.items, activeRun?.status, t]);
 	const showPlanToggle = planItems.length > PLAN_COLLAPSE_THRESHOLD;
 	const budget = useMemo(() => extractBudget(steps), [steps]);
+	const currentAction = useMemo(
+		() => deriveCurrentAction(steps, t),
+		[steps, t],
+	);
 	const subRuns = childRuns ?? [];
 
 	useEffect(() => {
@@ -224,6 +229,20 @@ export function AgentProgress({
 				)}`
 			: t("context.agentProgressSnapshotUnknown");
 
+	const handleCancel = async () => {
+		if (activeRun?.status !== "running") return;
+		try {
+			const result = await cancelRun({ productId, runId });
+			if (result?.cancelled) {
+				toast.success(t("context.agentProgressCancelled"));
+			} else {
+				toast.error(t("context.agentProgressCancelError"));
+			}
+		} catch {
+			toast.error(t("context.agentProgressCancelError"));
+		}
+	};
+
 	const handleCopy = async () => {
 		if (!canCopy || copyState === "copying") return;
 		setCopyState("copying");
@@ -270,6 +289,11 @@ export function AgentProgress({
 				</div>
 				<div className="flex items-center gap-2">
 					<StatusBadge status={activeRun.status} />
+					{activeRun.status === "running" ? (
+						<Button variant="destructive" size="sm" onClick={handleCancel}>
+							{t("context.agentProgressCancel")}
+						</Button>
+					) : null}
 					<Button
 						variant="outline"
 						size="sm"
@@ -281,6 +305,30 @@ export function AgentProgress({
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
+				{activeRun.status === "running" ? (
+					<div className="rounded-md border border-border px-3 py-2 text-fontSize-xs text-muted-foreground">
+						<div className="font-medium text-muted-foreground">
+							{t("context.agentProgressCurrentAction")}
+						</div>
+						<div>{currentAction ?? t("context.agentProgressWorking")}</div>
+						<div className="mt-2 flex flex-wrap items-center gap-2">
+							<span>
+								{t("context.agentProgressDurationInline", {
+									value:
+										totalDurationMs !== null
+											? formatDuration(totalDurationMs)
+											: "-",
+								})}
+							</span>
+							<span>·</span>
+							<span>
+								{t("context.agentProgressTokensInline", {
+									value: budget?.totalTokens ?? "-",
+								})}
+							</span>
+						</div>
+					</div>
+				) : null}
 				{snapshot ? (
 					<div className="rounded-md border border-border px-3 py-2 text-fontSize-xs">
 						<div className="flex flex-wrap items-center gap-2">
@@ -606,6 +654,43 @@ function extractPlan(steps: AgentRunStep[]): PlanManager | null {
 		const metadata = step.metadata as { plan?: PlanManager } | undefined;
 		if (metadata?.plan?.items?.length) {
 			return metadata.plan;
+		}
+	}
+	return null;
+}
+
+function deriveCurrentAction(
+	steps: AgentRunStep[],
+	t: (key: string) => string,
+): string | null {
+	for (let i = steps.length - 1; i >= 0; i -= 1) {
+		const step = steps[i];
+		if (step.step.startsWith("Tool: ")) {
+			const toolName = step.step.replace("Tool: ", "").trim();
+			switch (toolName) {
+				case "list_dirs":
+					return t("context.agentProgressActionListDirs");
+				case "list_files":
+					return t("context.agentProgressActionListFiles");
+				case "read_file":
+					return t("context.agentProgressActionReadFile");
+				case "search_code":
+					return t("context.agentProgressActionSearchCode");
+				default:
+					return t("context.agentProgressActionUsingTool");
+			}
+		}
+		if (step.step.startsWith("Repo context attempt")) {
+			return t("context.agentProgressActionAttempting");
+		}
+		if (step.step === "Repo context validation failed") {
+			return t("context.agentProgressActionFixingValidation");
+		}
+		if (step.step === "Compaction") {
+			return t("context.agentProgressActionCompacting");
+		}
+		if (step.step.startsWith("Model output")) {
+			return t("context.agentProgressActionThinking");
 		}
 	}
 	return null;

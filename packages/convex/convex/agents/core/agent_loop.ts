@@ -72,6 +72,7 @@ export interface AgentLoopConfig {
 	onStep?: (step: StepResult) => Promise<void>;
 	onModelResponse?: (step: ModelResponseStep) => Promise<void>;
 	onCompaction?: (step: CompactionStep) => Promise<void>;
+	shouldAbort?: () => Promise<boolean>;
 	validation?: AgentLoopValidationConfig;
 	planNag?: {
 		threshold: number;
@@ -162,6 +163,23 @@ export async function executeAgentLoop(
 	let compactionDone = false;
 
 	while (turns < config.maxTurns) {
+		if (config.shouldAbort && (await config.shouldAbort())) {
+			return {
+				text: lastDraftRawText ?? "",
+				rawText: lastDraftRawText ?? undefined,
+				output: lastDraftOutput ?? undefined,
+				status: "error",
+				metrics: buildMetrics(
+					startMs,
+					turns,
+					tokensIn,
+					tokensOut,
+					totalTokens,
+					config,
+				),
+				errorMessage: "Cancelled by user",
+			};
+		}
 		if (
 			config.maxTotalTokens !== undefined &&
 			totalTokens >= config.maxTotalTokens

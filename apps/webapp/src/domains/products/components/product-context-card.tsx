@@ -107,6 +107,12 @@ export function ProductContextCard({
 		};
 	}, []);
 
+	useEffect(() => {
+		if (activeRun?.status && activeRun.status !== "running") {
+			setIsAgentRunning(false);
+		}
+	}, [activeRun?.status]);
+
 	return (
 		<Card>
 			<CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">

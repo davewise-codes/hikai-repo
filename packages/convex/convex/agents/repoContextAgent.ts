@@ -1,5 +1,5 @@
 import type { ActionCtx } from "../_generated/server";
-import { internal } from "../_generated/api";
+import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { getAgentAIConfig } from "../ai";
 import { createLLMAdapter } from "../ai/config";
@@ -81,6 +81,13 @@ export async function runRepoContextAgent(params: {
 				timeoutMs: 120_000,
 				tools,
 				sampling: { temperature: 0 },
+				shouldAbort: async () => {
+					const run = await ctx.runQuery(api.agents.agentRuns.getRunById, {
+						productId,
+						runId,
+					});
+					return run?.status === "error" && run.errorMessage === "Cancelled by user";
+				},
 				onModelResponse: async ({ response, turn }) => {
 					const preview =
 						typeof response.text === "string"
@@ -120,6 +127,7 @@ export async function runRepoContextAgent(params: {
 		);
 
 		lastResult = result;
+		await recordBudget(ctx, productId, runId, result);
 		const rawText = result.rawText ?? result.text ?? "";
 		const parsed =
 			result.output && typeof result.output === "object"
@@ -243,6 +251,36 @@ async function recordValidationFailure(
 		status: "warn",
 		metadata: {
 			feedbackPreview: feedback.slice(0, 2000),
+		},
+	});
+}
+
+async function recordBudget(
+	ctx: ActionCtx,
+	productId: Id<"products">,
+	runId: Id<"agentRuns">,
+	result: AgentLoopResult,
+) {
+	const budgetStepStatus =
+		result.status === "completed"
+			? "success"
+			: result.status === "budget_exceeded"
+				? "error"
+				: "warn";
+
+	await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+		productId,
+		runId,
+		step: "Budget",
+		status: budgetStepStatus,
+		metadata: {
+			turns: result.metrics.turns,
+			maxTurns: result.metrics.maxTurns,
+			tokensIn: result.metrics.tokensIn,
+			tokensOut: result.metrics.tokensOut,
+			totalTokens: result.metrics.totalTokens,
+			maxTotalTokens: result.metrics.maxTotalTokens,
+			status: result.status,
 		},
 	});
 }

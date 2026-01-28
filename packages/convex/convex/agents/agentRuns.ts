@@ -97,6 +97,42 @@ export const finishRun = internalMutation({
 	},
 });
 
+export const cancelRun = mutation({
+	args: {
+		productId: v.id("products"),
+		runId: v.id("agentRuns"),
+		reason: v.optional(v.string()),
+	},
+	handler: async (ctx, { productId, runId, reason }) => {
+		await assertProductAccess(ctx, productId);
+
+		const run = await ctx.db.get(runId);
+		if (!run || run.productId !== productId) {
+			throw new Error("Agent run not found");
+		}
+		if (run.status !== "running") {
+			return { cancelled: false, status: run.status };
+		}
+
+		const now = Date.now();
+		const entry = {
+			step: "Cancelled",
+			status: "warn" as const,
+			timestamp: now,
+			metadata: { reason: reason ?? "user_requested" },
+		};
+
+		await ctx.db.patch(runId, {
+			status: "error",
+			errorMessage: "Cancelled by user",
+			finishedAt: now,
+			steps: [...run.steps, entry],
+		});
+
+		return { cancelled: true };
+	},
+});
+
 export const getRunById = query({
 	args: {
 		productId: v.id("products"),
