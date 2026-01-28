@@ -45,6 +45,7 @@ export function createSearchCodeTool(
 		name: "search_code",
 		description: "Search for patterns in the connected GitHub repository.",
 		inputSchema: SEARCH_CODE_SCHEMA,
+		outputLimitBytes: 30_000,
 		execute: async (input): Promise<SearchMatch[] | { error: string }> => {
 			const parsed = parseInput(input);
 			if (!parsed.query) {

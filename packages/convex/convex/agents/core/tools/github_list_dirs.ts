@@ -39,6 +39,7 @@ export function createListDirsTool(
 		description:
 			"List directories in the repository (depth-limited). Use first to understand project structure.",
 		inputSchema: LIST_DIRS_SCHEMA,
+		outputLimitBytes: 12_000,
 		execute: async (
 			input: unknown,
 		): Promise<{ dirs: DirEntry[]; truncated?: boolean } | { error: string }> => {

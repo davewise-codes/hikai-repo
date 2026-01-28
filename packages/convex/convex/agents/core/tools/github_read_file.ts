@@ -41,6 +41,7 @@ export function createReadFileTool(
 		name: "read_file",
 		description: "Read a file from the connected GitHub repository.",
 		inputSchema: READ_FILE_SCHEMA,
+		outputLimitBytes: 60_000,
 		execute: async (input): Promise<ReadFileOutput> => {
 			const parsed = parseInput(input);
 			if (!parsed.path) {

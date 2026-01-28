@@ -1039,7 +1039,7 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 | F1.4    | Validar todos los scouts con native tool_use                      | ✅     | CR1,CR3    | scouts, skills                                                     |
 | F1.5    | Reemplazar flujo por repoContextAgent único + contextDetail        | ✅     | CR1,CR3,CR4 | `contextAgent.ts`, `repoContextAgent.ts`, `contextValidator.ts`, `schema.ts`, `productContextData.ts` |
 | F2.0    | Auto-compaction de mensajes (pinned state)                        | ✅     | CR4        | `compaction.ts` (nuevo), `agent_loop.ts`, `agent_entrypoints.ts`   |
-| F2.0b   | Control de tamaño de outputs de tools                             | ⏳     | CR4        | `tool_registry.ts`, `tools/*.ts`                                   |
+| F2.0b   | Control de tamaño de outputs de tools                             | ✅     | CR4        | `tool_registry.ts`, `tools/*.ts`                                   |
 | F2.1    | Clasificación de errores y retry con backoff                      | ⏳     | —          | `agent_loop.ts`, `agent_run_steps.ts`                              |
 | F2.2    | Retry con backoff para GitHub API                                 | ⏳     | —          | `github_helpers.ts`                                                |
 | F3.0    | Tool policies por agente                                          | ⏳     | —          | `agent_entrypoints.ts`, `tool_prompt_model.ts`, `tool_registry.ts` |

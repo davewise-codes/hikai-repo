@@ -12,6 +12,13 @@ export type ToolResult = {
 	output?: unknown;
 	error?: string;
 	toolCallId?: string;
+	truncation?: {
+		applied: boolean;
+		originalSizeBytes: number;
+		finalSizeBytes: number;
+		limitBytes: number;
+		notice?: string;
+	};
 };
 
 export type ToolDefinition = {
@@ -19,7 +26,11 @@ export type ToolDefinition = {
 	description?: string;
 	inputSchema?: Record<string, unknown>;
 	execute?: (input: unknown) => Promise<unknown>;
+	outputLimitBytes?: number;
 };
+
+const DEFAULT_OUTPUT_LIMIT_BYTES = 20_000;
+const TRUNCATION_SUFFIX = "\n... [truncated]";
 
 export async function executeToolCall(
 	tools: ToolDefinition[],
@@ -47,11 +58,14 @@ export async function executeToolCall(
 	}
 	try {
 		const output = await tool.execute(call.input);
+		const limitBytes = tool.outputLimitBytes ?? DEFAULT_OUTPUT_LIMIT_BYTES;
+		const truncated = applyOutputLimit(output, limitBytes);
 		return {
 			name: call.name,
 			input: call.input,
-			output,
+			output: truncated.output,
 			toolCallId: call.id,
+			truncation: truncated.truncation,
 		};
 	} catch (error) {
 		return {
@@ -178,4 +192,138 @@ function validateType(
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function applyOutputLimit(
+	output: unknown,
+	limitBytes: number,
+): { output: unknown; truncation: ToolResult["truncation"] } {
+	const original = serializeWithSize(output);
+	if (original.sizeBytes <= limitBytes) {
+		return {
+			output,
+			truncation: {
+				applied: false,
+				originalSizeBytes: original.sizeBytes,
+				finalSizeBytes: original.sizeBytes,
+				limitBytes,
+			},
+		};
+	}
+
+	let nextOutput: unknown = output;
+	let notice = "Output truncated to fit tool output limit.";
+
+	if (typeof output === "string") {
+		nextOutput = truncateStringByBytes(output, limitBytes, TRUNCATION_SUFFIX);
+	} else if (Array.isArray(output)) {
+		nextOutput = truncateArrayByBytes(output, limitBytes);
+	} else if (isPlainObject(output)) {
+		nextOutput = truncateObjectByBytes(output, limitBytes);
+	} else {
+		nextOutput = truncateStringByBytes(String(output), limitBytes, TRUNCATION_SUFFIX);
+		notice = "Non-JSON tool output was stringified and truncated.";
+	}
+
+	const nextSerialized = serializeWithSize(nextOutput);
+	if (nextSerialized.sizeBytes > limitBytes) {
+		const fallback = truncateStringByBytes(original.json, limitBytes, TRUNCATION_SUFFIX);
+		nextOutput = { truncated: true, originalSizeBytes: original.sizeBytes, preview: fallback };
+		notice = "Output exceeded limit; stored truncated preview.";
+	}
+
+	const finalSerialized = serializeWithSize(nextOutput);
+	return {
+		output: nextOutput,
+		truncation: {
+			applied: true,
+			originalSizeBytes: original.sizeBytes,
+			finalSizeBytes: finalSerialized.sizeBytes,
+			limitBytes,
+			notice,
+		},
+	};
+}
+
+function serializeWithSize(value: unknown): { json: string; sizeBytes: number } {
+	let json = "";
+	try {
+		json = JSON.stringify(value);
+	} catch {
+		json = JSON.stringify({ value: String(value) });
+	}
+	return { json, sizeBytes: byteLength(json) };
+}
+
+function truncateStringByBytes(
+	value: string,
+	limitBytes: number,
+	suffix: string,
+): string {
+	const suffixBytes = byteLength(suffix);
+	if (limitBytes <= suffixBytes) {
+		return suffix.slice(0, Math.max(0, limitBytes));
+	}
+	const maxBytes = limitBytes - suffixBytes;
+	if (byteLength(value) <= limitBytes) return value;
+	const truncated = sliceStringByBytes(value, maxBytes);
+	return `${truncated}${suffix}`;
+}
+
+function truncateArrayByBytes<T>(value: T[], limitBytes: number): T[] {
+	if (value.length === 0) return value;
+	let low = 0;
+	let high = value.length;
+	while (low < high) {
+		const mid = Math.ceil((low + high) / 2);
+		const candidate = value.slice(0, mid);
+		if (serializeWithSize(candidate).sizeBytes <= limitBytes) {
+			low = mid;
+		} else {
+			high = mid - 1;
+		}
+	}
+	return value.slice(0, Math.max(0, low));
+}
+
+function truncateObjectByBytes(
+	value: Record<string, unknown>,
+	limitBytes: number,
+): Record<string, unknown> {
+	const next: Record<string, unknown> = { ...value };
+	if (typeof next.content === "string") {
+		next.content = truncateStringByBytes(next.content, limitBytes, TRUNCATION_SUFFIX);
+	}
+	if (Array.isArray(next.files)) {
+		next.files = truncateArrayByBytes(next.files, limitBytes);
+	}
+	if (Array.isArray(next.dirs)) {
+		next.dirs = truncateArrayByBytes(next.dirs, limitBytes);
+	}
+	if (Array.isArray(next.matches)) {
+		next.matches = truncateArrayByBytes(next.matches, limitBytes);
+	}
+	if (Array.isArray(next.items)) {
+		next.items = truncateArrayByBytes(next.items, limitBytes);
+	}
+	return next;
+}
+
+function sliceStringByBytes(value: string, maxBytes: number): string {
+	if (maxBytes <= 0) return "";
+	let low = 0;
+	let high = value.length;
+	while (low < high) {
+		const mid = Math.ceil((low + high) / 2);
+		if (byteLength(value.slice(0, mid)) <= maxBytes) {
+			low = mid;
+		} else {
+			high = mid - 1;
+		}
+	}
+	return value.slice(0, low);
+}
+
+function byteLength(value: string): number {
+	return new TextEncoder().encode(value).length;
 }

@@ -45,9 +45,26 @@ export async function persistToolSteps(
 					output,
 					error: result.error,
 					outputRef,
+					truncation: result.truncation,
 				},
 			},
 		});
+
+		const truncation = result.truncation;
+		if (truncation?.applied && truncation.originalSizeBytes > 0) {
+			const ratio = truncation.finalSizeBytes / truncation.originalSizeBytes;
+			if (ratio <= 0.5) {
+				await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+					productId,
+					runId,
+					step: `Tool output truncated (${result.name})`,
+					status: "warn",
+					metadata: {
+						truncation,
+					},
+				});
+			}
+		}
 	}
 }
 

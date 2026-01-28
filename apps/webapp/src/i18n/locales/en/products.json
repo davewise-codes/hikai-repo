@@ -603,7 +603,7 @@
     "agentProgressActionAttempting": "Starting a new attempt",
     "agentProgressActionFixingValidation": "Fixing validation errors",
     "agentProgressActionCompacting": "Summarizing context",
-    "agentProgressActionThinking": "Thinking"
+    "agentProgressActionThinking": "Thinking",
     "sources": "Sources",
     "lastGenerated": "Last generated: {{date}}",
     "modelInfo": "Model: {{provider}} / {{model}}",

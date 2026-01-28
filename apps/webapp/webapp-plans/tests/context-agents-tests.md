@@ -28,4 +28,7 @@
 - 2026-01-28: Se reemplazó el flujo por un agente único `repoContextAgent` con output `contextDetail` y validación determinista (sin todo_manager/validate_json).
 - 2026-01-28: Convex bundling falló por import faltante `validateAndEnrichContext`; se restauró export en contextValidator para compatibilidad con actions.ts.
 - 2026-01-28: `convex dev` sin errores y run completo de context agent generó `contextDetail` válido en snapshot.
+- 2026-01-28: RepoContextAgent completó en 2 runs, pero hubo errores repetidos de tool input (`read_file` sin path) que no impidieron el final. El output resultó superficial/ruidoso (demasiadas inferencias desde nombres de archivos y sin lectura real), calidad percibida baja pese a completar.
 - 2026-01-28: Se añadió recordatorio explícito en agent_loop cuando falla `todo_manager` por missing items, y ejemplo en la descripción del tool para reforzar el uso correcto.
+- 2026-01-28: F2.0b implementado: truncado global de outputs de tools con overrides por tool y metadata de truncación en steps. Pendiente ejecutar pruebas funcionales de truncado.
+- 2026-01-28: Run context_agent (m978yff2e8neyynyscph916at5803qe5) completó con éxito. Se observa metadata `truncation` en outputs de `list_dirs`/`list_files` (applied=false); no hubo truncación efectiva en esta prueba. Persisten errores de `read_file` por missing path que no bloquean el output final.

@@ -1,0 +1,728 @@
+Clawdbot — Arquitectura Funcional
+
+  Qué es
+
+  Un asistente personal con IA que vive en un gateway local (tu máquina) y se conecta a todos tus canales de comunicación. Tú le hablas por WhatsApp, Telegram, Slack, Discord, Signal, iMessage, etc. Él tiene acceso a tu entorno: navegar la web, controlar dispositivos,
+  memoria persistente, automatizaciones programadas.
+
+  Programa principal
+
+  clawdbot gateway run
+
+  Levanta un servidor WebSocket+HTTP en tu máquina que orquesta todo:
+
+                          ┌─────────────────────┐
+                          │   GATEWAY (local)    │
+                          │   puerto 18789       │
+                          ├─────────────────────┤
+    WhatsApp ─────┐      │  Channel Manager     │
+    Telegram ─────┤      │  ┌─────────────────┐ │      ┌──────────────┐
+    Slack ────────┤──────▶│  │  Router         │─┼─────▶│  Agent Loop  │
+    Discord ──────┤      │  │  (peer→agente)  │ │      │  (Pi Agent)  │
+    Signal ───────┤      │  └─────────────────┘ │      │              │
+    iMessage ─────┤      │                      │      │  LLM ←→ Tools│
+    Teams ────────┘      │  Sessions + Memory   │      └──────────────┘
+                          │  Config + Hooks      │
+    macOS app ───────────│  Plugin system        │
+    iOS/Android ─────────│  Cron scheduler       │
+    Web UI ──────────────│                       │
+                          └─────────────────────┘
+
+  ---
+  1. Por qué el agente consigue resultados
+
+  Modelo de ejecución: loop agentic con tools, no workflows.
+
+  El agente no sigue flujos predefinidos. Usa un bucle iterativo:
+
+    Mensaje del usuario
+         │
+         ▼
+    ┌─────────────┐
+    │  LLM piensa │◄──────────────────┐
+    │  (Claude,   │                    │
+    │   GPT, etc) │                    │
+    └──────┬──────┘                    │
+           │                           │
+      ¿tool call?───No──▶ Respuesta final
+           │
+          Sí
+           │
+           ▼
+    ┌─────────────┐
+    │ Ejecuta tool │
+    │ (browser,    │
+    │  web, envío, │
+    │  memoria...) │
+    └──────┬──────┘
+           │
+           └───resultado───────────────┘
+
+  Claves de autonomía:
+
+  - Sin límite de iteraciones fijo. El agente puede encadenar tantas llamadas a tools como necesite. Una tarea compleja puede requerir 20+ iteraciones.
+  - Fallback de modelos. Si Claude falla, intenta otro provider. Si el contexto se desborda, compacta la sesión automáticamente (resume turnos antiguos).
+  - Extended thinking. Soporte para razonamiento extendido (niveles low/medium/high) que permite al LLM "pensar más" antes de actuar.
+  - Sesiones persistentes. Cada conversación se guarda como JSONL. El agente retoma donde lo dejó, con todo el historial.
+  - Sub-agentes. Puede crear agentes hijos para tareas paralelas o especializadas.
+  - Colas de seguimiento. Si una tarea genera trabajo pendiente, se re-encola automáticamente.
+
+  ---
+  2. Cómo accede a inputs y contexto
+
+  Estrategia de tools: darle al LLM las mismas capacidades que tendría un humano frente a un ordenador.
+
+    ┌───────────────────────────────────────┐
+    │            TOOLS DEL AGENTE           │
+    ├───────────────────────────────────────┤
+    │                                       │
+    │  PERCEPCIÓN          ACCIÓN           │
+    │  ───────────         ──────           │
+    │  Web Search          Browser (auto)   │
+    │  Web Fetch           Canvas (UI live) │
+    │  Memory (vector)     Send Message     │
+    │  Session history     Channel Actions  │
+    │                      (Slack, Discord,  │
+    │  ENTORNO             Telegram, WA...) │
+    │  ──────              TTS (voz)        │
+    │  Browser DOM         Cron (programar) │
+    │  Node control        Image (generar)  │
+    │  (iOS/Android)       Sub-agents       │
+    │  Gateway intro-      Exec (bash/node) │
+    │  spection            con aprobación   │
+    │                                       │
+    └───────────────────────────────────────┘
+
+  Diseño de tools:
+
+  - Definidos como funciones TypeScript con schemas Typebox → se compilan a JSON Schema que el LLM consume directamente.
+  - No hay orquestación especial. El LLM decide qué tool usar y cuándo, basándose en el schema y la descripción. Es el modelo el que razona sobre qué herramienta necesita.
+  - Los tools de ejecución (bash, scripts) requieren aprobación explícita del usuario (tokens temporales).
+  - Protección SSRF en web fetch (bloquea IPs internas).
+
+  Memoria:
+
+  - Sistema híbrido: embeddings vectoriales (SQLite-vec / LanceDB) + BM25 (keyword).
+  - El agente puede buscar en su propia memoria semánticamente.
+  - Auto-compactación: cuando el contexto se llena, resume turnos viejos preservando lo esencial.
+
+  Contexto personal:
+
+  - ~/.clawdbot/config.yaml — identidad, personalidad, instrucciones, hooks.
+  - Archivos de bootstrap inyectados al inicio de cada sesión.
+  - Hooks configurables que modifican el comportamiento por evento.
+
+  ---
+  3. Cómo habla por tantos canales de forma natural
+
+  Principio clave: abstracción de canal. El agente no sabe ni le importa por dónde te habla.
+
+    ┌──────────┐  ┌──────────┐  ┌──────────┐
+    │ WhatsApp │  │ Telegram │  │  Slack   │  ...
+    │ (Baileys)│  │ (grammY) │  │ (@slack/ │
+    │          │  │          │  │  bolt)   │
+    └────┬─────┘  └────┬─────┘  └────┬─────┘
+         │              │              │
+         └──────────────┼──────────────┘
+                        │
+                        ▼
+              ┌──────────────────┐
+              │  Channel Manager │
+              │  (registry +     │
+              │   plugins)       │
+              └────────┬─────────┘
+                       │
+                       ▼
+              ┌──────────────────┐
+              │   Router         │
+              │                  │
+              │  peer ──▶ agente │
+              │  guild ──▶ sesión│
+              │  team ──▶ scope  │
+              └────────┬─────────┘
+                       │
+                       ▼
+              ┌──────────────────┐
+              │   Agent Loop     │
+              │  (agnóstico de   │
+              │   canal)         │
+              └────────┬─────────┘
+                       │
+                       ▼
+              ┌──────────────────┐
+              │  Outbound Send   │
+              │  Service         │
+              │  (adapta formato │
+              │   por canal)     │
+              └──────────────────┘
+
+  Por qué se siente natural:
+
+  1. No hay workflows. No hay "menú de opciones", ni "escribe 1 para X". Es un LLM con contexto completo que responde como una persona.
+  2. Sesión compartida o aislada. Puedes hablar con el mismo agente desde WhatsApp y Telegram y mantener la misma conversación (sesión "main"), o tener sesiones separadas por peer.
+  3. Pairing para seguridad. Los desconocidos reciben un código de emparejamiento. Una vez validado, hablan directamente con el agente. No hay onboarding pesado.
+  4. Streaming chunked. Las respuestas largas se envían en bloques (párrafos/frases) para que parezca que "está escribiendo", no que esperas 30 segundos.
+  5. Typing indicators. El agente señaliza "escribiendo..." mientras piensa.
+  6. Media pipeline. Imágenes, voz, archivos fluyen bidireccionalmente adaptándose a cada canal.
+  7. Plugin system para extensiones. Añadir un canal nuevo (Matrix, Teams, Zalo) es implementar un plugin que se registra en el Channel Manager. El core no cambia.
+
+  ---
+  Resumen de principios arquitectónicos
+  ┌───────────────────────────┬──────────────────────────────────────────────────────────────────┐
+  │         Principio         │                          Implementación                          │
+  ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Gateway local             │ Tu máquina es el hub. No hay cloud intermediario para tus datos. │
+  ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Agente agnóstico de canal │ El LLM no sabe por dónde hablas. El routing es infraestructura.  │
+  ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Tools > Workflows         │ El LLM decide qué hacer. No hay flujos codificados.              │
+  ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Fallback en cascada       │ Modelos, auth profiles, compactación — todo tiene plan B.        │
+  ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Plugin-first              │ Canales y tools se extienden sin tocar el core.                  │
+  ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Sesiones persistentes     │ Memoria a largo plazo + búsqueda semántica.                      │
+  ├───────────────────────────┼──────────────────────────────────────────────────────────────────┤
+  │ Ejecución controlada      │ Bash/scripts requieren aprobación. SSRF bloqueado.               │
+  └───────────────────────────┴──────────────────────────────────────────────────────────────────┘
+  El valor diferencial: no es "otro chatbot". Es un agente con acceso a tu entorno completo, accesible desde cualquier app de mensajería que ya usas, sin instalarte nada nuevo en el móvil. El gateway local mantiene tus datos bajo tu control.
+
+  --- 
+
+  Hikai — Arquitectura Funcional
+
+  Qué es
+
+  Una plataforma SaaS de inteligencia de producto que usa agentes de IA para analizar repositorios de código (GitHub) y enriquecer automáticamente el contexto de un producto: stack técnico, dominios funcionales, glosario, audiencia, competencia, riesgos.
+
+  Programa principal
+
+  No hay un binario ni un gateway local. Es una app web multi-tenant desplegada en cloud:
+
+    ┌────────────────────────────────────────────────┐
+    │              MONOREPO (pnpm + Turborepo)        │
+    │                                                 │
+    │  apps/website/        apps/webapp/              │
+    │  (Next.js)            (Vite + React)            │
+    │  Marketing            App principal             │
+    │  puerto 3003          puerto 3004               │
+    │       │                    │                    │
+    │       └────────┬───────────┘                    │
+    │                │                                │
+    │         packages/ui/     (design system)        │
+    │         packages/convex/ (backend + agentes)    │
+    └────────────────┬───────────────────────────────┘
+                     │
+                     ▼
+            ┌────────────────┐
+            │  Convex Cloud  │
+            │  (serverless)  │
+            │  DB + Auth +   │
+            │  Agent runtime │
+            └────────────────┘
+
+  ---
+  1. Por qué los agentes consiguen resultados
+
+  Modelo: agentes especializados por tarea, no un agente generalista.
+
+  Cada agente tiene un objetivo acotado y un presupuesto de tokens/tiempo:
+
+    ┌──────────────────────────────────────────┐
+    │         AGENTES ESPECIALIZADOS            │
+    ├──────────────────────────────────────────┤
+    │                                          │
+    │  Structure Scout ──▶ topología del repo  │
+    │  Glossary Scout  ──▶ terminología        │
+    │  Domain Map      ──▶ código→negocio      │
+    │  Feature Map     ──▶ features→dominios   │
+    │  Product Context ──▶ enriquece metadata  │
+    │  Timeline Interp ──▶ eventos→significado │
+    │                                          │
+    └──────────────────────────────────────────┘
+
+  Agent loop con guardrails:
+
+    Tarea asignada
+         │
+         ▼
+    ┌─────────────┐
+    │  LLM piensa │◄──────────────────┐
+    │  + plan mgr │                    │
+    └──────┬──────┘                    │
+           │                           │
+      ¿tool call?───No──▶ Validar JSON output
+           │                    │
+          Sí                ¿válido?──Sí──▶ Resultado
+           │                    │
+           ▼                   No
+    ┌─────────────┐            │
+    │ Ejecuta tool │      feedback al LLM
+    │ (GitHub API, │      "corrige X campo"
+    │  validate,   │            │
+    │  delegate)   │            └──────────────┘
+    └──────┬──────┘
+           │
+           └───resultado───────────────┘
+
+    Guardrails:
+    • maxTurns (ej: 16)
+    • maxTotalTokens (ej: 1.2M)
+    • timeoutMs (ej: 8 min)
+    • compactación si se llena el contexto
+
+  Claves:
+
+  - Agentes acotados. No son generalistas; cada uno sabe hacer una cosa bien. El Domain Map puede usar 16 turnos y 1.2M tokens, pero solo para mapear dominios.
+  - Validación con feedback loop. El output se valida contra un schema JSON. Si falla, el error vuelve al LLM para que corrija.
+  - Delegación jerárquica. Un agente puede invocar a otro como tool.
+  - Compactación de contexto. Cuando se llena la ventana, resume mensajes anteriores (patrón tomado de Clawdbot).
+
+  ---
+  2. Cómo accede a inputs y contexto
+
+  Estrategia: el entorno del usuario es su código (GitHub), no su máquina local.
+
+    ┌───────────────────────────────────────┐
+    │          TOOLS DISPONIBLES            │
+    ├───────────────────────────────────────┤
+    │                                       │
+    │  GITHUB (core)        INTERNOS        │
+    │  ─────────────        ────────        │
+    │  listRepoFiles        validateJson    │
+    │  listRepoDirs         todoManager     │
+    │  readRepoFile         listFiles       │
+    │  searchRepoCode       listDirs        │
+    │                       delegate(agent) │
+    │                                       │
+    └───────────────────────────────────────┘
+
+  Contexto del producto (lo que alimenta a los agentes):
+
+    ┌─────────────────────────────────────────┐
+    │         PRODUCT CONTEXT MODEL           │
+    ├──────────────────┬──────────────────────┤
+    │  PROVISTO POR    │  INFERIDO POR IA     │
+    │  EL USUARIO      │                      │
+    │  ──────────────  │  ────────────────    │
+    │  nombre          │  technicalStack      │
+    │  descripción     │  integrationEcosys   │
+    │  propuesta valor │  audienceSegments    │
+    │  target market   │  toneGuidelines      │
+    │  business model  │  competition         │
+    │  personas        │  risks               │
+    │  plataformas     │  maturity            │
+    │  visión          │  qualityScore        │
+    │                  │  confidence          │
+    └──────────────────┴──────────────────────┘
+
+  - El usuario da el baseline. Los agentes analizan el repo de GitHub y enriquecen todo lo demás.
+  - Cada ejecución crea un snapshot versionado con puntuación de confianza.
+  - El usuario puede dar feedback (thumbs up/down) para mejorar inferencias futuras.
+
+  ---
+  3. Interacción con el usuario
+
+  No hay canales de mensajería. Es una webapp SaaS clásica.
+
+    Usuario
+      │
+      ▼
+    ┌──────────────────┐
+    │  Webapp (Vite)   │
+    │  TanStack Router │
+    │  Zustand store   │
+    ├──────────────────┤
+    │  /organizations  │
+    │  /products       │
+    │  /connectors     │──── GitHub OAuth
+    │  /timeline       │
+    │  /settings       │
+    └────────┬─────────┘
+             │
+             ▼
+    ┌──────────────────┐
+    │  Convex (backend)│
+    │  queries/actions │
+    │  agent execution │
+    │  telemetry       │
+    └──────────────────┘
+
+  Multi-tenancy:
+
+    User ──▶ Organization ──▶ Product
+             (tenant)         (recurso)
+
+    Roles: owner | admin | member
+    Plans: free (1 producto) | pro (10) | enterprise (∞)
+
+  Cada query/mutation valida acceso con assertOrgAccess o assertProductAccess. Aislamiento estricto.
+
+  ---
+  Comparativa: Clawdbot vs Hikai
+
+                      CLAWDBOT                         HIKAI
+    ┌─────────────────────────────┐  ┌─────────────────────────────┐
+    │  Asistente personal         │  │  Plataforma SaaS de         │
+    │  multicanal con IA          │  │  inteligencia de producto   │
+    └─────────────────────────────┘  └─────────────────────────────┘
+  ┌────────────────────┬─────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────┐
+  │     Dimensión      │                          Clawdbot                           │                             Hikai                             │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Naturaleza         │ Agente personal generalista                                 │ Plataforma SaaS especializada                                 │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Despliegue         │ Gateway local (tu máquina)                                  │ Cloud (Convex + Vercel)                                       │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Datos              │ Bajo tu control, local                                      │ Multi-tenant en cloud                                         │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Usuario            │ Individuo (power user)                                      │ Equipos de producto (B2B)                                     │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Interfaz principal │ WhatsApp, Telegram, Slack, Discord, Signal, iMessage        │ Webapp (browser)                                              │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Agente             │ 1 agente generalista, autónomo, sin límite de turnos        │ N agentes especializados, acotados por tarea                  │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Tools              │ Entorno completo: browser, bash, web, memoria, dispositivos │ GitHub API + validación + delegación                          │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ LLM                │ Claude, GPT, fallback chain                                 │ OpenAI + Anthropic, override por agente                       │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Sesiones           │ Persistentes (JSONL), memoria vectorial híbrida             │ Threads de Convex Agent, snapshots versionados                │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Canales            │ 10+ (core + plugins)                                        │ 0 (solo webapp)                                               │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Extensibilidad     │ Plugin system (canales + tools)                             │ Monorepo packages (UI, config)                                │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Modelo de negocio  │ Herramienta personal / self-hosted                          │ SaaS con planes (free/pro/enterprise)                         │
+  ├────────────────────┼─────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────┤
+  │ Telemetría         │ Básica                                                      │ Exhaustiva (tokens, coste, latencia, por agente/producto/org) │
+  └────────────────────┴─────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────┘
+  Filosofías opuestas
+
+    CLAWDBOT                              HIKAI
+    ────────                              ─────
+
+    "Un agente que puede hacer            "Agentes especializados que
+     cualquier cosa si le das              entienden tu producto mejor
+     las herramientas"                     que tú"
+
+    Autonomía máxima                      Autonomía acotada
+    1 agente × muchos tools              N agentes × pocos tools
+    Conversacional (chat)                 Estructurado (webapp)
+    Local-first                           Cloud-first
+    Generalista                           Verticalmente especializado
+
+  Donde se complementan
+
+    ┌──────────┐    habla con     ┌──────────┐
+    │ CLAWDBOT │◄────────────────▶│  HIKAI   │
+    │          │                  │          │
+    │ "hazme   │   podría usar    │ "analiza │
+    │  esto"   │   Hikai como     │  mi repo │
+    │          │   tool/fuente    │  y dime  │
+    │ ejecución│   de contexto    │  qué hay"│
+    │ + acción │                  │ análisis │
+    │          │                  │ + insight│
+    └──────────┘                  └──────────┘
+
+  - Clawdbot es el brazo ejecutor: interactúa con el mundo, ejecuta comandos, navega, envía mensajes.
+  - Hikai es el cerebro analítico: entiende la estructura de un producto, sus dominios, su glosario, su contexto de negocio.
+  - Clawdbot podría usar Hikai como fuente de contexto para tomar mejores decisiones sobre un producto.
+  - Hikai podría usar un agente tipo Clawdbot para ejecutar acciones que van más allá del análisis (deploy, PRs, comunicación).
+
+  Patrones compartidos
+
+  Ambos proyectos comparten ADN técnico:
+
+  1. Agent loop con compactación — Hikai tomó explícitamente este patrón de Clawdbot (hay un doc clawdbot-agentic-improvements.md en el repo de Hikai).
+  2. TypeScript + ESM como stack base.
+  3. Tools como funciones con schema — el LLM decide qué usar, no hay orquestación hardcoded.
+  4. Telemetría de inferencia — ambos rastrean uso de tokens/modelos.
+  5. Validación de output estructurado — ambos validan que el LLM devuelva lo esperado.
+
+  ---
+
+Diagnóstico: Por qué fallan los agentes de Hikai
+
+  Patrón de fallo dominante
+
+    LLM recibe instrucciones complejas
+         │
+         ▼
+    Intenta usar todo_manager
+         │
+         ▼
+    Envía {} en lugar de {items: [...]}
+         │
+         ▼
+    Error de schema
+         │
+         ▼
+    LLM recibe error + reminder
+         │
+         ▼
+    Vuelve a enviar {}          ◄─── LOOP INFINITO
+         │
+         ▼
+    Agota maxTurns sin output
+
+  El LLM no está "entendiendo" el contrato del tool. Añadir más reminders, ejemplos, y ajustes de schema no lo resuelve — el modelo sigue confundido.
+
+  Causas raíz
+  ┌────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │        Problema        │                                         Por qué ocurre                                         │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Complejidad del flujo  │ todo_manager + validate_json + plan phases + status updates = demasiados conceptos             │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Tools con estado       │ todo_manager requiere que el LLM mantenga estado mental de un "plan" — cognitive overhead alto │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Falta de feedback útil │ El error dice "items required" pero el LLM no sabe qué items poner                             │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Sin verificación real  │ No hay equivalente a "compilar" o "tests pasan" — el agente no sabe si va bien                 │
+  ├────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Timeout en cascada     │ Context agent timeout (600s) mata scouts que van lentos pero podrían terminar                  │
+  └────────────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────┘
+  Contraste con Clawdbot
+
+    CLAWDBOT                           HIKAI (actual)
+    ────────                           ─────
+    Tools stateless                    todo_manager con estado
+    (bash, fetch, browser)             (plan, items, status)
+
+    LLM decide qué hacer               LLM debe seguir un protocolo
+    en cada turno                      específico de fases
+
+    Éxito = output visible             Éxito = JSON validado
+    (respuesta, archivo, etc)          tras N fases
+
+    Fallo = retry con otro             Fallo = loop infinito
+    approach                           repitiendo mismo error
+
+  ---
+  Propuesta: Simplificar radicalmente
+
+  Principio: Un agente de código funciona porque tiene verificación externa clara
+
+    Código ──▶ Compilar ──▶ ¿Errores? ──▶ Corregir
+                                │
+                               No
+                                │
+                                ▼
+                           Tests ──▶ ¿Pasan? ──▶ Done
+
+  Hikai necesita su equivalente de "compilar + tests".
+
+  ---
+  Nueva arquitectura propuesta
+
+  Fase 1: Un solo agente, output directo, validación post-hoc
+
+    ┌─────────────────────────────────────────────────────┐
+    │                                                     │
+    │   REPO CONTEXT AGENT (único)                        │
+    │                                                     │
+    │   Tools simples:                                    │
+    │   • list_files(path) → string[]                     │
+    │   • read_file(path) → string                        │
+    │   • search_code(query) → matches[]                  │
+    │                                                     │
+    │   Output: JSON estructurado directo                 │
+    │   (no validate_json tool, el output ES el JSON)    │
+    │                                                     │
+    └──────────────────────┬──────────────────────────────┘
+                           │
+                           ▼
+    ┌─────────────────────────────────────────────────────┐
+    │                                                     │
+    │   VALIDADOR (código, no LLM)                        │
+    │                                                     │
+    │   • Parse JSON                                      │
+    │   • Validate contra Zod schema                      │
+    │   • Check completeness (campos requeridos)          │
+    │   • Check coherence (referencias válidas)           │
+    │                                                     │
+    │   Si falla → feedback específico al agente          │
+    │   Si pasa → guardar snapshot                        │
+    │                                                     │
+    └─────────────────────────────────────────────────────┘
+
+  Eliminaciones clave
+  ┌─────────────────────────┬──────────────────────────────────────────────────┐
+  │         Quitar          │                     Por qué                      │
+  ├─────────────────────────┼──────────────────────────────────────────────────┤
+  │ todo_manager            │ Estado mental complejo, fuente de loops          │
+  ├─────────────────────────┼──────────────────────────────────────────────────┤
+  │ validate_json tool      │ El validador es código, no tool                  │
+  ├─────────────────────────┼──────────────────────────────────────────────────┤
+  │ Fases/phases            │ El agente explora libremente hasta tener output  │
+  ├─────────────────────────┼──────────────────────────────────────────────────┤
+  │ Sub-agentes (por ahora) │ Un agente → un output → validar → iterar         │
+  ├─────────────────────────┼──────────────────────────────────────────────────┤
+  │ Timeouts agresivos      │ Dejar que termine, con límite de tokens generoso │
+  └─────────────────────────┴──────────────────────────────────────────────────┘
+  El "compile + test" de Hikai
+
+    Agente termina con JSON
+           │
+           ▼
+    ┌──────────────────┐
+    │  SCHEMA CHECK    │◄─── "¿Compila?"
+    │  (Zod parse)     │
+    └────────┬─────────┘
+             │
+        ¿válido?
+             │
+            No ──▶ Feedback: "Campo X falta, Y tiene tipo incorrecto"
+             │           │
+             │           └──▶ Re-run agente con feedback
+             │
+            Sí
+             │
+             ▼
+    ┌──────────────────┐
+    │ COHERENCE CHECK  │◄─── "¿Tests pasan?"
+    │ (reglas de nego- │
+    │  cio en código)  │
+    └────────┬─────────┘
+             │
+        ¿coherente?
+             │
+            No ──▶ Feedback: "glossary menciona X pero no está en structure"
+             │           │
+             │           └──▶ Re-run agente con feedback
+             │
+            Sí
+             │
+             ▼
+         SNAPSHOT ✓
+
+  ---
+  Implementación concreta
+
+  1. Prompt del agente (simplificado)
+
+  Eres un analista de repositorios. Tu trabajo es entender {repo} y
+  producir un JSON con el contexto del producto.
+
+  TOOLS DISPONIBLES:
+  - list_files(path): lista archivos en un directorio
+  - read_file(path): lee contenido de un archivo
+  - search_code(query): busca código por texto
+
+  PROCESO:
+  1. Explora la estructura del repo
+  2. Lee archivos clave (README, package.json, código principal)
+  3. Identifica tecnologías, dominios, terminología
+  4. Cuando tengas suficiente información, responde SOLO con el JSON
+
+  OUTPUT REQUERIDO (JSON):
+  {
+    "structure": { "directories": [...], "keyFiles": [...] },
+    "techStack": ["typescript", "react", ...],
+    "domains": [{ "name": "...", "description": "...", "files": [...] }],
+    "glossary": [{ "term": "...", "definition": "..." }],
+    "summary": "..."
+  }
+
+  NO uses ningún otro tool. Cuando termines, responde con el JSON y nada más.
+
+  2. Loop de ejecución (código)
+
+  función runContextAgent(repo):
+      maxAttempts = 3
+
+      para attempt in 1..maxAttempts:
+          result = agent.run(prompt + previousFeedback)
+
+          // Extraer JSON del output
+          json = extractJSON(result.text)
+
+          // Validar schema
+          schemaResult = schema.safeParse(json)
+          si schemaResult.error:
+              previousFeedback = formatSchemaErrors(schemaResult.error)
+              continuar
+
+          // Validar coherencia
+          coherenceResult = checkCoherence(json)
+          si coherenceResult.errors:
+              previousFeedback = formatCoherenceErrors(coherenceResult.errors)
+              continuar
+
+          // Éxito
+          return saveSnapshot(json)
+
+      return { status: "failed", attempts: maxAttempts }
+
+  3. Validador de coherencia (ejemplos)
+
+  función checkCoherence(context):
+      errors = []
+
+      // Cada dominio debe referenciar archivos que existen en structure
+      para domain in context.domains:
+          para file in domain.files:
+              si file no está en context.structure.keyFiles:
+                  errors.push(`Domain "${domain.name}" references unknown file: ${file}`)
+
+      // Cada término del glosario debe aparecer en algún archivo leído
+      para term in context.glossary:
+          si term.term no aparece en ningún archivo analizado:
+              errors.push(`Glossary term "${term.term}" not found in codebase`)
+
+      // techStack debe ser consistente con archivos
+      si "react" in context.techStack:
+          si no hay archivos .jsx/.tsx:
+              errors.push(`techStack includes "react" but no JSX/TSX files found`)
+
+      return { valid: errors.length == 0, errors }
+
+  ---
+  Roadmap de iteración
+
+    FASE 1 (ahora)                    FASE 2 (después)
+    ─────────────                     ────────────────
+
+    1 agente único                    Agentes especializados
+    Output JSON directo               (si se necesita profundidad)
+    Validación en código
+    Retry con feedback                Orquestación simple
+    Sin todo_manager                  (secuencial, no paralelo)
+    Sin sub-agentes
+                                      FASE 3 (futuro)
+                                      ────────────────
+
+                                      Casos de uso downstream
+                                      (marketing, CS, etc.)
+                                      usando el contexto
+                                      ya validado
+
+  Fase 1: Entregables
+
+  1. Nuevo repoContextAgent.ts — un solo archivo, sin dependencias de todo_manager
+  2. Schema Zod para output — simple, plano, validable
+  3. contextValidator.ts — validación schema + coherencia
+  4. Loop con retry — máximo 3 intentos con feedback
+  5. UI simplificada — muestra: intentando → validando → éxito/fallo
+
+  Métricas de éxito Fase 1
+
+  - Agente completa en <60s para repo pequeño
+  - Output pasa validación en ≥80% de runs (sin retry)
+  - Con retry, éxito en ≥95% de runs
+  - Cero loops infinitos (maxTurns nunca agotado sin output)
+
+  ---
+  Resumen
+  ┌───────────────────────────────────────┬──────────────────────────────────────┐
+  │                 Antes                 │               Después                │
+  ├───────────────────────────────────────┼──────────────────────────────────────┤
+  │ N agentes especializados              │ 1 agente generalista                 │
+  ├───────────────────────────────────────┼──────────────────────────────────────┤
+  │ todo_manager + phases + validate_json │ Tools de lectura + output directo    │
+  ├───────────────────────────────────────┼──────────────────────────────────────┤
+  │ Validación por tool (LLM valida)      │ Validación por código (Zod + reglas) │
+  ├───────────────────────────────────────┼──────────────────────────────────────┤
+  │ Sub-agentes con timeouts              │ Un solo run con retry                │
+  ├───────────────────────────────────────┼──────────────────────────────────────┤
+  │ Complejidad alta, éxito bajo          │ Complejidad baja, éxito medible      │
+  └───────────────────────────────────────┴──────────────────────────────────────┘
+  El principio es: menos moving parts, feedback loop más corto, verificación determinista.

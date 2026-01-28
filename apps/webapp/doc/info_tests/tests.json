@@ -1,242 +1,185 @@
 {
-	"_creationTime": 1769497009807.7534,
-	"_id": "mn75970fm10svchenq036v3yz58008zm",
+	"_creationTime": 1769614712432.68,
+	"_id": "mn7fgshv0t3s69y2qjn7cttr4n803amr",
 	"agentRuns": {
-		"contextAgent": "m97b63ajw5w4emrqthsv8wy8vs800w5y",
-		"domainMapper": "m97ba6j18qx4jvx2v04h85023x8004st",
-		"featureScout": "m977qz2f42hznr8gqz1m47tpjn8010pz",
-		"glossaryScout": "m978m9bdm1cr88424azqtyhy158016k9",
-		"structureScout": "m970fdmx4wv8sk903fyrj1f84s80095f"
+		"contextAgent": "m97fxgytfgeq80tjtqzrydmd8d8039rp"
 	},
-	"completedPhases": ["domains", "features"],
-	"createdAt": 1769497009805,
-	"domainMap": {
+	"completedPhases": [],
+	"contextDetail": {
 		"domains": [
 			{
-				"evidence": [
-					"apps/webapp/src/domains/products/components/baseline-editor.tsx",
-					"apps/webapp/src/domains/products/index.ts"
+				"description": "Customer-facing and marketing web applications in the apps/ directory (webapp and website).",
+				"keyFiles": [
+					"apps/webapp/src/* (inferred)",
+					"apps/website/src/* (inferred)",
+					"apps/webapp/package.json (inferred)"
 				],
-				"name": "products",
-				"responsibility": "Manage product records, baseline configuration, and product-level UI (product list, creation, baseline editor).",
-				"weight": 0.3
+				"name": "frontend-webapps",
+				"purpose": "Deliver UI, pages and client-side behavior for product and marketing."
 			},
 			{
-				"evidence": [
-					"apps/webapp/src/domains/timeline/components/timeline-list.tsx",
-					"apps/webapp/src/domains/timeline/index.ts"
+				"description": "Shared UI components and styles packaged under packages/ui for reuse across apps.",
+				"keyFiles": [
+					"packages/ui/src/index.ts (inferred)",
+					"packages/ui/package.json (inferred)"
 				],
-				"name": "timeline",
-				"responsibility": "Display and manage timeline events (interpreted events, lists, filters) used to build product narratives and release highlights.",
-				"weight": 0.2
+				"name": "design-system / UI components",
+				"purpose": "Provide consistent components, styling primitives and TS types consumed by apps."
 			},
 			{
-				"evidence": [
-					"apps/webapp/src/domains/core/components/app-shell.tsx",
-					"apps/webapp/src/domains/core/index.ts"
+				"description": "Server-side logic, data access and realtime functions implemented using Convex.",
+				"keyFiles": [
+					"packages/convex/src/* (inferred)",
+					"packages/convex/package.json (inferred)"
 				],
-				"name": "core",
-				"responsibility": "Application shell and shared app-level UX (header, global layout, toasts, theme hooks).",
-				"weight": 0.15
+				"name": "backend / data & functions (Convex)",
+				"purpose": "Hold backend business logic, DB interactions and realtime endpoints for the apps."
 			},
 			{
-				"evidence": [
-					"apps/webapp/src/domains/connectors/components/connection-card.tsx",
-					"apps/webapp/src/domains/connectors/index.ts"
+				"description": "Shared configuration packages for TypeScript, Tailwind and workspace-level tooling.",
+				"keyFiles": [
+					"packages/typescript-config/*",
+					"packages/tailwind-config/*",
+					"eslint.config.mjs",
+					"tsconfig.json",
+					"prettier config files (.prettierrc, .prettierignore)"
 				],
-				"name": "connectors",
-				"responsibility": "Integrations and external connections UI (connection cards, add connection flows, sync/disconnect actions).",
-				"weight": 0.12
+				"name": "config & infra",
+				"purpose": "Centralize linting, TypeScript and styling configs for consistent DX across packages."
 			},
 			{
-				"evidence": [
-					"apps/webapp/src/domains/organizations/components/org-switcher.tsx",
-					"apps/webapp/src/domains/organizations/index.ts"
-				],
-				"name": "organizations",
-				"responsibility": "Organization management and switching (org switcher, org lists, org-related settings links).",
-				"weight": 0.12
-			},
-			{
-				"evidence": [
-					"apps/webapp/src/domains/auth/components/signin-form.tsx",
-					"apps/webapp/src/domains/auth/components/signup-form.tsx"
-				],
-				"name": "auth",
-				"responsibility": "Authentication flows and forms (signin, signup, password reset UI and validation).",
-				"weight": 0.06
-			},
-			{
-				"evidence": [
-					"apps/webapp/src/domains/shared/components/settings-layout.tsx",
-					"apps/webapp/src/domains/shared/index.ts"
-				],
-				"name": "shared",
-				"responsibility": "Reusable UI primitives and layout utilities used across settings and domains (settings layout, utility exports).",
-				"weight": 0.05
+				"description": "Documentation and operational guides present at repo root (README, SETUP-EMAIL, AGENTS, CLAUDE).",
+				"keyFiles": ["README.md", "SETUP-EMAIL.md", "AGENTS.md", "CLAUDE.md"],
+				"name": "developer-docs & ops",
+				"purpose": "Onboarding, agent documentation and setup instructions (e.g., email setup)."
 			}
 		],
-		"summary": { "totalDomains": 7, "warnings": [] }
-	},
-	"errors": [
-		{
-			"error": "Structure scout did not return output",
-			"phase": "structure",
-			"timestamp": 1769497122009
-		},
-		{
-			"error": "Glossary scout did not return output",
-			"phase": "glossary",
-			"timestamp": 1769497122009
-		}
-	],
-	"features": {
 		"features": [
 			{
-				"confidence": 0.9,
-				"description": "List, create, and manage product records from the product dashboard; includes baseline configuration entry points.",
-				"domain": "products",
-				"evidence": [
-					{
-						"excerpt": "Exports product list and routing for product CRUD flows (ProductsList, ProductCreate routes).",
-						"path": "apps/webapp/src/domains/products/index.ts",
-						"type": "component"
-					},
-					{
-						"excerpt": "BaselineEditor component: UI for configuring product baseline settings and saving baseline configuration.",
-						"path": "apps/webapp/src/domains/products/components/baseline-editor.tsx",
-						"type": "component"
-					}
-				],
-				"id": "products.product_list",
-				"name": "Product list & creation",
-				"visibility": "public"
+				"description": "Multiple apps share a single design system / UI package to enforce consistency and reduce duplication.",
+				"domain": "design-system / UI components",
+				"name": "Monorepo with shared UI",
+				"userFacing": false
 			},
 			{
-				"confidence": 0.85,
-				"description": "Display and manage timeline events with interpreted event items, lists and filters to build product narratives and release highlights.",
-				"domain": "timeline",
-				"evidence": [
-					{
-						"excerpt": "TimelineList component: renders event rows, supports filtering and event grouping for product narratives.",
-						"path": "apps/webapp/src/domains/timeline/components/timeline-list.tsx",
-						"type": "component"
-					},
-					{
-						"excerpt": "Timeline domain index: registers timeline routes and exposes timeline-related hooks and helpers.",
-						"path": "apps/webapp/src/domains/timeline/index.ts",
-						"type": "component"
-					}
-				],
-				"id": "timeline.events_list",
-				"name": "Timeline events list & filters",
-				"visibility": "public"
+				"description": "Backend and realtime features implemented using Convex packages, enabling lightweight serverless workflows.",
+				"domain": "backend / data & functions (Convex)",
+				"name": "Convex-backed application logic",
+				"userFacing": false
 			},
 			{
-				"confidence": 0.9,
-				"description": "Global app shell providing header, layout, theming hooks and global UX primitives (toasts, navigation).",
-				"domain": "core",
-				"evidence": [
-					{
-						"excerpt": "AppShell component: defines top-level layout, header, navigation slot and global state plumbing.",
-						"path": "apps/webapp/src/domains/core/components/app-shell.tsx",
-						"type": "component"
-					},
-					{
-						"excerpt": "Core domain index: wires core providers and exports global hooks (theme, toasts) used across the app.",
-						"path": "apps/webapp/src/domains/core/index.ts",
-						"type": "component"
-					}
-				],
-				"id": "core.app_shell",
-				"name": "Application shell & global layout",
-				"visibility": "internal"
+				"description": "Tailwind config is centralized in packages/tailwind-config to provide consistent theme/design tokens.",
+				"domain": "config & infra",
+				"name": "Tailwind-based styling with centralized config",
+				"userFacing": false
 			},
 			{
-				"confidence": 0.8,
-				"description": "UI for managing integrations: connection cards, add-connection flows, sync and disconnect actions.",
-				"domain": "connectors",
-				"evidence": [
-					{
-						"excerpt": "ConnectionCard: displays connector status, last sync, and actions (sync, disconnect, settings).",
-						"path": "apps/webapp/src/domains/connectors/components/connection-card.tsx",
-						"type": "component"
-					},
-					{
-						"excerpt": "Connectors domain index: routes and helpers for connector onboarding and management flows.",
-						"path": "apps/webapp/src/domains/connectors/index.ts",
-						"type": "component"
-					}
-				],
-				"id": "connectors.connection_card",
-				"name": "Connectors - connection management",
-				"visibility": "public"
+				"description": "Unit and/or component tests are run with Vitest (workspace-level config present).",
+				"domain": "config & infra",
+				"name": "Testing with Vitest",
+				"userFacing": false
 			},
 			{
-				"confidence": 0.75,
-				"description": "Organization picker and related org-level links (switcher UI, org list and settings shortcuts).",
-				"domain": "organizations",
-				"evidence": [
-					{
-						"excerpt": "OrgSwitcher component: select active organization, shows org list and quick links to org settings.",
-						"path": "apps/webapp/src/domains/organizations/components/org-switcher.tsx",
-						"type": "component"
-					},
-					{
-						"excerpt": "Organizations index: exposes organization services and routes for organization settings.",
-						"path": "apps/webapp/src/domains/organizations/index.ts",
-						"type": "component"
-					}
-				],
-				"id": "organizations.org_switcher",
-				"name": "Organization switcher & org management",
-				"visibility": "public"
+				"description": "Repository includes documentation and setup steps for email or other operational concerns (SETUP-EMAIL.md).",
+				"domain": "developer-docs & ops",
+				"name": "Email setup / operational guides",
+				"userFacing": false
 			},
 			{
-				"confidence": 0.7,
-				"description": "User authentication forms and flows including signin, signup and validation UI for account access.",
-				"domain": "auth",
-				"evidence": [
-					{
-						"excerpt": "SigninForm: username/email and password input, validation, submit handling and error messages.",
-						"path": "apps/webapp/src/domains/auth/components/signin-form.tsx",
-						"type": "component"
-					},
-					{
-						"excerpt": "SignupForm: account creation UI, input validation, and onboarding hooks.",
-						"path": "apps/webapp/src/domains/auth/components/signup-form.tsx",
-						"type": "component"
-					}
-				],
-				"id": "auth.signin_signup",
-				"name": "Authentication flows (sign in / sign up)",
-				"visibility": "public"
-			},
-			{
-				"confidence": 0.65,
-				"description": "Reusable settings layout, shared components and utilities used across domain settings pages and admin flows.",
-				"domain": "shared",
-				"evidence": [
-					{
-						"excerpt": "SettingsLayout: reusable page scaffold for settings pages with nav and content areas.",
-						"path": "apps/webapp/src/domains/shared/components/settings-layout.tsx",
-						"type": "component"
-					},
-					{
-						"excerpt": "Shared domain index: exports shared UI primitives and utilities used across multiple domains.",
-						"path": "apps/webapp/src/domains/shared/index.ts",
-						"type": "component"
-					}
-				],
-				"id": "shared.settings_layout",
-				"name": "Shared settings layout & UI primitives",
-				"visibility": "internal"
+				"description": "Separate app directories for webapp (product) and website (marketing/documentation) enabling independent deployments.",
+				"domain": "frontend-webapps",
+				"name": "Multiple web apps (product + marketing)",
+				"userFacing": true
 			}
 		],
-		"generatedAt": 1769472000000
+		"language": {
+			"conventions": [
+				"TypeScript-first codebase (tsconfig.json present)",
+				"Shared config packages for consistency (typescript-config, tailwind-config)",
+				"Component-driven UI in packages/ui",
+				"Likely file naming: camelCase for identifiers, kebab-case or folder-per-feature for packages/files"
+			],
+			"glossary": [
+				{
+					"definition": "Top-level folder containing runnable applications (webapp, website).",
+					"term": "apps"
+				},
+				{
+					"definition": "Workspace packages that are imported by apps or other packages (ui, convex, configs).",
+					"term": "packages"
+				},
+				{
+					"definition": "A backend-as-a-service platform used here for server-side logic and realtime DB functions.",
+					"term": "convex"
+				},
+				{
+					"definition": "Task runner / build orchestration used to speed up monorepo builds.",
+					"term": "turborepo / turbo"
+				},
+				{
+					"definition": "Monorepo package manager configuration used to link internal packages.",
+					"term": "pnpm workspace"
+				}
+			]
+		},
+		"meta": {
+			"buildTooling": "turborepo (turbo)",
+			"lintingFormatting": "eslint + prettier",
+			"observations": [
+				"No file contents were provided; many file paths and roles are inferred from repository layout and file names.",
+				"Presence of AGENTS.md and CLAUDE.md suggests documentation related to agent tooling or AI workflows in repo context.",
+				"SETUP-EMAIL.md indicates repo contains operational setup steps (email)."
+			],
+			"packageManager": "pnpm",
+			"repoType": "monorepo (pnpm workspace)",
+			"testing": "vitest"
+		},
+		"technical": {
+			"entryPoints": [
+				"apps/webapp/src/main.tsx (inferred)",
+				"apps/website/src/main.tsx or apps/website/src/index.tsx (inferred)",
+				"packages/ui/src/index.ts (inferred)",
+				"packages/convex/index.ts or packages/convex/src/index.ts (inferred)"
+			],
+			"integrations": [
+				"convex (backend / realtime functions & db)",
+				"tailwindcss (via packages/tailwind-config)",
+				"pnpm workspace + turborepo (monorepo tooling)",
+				"vitest (test runner)",
+				"eslint / prettier (linting & formatting)"
+			],
+			"patterns": [
+				"monorepo (pnpm workspace + turbo)",
+				"shared packages / design-system (packages/ui)",
+				"centralized config packages (packages/typescript-config, packages/tailwind-config)",
+				"multi-app (apps/webapp, apps/website)",
+				"BaaS / serverless-style backend (convex)"
+			],
+			"rootDirs": ["apps", "packages", ".vscode", ".claude"],
+			"stack": [
+				"typescript",
+				"react (likely, apps/webapp & packages/ui)",
+				"tailwindcss (packages/tailwind-config)",
+				"convex (backend-as-a-service / JS SDK)",
+				"pnpm (monorepo package manager)",
+				"turborepo",
+				"vitest (testing)",
+				"eslint",
+				"prettier"
+			]
+		}
 	},
+	"createdAt": 1769614712430,
+	"errors": [],
 	"generatedBy": "contextAgent",
+	"generationMetrics": {
+		"tokensIn": 18071,
+		"tokensOut": 4319,
+		"totalLatencyMs": 107106,
+		"totalTokens": 22390,
+		"totalTurns": 10
+	},
 	"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
-	"status": "partial",
+	"status": "completed",
 	"triggerReason": "manual_refresh"
 }

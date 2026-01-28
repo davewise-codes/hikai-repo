@@ -44,6 +44,7 @@ export function createListFilesTool(
 		description:
 			"List files in a specific directory (non-recursive). Use after list_dirs.",
 		inputSchema: LIST_FILES_SCHEMA,
+		outputLimitBytes: 16_000,
 		execute: async (input) => {
 			const parsed = parseInput(input);
 			const connection = await getActiveGithubConnection(ctx, productId);
