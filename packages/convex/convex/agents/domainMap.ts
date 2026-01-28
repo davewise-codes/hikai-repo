@@ -433,6 +433,7 @@ function buildDomainMapPrompt(
 		'- read_file input: { "path": "path/to/file.tsx" }',
 		'- validate_json input: { "json": { ... } }',
 		"Do NOT use tasks or description fields in todo_manager.",
+		"At most one todo_manager item may be in_progress (0 or 1).",
 		"Do NOT nest tool calls inside todo_manager. Call each tool directly.",
 		"Example tool call block:",
 		'{"type":"tool_use","toolCalls":[{"id":"call-1","name":"todo_manager","input":{"items":[{"content":"Explore repo structure","activeForm":"Exploring repo","status":"in_progress"},{"content":"Inspect key files","activeForm":"Inspecting files","status":"pending"},{"content":"Map domains","activeForm":"Mapping domains","status":"pending"}]}},{"id":"call-2","name":"list_dirs","input":{"path":"","depth":2,"limit":50}}]}',

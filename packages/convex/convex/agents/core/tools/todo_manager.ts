@@ -142,11 +142,16 @@ function parseTodoManagerInput(input: unknown): TodoManagerInput {
 		);
 	}
 	const normalized = items.map((item) => normalizeItem(item));
-	const inProgressCount = normalized.filter(
-		(item) => item?.status === "in_progress",
-	).length;
-	if (inProgressCount > 1) {
-		throw new Error("todo_manager: only one item can be in_progress");
+	if (normalized.filter((item) => item?.status === "in_progress").length > 1) {
+		let found = false;
+		for (const item of normalized) {
+			if (item?.status !== "in_progress") continue;
+			if (!found) {
+				found = true;
+				continue;
+			}
+			item.status = "pending";
+		}
 	}
 	for (const item of normalized) {
 		if (

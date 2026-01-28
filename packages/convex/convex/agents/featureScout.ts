@@ -429,6 +429,7 @@ function buildFeaturePrompt({
 		'- read_file input: { "path": "path/to/file" }',
 		'- validate_json input: { "json": { ... } }',
 		"Do NOT use tasks or description fields in todo_manager.",
+		"At most one todo_manager item may be in_progress (0 or 1).",
 		`Use productId: ${productId} when calling tools.`,
 	].join("\n");
 }

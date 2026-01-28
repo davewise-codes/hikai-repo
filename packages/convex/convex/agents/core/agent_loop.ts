@@ -207,46 +207,24 @@ export async function executeAgentLoop(
 			};
 		}
 
+		const hasMixedText =
+			Boolean(response.toolCalls?.length) && response.text.trim().length > 0;
+		if (hasMixedText) {
+			response._debug = {
+				rawText: response.text,
+				extracted: {
+					toolCalls: response.toolCalls ?? [],
+					discardedText: response.text,
+				},
+			};
+		}
+
 		tokensIn += response.tokensIn ?? 0;
 		tokensOut += response.tokensOut ?? 0;
 		totalTokens += response.totalTokens ?? 0;
 
 		if (config.onModelResponse) {
 			await config.onModelResponse({ turn: turns, response });
-		}
-
-		const draftCandidate =
-			typeof response._debug?.extracted === "object" &&
-			response._debug?.extracted !== null &&
-			"data" in response._debug.extracted
-				? (response._debug.extracted as { data?: unknown }).data
-				: null;
-		if (
-			draftCandidate &&
-			typeof draftCandidate === "object" &&
-			"type" in draftCandidate &&
-			(draftCandidate as { type?: string }).type === "final" &&
-			"output" in draftCandidate
-		) {
-			lastDraftOutput = (draftCandidate as { output?: unknown }).output ?? null;
-			if (lastDraftOutput) {
-				try {
-					lastDraftRawText = JSON.stringify(lastDraftOutput, null, 2);
-				} catch {
-					lastDraftRawText = response.text;
-				}
-			}
-		}
-		if (!lastDraftOutput && response._debug?.rawText) {
-			const embeddedFinal = extractFinalFromRawText(response._debug.rawText);
-			if (embeddedFinal && embeddedFinal.output) {
-				lastDraftOutput = embeddedFinal.output;
-				try {
-					lastDraftRawText = JSON.stringify(embeddedFinal.output, null, 2);
-				} catch {
-					lastDraftRawText = response.text;
-				}
-			}
 		}
 
 		if (
@@ -270,25 +248,21 @@ export async function executeAgentLoop(
 		}
 
 		if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
-			const parsed = extractJsonPayload(response.text);
-			const looksLikeToolUse = response.text.includes("\"type\":\"tool_use\"");
-			if (!parsed && looksLikeToolUse && config.toolUseExtraTextReminder) {
-				messages.push({ role: "assistant", content: response.text });
-				messages.push({ role: "user", content: config.toolUseExtraTextReminder });
-				turns += 1;
-				continue;
+			const legacyToolCalls = extractLegacyToolCalls(response.text);
+			if (legacyToolCalls?.length) {
+				response = {
+					...response,
+					stopReason: "tool_use",
+					toolCalls: legacyToolCalls,
+					_debug: {
+						rawText: response.text,
+						extracted: { data: { type: "tool_use", toolCalls: legacyToolCalls } },
+					},
+				};
 			}
-			if (config.requireValidateJson && !hasValidatedJson) {
-				messages.push({ role: "assistant", content: response.text });
-				messages.push({
-					role: "user",
-					content:
-						config.validateJsonReminder ??
-						"<reminder>Call validate_json with your final JSON before submitting the final output.</reminder>",
-				});
-				turns += 1;
-				continue;
-			}
+		}
+
+		if (response.stopReason !== "tool_use" || !response.toolCalls?.length) {
 			if (!response.text.trim() && config.emptyResponseReminder) {
 				messages.push({ role: "assistant", content: response.text });
 				messages.push({
@@ -298,18 +272,19 @@ export async function executeAgentLoop(
 				turns += 1;
 				continue;
 			}
-			const normalizedText = parsed?.normalizedText ?? response.text;
-			const output = parsed?.data ?? null;
+			const inlineOutput = parseInlineOutput(response.text);
+			const normalizedText = inlineOutput.normalizedText;
+			const output = inlineOutput.output;
 			let validationResult = config.validation
 				? validateOutput(config.validation, output)
 				: null;
-			if (validationResult && lastPlan && !isPlanCompleted(lastPlan)) {
+			const planWasIncomplete = Boolean(lastPlan && !isPlanCompleted(lastPlan));
+			if (validationResult && planWasIncomplete) {
 				validationResult = {
 					...validationResult,
-					valid: false,
-					errors: [
-						"Plan is not completed. Update with todo_manager before final output.",
-						...validationResult.errors,
+					warnings: [
+						...(validationResult.warnings ?? []),
+						"Plan was not completed. Remaining items marked as skipped.",
 					],
 				};
 			}
@@ -319,7 +294,7 @@ export async function executeAgentLoop(
 					validationResult,
 					output,
 					response.text,
-					parsed?.hadExtraText ?? false,
+					inlineOutput.hadExtraText,
 				);
 				if (!validationResult.valid) {
 					messages.push({ role: "assistant", content: normalizedText });
@@ -334,6 +309,9 @@ export async function executeAgentLoop(
 					turns += 1;
 					continue;
 				}
+			}
+			if (planWasIncomplete && lastPlan) {
+				lastPlan = markPlanSkipped(lastPlan);
 			}
 
 			return {
@@ -352,64 +330,7 @@ export async function executeAgentLoop(
 			};
 	}
 
-	const hadExtraText =
-		typeof response._debug?.extracted === "object" &&
-		response._debug?.extracted !== null &&
-		"hadExtraText" in response._debug.extracted &&
-		Boolean(
-			(response._debug.extracted as { hadExtraText?: boolean }).hadExtraText,
-		);
-
-	const hasOnlyValidateJsonCalls =
-		response.toolCalls?.length &&
-		response.toolCalls.every((call) => call.name === "validate_json");
-	const hasOnlyTodoManagerCalls =
-		response.toolCalls?.length &&
-		response.toolCalls.every((call) => call.name === "todo_manager");
-	if (
-		lastPlan &&
-		isPlanCompleted(lastPlan) &&
-		hasOnlyTodoManagerCalls &&
-		!hasOnlyValidateJsonCalls
-	) {
-		messages.push({ role: "assistant", content: response.text });
-		const reminders = [
-			"Plan already completed. Do NOT call todo_manager again.",
-			config.requireValidateJson
-				? config.validateJsonReminder ??
-					"<reminder>Call validate_json with your final JSON before submitting the final output.</reminder>"
-				: "Return your final JSON output now.",
-		];
-		if (config.finalOutputOnlyReminder) {
-			reminders.push(config.finalOutputOnlyReminder);
-		}
-		messages.push({ role: "user", content: reminders.join("\n") });
-		turns += 1;
-		continue;
-	}
-	if (
-		lastPlan &&
-		isPlanCompleted(lastPlan) &&
-		config.finalOutputOnlyReminder &&
-		!hasOnlyValidateJsonCalls
-	) {
-		messages.push({ role: "assistant", content: response.text });
-		messages.push({ role: "user", content: config.finalOutputOnlyReminder });
-		turns += 1;
-		continue;
-	}
-
-	if (hadExtraText && config.toolUseExtraTextReminder) {
-		messages.push({ role: "assistant", content: response.text });
-		messages.push({ role: "user", content: config.toolUseExtraTextReminder });
-		turns += 1;
-		continue;
-	}
-
 		const results = await executeToolCalls(response.toolCalls, tools);
-		const nonValidateTools = response.toolCalls.filter(
-			(call) => call.name !== "validate_json",
-		);
 		const validatedThisTurn = results.some((result) => {
 			if (result.name !== "validate_json") return false;
 			if (!result.output || typeof result.output !== "object") return false;
@@ -438,7 +359,8 @@ export async function executeAgentLoop(
 			turnsSincePlanUpdate >= config.planNag.threshold
 				? config.planNag.message
 				: null;
-		messages.push({ role: "assistant", content: response.text });
+		const assistantText = hasMixedText ? "" : response.text;
+		messages.push({ role: "assistant", content: assistantText });
 		messages.push({
 			role: "user",
 			content: formatToolResults(results, lastPlan, reminder),
@@ -560,6 +482,73 @@ function formatToolResults(
 	return blocks.join("\n\n");
 }
 
+function parseInlineOutput(text: string): {
+	output: unknown | null;
+	normalizedText: string;
+	hadExtraText: boolean;
+} {
+	const trimmed = text.trim();
+	if (!trimmed) {
+		return { output: null, normalizedText: text, hadExtraText: false };
+	}
+	try {
+		const parsed = JSON.parse(trimmed) as unknown;
+		return {
+			output: parsed,
+			normalizedText: JSON.stringify(parsed, null, 2),
+			hadExtraText: false,
+		};
+	} catch {
+		const extracted = extractJsonPayload(text);
+		if (extracted?.data !== undefined) {
+			const data = extracted.data;
+			const output =
+				data &&
+				typeof data === "object" &&
+				"output" in (data as Record<string, unknown>)
+					? (data as { output?: unknown }).output
+					: data;
+			return {
+				output: output ?? null,
+				normalizedText: extracted.normalizedText ?? text,
+				hadExtraText: Boolean(extracted.hadExtraText),
+			};
+		}
+	}
+	return { output: null, normalizedText: text, hadExtraText: false };
+}
+
+function extractLegacyToolCalls(text: string): ToolCall[] | null {
+	const extracted = extractJsonPayload(text);
+	const data =
+		extracted?.data && typeof extracted.data === "object"
+			? (extracted.data as Record<string, unknown>)
+			: null;
+	if (!data || data.type !== "tool_use" || !Array.isArray(data.toolCalls)) {
+		return null;
+	}
+	const toolCalls = data.toolCalls
+		.map((call, index) => {
+			if (!call || typeof call !== "object") return null;
+			const toolCall = call as {
+				name?: string;
+				tool?: string;
+				input?: unknown;
+				args?: unknown;
+				id?: string;
+			};
+			const name = toolCall.name ?? toolCall.tool;
+			if (!name) return null;
+			return {
+				name,
+				input: toolCall.input ?? toolCall.args ?? {},
+				id: toolCall.id ?? `call-${index + 1}`,
+			};
+		})
+		.filter((call): call is ToolCall => Boolean(call));
+	return toolCalls.length > 0 ? toolCalls : null;
+}
+
 function validateOutput(
 	validation: AgentLoopValidationConfig,
 	output: unknown | null,
@@ -572,6 +561,27 @@ function validateOutput(
 		};
 	}
 	return validation.validate(output);
+}
+
+function markPlanSkipped(plan: PlanManager): PlanManager {
+	const items = plan.items.map((item) => {
+		if (item.status === "completed") return item;
+		return {
+			...item,
+			status: "blocked",
+			checkpoint: {
+				...(typeof item.checkpoint === "object" && item.checkpoint
+					? item.checkpoint
+					: {}),
+				skipped: true,
+			},
+		};
+	});
+	return {
+		...plan,
+		items,
+		currentItem: null,
+	};
 }
 
 function buildValidationFeedback(
@@ -602,24 +612,4 @@ function buildValidationFeedback(
 	}
 	lines.push("Return ONLY valid JSON that fixes the errors.");
 	return lines.join("\n");
-}
-
-function extractFinalFromRawText(text: string): { output: unknown } | null {
-	const marker = "\"type\":\"final\"";
-	const index = text.lastIndexOf(marker);
-	if (index === -1) return null;
-	const slice = text.slice(index);
-	const extracted = extractJsonPayload(slice);
-	if (
-		extracted &&
-		extracted.data &&
-		typeof extracted.data === "object" &&
-		"type" in (extracted.data as Record<string, unknown>)
-	) {
-		const data = extracted.data as { type?: string; output?: unknown };
-		if (data.type === "final") {
-			return { output: data.output };
-		}
-	}
-	return null;
 }
