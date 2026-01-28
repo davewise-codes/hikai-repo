@@ -37,9 +37,12 @@ export async function executeToolCall(
 	if (tool.inputSchema) {
 		const validation = validateToolInput(tool.inputSchema, call.input);
 		if (!validation.valid) {
-			throw new Error(
-				`Invalid input for ${call.name}: ${validation.errors.join("; ")}`,
-			);
+			return {
+				name: call.name,
+				input: call.input,
+				error: `Invalid input for ${call.name}: ${validation.errors.join("; ")}`,
+				toolCallId: call.id,
+			};
 		}
 	}
 	try {

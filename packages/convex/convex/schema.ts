@@ -217,6 +217,7 @@ const schema = defineSchema({
 		glossary: v.optional(v.any()),
 		domainMap: v.optional(v.any()),
 		features: v.optional(v.any()),
+		contextDetail: v.optional(v.any()),
 		generationMetrics: v.optional(
 			v.object({
 				totalLatencyMs: v.optional(v.number()),

@@ -2,11 +2,12 @@ import { v } from "convex/values";
 import { action } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
+import { runRepoContextAgent } from "./repoContextAgent";
 
 const AGENT_NAME = "Context Agent";
 const USE_CASE = "context_agent";
 
-type Phase = "structure" | "glossary" | "domains" | "features";
+type Phase = "context" | "structure" | "glossary" | "domains" | "features";
 
 type SnapshotError = {
 	phase: Phase;
@@ -107,8 +108,6 @@ export const generateContextSnapshot = action({
 		const errors: SnapshotError[] = [];
 		const completedPhases: Phase[] = [];
 		const startedAt = Date.now();
-		const MAX_DURATION_MS = 9 * 60 * 1000;
-		const timeRemainingMs = () => MAX_DURATION_MS - (Date.now() - startedAt);
 		const metrics: GenerationMetrics = {
 			totalLatencyMs: 0,
 			totalTokens: 0,
@@ -116,270 +115,43 @@ export const generateContextSnapshot = action({
 			tokensOut: 0,
 			totalTurns: 0,
 		};
-		const updateMetrics = (result?: {
-			metrics?: {
-				turns: number;
-				tokensIn: number;
-				tokensOut: number;
-				totalTokens: number;
-				latencyMs: number;
-			};
-		} | null) => {
-			if (!result?.metrics) return;
-			metrics.totalLatencyMs += result.metrics.latencyMs ?? 0;
-			metrics.totalTokens += result.metrics.totalTokens ?? 0;
-			metrics.tokensIn += result.metrics.tokensIn ?? 0;
-			metrics.tokensOut += result.metrics.tokensOut ?? 0;
-			metrics.totalTurns += result.metrics.turns ?? 0;
-		};
-		let agentRuns: {
-			contextAgent?: Id<"agentRuns">;
-			structureScout?: Id<"agentRuns">;
-			glossaryScout?: Id<"agentRuns">;
-			domainMapper?: Id<"agentRuns">;
-			featureScout?: Id<"agentRuns">;
-		} = { contextAgent: runId };
 
-		await recordStep("Phase 1: structure + glossary", "info");
-		let structureResult: {
-			runId?: Id<"agentRuns">;
-			status?: string;
-			errorMessage?: string;
-			structureScout?: Record<string, unknown> | null;
-		} | null = null;
-		let glossaryResult: {
-			runId?: Id<"agentRuns">;
-			status?: string;
-			errorMessage?: string;
-			glossary?: Record<string, unknown> | null;
-		} | null = null;
-		const phase1Results = await Promise.allSettled([
-			ctx.runAction(api.agents.structureScout.generateStructureScout, {
-				productId,
-				snapshotId,
-				parentRunId: runId,
-				triggerReason: normalizedTrigger,
-			}),
-			ctx.runAction(api.agents.glossaryScout.generateGlossaryScout, {
-				productId,
-				snapshotId,
-				parentRunId: runId,
-				inputs: {
-					repoStructure: null,
-				},
-				triggerReason: normalizedTrigger,
-			}),
-		]);
-
-		const structureSettled = phase1Results[0];
-		if (structureSettled.status === "fulfilled") {
-			structureResult = structureSettled.value as typeof structureResult;
-			updateMetrics(structureResult as { metrics?: unknown });
-		} else {
-			const error = structureSettled.reason;
-			errors.push({
-				phase: "structure",
-				error: error instanceof Error ? error.message : "Structure scout failed",
-				timestamp: Date.now(),
-			});
+		await recordStep("Repo context: start", "info");
+		const contextResult = await runRepoContextAgent({
+			ctx,
+			productId,
+			runId,
+		});
+		if (contextResult.metrics) {
+			metrics.totalLatencyMs += contextResult.metrics.latencyMs ?? 0;
+			metrics.totalTokens += contextResult.metrics.totalTokens ?? 0;
+			metrics.tokensIn += contextResult.metrics.tokensIn ?? 0;
+			metrics.tokensOut += contextResult.metrics.tokensOut ?? 0;
+			metrics.totalTurns += contextResult.metrics.turns ?? 0;
 		}
 
-		const glossarySettled = phase1Results[1];
-		if (glossarySettled.status === "fulfilled") {
-			glossaryResult = glossarySettled.value as typeof glossaryResult;
-			updateMetrics(glossaryResult as { metrics?: unknown });
-		} else {
-			const error = glossarySettled.reason;
-			errors.push({
-				phase: "glossary",
-				error: error instanceof Error ? error.message : "Glossary scout failed",
-				timestamp: Date.now(),
-			});
-		}
-
-		const repoStructure = structureResult?.structureScout ?? null;
-
-		agentRuns = {
-			...agentRuns,
-			structureScout: structureResult?.runId,
-			glossaryScout: glossaryResult?.runId,
-		};
+		const agentRuns = { contextAgent: runId };
 		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
 			snapshotId,
 			agentRuns,
 		});
 
-		if (structureResult?.structureScout) {
-			completedPhases.push("structure");
-		} else {
+		if (!contextResult.contextDetail) {
 			errors.push({
-				phase: "structure",
+				phase: "context",
 				error:
-					structureResult?.errorMessage ??
-					"Structure scout did not return output",
+					contextResult.errorMessage ??
+					"Repo context agent did not return output",
 				timestamp: Date.now(),
 			});
 		}
 
-		if (glossaryResult?.glossary) {
-			completedPhases.push("glossary");
-		} else {
-			errors.push({
-				phase: "glossary",
-				error:
-					glossaryResult?.errorMessage ??
-					"Glossary scout did not return output",
-				timestamp: Date.now(),
-			});
-		}
-
-		const glossary = glossaryResult?.glossary ?? null;
-		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
-			snapshotId,
-			repoStructure: repoStructure ?? undefined,
-			glossary: glossary ?? undefined,
-			completedPhases,
-			errors,
-			status: "in_progress",
-		});
-
-		await recordStep("Phase 2: domain map", "info");
-		let domainResult: {
-			runId?: Id<"agentRuns">;
-			status?: string;
-			errorMessage?: string;
-			domainMap?: Record<string, unknown> | null;
-		} | null = null;
-
-		try {
-			domainResult = await ctx.runAction(api.agents.domainMap.generateDomainMap, {
-				productId,
-				snapshotId,
-				parentRunId: runId,
-				inputs: {
-					baseline: product.baseline ?? {},
-					repoStructure,
-					glossary,
-				},
-				triggerReason: normalizedTrigger,
-			});
-			updateMetrics(domainResult as { metrics?: unknown });
-		} catch (error) {
-			errors.push({
-				phase: "domains",
-				error: error instanceof Error ? error.message : "Domain map failed",
-				timestamp: Date.now(),
-			});
-		}
-
-		agentRuns = {
-			...agentRuns,
-			domainMapper: domainResult?.runId,
-		};
-		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
-			snapshotId,
-			agentRuns,
-		});
-
-		if (domainResult?.domainMap) {
-			completedPhases.push("domains");
-		} else {
-			errors.push({
-				phase: "domains",
-				error:
-					domainResult?.errorMessage ??
-					"Domain map did not return output",
-				timestamp: Date.now(),
-			});
-		}
-
-		const domainMap = domainResult?.domainMap ?? null;
-		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
-			snapshotId,
-			domainMap: domainMap ?? undefined,
-			completedPhases,
-			errors,
-			status: "in_progress",
-		});
-
-		await recordStep("Phase 3: features", "info");
-		let featureResult: {
-			runId?: Id<"agentRuns">;
-			status?: string;
-			errorMessage?: string;
-			features?: Record<string, unknown> | null;
-		} | null = null;
-		let featureAttempted = false;
-
-		if (domainMap && timeRemainingMs() > 90_000) {
-			featureAttempted = true;
-			try {
-				featureResult = await ctx.runAction(api.agents.featureScout.generateFeatureScout, {
-					productId,
-					snapshotId,
-					parentRunId: runId,
-					inputs: {
-						domainMap,
-						repoStructure,
-						glossary,
-					},
-					triggerReason: normalizedTrigger,
-				});
-				updateMetrics(featureResult as { metrics?: unknown });
-			} catch (error) {
-				errors.push({
-					phase: "features",
-					error: error instanceof Error ? error.message : "Feature scout failed",
-					timestamp: Date.now(),
-				});
-			}
-		} else {
-			await recordStep(
-				"Phase 3: features",
-				"warn",
-				domainMap
-					? { reason: "skipped_timeout_guard", remainingMs: timeRemainingMs() }
-					: { reason: "skipped_missing_domain_map" },
-			);
-			errors.push({
-				phase: "features",
-				error: domainMap
-					? "Skipped features to avoid context agent timeout"
-					: "Skipped features because domain map is missing",
-				timestamp: Date.now(),
-			});
-		}
-
-		agentRuns = {
-			...agentRuns,
-			featureScout: featureResult?.runId,
-		};
-		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
-			snapshotId,
-			agentRuns,
-		});
-
-		if (featureResult?.features) {
-			completedPhases.push("features");
-		} else if (featureAttempted) {
-			errors.push({
-				phase: "features",
-				error:
-					featureResult?.errorMessage ??
-					"Feature scout did not return output",
-				timestamp: Date.now(),
-			});
-		}
-
-		const status: "completed" | "partial" | "failed" =
-			errors.length === 0
-				? "completed"
-				: completedPhases.length > 0
-					? "partial"
-					: "failed";
+		const status: "completed" | "failed" =
+			contextResult.contextDetail ? "completed" : "failed";
 
 		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
 			snapshotId,
+			contextDetail: contextResult.contextDetail ?? undefined,
 			status,
 			completedPhases,
 			errors,

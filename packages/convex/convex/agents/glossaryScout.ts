@@ -9,7 +9,7 @@ import {
 	type AgentLoopStatus,
 	type AgentMessage,
 } from "./core/agent_loop";
-import { persistToolSteps } from "./core/agent_run_steps";
+import { persistCompactionStep, persistToolSteps } from "./core/agent_run_steps";
 import { injectSkill, loadSkillFromRegistry } from "./core/skill_loader";
 import {
 	createListDirsTool,
@@ -160,6 +160,11 @@ export const generateGlossaryScout = action({
 		});
 		const messages: AgentMessage[] = [
 			injectSkill(skill),
+			{
+				role: "user",
+				content:
+					"First, create a plan with todo_manager using items[]. Do NOT call todo_manager with empty input. Example: {\"items\":[{\"content\":\"Plan task\",\"activeForm\":\"Drafting plan\",\"status\":\"in_progress\"}]}",
+			},
 			{ role: "user", content: prompt },
 		];
 		const tools = [
@@ -222,6 +227,9 @@ export const generateGlossaryScout = action({
 				},
 				onStep: async (step) => {
 					await persistToolSteps(ctx, productId, runId, step);
+				},
+				onCompaction: async (step) => {
+					await persistCompactionStep(ctx, productId, runId, step);
 				},
 			},
 			prompt,

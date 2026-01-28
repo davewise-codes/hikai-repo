@@ -8,7 +8,7 @@ import {
 	type AgentLoopResult,
 	type AgentMessage,
 } from "../agent_loop";
-import { persistToolSteps } from "../agent_run_steps";
+import { persistCompactionStep, persistToolSteps } from "../agent_run_steps";
 import { getAgentEntrypoint } from "../agent_entrypoints";
 import { createToolPromptModel } from "../tool_prompt_model";
 import { injectSkill } from "../skill_loader";
@@ -92,6 +92,7 @@ export function createDelegateTool(
 					maxTotalTokens: entrypoint.defaultConfig.maxTotalTokens,
 					timeoutMs: entrypoint.defaultConfig.timeoutMs,
 					sampling: entrypoint.defaultConfig.sampling,
+					compaction: entrypoint.defaultConfig.compaction,
 					tools,
 					requireValidateJson: true,
 					validateJsonReminder:
@@ -126,6 +127,9 @@ export function createDelegateTool(
 					},
 					onStep: async (step) => {
 						await persistToolSteps(ctx, productId, runId, step);
+					},
+					onCompaction: async (step) => {
+						await persistCompactionStep(ctx, productId, runId, step);
 					},
 				},
 				prompt,

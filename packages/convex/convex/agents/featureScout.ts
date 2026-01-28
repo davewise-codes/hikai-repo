@@ -9,7 +9,7 @@ import {
 	type AgentLoopStatus,
 	type AgentMessage,
 } from "./core/agent_loop";
-import { persistToolSteps } from "./core/agent_run_steps";
+import { persistCompactionStep, persistToolSteps } from "./core/agent_run_steps";
 import { injectSkill, loadSkillFromRegistry } from "./core/skill_loader";
 import {
 	createListDirsTool,
@@ -276,6 +276,9 @@ export const generateFeatureScout = action({
 				},
 				onStep: async (step) => {
 					await persistToolSteps(ctx, productId, runId, step);
+				},
+				onCompaction: async (step) => {
+					await persistCompactionStep(ctx, productId, runId, step);
 				},
 			},
 			prompt,

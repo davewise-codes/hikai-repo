@@ -1,4 +1,5 @@
 import type { AgentLoopSampling } from "./agent_loop";
+import { DEFAULT_COMPACTION_CONFIG, type CompactionConfig } from "./compaction";
 import type { Skill } from "./skill_loader";
 import { loadSkillFromRegistry } from "./skill_loader";
 import { SKILL_CONTENTS } from "../skills";
@@ -9,6 +10,7 @@ export type AgentConfig = {
 	maxTokens?: number;
 	maxTotalTokens?: number;
 	sampling?: AgentLoopSampling;
+	compaction?: CompactionConfig;
 };
 
 export type AgentEntrypoint = {
@@ -25,6 +27,7 @@ const ENTRYPOINTS: Record<string, AgentEntrypoint> = {
 			maxTurns: 8,
 			timeoutMs: 90_000,
 			maxTokens: 1800,
+			compaction: DEFAULT_COMPACTION_CONFIG,
 		},
 	},
 	glossary_scout: {
@@ -34,6 +37,7 @@ const ENTRYPOINTS: Record<string, AgentEntrypoint> = {
 			maxTurns: 8,
 			timeoutMs: 120_000,
 			maxTokens: 2400,
+			compaction: DEFAULT_COMPACTION_CONFIG,
 		},
 	},
 	domain_mapper: {
@@ -43,6 +47,7 @@ const ENTRYPOINTS: Record<string, AgentEntrypoint> = {
 			maxTurns: 10,
 			timeoutMs: 180_000,
 			maxTokens: 3000,
+			compaction: DEFAULT_COMPACTION_CONFIG,
 		},
 	},
 	feature_scout: {
@@ -52,6 +57,7 @@ const ENTRYPOINTS: Record<string, AgentEntrypoint> = {
 			maxTurns: 10,
 			timeoutMs: 180_000,
 			maxTokens: 3000,
+			compaction: DEFAULT_COMPACTION_CONFIG,
 		},
 	},
 };

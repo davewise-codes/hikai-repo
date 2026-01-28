@@ -1,7 +1,7 @@
 import type { ActionCtx } from "../../_generated/server";
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
-import type { StepResult } from "./agent_loop";
+import type { CompactionStep, StepResult } from "./agent_loop";
 
 export async function persistToolSteps(
 	ctx: ActionCtx,
@@ -49,6 +49,28 @@ export async function persistToolSteps(
 			},
 		});
 	}
+}
+
+export async function persistCompactionStep(
+	ctx: ActionCtx,
+	productId: Id<"products">,
+	runId: Id<"agentRuns">,
+	step: CompactionStep,
+) {
+	await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+		productId,
+		runId,
+		step: "Compaction",
+		status: "info",
+		metadata: {
+			reason: step.reason,
+			messagesBefore: step.messagesBefore,
+			messagesAfter: step.messagesAfter,
+			removedMessages: step.removedMessages,
+			pinnedMessages: step.pinnedMessages,
+			summaryPreview: step.summary.slice(0, 2000),
+		},
+	});
 }
 
 function byteLength(value: string): number {

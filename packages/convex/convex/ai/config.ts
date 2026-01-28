@@ -21,6 +21,7 @@ export type AgentTelemetryConfig = {
 
 const AGENT_MODEL_OVERRIDES: Record<string, AgentModelOverride> = {
 	"Product Context Agent": { provider: "openai", model: "gpt-5-mini" },
+	"Repo Context Agent": { provider: "openai", model: "gpt-5-mini" },
 	"Timeline Context Interpreter Agent": { provider: "openai", model: "gpt-5-mini" },
 	"Source Context Classifier Agent": { provider: "openai", model: "gpt-5-mini" },
 	"Feature Map Agent": { provider: "openai", model: "gpt-5-mini" },
@@ -29,6 +30,7 @@ const AGENT_MODEL_OVERRIDES: Record<string, AgentModelOverride> = {
 
 const AGENT_TELEMETRY_CONFIG: Record<string, AgentTelemetryConfig> = {
 	"Product Context Agent": { persistInferenceLogs: true, enableRating: true },
+	"Repo Context Agent": { persistInferenceLogs: true, enableRating: false },
 	"Timeline Context Interpreter Agent": {
 		persistInferenceLogs: true,
 		enableRating: true,

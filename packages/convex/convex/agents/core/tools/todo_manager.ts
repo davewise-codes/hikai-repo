@@ -31,10 +31,7 @@ type RawPlanItem = {
 const TODO_MANAGER_SCHEMA = {
 	type: "object",
 	additionalProperties: false,
-	oneOf: [
-		{ type: "object", required: ["items"] },
-		{ type: "object", required: ["tasks"] },
-	],
+	required: ["items"],
 	properties: {
 		productId: { type: "string" },
 		items: {
@@ -98,7 +95,7 @@ export function createTodoManagerTool(
 	return {
 		name: "todo_manager",
 		description:
-			"Update execution plan. Send the COMPLETE list of items with status.",
+			"Update execution plan. Send the COMPLETE list of items with status. Example input: {\"items\":[{\"content\":\"Example task\",\"activeForm\":\"Drafting example task\",\"status\":\"in_progress\"}]} (at most one in_progress).",
 		inputSchema: TODO_MANAGER_SCHEMA,
 		execute: async (input) => {
 			const parsed = parseTodoManagerInput(input);

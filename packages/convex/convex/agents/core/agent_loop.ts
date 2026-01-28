@@ -6,6 +6,11 @@ import {
 } from "./tool_registry";
 import { extractJsonPayload } from "./json_utils";
 import { renderPlan, type PlanManager } from "./plan_manager";
+import {
+	compactMessages,
+	resolveCompactionConfig,
+	type CompactionConfig,
+} from "./compaction";
 
 export type AgentMessage = {
 	role: "user" | "assistant";
@@ -66,6 +71,7 @@ export interface AgentLoopConfig {
 	sampling?: AgentLoopSampling;
 	onStep?: (step: StepResult) => Promise<void>;
 	onModelResponse?: (step: ModelResponseStep) => Promise<void>;
+	onCompaction?: (step: CompactionStep) => Promise<void>;
 	validation?: AgentLoopValidationConfig;
 	planNag?: {
 		threshold: number;
@@ -77,6 +83,7 @@ export interface AgentLoopConfig {
 	requireValidateJson?: boolean;
 	validateJsonReminder?: string;
 	autoFinalizeOnValidateJson?: boolean;
+	compaction?: Partial<CompactionConfig>;
 }
 
 export type AgentLoopStatus =
@@ -116,6 +123,16 @@ export type ModelResponseStep = {
 	response: AgentModelResponse;
 };
 
+export type CompactionStep = {
+	turn: number;
+	reason: "message_threshold" | "token_threshold";
+	messagesBefore: number;
+	messagesAfter: number;
+	removedMessages: number;
+	pinnedMessages: number;
+	summary: string;
+};
+
 const DEFAULT_SAMPLING: AgentLoopSampling = {};
 
 export async function executeAgentLoop(
@@ -131,6 +148,7 @@ export async function executeAgentLoop(
 			: [{ role: "user", content: initialPrompt }];
 	const tools = config.tools ?? [];
 	const sampling = { ...DEFAULT_SAMPLING, ...config.sampling };
+	const compaction = resolveCompactionConfig(config.compaction);
 	let tokensIn = 0;
 	let tokensOut = 0;
 	let totalTokens = 0;
@@ -141,6 +159,7 @@ export async function executeAgentLoop(
 	let lastValidatedJson: Record<string, unknown> | null = null;
 	let lastDraftOutput: unknown | null = null;
 	let lastDraftRawText: string | null = null;
+	let compactionDone = false;
 
 	while (turns < config.maxTurns) {
 		if (
@@ -393,6 +412,35 @@ export async function executeAgentLoop(
 			};
 		}
 
+		const hitMessageThreshold = messages.length > compaction.messageThreshold;
+		const hitTokenThreshold =
+			config.maxTotalTokens !== undefined &&
+			totalTokens > config.maxTotalTokens * 0.75;
+		const shouldCompact =
+			compaction.enabled &&
+			!compactionDone &&
+			(hitMessageThreshold || hitTokenThreshold);
+
+		if (shouldCompact) {
+			const reason = hitMessageThreshold
+				? "message_threshold"
+				: "token_threshold";
+			const result = await compactMessages(messages, model, compaction);
+			compactionDone = true;
+			if (result) {
+				messages.splice(0, messages.length, ...result.messages);
+				await config.onCompaction?.({
+					turn: turns,
+					reason,
+					messagesBefore: result.messagesBefore,
+					messagesAfter: result.messagesAfter,
+					removedMessages: result.removedMessages,
+					pinnedMessages: result.pinnedMessages,
+					summary: result.summary,
+				});
+			}
+		}
+
 		turns += 1;
 	}
 
@@ -466,7 +514,27 @@ function formatToolResults(
 	plan: PlanManager | null,
 	reminder: string | null,
 ): string {
-	const blocks = [JSON.stringify(results)];
+	const blocks: string[] = [];
+	const todoError = results.find(
+		(result) =>
+			result.name === "todo_manager" &&
+			typeof result.error === "string" &&
+			result.error.includes("$.items is required"),
+	);
+	if (todoError) {
+		blocks.push(
+			[
+				"<reminder>",
+				"Your todo_manager call failed because items is required.",
+				"Call todo_manager again NOW with items. Do not send empty input.",
+				"Example:",
+				`{"items":[{"content":"Example task","activeForm":"Drafting example task","status":"in_progress"}]}`,
+				"At most one item can be in_progress.",
+				"</reminder>",
+			].join("\n"),
+		);
+	}
+	blocks.push(JSON.stringify(results));
 	if (plan) {
 		const rendered = renderPlan(plan);
 		const completed = plan.items.filter(
