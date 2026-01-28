@@ -23,6 +23,18 @@ type FileEntry = {
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
+const LIST_FILES_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	properties: {
+		productId: { type: "string" },
+		path: { type: "string" },
+		pattern: { type: "string" },
+		limit: { type: "number" },
+		repoFullName: { type: "string" },
+	},
+} as const;
+
 export function createListFilesTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -31,6 +43,7 @@ export function createListFilesTool(
 		name: "list_files",
 		description:
 			"List files in a specific directory (non-recursive). Use after list_dirs.",
+		inputSchema: LIST_FILES_SCHEMA,
 		execute: async (input) => {
 			const parsed = parseInput(input);
 			const connection = await getActiveGithubConnection(ctx, productId);

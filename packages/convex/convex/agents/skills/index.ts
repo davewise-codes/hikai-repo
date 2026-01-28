@@ -222,6 +222,12 @@ Build a domain map that reflects the main product areas based on evidence from t
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
+## Tool Input Rules (critical)
+
+- todo_manager input MUST be:
+  `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }`
+- Do NOT use `tasks` or `description` fields in todo_manager.
+
 ## Exploration Strategy (suggested)
 
 - Start with list_dirs({ depth: 2 }) to see structure.
@@ -269,6 +275,12 @@ description: Extracts a glossary of product terms from baseline + code + docs.
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
+## Tool Input Rules (critical)
+
+- todo_manager input MUST be:
+  `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }`
+- Do NOT use `tasks` or `description` fields in todo_manager.
+
 ## Output Schema
 
 {
@@ -314,6 +326,12 @@ description: Extracts product features and links them to domains with evidence.
 - read_file: Read key routes/components for feature evidence.
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
+
+## Tool Input Rules (critical)
+
+- todo_manager input MUST be:
+  `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }`
+- Do NOT use `tasks` or `description` fields in todo_manager.
 
 ## Output Schema
 
@@ -382,6 +400,13 @@ Do NOT infer domains or business meaning. Only structure and location.
 - list_files: Files in a specific directory. Use to inspect tiles.
 - read_file: Read specific files. Budget: max 10 reads total.
 - validate_json: Validate JSON syntax and return parsed data.
+- todo_manager: Track the execution plan (items only).
+
+## Tool Input Rules (critical)
+
+- todo_manager input MUST be:
+  `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }`
+- Do NOT use `tasks` or `description` fields in todo_manager.
 
 ## Planning (recommended but optional)
 

@@ -24,6 +24,19 @@ const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 const MAX_FILES_TO_SCAN = 80;
 
+const SEARCH_CODE_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	required: ["query"],
+	properties: {
+		productId: { type: "string" },
+		query: { type: "string" },
+		filePattern: { type: "string" },
+		limit: { type: "number" },
+		repoFullName: { type: "string" },
+	},
+} as const;
+
 export function createSearchCodeTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -31,6 +44,7 @@ export function createSearchCodeTool(
 	return {
 		name: "search_code",
 		description: "Search for patterns in the connected GitHub repository.",
+		inputSchema: SEARCH_CODE_SCHEMA,
 		execute: async (input): Promise<SearchMatch[] | { error: string }> => {
 			const parsed = parseInput(input);
 			if (!parsed.query) {

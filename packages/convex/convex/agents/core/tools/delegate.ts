@@ -25,6 +25,18 @@ type DelegateInput = {
 	context?: unknown;
 };
 
+const DELEGATE_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	required: ["agentType", "task"],
+	properties: {
+		productId: { type: "string" },
+		agentType: { type: "string" },
+		task: { type: "string" },
+		context: {},
+	},
+} as const;
+
 export function createDelegateTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -34,6 +46,7 @@ export function createDelegateTool(
 		name: "delegate",
 		description:
 			"Delegate a focused subtask to a specialized sub-agent (structure_scout, glossary_scout, domain_mapper, feature_scout).",
+		inputSchema: DELEGATE_SCHEMA,
 		execute: async (input) => {
 			const parsed = parseInput(input);
 			const entrypoint = getAgentEntrypoint(parsed.agentType);

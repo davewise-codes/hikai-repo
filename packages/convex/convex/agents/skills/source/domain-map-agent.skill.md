@@ -16,6 +16,12 @@ Build a domain map that reflects the main product areas based on evidence from t
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
+## Tool Input Rules (critical)
+
+- todo_manager input MUST be:
+  `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence": "string|[string]?", "checkpoint": "string?" }] }`
+- Do NOT use `tasks` or `description` fields in todo_manager.
+
 ## Exploration Strategy (suggested)
 
 - Start with list_dirs({ depth: 2 }) to see structure.

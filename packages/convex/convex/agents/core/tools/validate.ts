@@ -6,10 +6,22 @@ type ValidateInput = {
 	data: unknown;
 };
 
+const VALIDATE_OUTPUT_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	required: ["outputType", "data"],
+	properties: {
+		productId: { type: "string" },
+		outputType: { type: "string" },
+		data: {},
+	},
+} as const;
+
 export function createValidateTool(): ToolDefinition {
 	return {
 		name: "validate_output",
 		description: "Validate agent output against schema",
+		inputSchema: VALIDATE_OUTPUT_SCHEMA,
 		execute: async (input) => {
 			if (!input || typeof input !== "object") {
 				return {

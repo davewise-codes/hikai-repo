@@ -19,6 +19,17 @@ const MAX_DEPTH = 3;
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
 
+const LIST_DIRS_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	properties: {
+		productId: { type: "string" },
+		path: { type: "string" },
+		depth: { type: "number" },
+		limit: { type: "number" },
+	},
+} as const;
+
 export function createListDirsTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -27,6 +38,7 @@ export function createListDirsTool(
 		name: "list_dirs",
 		description:
 			"List directories in the repository (depth-limited). Use first to understand project structure.",
+		inputSchema: LIST_DIRS_SCHEMA,
 		execute: async (
 			input: unknown,
 		): Promise<{ dirs: DirEntry[]; truncated?: boolean } | { error: string }> => {

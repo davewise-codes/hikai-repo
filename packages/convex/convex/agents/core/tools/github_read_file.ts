@@ -22,6 +22,17 @@ type ReadFileOutput =
 
 const MAX_FILE_SIZE = 100 * 1024;
 
+const READ_FILE_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	required: ["path"],
+	properties: {
+		productId: { type: "string" },
+		path: { type: "string" },
+		repoFullName: { type: "string" },
+	},
+} as const;
+
 export function createReadFileTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -29,6 +40,7 @@ export function createReadFileTool(
 	return {
 		name: "read_file",
 		description: "Read a file from the connected GitHub repository.",
+		inputSchema: READ_FILE_SCHEMA,
 		execute: async (input): Promise<ReadFileOutput> => {
 			const parsed = parseInput(input);
 			if (!parsed.path) {

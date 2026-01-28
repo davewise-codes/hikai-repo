@@ -22,6 +22,12 @@ Identify user-facing features and map them to domains with evidence.
 - validate_json: Validate JSON syntax and return parsed data.
 - todo_manager: Track the execution plan.
 
+## Tool Input Rules (critical)
+
+- todo_manager input MUST be:
+  `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence": "string|[string]?", "checkpoint": "string?" }] }`
+- Do NOT use `tasks` or `description` fields in todo_manager.
+
 ## Output Schema
 
 ```json

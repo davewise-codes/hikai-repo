@@ -20,6 +20,13 @@ Do NOT infer domains or business meaning. Only structure and location.
 - list_files: Files in a specific directory. Use to inspect tiles.
 - read_file: Read specific files. Budget: max 10 reads total.
 - validate_json: Validate JSON syntax and return parsed data.
+- todo_manager: Track the execution plan (items only).
+
+## Tool Input Rules (critical)
+
+- todo_manager input MUST be:
+  `{ "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence": "string|[string]?", "checkpoint": "string?" }] }`
+- Do NOT use `tasks` or `description` fields in todo_manager.
 
 ## Planning (recommended but optional)
 

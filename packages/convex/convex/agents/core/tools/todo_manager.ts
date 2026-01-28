@@ -13,6 +13,7 @@ import type { ToolDefinition } from "../tool_registry";
 
 type TodoManagerInput = {
 	items: PlanItemInput[];
+	tasks?: PlanItemInput[];
 };
 
 type RawPlanItem = {
@@ -27,6 +28,66 @@ type RawPlanItem = {
 	checkpoint?: string;
 };
 
+const TODO_MANAGER_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	oneOf: [
+		{ type: "object", required: ["items"] },
+		{ type: "object", required: ["tasks"] },
+	],
+	properties: {
+		productId: { type: "string" },
+		items: {
+			type: "array",
+			items: {
+				type: "object",
+				additionalProperties: false,
+				properties: {
+					id: { type: "string" },
+					status: { type: "string" },
+					content: { type: "string" },
+					activeForm: { type: "string" },
+					description: { type: "string" },
+					task: { type: "string" },
+					title: { type: "string" },
+					notes: { type: "string" },
+					evidence: {
+						oneOf: [
+							{ type: "string" },
+							{ type: "array", items: { type: "string" } },
+						],
+					},
+					checkpoint: { type: "string" },
+				},
+			},
+		},
+		tasks: {
+			type: "array",
+			items: {
+				type: "object",
+				additionalProperties: false,
+				properties: {
+					id: { type: "string" },
+					status: { type: "string" },
+					content: { type: "string" },
+					activeForm: { type: "string" },
+					description: { type: "string" },
+					task: { type: "string" },
+					title: { type: "string" },
+					notes: { type: "string" },
+					evidence: {
+						oneOf: [
+							{ type: "string" },
+							{ type: "array", items: { type: "string" } },
+						],
+					},
+					checkpoint: { type: "string" },
+				},
+			},
+		},
+	},
+} as const;
+
 export function createTodoManagerTool(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -38,6 +99,7 @@ export function createTodoManagerTool(
 		name: "todo_manager",
 		description:
 			"Update execution plan. Send the COMPLETE list of items with status.",
+		inputSchema: TODO_MANAGER_SCHEMA,
 		execute: async (input) => {
 			const parsed = parseTodoManagerInput(input);
 			const normalizedItems: PlanItem[] = parsed.items.map((item, index) => ({
@@ -70,15 +132,16 @@ function parseTodoManagerInput(input: unknown): TodoManagerInput {
 		throw new Error("todo_manager: invalid input");
 	}
 	const raw = input as Partial<TodoManagerInput>;
-	if (!Array.isArray(raw.items)) {
+	const items = raw.items ?? raw.tasks;
+	if (!Array.isArray(items)) {
 		throw new Error("todo_manager: items array is required");
 	}
-	if (raw.items.length > PLAN_MAX_ITEMS) {
+	if (items.length > PLAN_MAX_ITEMS) {
 		throw new Error(
 			`todo_manager: plan cannot exceed ${PLAN_MAX_ITEMS} items`,
 		);
 	}
-	const normalized = raw.items.map((item) => normalizeItem(item));
+	const normalized = items.map((item) => normalizeItem(item));
 	const inProgressCount = normalized.filter(
 		(item) => item?.status === "in_progress",
 	).length;
@@ -111,8 +174,8 @@ function parseTodoManagerInput(input: unknown): TodoManagerInput {
 
 function normalizeItem(input: PlanItemInput | RawPlanItem): PlanItemInput {
 	const raw = input as RawPlanItem;
-	const content = raw.content ?? raw.task ?? raw.title ?? "";
-	const activeForm = raw.activeForm ?? raw.notes ?? content;
+	const content = raw.content ?? raw.task ?? raw.title ?? raw.description ?? "";
+	const activeForm = raw.activeForm ?? raw.notes ?? raw.description ?? content;
 	const status = normalizeStatus(raw.status);
 	const evidence = raw.evidence;
 	return {

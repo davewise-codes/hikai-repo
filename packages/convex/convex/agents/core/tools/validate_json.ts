@@ -4,10 +4,21 @@ type ValidateJsonInput = {
 	json: unknown;
 };
 
+const VALIDATE_JSON_SCHEMA = {
+	type: "object",
+	additionalProperties: false,
+	required: ["json"],
+	properties: {
+		productId: { type: "string" },
+		json: {},
+	},
+} as const;
+
 export function createValidateJsonTool(): ToolDefinition {
 	return {
 		name: "validate_json",
 		description: "Validate JSON syntax and return parsed data",
+		inputSchema: VALIDATE_JSON_SCHEMA,
 		execute: async (input) => {
 			if (!input || typeof input !== "object") {
 				return { valid: false, error: "Invalid input for validate_json" };

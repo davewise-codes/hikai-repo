@@ -423,10 +423,12 @@ function buildFeaturePrompt({
 		"",
 		"Before final output, call validate_json with your JSON object.",
 		"Tool input rules:",
+		'- todo_manager input: { "items": [{ "content": "string", "activeForm": "string", "status": "pending|in_progress|completed|blocked", "evidence"?: "string|[string]", "checkpoint"?: "string" }] }',
 		'- list_dirs input: { "path"?: "", "depth"?: 2, "limit"?: 50 }',
 		'- list_files input: { "path"?: "", "pattern"?: "*.tsx", "limit"?: 50 }',
 		'- read_file input: { "path": "path/to/file" }',
 		'- validate_json input: { "json": { ... } }',
+		"Do NOT use tasks or description fields in todo_manager.",
 		`Use productId: ${productId} when calling tools.`,
 	].join("\n");
 }
@@ -441,6 +443,7 @@ function buildToolProtocol(productId: Id<"products">): string {
 		"- Call todo_manager FIRST to create your plan",
 		"- After each phase, update plan with todo_manager",
 		"- Only one task in_progress at a time",
+		'- todo_manager input must use "items" (no tasks/description fields)',
 		"",
 		"CRITICAL - Response format:",
 		"- Tool calls: ONLY JSON, nothing else in the response",
