@@ -14,11 +14,32 @@ export type GithubConnection = {
 };
 
 const DEFAULT_REPO_LIMIT = 100;
+const CONNECTION_CACHE_TTL_MS = 30_000;
+const TREE_CACHE_TTL_MS = 60_000;
+const FILE_CACHE_TTL_MS = 60_000;
+
+type CacheEntry<T> = {
+	timestamp: number;
+	value: T;
+};
+
+const connectionCache = new Map<string, CacheEntry<GithubConnection>>();
+const repoTreeCache = new Map<
+	string,
+	CacheEntry<Array<{ path: string; type: "file" | "dir"; size?: number }>>
+>();
+const fileContentCache = new Map<string, CacheEntry<string>>();
 
 export async function getActiveGithubConnection(
 	ctx: ActionCtx,
 	productId: Id<"products">,
 ): Promise<GithubConnection | null> {
+	const cacheKey = productId.toString();
+	const cached = getCachedValue(connectionCache, cacheKey, CONNECTION_CACHE_TTL_MS);
+	if (cached) {
+		return cached;
+	}
+
 	const connections = await ctx.runQuery(
 		internal.connectors.connections.listByProductInternal,
 		{ productId },
@@ -41,17 +62,25 @@ export async function getActiveGithubConnection(
 
 	const repos = await listInstallationRepositories(token, DEFAULT_REPO_LIMIT);
 
-	return {
+	const connection = {
 		connectionId: githubConnection._id,
 		token,
 		repos,
 	};
+	connectionCache.set(cacheKey, { timestamp: Date.now(), value: connection });
+	return connection;
 }
 
 export async function fetchRepoTree(
 	token: string,
 	repoFullName: string,
 ): Promise<Array<{ path: string; type: "file" | "dir"; size?: number }>> {
+	const cacheKey = `${token}:${repoFullName}`;
+	const cached = getCachedValue(repoTreeCache, cacheKey, TREE_CACHE_TTL_MS);
+	if (cached) {
+		return cached;
+	}
+
 	const repoResponse = await fetch(
 		`https://api.github.com/repos/${repoFullName}`,
 		{ headers: githubHeaders(token) },
@@ -92,13 +121,15 @@ export async function fetchRepoTree(
 		tree?: Array<{ path?: string; type?: string; size?: number }>;
 	};
 	const entries = treeJson.tree ?? [];
-	return entries
+	const tree = entries
 		.filter((entry) => entry.path && (entry.type === "blob" || entry.type === "tree"))
 		.map((entry) => ({
 			path: entry.path as string,
 			type: entry.type === "blob" ? "file" : "dir",
 			size: entry.size,
 		}));
+	repoTreeCache.set(cacheKey, { timestamp: Date.now(), value: tree });
+	return tree;
 }
 
 export async function fetchRepoFileContent(
@@ -106,6 +137,12 @@ export async function fetchRepoFileContent(
 	repoFullName: string,
 	path: string,
 ): Promise<string> {
+	const cacheKey = `${token}:${repoFullName}:${path}`;
+	const cached = getCachedValue(fileContentCache, cacheKey, FILE_CACHE_TTL_MS);
+	if (cached) {
+		return cached;
+	}
+
 	const response = await fetch(
 		`https://api.github.com/repos/${repoFullName}/contents/${encodeURIComponent(
 			path,
@@ -122,7 +159,9 @@ export async function fetchRepoFileContent(
 	if (!json.content || json.encoding !== "base64") {
 		throw new Error("Unexpected file format");
 	}
-	return decodeBase64(json.content);
+	const content = decodeBase64(json.content);
+	fileContentCache.set(cacheKey, { timestamp: Date.now(), value: content });
+	return content;
 }
 
 export async function listInstallationRepositories(
@@ -163,4 +202,18 @@ function githubHeaders(token: string) {
 		Authorization: `token ${token}`,
 		"User-Agent": "hikai-agent",
 	};
+}
+
+function getCachedValue<T>(
+	cache: Map<string, CacheEntry<T>>,
+	key: string,
+	ttlMs: number,
+): T | null {
+	const entry = cache.get(key);
+	if (!entry) return null;
+	if (Date.now() - entry.timestamp > ttlMs) {
+		cache.delete(key);
+		return null;
+	}
+	return entry.value;
 }

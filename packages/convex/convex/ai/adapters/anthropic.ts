@@ -1,4 +1,4 @@
-import { generateText, jsonSchema } from "ai";
+import { generateText, jsonSchema, type ModelMessage } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import {
 	LLMPort,
@@ -61,7 +61,7 @@ export function createAnthropicAdapter(
 			const result = await generateText({
 				model: anthropic(modelId),
 				system: params.systemPrompt,
-				messages: params.messages as unknown,
+				messages: params.messages as unknown as ModelMessage[],
 				tools,
 				maxOutputTokens: params.maxTokens ?? 1024,
 				temperature: params.temperature,
@@ -74,9 +74,9 @@ export function createAnthropicAdapter(
 				result.usage?.totalTokens ?? tokensIn + tokensOut;
 			const toolCalls: LLMToolCall[] = (result.toolCalls ?? []).map(
 				(call, index) => ({
-					toolCallId: call.toolCallId ?? call.id ?? `toolcall_${index}`,
-					toolName: call.toolName ?? call.name ?? "",
-					args: (call.args ?? call.arguments ?? {}) as Record<string, unknown>,
+					toolCallId: call.toolCallId ?? `toolcall_${index}`,
+					toolName: call.toolName ?? "",
+					args: (call.input ?? {}) as Record<string, unknown>,
 				})
 			);
 			const stopReason =

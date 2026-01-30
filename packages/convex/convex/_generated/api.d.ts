@@ -25,6 +25,7 @@ import type * as agents_core_skill_loader from "../agents/core/skill_loader.js";
 import type * as agents_core_tool_prompt_model from "../agents/core/tool_prompt_model.js";
 import type * as agents_core_tool_registry from "../agents/core/tool_registry.js";
 import type * as agents_core_tools_delegate from "../agents/core/tools/delegate.js";
+import type * as agents_core_tools_github_grep_file from "../agents/core/tools/github_grep_file.js";
 import type * as agents_core_tools_github_helpers from "../agents/core/tools/github_helpers.js";
 import type * as agents_core_tools_github_list_dirs from "../agents/core/tools/github_list_dirs.js";
 import type * as agents_core_tools_github_list_files from "../agents/core/tools/github_list_files.js";
@@ -120,6 +121,7 @@ declare const fullApi: ApiFromModules<{
   "agents/core/tool_prompt_model": typeof agents_core_tool_prompt_model;
   "agents/core/tool_registry": typeof agents_core_tool_registry;
   "agents/core/tools/delegate": typeof agents_core_tools_delegate;
+  "agents/core/tools/github_grep_file": typeof agents_core_tools_github_grep_file;
   "agents/core/tools/github_helpers": typeof agents_core_tools_github_helpers;
   "agents/core/tools/github_list_dirs": typeof agents_core_tools_github_list_dirs;
   "agents/core/tools/github_list_files": typeof agents_core_tools_github_list_files;

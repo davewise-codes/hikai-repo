@@ -32,3 +32,30 @@
 - 2026-01-28: Se añadió recordatorio explícito en agent_loop cuando falla `todo_manager` por missing items, y ejemplo en la descripción del tool para reforzar el uso correcto.
 - 2026-01-28: F2.0b implementado: truncado global de outputs de tools con overrides por tool y metadata de truncación en steps. Pendiente ejecutar pruebas funcionales de truncado.
 - 2026-01-28: Run context_agent (m978yff2e8neyynyscph916at5803qe5) completó con éxito. Se observa metadata `truncation` en outputs de `list_dirs`/`list_files` (applied=false); no hubo truncación efectiva en esta prueba. Persisten errores de `read_file` por missing path que no bloquean el output final.
+- 2026-01-28: F2.0c en curso: se actualizó prompt del RepoContextAgent con reglas evidence-first y checklist mínima; se añadieron skills base (stack-fingerprints, repo-patterns, repo-exploration-checklist). Pendiente validar en run real.
+- 2026-01-28: F2.0c prueba falló por timeout. El agente repitió `read_file` con input `{}` (sin `path`) en múltiples turns y alternó con `list_files/list_dirs` sin recuperar. Resultado: budget timeout y validación "Empty output".
+- 2026-01-28: Hipótesis de root cause: AI SDK espera tool schema con `parameters` (no `inputSchema`) y toolCalls entregan `input` (no `args`). Ajustado en adapters OpenAI/Anthropic; pendiente re-ejecutar para validar que `read_file` recibe `path`.
+- 2026-01-29: Revisión tipos SDK (ai v5): tools esperan `inputSchema` y toolCalls entregan `input`. Se corrigió adapters OpenAI/Anthropic para leer `call.input` y no `args`, y se revirtió tools a `inputSchema`. Pendiente re-test para confirmar que `read_file` recibe `path`.
+- 2026-01-29: Se añadió guard de cancelación para evitar escribir steps cuando el run ya no está `running` (appendStep ignora; persistToolSteps/persistCompactionStep retornan si cancelado).
+- 2026-01-29: Run exitoso con evidence-first (m977wqfgzwj4x8yf9s29xvf0c9804kwg). `read_file` recibe `path`, se leen README.md, root package.json y apps/webapp/package.json; output incluye `meta.filesRead` y `limitations`. Sin timeouts.
+- 2026-01-29: F2.0d en curso: prompt orientado a negocio + nuevo esquema (surfaces/capabilities/journeys/domainLanguage/alignment/technicalSignals) y skills de negocio añadidas. Pendiente run de validación.
+- 2026-01-29: Se inyecta baseline real en repoContextAgent y se refuerza prompt para evitar enfoque de template (priorizar src/ y corroborar README). Pendiente nueva ejecución para validar.
+- 2026-01-29: Run F2.0d en timeout con validación "Empty output". En steps: list_dirs/list_files raíz, read README.md y package.json, read apps/webapp/package.json, list_files apps/website, read apps/website/package.json, search_code("marketing"). No llegó a leer ningún archivo de `src/` y nunca emitió JSON final antes del timeout. Indica que el prompt empuja exploración pero no fuerza un “stop condition” (emitir output tras leer archivos mínimos en src).
+- 2026-01-29: Tras añadir reglas de cierre explícitas en el prompt, nueva ejecución sigue en timeout/Empty output. Steps muestran list_dirs/list_files raíz, read README.md, read package.json, list_dirs apps/webapp (detecta src/), pero no list_files/read_file en src/; se queda en search_code ("progress") y no produce JSON. Indica que las reglas de cierre aún no se cumplen en práctica y el modelo evita escoger/leer un archivo de código.
+- 2026-01-30: Se migró `contextDetail` a un schema “clasificador” por dominios: `name`, `purpose`, `capabilities` (keywords), `pathPatterns`, `schemaEntities`, y `structure`. UI actualizada para mostrar estos campos y el bloque de estructura.
+- 2026-01-30: RepoContextAgent: compaction desactivada; warning de tiempo al 80% del timeout; límites estrictos de tool calls/read_file; prompt orientado a dominios + schemaEntities + pathPatterns. Herramientas GitHub con cache (tree/file/connection) y search_code optimizado (GitHub code search + fallback; brace globs). Sin timeouts en el último run.
+- 2026-01-30: Resumen de últimas pruebas (context agent):
+
+  ┌────────────────────┬──────────┬──────────┬────────────┐
+  │       Prueba       │ Duración │ Dominios │ Tool calls │
+  ├────────────────────┼──────────┼──────────┼────────────┤
+  │ Inicial (timeout)  │ >600s    │ 0        │ 37+        │
+  ├────────────────────┼──────────┼──────────┼────────────┤
+  │ Después de límites │ 554s     │ 4        │ 28         │
+  ├────────────────────┼──────────┼──────────┼────────────┤
+  │ Optimizada         │ 167s     │ 5        │ 8          │
+  ├────────────────────┼──────────┼──────────┼────────────┤
+  │ Anterior           │ 186s     │ 3        │ 8          │
+  ├────────────────────┼──────────┼──────────┼────────────┤
+  │ Esta               │ 186s     │ 6        │ 8          │
+  └────────────────────┴──────────┴──────────┴────────────┘

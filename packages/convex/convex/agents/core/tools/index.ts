@@ -5,4 +5,5 @@ export { createDelegateTool } from "./delegate";
 export { createListDirsTool } from "./github_list_dirs";
 export { createListFilesTool } from "./github_list_files";
 export { createReadFileTool } from "./github_read_file";
+export { createGrepFileTool } from "./github_grep_file";
 export { createSearchCodeTool } from "./github_search_code";

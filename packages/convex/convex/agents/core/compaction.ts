@@ -49,6 +49,7 @@ export async function compactMessages(
 	messages: AgentMessage[],
 	model: AgentModel,
 	options: CompactionConfig,
+	deterministicSummary?: string,
 ): Promise<CompactionResult | null> {
 	if (messages.length <= 2) return null;
 
@@ -73,7 +74,10 @@ export async function compactMessages(
 
 	if (removedMessages.length === 0) return null;
 
-	const summary = await summarizeMessages(removedMessages, model, options);
+	let summary = await summarizeMessages(removedMessages, model, options);
+	if (deterministicSummary && deterministicSummary.trim().length > 0) {
+		summary = `${summary}\n\n${deterministicSummary.trim()}`;
+	}
 	const summaryMessage: AgentMessage = {
 		role: "assistant",
 		content: `<context-summary>\n${summary}\n</context-summary>`,

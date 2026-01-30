@@ -1,4 +1,139 @@
 export const SKILL_CONTENTS: Record<string, string> = {
+	"stack-fingerprints": `---
+name: stack-fingerprints
+version: v1.0
+description: Identifica tecnologias de un repositorio usando archivos de configuracion y dependencias.
+---
+
+## Lenguajes
+| Archivo | Stack |
+|---------|-------|
+| package.json | Node.js/JavaScript |
+| tsconfig.json | TypeScript |
+| Cargo.toml | Rust |
+| go.mod | Go |
+| pyproject.toml, setup.py | Python |
+| Gemfile | Ruby |
+| pom.xml, build.gradle | Java |
+| *.csproj | C#/.NET |
+
+## Frameworks (buscar en dependencies)
+| Dependencia | Framework |
+|-------------|-----------|
+| react, react-dom | React |
+| next | Next.js |
+| express | Express.js |
+| fastapi | FastAPI |
+| django | Django |
+| actix-web, axum | Rust web |
+| gin, echo | Go web |
+
+## Build/Deploy
+| Archivo | Indica |
+|---------|--------|
+| Dockerfile | Containerizado |
+| serverless.yml | Serverless Framework |
+| vercel.json | Vercel |
+| fly.toml | Fly.io |
+| .github/workflows/ | GitHub Actions CI |
+
+## Monorepo signals
+- Directorio "packages/" o "apps/"
+- pnpm-workspace.yaml o lerna.json
+- Multiples package.json en subdirectorios
+`,
+	"repo-patterns": `---
+name: repo-patterns
+version: v1.0
+description: Patrones arquitectonicos comunes en repositorios y como reconocerlos.
+---
+
+## Monorepo
+Senales: "packages/", "apps/", workspace config
+Explorar: cada package tiene su propio dominio
+
+## Backend API
+Senales: "routes/", "controllers/", "handlers/"
+Dominios tipicos: auth, users, recursos del negocio
+
+## Frontend SPA
+Senales: "components/", "pages/", "hooks/"
+Dominios tipicos: ui, state, api-client
+
+## Full-stack
+Senales: separacion client/server o apps/api + apps/web
+Explorar: ambos lados independientemente
+
+## Serverless
+Senales: "functions/", "lambdas/", serverless.yml
+Dominios: cada funcion suele ser un dominio
+
+## CLI Tool
+Senales: "bin/", "commands/", "src/cli/"
+Dominios: commands, core logic, output formatting
+`,
+	"repo-exploration-checklist": `---
+name: repo-exploration-checklist
+version: v1.0
+description: Checklist minimo de lectura para grounding de contexto.
+---
+
+## Checklist
+1) list_dirs root
+2) list_files root
+3) read_file README.md (si existe)
+4) read_file package.json (root)
+5) read_file apps/webapp/package.json (si existe)
+6) read_file apps/website/package.json (si existe)
+7) read_file packages/ui/package.json (si existe)
+8) read_file packages/convex/package.json (si existe)
+
+## Reglas
+- Si un read_file falla por path, usa list_files del directorio y reintenta con un path valido.
+- No repitas el mismo tool call con el mismo input tras un error.
+`,
+	"surface-exploration": `---
+name: surface-exploration
+version: v1.0
+description: Como explorar surfaces para extraer valor de negocio.
+---
+
+## product_front (UI)
+- buscar rutas/pages/components con nombres de features
+- forms => acciones del usuario
+- titles y botones => capabilities
+
+## product_platform (Backend)
+- schemas/modelos => entidades del dominio
+- mutations/actions => capabilities
+- queries => informacion consumida por el front
+
+## product_marketing (Website)
+- hero headlines, pricing, feature lists => value proposition y capabilities
+- testimonials => target audience
+
+## product_docs
+- definiciones, workflows => glosario y journeys
+`,
+	"domain-language": `---
+name: domain-language
+version: v1.0
+description: Como identificar lenguaje de dominio de negocio.
+---
+
+Prioridad: marketing copy > docs > UI copy > schemas > comments
+No incluir terminos tecnicos (libs, patrones).
+`,
+	"journey-extraction": `---
+name: journey-extraction
+version: v1.0
+description: Como extraer journeys desde rutas y UI.
+---
+
+- rutas/pages => journeys
+- flows multi-step => pasos
+- correlacionar front y backend por dominio
+`,
 	"surface-classification": `---
 name: surface-classification
 version: v1.0

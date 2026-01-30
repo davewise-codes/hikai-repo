@@ -73,15 +73,11 @@ export function ContextSnapshotCard({
 
 	const snapshotPayload = snapshot as Record<string, unknown>;
 	const contextDetail = snapshot.contextDetail ?? null;
-	const technical = (contextDetail as any)?.technical ?? null;
 	const domains = Array.isArray((contextDetail as any)?.domains)
 		? ((contextDetail as any).domains as Array<Record<string, unknown>>)
 		: [];
-	const features = Array.isArray((contextDetail as any)?.features)
-		? ((contextDetail as any).features as Array<Record<string, unknown>>)
-		: [];
-	const language = (contextDetail as any)?.language ?? null;
 	const meta = (contextDetail as any)?.meta ?? null;
+	const structure = (contextDetail as any)?.structure ?? null;
 
 	return (
 		<Card>
@@ -122,49 +118,6 @@ export function ContextSnapshotCard({
 				/>
 
 				<OutputSection
-					title={t("context.contextSnapshotOutputTechnical")}
-					subtitle={t("context.contextSnapshotOutputTechnicalHint", {
-						count: Array.isArray((technical as any)?.stack)
-							? (technical as any).stack.length
-							: 0,
-					})}
-					payload={technical}
-					onCopy={handleCopy}
-					copyLabel={t("context.contextSnapshotCopySection")}
-					emptyLabel={t("context.contextSnapshotOutputEmpty")}
-				>
-					{technical ? (
-						<div className="space-y-2 text-fontSize-xs text-muted-foreground">
-							<div>
-								{t("context.contextSnapshotOutputTechnicalStack", {
-									value: formatList((technical as any).stack),
-								})}
-							</div>
-							<div>
-								{t("context.contextSnapshotOutputTechnicalPatterns", {
-									value: formatList((technical as any).patterns),
-								})}
-							</div>
-							<div>
-								{t("context.contextSnapshotOutputTechnicalRoots", {
-									value: formatList((technical as any).rootDirs),
-								})}
-							</div>
-							<div>
-								{t("context.contextSnapshotOutputTechnicalEntryPoints", {
-									value: formatList((technical as any).entryPoints),
-								})}
-							</div>
-							<div>
-								{t("context.contextSnapshotOutputTechnicalIntegrations", {
-									value: formatList((technical as any).integrations),
-								})}
-							</div>
-						</div>
-					) : null}
-				</OutputSection>
-
-				<OutputSection
 					title={t("context.contextSnapshotOutputDomains")}
 					subtitle={t("context.contextSnapshotOutputDomainsHint", {
 						count: domains.length,
@@ -176,78 +129,69 @@ export function ContextSnapshotCard({
 				>
 					{domains.length > 0 ? (
 						<div className="space-y-3">
-							{domains.map((domain, index) => (
-								<div
-									key={`${domain.name ?? "domain"}-${index}`}
-									className="rounded-md border border-border px-3 py-2 text-fontSize-xs"
-								>
-									<div className="font-medium">
-										{typeof domain.name === "string" ? domain.name : "-"}
+							{domains.map((domain, index) => {
+								const name =
+									typeof domain.name === "string" ? domain.name : "-";
+								const purpose =
+									typeof domain.purpose === "string"
+										? domain.purpose
+										: null;
+								const capabilities = Array.isArray(domain.capabilities)
+									? (domain.capabilities as string[])
+									: [];
+								const pathPatterns = Array.isArray(domain.pathPatterns)
+									? (domain.pathPatterns as string[])
+									: [];
+								const schemaEntities = Array.isArray(domain.schemaEntities)
+									? (domain.schemaEntities as string[])
+									: [];
+								return (
+									<div
+										key={`${name}-${index}`}
+										className="rounded-md border border-border px-3 py-2 text-fontSize-xs"
+									>
+										<div className="font-medium">{name}</div>
+										{purpose ? (
+											<div className="mt-1 text-muted-foreground">
+												{purpose}
+											</div>
+										) : null}
+										{capabilities.length > 0 ? (
+											<div className="mt-2 text-muted-foreground">
+												{t("context.contextSnapshotOutputDomainCapabilities", {
+													value: formatList(capabilities),
+												})}
+											</div>
+										) : null}
+										{pathPatterns.length > 0 ? (
+											<div className="mt-2 text-muted-foreground">
+												{t("context.contextSnapshotOutputDomainPaths", {
+													value: formatList(pathPatterns),
+												})}
+											</div>
+										) : null}
+										{schemaEntities.length > 0 ? (
+											<div className="mt-2 text-muted-foreground">
+												{t("context.contextSnapshotOutputDomainEntities", {
+													value: formatList(schemaEntities),
+												})}
+											</div>
+										) : null}
 									</div>
-									{typeof domain.purpose === "string" ? (
-										<div className="mt-1 text-muted-foreground">
-											{domain.purpose}
-										</div>
-									) : null}
-								</div>
-							))}
+								);
+							})}
 						</div>
 					) : null}
 				</OutputSection>
 
 				<OutputSection
-					title={t("context.contextSnapshotOutputFeatures")}
-					subtitle={t("context.contextSnapshotOutputFeaturesHint", {
-						count: features.length,
-					})}
-					payload={contextDetail}
+					title={t("context.contextSnapshotOutputStructure")}
+					subtitle={t("context.contextSnapshotOutputStructureHint")}
+					payload={structure}
 					onCopy={handleCopy}
 					copyLabel={t("context.contextSnapshotCopySection")}
 					emptyLabel={t("context.contextSnapshotOutputEmpty")}
-				>
-					{features.length > 0 ? (
-						<div className="space-y-3">
-							{features.map((feature, index) => (
-								<div
-									key={`${feature.name ?? "feature"}-${index}`}
-									className="rounded-md border border-border px-3 py-2 text-fontSize-xs"
-								>
-									<div className="font-medium">
-										{typeof feature.name === "string" ? feature.name : "-"}
-									</div>
-									{typeof feature.description === "string" ? (
-										<div className="mt-1 text-muted-foreground">
-											{feature.description}
-										</div>
-									) : null}
-								</div>
-							))}
-						</div>
-					) : null}
-				</OutputSection>
-
-				<OutputSection
-					title={t("context.contextSnapshotOutputLanguage")}
-					subtitle={t("context.contextSnapshotOutputLanguageHint", {
-						count: Array.isArray((language as any)?.glossary)
-							? (language as any).glossary.length
-							: 0,
-					})}
-					payload={language}
-					onCopy={handleCopy}
-					copyLabel={t("context.contextSnapshotCopySection")}
-					emptyLabel={t("context.contextSnapshotOutputEmpty")}
-				>
-					{language ? (
-						<div className="space-y-2 text-fontSize-xs text-muted-foreground">
-							<div>
-								{t("context.contextSnapshotOutputLanguageConventions", {
-									value: formatList((language as any).conventions),
-								})}
-							</div>
-						</div>
-					) : null}
-				</OutputSection>
+				/>
 
 				<OutputSection
 					title={t("context.contextSnapshotOutputMeta")}

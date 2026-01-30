@@ -121,6 +121,11 @@ export const generateContextSnapshot = action({
 			ctx,
 			productId,
 			runId,
+			baseline: {
+				problemSolved: product.baseline?.problemSolved ?? "",
+				valueProposition: product.baseline?.valueProposition ?? "",
+				audiences: product.baseline?.audiences ?? [],
+			},
 		});
 		if (contextResult.metrics) {
 			metrics.totalLatencyMs += contextResult.metrics.latencyMs ?? 0;

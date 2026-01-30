@@ -59,6 +59,9 @@ export const appendStep = internalMutation({
 		if (!run || run.productId !== productId) {
 			throw new Error("Agent run not found");
 		}
+		if (run.status !== "running") {
+			return;
+		}
 
 		const entry = {
 			step,

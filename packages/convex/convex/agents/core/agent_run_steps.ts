@@ -9,6 +9,13 @@ export async function persistToolSteps(
 	runId: Id<"agentRuns">,
 	step: StepResult,
 ) {
+	const run = await ctx.runQuery(internal.agents.agentRuns.getRunById, {
+		productId,
+		runId,
+	});
+	if (!run || run.status !== "running") {
+		return;
+	}
 	const toolCalls = step.toolCalls ?? [];
 	for (const result of step.results) {
 		const call =
@@ -74,6 +81,13 @@ export async function persistCompactionStep(
 	runId: Id<"agentRuns">,
 	step: CompactionStep,
 ) {
+	const run = await ctx.runQuery(internal.agents.agentRuns.getRunById, {
+		productId,
+		runId,
+	});
+	if (!run || run.status !== "running") {
+		return;
+	}
 	await ctx.runMutation(internal.agents.agentRuns.appendStep, {
 		productId,
 		runId,

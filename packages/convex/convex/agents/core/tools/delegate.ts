@@ -16,6 +16,7 @@ import type { ToolDefinition } from "../tool_registry";
 import { createListDirsTool } from "./github_list_dirs";
 import { createListFilesTool } from "./github_list_files";
 import { createReadFileTool } from "./github_read_file";
+import { createGrepFileTool } from "./github_grep_file";
 import { createSearchCodeTool } from "./github_search_code";
 import { createValidateJsonTool } from "./validate_json";
 
@@ -80,6 +81,7 @@ export function createDelegateTool(
 				createListDirsTool(ctx, productId),
 				createListFilesTool(ctx, productId),
 				createReadFileTool(ctx, productId),
+				createGrepFileTool(ctx, productId),
 				createSearchCodeTool(ctx, productId),
 				createValidateJsonTool(),
 			];

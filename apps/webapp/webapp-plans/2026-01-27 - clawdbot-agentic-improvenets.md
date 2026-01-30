@@ -1040,6 +1040,8 @@ Este plan aborda las causas raíz en orden de impacto y luego incorpora mejoras 
 | F1.5    | Reemplazar flujo por repoContextAgent único + contextDetail        | ✅     | CR1,CR3,CR4 | `contextAgent.ts`, `repoContextAgent.ts`, `contextValidator.ts`, `schema.ts`, `productContextData.ts` |
 | F2.0    | Auto-compaction de mensajes (pinned state)                        | ✅     | CR4        | `compaction.ts` (nuevo), `agent_loop.ts`, `agent_entrypoints.ts`   |
 | F2.0b   | Control de tamaño de outputs de tools                             | ✅     | CR4        | `tool_registry.ts`, `tools/*.ts`                                   |
+| F2.0c   | Prompt grounded + skills de evidencia (contextDetail)             | ✅     | CR1,CR3    | `repoContextAgent.ts`, `skills/*`, `agent_entrypoints.ts`          |
+| F2.0d   | Refinamiento funcional (capabilities/journeys/language)           | 🔄     | CR1,CR3    | `repoContextAgent.ts`, `skills/*`, `contextValidator.ts`           |
 | F2.1    | Clasificación de errores y retry con backoff                      | ⏳     | —          | `agent_loop.ts`, `agent_run_steps.ts`                              |
 | F2.2    | Retry con backoff para GitHub API                                 | ⏳     | —          | `github_helpers.ts`                                                |
 | F3.0    | Tool policies por agente                                          | ⏳     | —          | `agent_entrypoints.ts`, `tool_prompt_model.ts`, `tool_registry.ts` |
@@ -1684,6 +1686,308 @@ RESTRICCIONES:
 1. Ejecutar search_code en un repo grande → verificar truncación y metadata
 2. Ejecutar read_file en un archivo grande → verificar límite aplicado
 3. Verificar que el agente sigue funcionando con outputs truncados
+
+---
+
+### F2.0c: Prompt grounded + skills de evidencia (contextDetail)
+
+**Objetivo**: Mejorar calidad del contexto sin tocar el flujo ni el loop. Se refuerza el prompt con reglas de evidencia y se introducen skills de apoyo para identificar stack y patrones con señales verificables.
+
+**Causa raíz**: CR1, CR3
+
+**Archivos**:
+
+- `packages/convex/convex/agents/repoContextAgent.ts` (actualizar prompt)
+- `packages/convex/convex/agents/skills/index.ts` (nuevos skills)
+- `packages/convex/convex/agents/skills/source/*.skill.md` (docs de skills)
+- `packages/convex/convex/agents/core/agent_entrypoints.ts` (referencia a skills si aplica)
+
+**Prompt (propuesta combinada)**:
+
+```
+Analiza este repositorio y produce un JSON con su contexto tecnico.
+
+## Conocimiento disponible (skills)
+Si necesitas ayuda identificando tecnologias o patrones:
+- read_file("convex/agents/skills/stack-fingerprints.md")
+- read_file("convex/agents/skills/repo-patterns.md")
+- read_file("convex/agents/skills/repo-exploration-checklist.md")
+
+## Tools
+- list_dirs(path?, depth?, limit?)
+- list_files(path?, pattern?, limit?)
+- read_file(path)
+- search_code(query, path?, limit?)
+
+## Regla critica (evidence-first)
+- Solo incluye informacion que hayas visto en archivos leidos.
+- Cada dominio y feature DEBE tener al menos 1 archivo en keyFiles que hayas leido con read_file o search_code.
+- Si no hay evidencia, omite el item o marca como "unknown" (no inventes).
+- No repitas el mismo tool call con el mismo input si fallo; corrige el input.
+
+## Exploracion minima (checklist)
+1) list_dirs root
+2) list_files root
+3) read_file README.md (si existe)
+4) read_file package.json (root)
+5) read_file apps/webapp/package.json (si existe)
+6) read_file apps/website/package.json (si existe)
+7) read_file packages/ui/package.json (si existe)
+8) read_file packages/convex/package.json (si existe)
+Si un read_file falla, usa list_files en el folder y selecciona un archivo valido.
+
+## Output (JSON)
+{
+  "technical": { "stack": [], "patterns": [], "rootDirs": [], "entryPoints": [], "integrations": [] },
+  "domains": [{ "name": "", "description": "", "purpose": "", "keyFiles": [] }],
+  "features": [{ "name": "", "description": "", "domain": "", "userFacing": true }],
+  "language": { "glossary": [], "conventions": [] },
+  "meta": { "filesRead": [], "limitations": [] }
+}
+
+Responde SOLO con el JSON cuando tengas evidencia suficiente.
+```
+
+**Skills a incorporar**
+
+1) `stack-fingerprints`
+```
+---
+name: stack-fingerprints
+description: Como identificar tecnologias de un repositorio por sus archivos de configuracion.
+---
+
+Lenguajes:
+- package.json => Node.js/JavaScript
+- tsconfig.json => TypeScript
+- Cargo.toml => Rust
+- go.mod => Go
+- pyproject.toml, setup.py => Python
+- Gemfile => Ruby
+- pom.xml, build.gradle => Java
+- *.csproj => C#/.NET
+
+Frameworks (buscar en dependencies):
+- react, react-dom => React
+- next => Next.js
+- express => Express.js
+- fastapi => FastAPI
+- django => Django
+- actix-web, axum => Rust web
+- gin, echo => Go web
+
+Build/Deploy:
+- Dockerfile => Containerizado
+- serverless.yml => Serverless Framework
+- vercel.json => Vercel
+- fly.toml => Fly.io
+- .github/workflows/ => GitHub Actions CI
+
+Monorepo:
+- directorios packages/ o apps/
+- pnpm-workspace.yaml o lerna.json
+- multiples package.json en subdirectorios
+```
+
+2) `repo-patterns`
+```
+---
+name: repo-patterns
+description: Patrones arquitectonicos comunes y como reconocerlos.
+---
+
+Monorepo:
+- senales: packages/, apps/, workspace config
+- explorar: cada package puede ser un dominio
+
+Backend API:
+- senales: routes/, controllers/, handlers/
+- dominios tipicos: auth, users, recursos de negocio
+
+Frontend SPA:
+- senales: components/, pages/, hooks/
+- dominios tipicos: ui, state, api-client
+
+Full-stack:
+- senales: separacion client/server o apps/api + apps/web
+
+Serverless:
+- senales: functions/, lambdas/, serverless.yml
+
+CLI tool:
+- senales: bin/, commands/, src/cli/
+```
+
+3) `repo-exploration-checklist`
+```
+---
+name: repo-exploration-checklist
+description: Checklist minimo de lectura para grounding de contexto.
+---
+
+Checklist:
+1) list_dirs root
+2) list_files root
+3) read_file README.md (si existe)
+4) read_file package.json (root)
+5) read_file apps/webapp/package.json (si existe)
+6) read_file apps/website/package.json (si existe)
+7) read_file packages/ui/package.json (si existe)
+8) read_file packages/convex/package.json (si existe)
+
+Reglas:
+- Si un read_file falla por path, usa list_files del directorio y reintenta con un path valido.
+- No repitas el mismo tool call con el mismo input tras un error.
+```
+
+**Validacion**:
+
+- [ ] Agent completa con al menos 4 read_file exitosos
+- [ ] Dominios y features tienen keyFiles leidos (sin inferencias sueltas)
+- [ ] `meta.filesRead` contiene los paths leidos
+- [ ] Output sigue siendo JSON valido
+
+**Pruebas funcionales**:
+
+1. Ejecutar context agent en repo pequeno y verificar que usa checklist (README + package.json).
+2. Verificar que no aparecen items sin keyFiles leidos.
+3. Verificar que el agente corrige errores de read_file con list_files y reintenta.
+
+---
+
+### F2.0d: Refinamiento funcional (capabilities/journeys/language)
+
+**Objetivo**: Cambiar el foco del contexto hacia “qué hace el producto y para quién” sin perder grounding. Mantener evidence‑first y checklist mínima, pero orientar el output a surfaces, capabilities, journeys y lenguaje de dominio.
+
+**Causa raíz**: CR1, CR3
+
+**Archivos**:
+
+- `packages/convex/convex/agents/repoContextAgent.ts` (prompt revisado)
+- `packages/convex/convex/agents/skills/index.ts` (nuevos skills)
+- `packages/convex/convex/agents/skills/source/*.skill.md` (skills de negocio)
+- `packages/convex/convex/agents/contextValidator.ts` (ajustar esquema de salida)
+
+**Prompt revisado (baseline + negocio + grounding)**:
+
+```
+Eres un analista de producto. Tu objetivo es entender QUE HACE este producto y para quien, no como esta construido.
+
+## Contexto del Producto (baseline)
+{{productBaseline}}
+Usa este contexto para guiar tu exploracion. Busca evidencia de:
+- Audiencias mencionadas ({{audiences}})
+- Problema que resuelve ({{problemSolved}})
+- Propuesta de valor ({{valueProposition}})
+
+## Conocimiento disponible (skills)
+Si necesitas ayuda identificando surfaces o lenguaje de dominio:
+- read_file("packages/convex/convex/agents/skills/source/surface-exploration.skill.md")
+- read_file("packages/convex/convex/agents/skills/source/domain-language.skill.md")
+- read_file("packages/convex/convex/agents/skills/source/journey-extraction.skill.md")
+
+## Tools
+- list_dirs, list_files, read_file, search_code
+
+## Regla critica (evidence-first)
+- Solo incluye informacion que hayas visto en archivos leidos.
+- Cada capability/journey/term DEBE citar evidencia (archivo leido o snippet de search_code).
+- No repitas el mismo tool call con el mismo input si fallo; corrige el input.
+
+## Exploracion minima
+1) list_dirs root
+2) list_files root
+3) read_file README.md (si existe)
+4) read_file package.json (root)
+5) read_file apps/webapp/package.json (si existe)
+6) read_file apps/website/package.json (si existe)
+7) read_file packages/ui/package.json (si existe)
+8) read_file packages/convex/package.json (si existe)
+Luego: lee 2 archivos por surface detectada (src/, routes, docs o marketing copy).
+
+## Output (JSON)
+{
+  "surfacesDetected": [
+    { "surface": "product_front", "path": "apps/webapp", "evidence": ["apps/webapp/package.json"] }
+  ],
+  "capabilities": [
+    { "name": "…", "description": "…", "surface": "product_front", "evidence": ["..."], "relatedBackend": "..." }
+  ],
+  "journeys": [
+    { "name": "…", "description": "…", "steps": ["..."], "evidence": ["..."] }
+  ],
+  "domainLanguage": {
+    "terms": [{ "term": "…", "definition": "…", "source": "..." }],
+    "entities": ["User", "Organization"]
+  },
+  "alignment": {
+    "problemSolved": { "found": true, "evidence": "..." },
+    "valueProposition": { "found": true, "evidence": "..." },
+    "audiences": [{ "audience": "...", "found": true, "where": "..." }]
+  },
+  "technicalSignals": ["react", "convex", "monorepo"],
+  "meta": { "filesRead": ["..."], "limitations": ["..."] }
+}
+
+Responde SOLO con el JSON cuando tengas evidencia suficiente.
+```
+
+**Skills nuevas**
+
+1) `surface-exploration`
+```
+---
+name: surface-exploration
+version: v1.0
+description: Como explorar surfaces para extraer valor de negocio.
+---
+product_front:
+- buscar rutas/pages/components con nombres de features
+- forms => acciones del usuario
+product_platform:
+- schemas/modelos => entidades
+- mutations/actions => capabilities
+product_marketing:
+- hero headlines, pricing, feature lists => value proposition y capabilities
+product_docs:
+- definiciones, workflows => glosario y journeys
+```
+
+2) `domain-language`
+```
+---
+name: domain-language
+version: v1.0
+description: Como identificar lenguaje de dominio de negocio.
+---
+Prioridad: marketing copy > docs > UI copy > schemas > comments
+No incluir terminos tecnicos (libs, patrones).
+```
+
+3) `journey-extraction`
+```
+---
+name: journey-extraction
+version: v1.0
+description: Como extraer journeys desde rutas y UI.
+---
+- rutas/pages => journeys
+- flows multi-step => pasos
+- correlacionar front y backend por dominio
+```
+
+**Validacion**:
+
+- [ ] capabilities y journeys citan evidencia leida
+- [ ] surfacesDetected solo incluye surfaces con path real
+- [ ] domainLanguage evita terminos puramente tecnicos
+- [ ] meta.filesRead y limitations poblados
+
+**Pruebas funcionales**:
+
+1. Run con baseline definido: validar que alignment responde con evidencia.
+2. Verificar que se leen al menos 2 archivos por surface detectada.
+3. Confirmar que capabilities/journeys tienen evidence real (no inferidas).
 
 ---
 

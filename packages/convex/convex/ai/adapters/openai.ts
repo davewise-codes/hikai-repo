@@ -1,4 +1,4 @@
-import { generateText, jsonSchema } from "ai";
+import { generateText, jsonSchema, type ModelMessage } from "ai";
 import { openai } from "@ai-sdk/openai";
 import {
 	LLMPort,
@@ -59,7 +59,7 @@ export function createOpenAIAdapter(modelId: string = "gpt-4o-mini"): LLMPort {
 			const result = await generateText({
 				model: openai(modelId),
 				system: params.systemPrompt,
-				messages: params.messages as unknown,
+				messages: params.messages as unknown as ModelMessage[],
 				tools,
 				maxOutputTokens: params.maxTokens,
 				temperature: params.temperature,
@@ -72,9 +72,9 @@ export function createOpenAIAdapter(modelId: string = "gpt-4o-mini"): LLMPort {
 				result.usage?.totalTokens ?? tokensIn + tokensOut;
 			const toolCalls: LLMToolCall[] = (result.toolCalls ?? []).map(
 				(call, index) => ({
-					toolCallId: call.toolCallId ?? call.id ?? `toolcall_${index}`,
-					toolName: call.toolName ?? call.name ?? "",
-					args: (call.args ?? call.arguments ?? {}) as Record<string, unknown>,
+					toolCallId: call.toolCallId ?? `toolcall_${index}`,
+					toolName: call.toolName ?? "",
+					args: (call.input ?? {}) as Record<string, unknown>,
 				})
 			);
 			const stopReason =
