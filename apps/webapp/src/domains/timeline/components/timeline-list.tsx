@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
+	Badge,
 	Card,
 	CardContent,
 	Tooltip,
@@ -30,6 +31,7 @@ export type TimelineListEvent = {
 	relevance?: number;
 	tags?: string[];
 	audience?: string;
+	domain?: string;
 	feature?: string;
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;
@@ -136,6 +138,7 @@ export function TimelineList({
 				const hasFeatures = (event.features?.length ?? 0) > 0;
 				const hasFixes = (event.fixes?.length ?? 0) > 0;
 				const hasImprovements = (event.improvements?.length ?? 0) > 0;
+				const domainLabel = event.domain?.trim();
 				const impact = event.bucketImpact ?? 1;
 				const impactSize =
 					impact >= 4 ? "h-4 w-4" : impact >= 2 ? "h-3 w-3" : "h-2 w-2";
@@ -214,6 +217,13 @@ export function TimelineList({
 										<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
 											{event.summary}
 										</p>
+									) : null}
+									{domainLabel ? (
+										<div className="pt-1">
+											<Badge variant="outline" className="text-fontSize-2xs">
+												{domainLabel}
+											</Badge>
+										</div>
 									) : null}
 								</CardContent>
 							</Card>

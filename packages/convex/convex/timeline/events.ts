@@ -23,6 +23,7 @@ type TimelineItem = {
 	relevance?: number;
 	tags?: string[];
 	audience?: string;
+	domain?: string;
 	feature?: string;
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;

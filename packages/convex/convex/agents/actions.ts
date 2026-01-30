@@ -1052,9 +1052,24 @@ export const interpretTimelineEvents = action({
 		const featureMap =
 			(currentSnapshot as { featureMap?: Record<string, unknown> })?.featureMap ??
 			null;
+		const repoDomains = extractRepoDomains(
+			(currentSnapshot as { contextDetail?: unknown })?.contextDetail,
+		);
 		const releaseCadence =
 			currentSnapshot?.releaseCadence ?? product.releaseCadence ?? "unknown";
 		const languagePreference = product.languagePreference ?? "en";
+
+		const rawEventsWithDomain = rawEvents.map((event) => {
+			const domainHint = deriveDomainHint(
+				event.filePaths ?? [],
+				event.summary,
+				repoDomains,
+			);
+			return {
+				...event,
+				domainHint,
+			};
+		});
 
 		const snapshotPayload = {
 			baseline,
@@ -1069,8 +1084,9 @@ export const interpretTimelineEvents = action({
 			baseline,
 			productContext: context,
 			featureMap,
+			repoDomains,
 			repoContexts: repoContextSummary,
-			rawEvents,
+			rawEvents: rawEventsWithDomain,
 		};
 
 		const promptPayload = JSON.stringify(input);
@@ -1105,6 +1121,7 @@ export const interpretTimelineEvents = action({
 					kind: string;
 					tags?: string[];
 					audience?: string;
+					domain?: string;
 					feature?: string;
 					relevance?: number;
 					rawEventIds: string[];
@@ -1276,9 +1293,14 @@ export const interpretTimelineEvents = action({
 					typeof narrative.feature === "string"
 						? narrative.feature.trim()
 						: undefined;
+				const normalizedDomain =
+					typeof (narrative as { domain?: string }).domain === "string"
+						? (narrative as { domain?: string }).domain?.trim()
+						: undefined;
 				return {
 					...narrative,
 					feature: normalizedFeature || undefined,
+					domain: normalizedDomain || undefined,
 					focusAreas: normalizedFocusAreas.size
 						? Array.from(normalizedFocusAreas)
 						: undefined,
@@ -2364,6 +2386,93 @@ function deriveSurfaceHints(filePaths: string[]): Array<
 
 	if (!hints.size) return ["unknown"];
 	return Array.from(hints);
+}
+
+type RepoDomainHint = {
+	name: string;
+	pathPatterns: string[];
+	schemaEntities: string[];
+	capabilities: string[];
+};
+
+function extractRepoDomains(contextDetail: unknown): RepoDomainHint[] {
+	const detail = contextDetail as { domains?: Array<Record<string, unknown>> };
+	if (!detail || !Array.isArray(detail.domains)) return [];
+	return detail.domains
+		.map((domain) => ({
+			name: typeof domain.name === "string" ? domain.name : "",
+			pathPatterns: Array.isArray(domain.pathPatterns)
+				? (domain.pathPatterns as string[])
+				: [],
+			schemaEntities: Array.isArray(domain.schemaEntities)
+				? (domain.schemaEntities as string[])
+				: [],
+			capabilities: Array.isArray(domain.capabilities)
+				? (domain.capabilities as string[])
+				: [],
+		}))
+		.filter((domain) => domain.name.length > 0);
+}
+
+function deriveDomainHint(
+	filePaths: string[],
+	summary: string,
+	domains: RepoDomainHint[],
+): { name: string; matchedBy: "path" | "entity" | "none" } | undefined {
+	if (!domains.length) return undefined;
+
+	const pathMatches: Array<{ domain: RepoDomainHint; score: number }> = [];
+	for (const domain of domains) {
+		let score = 0;
+		for (const path of filePaths) {
+			for (const pattern of domain.pathPatterns) {
+				if (matchesGlob(path, pattern)) {
+					score += 1;
+				}
+			}
+		}
+		if (score > 0) pathMatches.push({ domain, score });
+	}
+
+	if (pathMatches.length > 0) {
+		pathMatches.sort((a, b) => b.score - a.score);
+		return { name: pathMatches[0].domain.name, matchedBy: "path" };
+	}
+
+	const normalizedSummary = summary.toLowerCase();
+	const entityMatches: Array<{ domain: RepoDomainHint; score: number }> = [];
+	for (const domain of domains) {
+		let score = 0;
+		for (const entity of domain.schemaEntities) {
+			const normalizedEntity = entity.toLowerCase();
+			if (normalizedEntity && normalizedSummary.includes(normalizedEntity)) {
+				score += 1;
+			}
+		}
+		if (score > 0) entityMatches.push({ domain, score });
+	}
+	if (entityMatches.length > 0) {
+		entityMatches.sort((a, b) => b.score - a.score);
+		return { name: entityMatches[0].domain.name, matchedBy: "entity" };
+	}
+
+	return { name: domains[0]?.name ?? "Unknown", matchedBy: "none" };
+}
+
+function matchesGlob(path: string, pattern: string): boolean {
+	const normalizedPath = path.replace(/^\.\/+/, "");
+	const normalizedPattern = pattern.replace(/^\.\/+/, "");
+	const regex = globToRegex(normalizedPattern);
+	return regex.test(normalizedPath);
+}
+
+function globToRegex(pattern: string): RegExp {
+	const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+	const withWildcards = escaped
+		.replace(/\*\*/g, ".*")
+		.replace(/\*/g, "[^/]*")
+		.replace(/\?/g, ".");
+	return new RegExp(`^${withWildcards}$`, "i");
 }
 
 function toSafeString(value: unknown): string {

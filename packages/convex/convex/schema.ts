@@ -499,6 +499,7 @@ const schema = defineSchema({
     kind: v.string(),
     tags: v.optional(v.array(v.string())),
     audience: v.optional(v.string()),
+    domain: v.optional(v.string()),
     feature: v.optional(v.string()),
     relevance: v.optional(v.number()),
     focusAreas: v.optional(v.array(v.string())),

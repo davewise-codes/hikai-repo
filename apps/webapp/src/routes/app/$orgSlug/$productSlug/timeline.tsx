@@ -107,6 +107,7 @@ function TimelinePage() {
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [filters, setFilters] = useState<TimelineFilterState>({
 		focusAreas: [],
+		domains: [],
 		categories: [],
 		from: "",
 		to: "",
@@ -138,6 +139,16 @@ function TimelinePage() {
 			],
 		};
 	}, [currentContext, t]);
+	const domainOptions = useMemo(() => {
+		if (!timeline?.length) return [];
+		const names = new Set<string>();
+		timeline.forEach((event) => {
+			if (event.domain) names.add(event.domain);
+		});
+		return Array.from(names)
+			.sort((a, b) => a.localeCompare(b))
+			.map((name) => ({ value: name, label: name }));
+	}, [timeline]);
 
 	const activeConnection = useMemo(
 		() => connections?.find((connection) => connection.status === "active"),
@@ -147,6 +158,9 @@ function TimelinePage() {
 	const filteredEvents = useMemo(() => {
 		if (!timeline) return [];
 		return timeline.filter((event) => {
+			const matchDomains =
+				filters.domains.length === 0 ||
+				(event.domain ? filters.domains.includes(event.domain) : false);
 			const eventAreas = event.focusAreas ?? [];
 			const isInternalOnly = eventAreas.length === 0 || eventAreas.includes("Other");
 			const matchFocusAreas =
@@ -168,7 +182,7 @@ function TimelinePage() {
 				!filters.from || event.occurredAt >= new Date(filters.from).getTime();
 			const matchTo =
 				!filters.to || event.occurredAt <= new Date(filters.to).getTime();
-			return matchFocusAreas && matchCategories && matchFrom && matchTo;
+			return matchDomains && matchFocusAreas && matchCategories && matchFrom && matchTo;
 		});
 	}, [filters, timeline]);
 
@@ -436,6 +450,14 @@ function TimelinePage() {
 				: [...prev.categories, value],
 		}));
 	}, []);
+	const handleDomainToggle = useCallback((value: string) => {
+		setFilters((prev) => ({
+			...prev,
+			domains: prev.domains.includes(value)
+				? prev.domains.filter((item) => item !== value)
+				: [...prev.domains, value],
+		}));
+	}, []);
 
 	const handleFromChange = useCallback((value: string) => {
 		setDatePreset("all");
@@ -469,11 +491,12 @@ function TimelinePage() {
 
 	const clearAllFilters = useCallback(() => {
 		setDatePreset("all");
-		setFilters({ focusAreas: [], categories: [], from: "", to: "" });
+		setFilters({ focusAreas: [], domains: [], categories: [], from: "", to: "" });
 	}, []);
 
 	const hasActiveFilters =
 		filters.focusAreas.length > 0 ||
+		filters.domains.length > 0 ||
 		filters.categories.length > 0 ||
 		!!filters.from ||
 		!!filters.to;
@@ -576,6 +599,21 @@ function TimelinePage() {
 									</button>
 								</span>
 							))}
+							{filters.domains.map((domain) => (
+								<span
+									key={domain}
+									className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
+								>
+									{domain}
+									<button
+										type="button"
+										onClick={() => handleDomainToggle(domain)}
+										className="text-muted-foreground hover:text-foreground"
+									>
+										<X className="h-3 w-3" />
+									</button>
+								</span>
+							))}
 							{dateFilterLabel ? (
 								<span className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5">
 									{t("filters.date")} {dateFilterLabel}
@@ -665,6 +703,30 @@ function TimelinePage() {
 													{t(`filters.${category}`)}
 												</DropdownMenuCheckboxItem>
 											),
+										)}
+									</DropdownMenuSubContent>
+								</DropdownMenuSub>
+								<DropdownMenuSub>
+									<DropdownMenuSubTrigger>
+										{t("filters.domains")}
+									</DropdownMenuSubTrigger>
+									<DropdownMenuSubContent className="w-56">
+										{domainOptions.length ? (
+											domainOptions.map((domain) => (
+												<DropdownMenuCheckboxItem
+													key={domain.value}
+													checked={filters.domains.includes(domain.value)}
+													onCheckedChange={() => handleDomainToggle(domain.value)}
+													onSelect={(event) => event.preventDefault()}
+													className="text-fontSize-sm"
+												>
+													{domain.label}
+												</DropdownMenuCheckboxItem>
+											))
+										) : (
+											<DropdownMenuItem disabled className="text-fontSize-sm">
+												{t("filters.noDomains")}
+											</DropdownMenuItem>
 										)}
 									</DropdownMenuSubContent>
 								</DropdownMenuSub>

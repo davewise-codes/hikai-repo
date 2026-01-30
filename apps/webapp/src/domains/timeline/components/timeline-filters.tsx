@@ -1,10 +1,11 @@
 import { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowDown, ArrowUp, Button, Input, Label } from "@hikai/ui";
+import { ArrowDown, ArrowUp, Button, Input, Label, MultiSelectDropdown } from "@hikai/ui";
 import { cn } from "@hikai/ui";
 
 export type TimelineFilterState = {
 	focusAreas: string[];
+	domains: string[];
 	categories: Array<"features" | "fixes" | "improvements">;
 	from: string;
 	to: string;
@@ -13,6 +14,7 @@ export type TimelineFilterState = {
 interface TimelineFiltersProps {
 	filters: TimelineFilterState;
 	onChange: (next: TimelineFilterState) => void;
+	domainOptions?: Array<{ value: string; label: string }>;
 	onPrev?: () => void;
 	onNext?: () => void;
 	disablePrev?: boolean;
@@ -24,6 +26,7 @@ interface TimelineFiltersProps {
 export function TimelineFilters({
 	filters,
 	onChange,
+	domainOptions = [],
 	onPrev,
 	onNext,
 	disablePrev,
@@ -97,6 +100,20 @@ export function TimelineFilters({
 						className="h-9 w-36 text-fontSize-xs"
 					/>
 				</div>
+				{domainOptions.length ? (
+					<div className="hidden items-center gap-2 md:flex">
+						<Label className="text-fontSize-xs text-muted-foreground">
+							{t("controls.domain")}
+						</Label>
+						<MultiSelectDropdown
+							options={domainOptions}
+							selected={filters.domains}
+							onChange={(next) => onChange({ ...filters, domains: next })}
+							className="h-9 min-w-[180px]"
+							placeholder={t("controls.domainPlaceholder")}
+						/>
+					</div>
+				) : null}
 			</div>
 		</div>
 	);

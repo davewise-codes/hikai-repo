@@ -9,6 +9,7 @@ export type TimelineRawEventInput = {
 	surfaceHints?: Array<
 		"product_core" | "marketing_surface" | "infra" | "docs" | "experiments" | "unknown"
 	>;
+	domainHint?: { name: string; matchedBy: "path" | "entity" | "none" };
 };
 
 export type TimelineNarrativeItem = {
@@ -29,6 +30,7 @@ export type TimelineNarrativeEvent = {
 	kind: string;
 	tags?: string[];
 	audience?: string;
+	domain?: string;
 	feature?: string;
 	relevance?: number;
 	rawEventIds: string[];
@@ -63,6 +65,9 @@ Input JSON:
   "baseline": { ... },
   "productContext": { ... },
   "featureMap": { "features": [ { "id": "...", "slug": "...", "name": "...", "domain": "..." } ] },
+  "repoDomains": [
+    { "name": "...", "pathPatterns": ["..."], "schemaEntities": ["..."], "capabilities": ["..."] }
+  ],
   "repoContexts": [
     { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|unknown", "notes": "..." }
   ],
@@ -73,7 +78,8 @@ Input JSON:
       "sourceType": "commit|pull_request|release|other",
       "summary": "…",
       "filePaths": ["apps/app/..."],
-      "surfaceHints": ["product_core"]
+      "surfaceHints": ["product_core"],
+      "domainHint": { "name": "...", "matchedBy": "path|entity|none" }
     }
   ]
 }
@@ -92,6 +98,7 @@ Output JSON:
       "kind": "feature|bugfix|release|docs|marketing|infra|other",
       "tags": ["feature:...", "audience:...", "pillar:..."],
       "audience": "optional audience segment name",
+      "domain": "optional repo domain name (from repoDomains)",
       "feature": "optional featureMap name",
       "relevance": 1-5,
       "rawEventIds": ["rawEventId1", "rawEventId2"],
@@ -111,12 +118,12 @@ Rules:
 - Do not include raw commit messages or hashes in titles; summarize as product impact.
 - Use tags derived from the product taxonomy when possible.
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
-- For focusAreas, use productDomains names when possible; if no match, use "Other".
+- For focusAreas, prefer repoDomains names when available; otherwise use productDomains; if no match, use "Other".
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
 - Mark items "internal" when they are below-the-glass development work that does not change the value proposition.
 - Keep summary/narrative public-safe; internal items should only appear in improvements and not be mentioned in summary/narrative.
 - Every public item must map clearly to a featureMap feature or productDomain; if it doesn't, mark it internal.
 - When a featureMap match exists, use the featureMap name for "feature" and align the item's focusArea to the featureMap domain.
-- Use repoContexts and surfaceHints to judge relevance: marketing_surface, docs, infra, experiments are usually internal unless they clearly map to value for the ICP.
+- Use repoContexts, domainHint and surfaceHints to judge relevance: marketing_surface, docs, infra, experiments are usually internal unless they clearly map to value for the ICP.
 - If surfaceHints includes marketing_surface and product_core is not present, treat the item as internal by default.
 `.trim();
