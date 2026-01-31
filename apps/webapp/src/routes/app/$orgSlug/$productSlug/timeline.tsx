@@ -106,7 +106,6 @@ function TimelinePage() {
 	const [isRegenerating, setIsRegenerating] = useState(false);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
 	const [filters, setFilters] = useState<TimelineFilterState>({
-		focusAreas: [],
 		domains: [],
 		categories: [],
 		from: "",
@@ -115,35 +114,13 @@ function TimelinePage() {
 	const [datePreset, setDatePreset] = useState<
 		"all" | "last7" | "last30" | "lastMonth"
 	>("all");
-	const currentContext = useQuery(
-		api.products.products.getCurrentProductContextSnapshot,
-		productId ? { productId } : "skip",
-	);
-
-	const internalFocusValue = "__internal__";
-	const technicalFocusValue = "Technical";
-	const focusAreaOptions = useMemo(() => {
-		const names = new Set<string>();
-		const addNames = (items?: Array<{ name?: string }>) => {
-			items?.forEach((item) => {
-				if (item?.name) names.add(item.name);
-			});
-		};
-		addNames(currentContext?.productDomains);
-		const contextAreas = Array.from(names).sort((a, b) => a.localeCompare(b));
-		return {
-			contextAreas,
-			internalAreas: [
-				{ value: technicalFocusValue, label: t("filters.technicalWork") },
-				{ value: internalFocusValue, label: t("filters.internalWork") },
-			],
-		};
-	}, [currentContext, t]);
 	const domainOptions = useMemo(() => {
 		if (!timeline?.length) return [];
 		const names = new Set<string>();
 		timeline.forEach((event) => {
-			if (event.domain) names.add(event.domain);
+			(event.domains ?? []).forEach((domain) => {
+				if (domain) names.add(domain);
+			});
 		});
 		return Array.from(names)
 			.sort((a, b) => a.localeCompare(b))
@@ -160,29 +137,26 @@ function TimelinePage() {
 		return timeline.filter((event) => {
 			const matchDomains =
 				filters.domains.length === 0 ||
-				(event.domain ? filters.domains.includes(event.domain) : false);
-			const eventAreas = event.focusAreas ?? [];
-			const isInternalOnly = eventAreas.length === 0 || eventAreas.includes("Other");
-			const matchFocusAreas =
-				filters.focusAreas.length === 0 ||
-				filters.focusAreas.some((area) => {
-					if (area === internalFocusValue) return isInternalOnly;
-					return eventAreas.includes(area);
-				});
+				(event.domains ?? []).some((domain) =>
+					filters.domains.includes(domain),
+				);
 			const matchCategories =
 				filters.categories.length === 0 ||
 				filters.categories.some((category) => {
-					if (category === "features") return (event.features?.length ?? 0) > 0;
-					if (category === "fixes") return (event.fixes?.length ?? 0) > 0;
+					const items = event.workItems ?? [];
+					if (category === "features")
+						return items.some((item) => item.type === "feature");
+					if (category === "fixes")
+						return items.some((item) => item.type === "fix");
 					if (category === "improvements")
-						return (event.improvements?.length ?? 0) > 0;
+						return items.some((item) => item.type === "improvement");
 					return false;
 				});
 			const matchFrom =
 				!filters.from || event.occurredAt >= new Date(filters.from).getTime();
 			const matchTo =
 				!filters.to || event.occurredAt <= new Date(filters.to).getTime();
-			return matchDomains && matchFocusAreas && matchCategories && matchFrom && matchTo;
+			return matchDomains && matchCategories && matchFrom && matchTo;
 		});
 	}, [filters, timeline]);
 
@@ -433,15 +407,6 @@ function TimelinePage() {
 	);
 
 	const showConnectCta = !isConnectionsLoading && !activeConnection;
-	const handleFocusAreaToggle = useCallback((value: string) => {
-		setFilters((prev) => ({
-			...prev,
-			focusAreas: prev.focusAreas.includes(value)
-				? prev.focusAreas.filter((item) => item !== value)
-				: [...prev.focusAreas, value],
-		}));
-	}, []);
-
 	const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improvements") => {
 		setFilters((prev) => ({
 			...prev,
@@ -491,11 +456,10 @@ function TimelinePage() {
 
 	const clearAllFilters = useCallback(() => {
 		setDatePreset("all");
-		setFilters({ focusAreas: [], domains: [], categories: [], from: "", to: "" });
+		setFilters({ domains: [], categories: [], from: "", to: "" });
 	}, []);
 
 	const hasActiveFilters =
-		filters.focusAreas.length > 0 ||
 		filters.domains.length > 0 ||
 		filters.categories.length > 0 ||
 		!!filters.from ||
@@ -565,25 +529,6 @@ function TimelinePage() {
 									<X className="h-3.5 w-3.5" />
 								</Button>
 							) : null}
-							{filters.focusAreas.map((area) => (
-								<span
-									key={area}
-									className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
-								>
-									{area === internalFocusValue
-										? t("filters.internalWork")
-										: area === technicalFocusValue
-											? t("filters.technicalWork")
-											: area}
-									<button
-										type="button"
-										onClick={() => handleFocusAreaToggle(area)}
-										className="text-muted-foreground hover:text-foreground"
-									>
-										<X className="h-3 w-3" />
-									</button>
-								</span>
-							))}
 							{filters.categories.map((category) => (
 								<span
 									key={category}
@@ -642,50 +587,6 @@ function TimelinePage() {
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent align="end" className="w-56">
-								<DropdownMenuSub>
-								<DropdownMenuSubTrigger>
-									{t("filters.focusAreas")}
-								</DropdownMenuSubTrigger>
-								<DropdownMenuSubContent className="w-56">
-										{focusAreaOptions.contextAreas.length ? (
-											<>
-												<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
-													{t("filters.focusAreasContext")}
-												</DropdownMenuLabel>
-												{focusAreaOptions.contextAreas.map((area) => (
-													<DropdownMenuCheckboxItem
-														key={area}
-														checked={filters.focusAreas.includes(area)}
-														onCheckedChange={() => handleFocusAreaToggle(area)}
-														onSelect={(event) => event.preventDefault()}
-														className="text-fontSize-sm"
-													>
-														{area}
-													</DropdownMenuCheckboxItem>
-												))}
-												<DropdownMenuSeparator />
-												<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
-													{t("filters.focusAreasInternal")}
-												</DropdownMenuLabel>
-												{focusAreaOptions.internalAreas.map((area) => (
-													<DropdownMenuCheckboxItem
-														key={area.value}
-														checked={filters.focusAreas.includes(area.value)}
-														onCheckedChange={() => handleFocusAreaToggle(area.value)}
-														onSelect={(event) => event.preventDefault()}
-														className="text-fontSize-sm"
-													>
-														{area.label}
-													</DropdownMenuCheckboxItem>
-												))}
-											</>
-										) : (
-											<DropdownMenuItem disabled className="text-fontSize-sm">
-												{t("filters.noFocusAreas")}
-											</DropdownMenuItem>
-										)}
-									</DropdownMenuSubContent>
-								</DropdownMenuSub>
 								<DropdownMenuSub>
 									<DropdownMenuSubTrigger>
 										{t("filters.categories")}
@@ -1106,11 +1007,9 @@ function DetailPanel({
 	);
 	const [isRating, setIsRating] = useState(false);
 	const currentRating = ratingData?.rating ?? null;
-	const focusAreas = event?.focusAreas ?? [];
-	const displayFocusAreas = focusAreas.map((area) =>
-		area === "Other" ? t("detail.internalGroup") : area,
-	);
-	const shouldShowInternalNote = !displayFocusAreas.length;
+	const workItems = event?.workItems ?? [];
+	const hasPublicItems = workItems.some((item) => item.visibility === "public");
+	const shouldShowInternalNote = !!event && !hasPublicItems;
 	const shouldShowFeedback = !!event?.inferenceLogId && currentRating === null;
 	const [activeTab, setActiveTab] = useState("overview");
 
@@ -1130,10 +1029,13 @@ function DetailPanel({
 
 	const renderCategory = (
 		items: Array<{
+			type: "feature" | "fix" | "improvement";
+			featureSlug: string;
 			title: string;
 			summary?: string;
-			focusArea?: string;
 			visibility?: "public" | "internal";
+			isNew?: boolean;
+			relatesTo?: string;
 		}>,
 		emptyLabel: string,
 	) => {
@@ -1143,44 +1045,31 @@ function DetailPanel({
 			);
 		}
 
-		const fallbackArea = t("detail.focusAreaOther");
-		const grouped = items.reduce<Record<string, typeof items>>((acc, item) => {
-			const rawArea = item.focusArea?.trim();
-			const key = rawArea === "Other" ? t("detail.internalGroup") : rawArea || fallbackArea;
-			if (!acc[key]) acc[key] = [];
-			acc[key].push(item);
-			return acc;
-		}, {});
-
 		return (
-			<div className="space-y-4">
-				{Object.entries(grouped).map(([area, areaItems]) => (
-					<div key={area} className="space-y-2">
-						<p className="text-fontSize-xs uppercase tracking-wide text-muted-foreground">
-							{area}
-						</p>
-						<div className="space-y-2">
-							{areaItems.map((item, index) => (
-								<div
-									key={`${area}-${index}`}
-									className="rounded-md border border-border p-3"
-								>
-									<div className="flex items-center justify-between gap-2">
-										<p className="text-fontSize-sm font-medium">{item.title}</p>
-										{item.visibility === "internal" ? (
-											<span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-												{t("detail.internal")}
-											</span>
-										) : null}
-									</div>
-									{item.summary ? (
-										<p className="mt-1 text-fontSize-xs text-muted-foreground">
-											{item.summary}
-										</p>
-									) : null}
-								</div>
-							))}
+			<div className="space-y-2">
+				{items.map((item, index) => (
+					<div
+						key={`${item.featureSlug}-${index}`}
+						className="rounded-md border border-border p-3"
+					>
+						<div className="flex items-center justify-between gap-2">
+							<p className="text-fontSize-sm font-medium">{item.title}</p>
+							{item.visibility === "internal" ? (
+								<span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+									{t("detail.internal")}
+								</span>
+							) : null}
 						</div>
+						{item.summary ? (
+							<p className="mt-1 text-fontSize-xs text-muted-foreground">
+								{item.summary}
+							</p>
+						) : null}
+						{item.relatesTo ? (
+							<p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+								{t("detail.relatedTo")} {item.relatesTo}
+							</p>
+						) : null}
 					</div>
 				))}
 			</div>
@@ -1209,11 +1098,7 @@ function DetailPanel({
 							</Button>
 						) : null}
 					</div>
-					{event && displayFocusAreas.length ? (
-						<p className="mt-2 text-fontSize-xs text-muted-foreground">
-							{t("detail.focusAreasLabel")} {displayFocusAreas.join(" · ")}
-						</p>
-					) : event && shouldShowInternalNote ? (
+					{event && shouldShowInternalNote ? (
 						<p className="mt-2 text-fontSize-xs text-muted-foreground">
 							{t("detail.focusAreasInternal")}
 						</p>
@@ -1303,7 +1188,9 @@ function DetailPanel({
 								<div className="h-full overflow-y-auto rounded-lg border">
 									<div className="space-y-4 p-4">
 										{renderCategory(
-											event.features ?? [],
+											(event.workItems ?? []).filter(
+												(item) => item.type === "feature",
+											),
 											t("detail.empty.features"),
 										)}
 									</div>
@@ -1315,7 +1202,12 @@ function DetailPanel({
 							>
 								<div className="h-full overflow-y-auto rounded-lg border">
 									<div className="space-y-4 p-4">
-										{renderCategory(event.fixes ?? [], t("detail.empty.fixes"))}
+										{renderCategory(
+											(event.workItems ?? []).filter(
+												(item) => item.type === "fix",
+											),
+											t("detail.empty.fixes"),
+										)}
 									</div>
 								</div>
 							</TabsContent>
@@ -1326,7 +1218,9 @@ function DetailPanel({
 								<div className="h-full overflow-y-auto rounded-lg border">
 									<div className="space-y-4 p-4">
 										{renderCategory(
-											event.improvements ?? [],
+											(event.workItems ?? []).filter(
+												(item) => item.type === "improvement",
+											),
 											t("detail.empty.improvements"),
 										)}
 									</div>

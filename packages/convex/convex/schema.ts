@@ -486,6 +486,22 @@ const schema = defineSchema({
     .index("by_connection_time", ["connectionId", "ingestedAt"])
     .index("by_status", ["status"]),
 
+  productFeatures: defineTable({
+    productId: v.id("products"),
+    slug: v.string(),
+    name: v.string(),
+    domain: v.optional(v.string()),
+    description: v.optional(v.string()),
+    visibility: v.union(v.literal("public"), v.literal("internal")),
+    status: v.union(v.literal("active"), v.literal("deprecated")),
+    createdAt: v.number(),
+    lastEventAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_product", ["productId"])
+    .index("by_product_slug", ["productId", "slug"])
+    .index("by_product_domain", ["productId", "domain"]),
+
   interpretedEvents: defineTable({
     productId: v.id("products"),
     bucketId: v.string(),
@@ -497,43 +513,25 @@ const schema = defineSchema({
     summary: v.optional(v.string()),
     narrative: v.optional(v.string()),
     kind: v.string(),
-    tags: v.optional(v.array(v.string())),
-    audience: v.optional(v.string()),
-    domain: v.optional(v.string()),
-    feature: v.optional(v.string()),
+    domains: v.optional(v.array(v.string())),
     relevance: v.optional(v.number()),
-    focusAreas: v.optional(v.array(v.string())),
-    features: v.optional(
+    workItems: v.optional(
       v.array(
         v.object({
+          type: v.union(
+            v.literal("feature"),
+            v.literal("fix"),
+            v.literal("improvement")
+          ),
+          featureSlug: v.string(),
           title: v.string(),
           summary: v.optional(v.string()),
-          focusArea: v.optional(v.string()),
-          visibility: v.optional(v.union(v.literal("public"), v.literal("internal"))),
+          visibility: v.union(v.literal("public"), v.literal("internal")),
+          isNew: v.optional(v.boolean()),
+          relatesTo: v.optional(v.string()),
         })
       )
     ),
-    fixes: v.optional(
-      v.array(
-        v.object({
-          title: v.string(),
-          summary: v.optional(v.string()),
-          focusArea: v.optional(v.string()),
-          visibility: v.optional(v.union(v.literal("public"), v.literal("internal"))),
-        })
-      )
-    ),
-    improvements: v.optional(
-      v.array(
-        v.object({
-          title: v.string(),
-          summary: v.optional(v.string()),
-          focusArea: v.optional(v.string()),
-          visibility: v.optional(v.union(v.literal("public"), v.literal("internal"))),
-        })
-      )
-    ),
-    ongoingFocusAreas: v.optional(v.array(v.string())),
     bucketImpact: v.optional(v.number()),
     rawEventIds: v.array(v.id("rawEvents")),
     rawEventCount: v.number(),

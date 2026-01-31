@@ -3,6 +3,7 @@ import { action } from "../_generated/server";
 import { api, internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { runRepoContextAgent } from "./repoContextAgent";
+import { runFeatureScoutAgent } from "./featureScoutAgent";
 
 const AGENT_NAME = "Context Agent";
 const USE_CASE = "context_agent";
@@ -135,7 +136,7 @@ export const generateContextSnapshot = action({
 			metrics.totalTurns += contextResult.metrics.turns ?? 0;
 		}
 
-		const agentRuns = { contextAgent: runId };
+		const agentRuns = { contextAgent: runId, featureScout: runId };
 		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
 			snapshotId,
 			agentRuns,
@@ -150,13 +151,67 @@ export const generateContextSnapshot = action({
 				timestamp: Date.now(),
 			});
 		}
+		if (contextResult.contextDetail) {
+			completedPhases.push("domains");
+		}
 
-		const status: "completed" | "failed" =
-			contextResult.contextDetail ? "completed" : "failed";
+		let featureOutput: Awaited<
+			ReturnType<typeof runFeatureScoutAgent>
+		>["features"] = null;
+
+		if (contextResult.contextDetail?.domains?.length) {
+			await recordStep("Feature scout: start", "info");
+			const featureResult = await runFeatureScoutAgent({
+				ctx,
+				productId,
+				runId,
+				repoDomains: contextResult.contextDetail.domains,
+			});
+			if (featureResult.metrics) {
+				metrics.totalLatencyMs += featureResult.metrics.latencyMs ?? 0;
+				metrics.totalTokens += featureResult.metrics.totalTokens ?? 0;
+				metrics.tokensIn += featureResult.metrics.tokensIn ?? 0;
+				metrics.tokensOut += featureResult.metrics.tokensOut ?? 0;
+				metrics.totalTurns += featureResult.metrics.turns ?? 0;
+			}
+
+			if (!featureResult.features) {
+				errors.push({
+					phase: "features",
+					error:
+						featureResult.errorMessage ??
+						"Feature scout agent did not return output",
+					timestamp: Date.now(),
+				});
+			} else {
+				featureOutput = featureResult.features;
+				completedPhases.push("features");
+				await ctx.runMutation(internal.products.features.upsertProductFeatures, {
+					productId,
+					features: featureResult.features.features.map((feature) => ({
+						slug: feature.slug,
+						name: feature.name,
+						domain: feature.domain,
+						description: feature.description,
+						visibility: feature.visibility,
+						status: "active",
+						lastEventAt: Date.now(),
+					})),
+				});
+			}
+		}
+
+		const status: "completed" | "failed" | "partial" =
+			contextResult.contextDetail
+				? errors.length
+					? "partial"
+					: "completed"
+				: "failed";
 
 		await ctx.runMutation(internal.agents.productContextData.updateContextSnapshot, {
 			snapshotId,
 			contextDetail: contextResult.contextDetail ?? undefined,
+			features: featureOutput ?? undefined,
 			status,
 			completedPhases,
 			errors,

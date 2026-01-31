@@ -21,32 +21,18 @@ type TimelineItem = {
 	narrative?: string;
 	occurredAt: number;
 	relevance?: number;
-	tags?: string[];
-	audience?: string;
-	domain?: string;
-	feature?: string;
+	domains?: string[];
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;
-	focusAreas?: string[];
-	features?: Array<{
+	workItems?: Array<{
+		type: "feature" | "fix" | "improvement";
+		featureSlug: string;
 		title: string;
 		summary?: string;
-		focusArea?: string;
-		visibility?: "public" | "internal";
+		visibility: "public" | "internal";
+		isNew?: boolean;
+		relatesTo?: string;
 	}>;
-	fixes?: Array<{
-		title: string;
-		summary?: string;
-		focusArea?: string;
-		visibility?: "public" | "internal";
-	}>;
-	improvements?: Array<{
-		title: string;
-		summary?: string;
-		focusArea?: string;
-		visibility?: "public" | "internal";
-	}>;
-	ongoingFocusAreas?: string[];
 	bucketImpact?: number;
 	contextSnapshotId?: Id<"productContextSnapshots">;
 	inferenceLogId?: Id<"aiInferenceLogs">;

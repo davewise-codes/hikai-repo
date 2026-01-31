@@ -47,15 +47,52 @@
 - 2026-01-30: Resumen de últimas pruebas (context agent):
 
   ┌────────────────────┬──────────┬──────────┬────────────┐
-  │       Prueba       │ Duración │ Dominios │ Tool calls │
+  │ Prueba │ Duración │ Dominios │ Tool calls │
   ├────────────────────┼──────────┼──────────┼────────────┤
-  │ Inicial (timeout)  │ >600s    │ 0        │ 37+        │
+  │ Inicial (timeout) │ >600s │ 0 │ 37+ │
   ├────────────────────┼──────────┼──────────┼────────────┤
-  │ Después de límites │ 554s     │ 4        │ 28         │
+  │ Después de límites │ 554s │ 4 │ 28 │
   ├────────────────────┼──────────┼──────────┼────────────┤
-  │ Optimizada         │ 167s     │ 5        │ 8          │
+  │ Optimizada │ 167s │ 5 │ 8 │
   ├────────────────────┼──────────┼──────────┼────────────┤
-  │ Anterior           │ 186s     │ 3        │ 8          │
+  │ Anterior │ 186s │ 3 │ 8 │
   ├────────────────────┼──────────┼──────────┼────────────┤
-  │ Esta               │ 186s     │ 6        │ 8          │
+  │ Esta │ 186s │ 6 │ 8 │
   └────────────────────┴──────────┴──────────┴────────────┘
+
+éxito rotundo. Analizando los resultados:
+
+Resumen por dominio
+┌───────────────┬──────────┬───────┬────────┬────────────────────┐
+│ Dominio │ Features │ Turns │ Tokens │ Coverage │
+├───────────────┼──────────┼───────┼────────┼────────────────────┤
+│ Organizations │ 8 │ 4 │ 10,829 │ 6/6 ✓ │
+├───────────────┼──────────┼───────┼────────┼────────────────────┤
+│ Products │ 11 │ 7 │ 74,293 │ 6/6 ✓ │
+├───────────────┼──────────┼───────┼────────┼────────────────────┤
+│ Connectors │ 3 │ 7 │ 29,557 │ 7/7 ✓ │
+├───────────────┼──────────┼───────┼────────┼────────────────────┤
+│ Timeline │ 2 │ 5 │ 17,102 │ 1/6 (backend-only) │
+├───────────────┼──────────┼───────┼────────┼────────────────────┤
+│ Auth & Users │ 7 │ 5 │ 21,668 │ 2/4 │
+├───────────────┼──────────┼───────┼────────┼────────────────────┤
+│ Agents & AI │ 0 │ 5 │ 22,395 │ 0/6 (backend-only) │
+└───────────────┴──────────┴───────┴────────┴────────────────────┘
+Total: 31 features en ~90 segundos (todos en paralelo)
+
+Lo que funcionó
+
+1. Sin output vacío - Todos los scouts produjeron JSON válido
+2. Ejecución paralela - 6 scouts simultáneos vs secuencial
+3. Cobertura honesta:
+
+
+    - Agents & AI correctamente identificado como backend-only
+    - Timeline marcó ingest/interpret/export como backend-only
+    - Auth documentó UI faltante para preferences/profile
+
+4. Calidad de features - Descripciones detalladas, slugs correctos, capabilities mapeadas
+
+Único issue menor
+
+El problema del path/pattern persiste en algunos scouts (ej: path: "packages/convex/convex/agents/\*\*"), pero los scouts se recuperaron probando otros patterns. Podrías clarificar en el prompt que path es directorio y pattern es glob.

@@ -29,32 +29,18 @@ export type TimelineListEvent = {
 	narrative?: string;
 	occurredAt: number;
 	relevance?: number;
-	tags?: string[];
-	audience?: string;
-	domain?: string;
-	feature?: string;
+	domains?: string[];
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;
-	focusAreas?: string[];
-	features?: Array<{
+	workItems?: Array<{
+		type: "feature" | "fix" | "improvement";
+		featureSlug: string;
 		title: string;
 		summary?: string;
-		focusArea?: string;
-		visibility?: "public" | "internal";
+		visibility: "public" | "internal";
+		isNew?: boolean;
+		relatesTo?: string;
 	}>;
-	fixes?: Array<{
-		title: string;
-		summary?: string;
-		focusArea?: string;
-		visibility?: "public" | "internal";
-	}>;
-	improvements?: Array<{
-		title: string;
-		summary?: string;
-		focusArea?: string;
-		visibility?: "public" | "internal";
-	}>;
-	ongoingFocusAreas?: string[];
 	bucketImpact?: number;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
@@ -135,10 +121,13 @@ export function TimelineList({
 			{events.map((event) => {
 				const isSelected = selectedId === event._id;
 				const formattedDate = formatShortDate(event.occurredAt, i18n.language);
-				const hasFeatures = (event.features?.length ?? 0) > 0;
-				const hasFixes = (event.fixes?.length ?? 0) > 0;
-				const hasImprovements = (event.improvements?.length ?? 0) > 0;
-				const domainLabel = event.domain?.trim();
+				const workItems = event.workItems ?? [];
+				const hasFeatures = workItems.some((item) => item.type === "feature");
+				const hasFixes = workItems.some((item) => item.type === "fix");
+				const hasImprovements = workItems.some(
+					(item) => item.type === "improvement",
+				);
+				const domainLabel = event.domains?.[0]?.trim();
 				const impact = event.bucketImpact ?? 1;
 				const impactSize =
 					impact >= 4 ? "h-4 w-4" : impact >= 2 ? "h-3 w-3" : "h-2 w-2";

@@ -27,6 +27,7 @@ type ProductContextCardProps = {
 };
 
 const CONTEXT_AGENT_USE_CASE = "context_agent";
+const FEATURE_SCOUT_USE_CASE = "feature_scout";
 
 export function ProductContextCard({
 	product,
@@ -38,10 +39,19 @@ export function ProductContextCard({
 	const generateContextSnapshot = useAction(
 		api.agents.contextAgent.generateContextSnapshot,
 	);
+	const generateFeatureScout = useAction(
+		api.agents.featureScoutAgent.generateFeatureScoutFromContext,
+	);
 	const [agentRunId, setAgentRunId] = useState<Id<"agentRuns"> | null>(null);
 	const [isAgentRunning, setIsAgentRunning] = useState(false);
 	const [agentError, setAgentError] = useState<string | null>(null);
 	const [triggerStartedAt, setTriggerStartedAt] = useState<number | null>(null);
+	const [featureRunId, setFeatureRunId] = useState<Id<"agentRuns"> | null>(null);
+	const [isFeatureRunning, setIsFeatureRunning] = useState(false);
+	const [featureError, setFeatureError] = useState<string | null>(null);
+	const [featureTriggerStartedAt, setFeatureTriggerStartedAt] = useState<
+		number | null
+	>(null);
 	const { connections, isLoading } = useConnections(product._id);
 
 	const agentRun = useQuery(
@@ -53,11 +63,27 @@ export function ProductContextCard({
 				}
 			: "skip",
 	);
+	const featureAgentRun = useQuery(
+		api.agents.agentRuns.getRunById,
+		featureRunId
+			? {
+					productId: product._id,
+					runId: featureRunId,
+				}
+			: "skip",
+	);
 	const latestRun = useQuery(
 		api.agents.agentRuns.getLatestRunForUseCase,
 		{
 			productId: product._id,
 			useCase: CONTEXT_AGENT_USE_CASE,
+		},
+	);
+	const latestFeatureRun = useQuery(
+		api.agents.agentRuns.getLatestRunForUseCase,
+		{
+			productId: product._id,
+			useCase: FEATURE_SCOUT_USE_CASE,
 		},
 	);
 	const activeRun = agentRunId
@@ -67,8 +93,16 @@ export function ProductContextCard({
 				? latestRun
 				: null
 			: latestRun;
+	const activeFeatureRun = featureRunId
+		? featureAgentRun
+		: latestFeatureRun && featureTriggerStartedAt
+			? latestFeatureRun.startedAt >= featureTriggerStartedAt
+				? latestFeatureRun
+				: null
+			: latestFeatureRun;
 
 	const showAgentProgress = Boolean(activeRun);
+	const showFeatureProgress = Boolean(activeFeatureRun);
 	const hasSources = (connections?.length ?? 0) > 0;
 
 	const handleRunAgent = async () => {
@@ -101,9 +135,39 @@ export function ProductContextCard({
 		}
 	};
 
+	const handleRunFeatureScout = async () => {
+		const startedAt = Date.now();
+		setIsFeatureRunning(true);
+		setFeatureError(null);
+		setFeatureRunId(null);
+		setFeatureTriggerStartedAt(startedAt);
+		onRunStart?.({ startedAt, runId: null });
+		try {
+			const result = await generateFeatureScout({
+				productId: product._id,
+				triggerReason: "manual_refresh",
+			});
+			if (result?.runId) {
+				const nextRunId = result.runId as Id<"agentRuns">;
+				setFeatureRunId(nextRunId);
+				onRunStart?.({ startedAt, runId: nextRunId });
+			} else {
+				setFeatureRunId(null);
+			}
+			toast.success(t("context.featureScoutGenerateSuccess"));
+		} catch (err) {
+			const message = err instanceof Error ? err.message : t("errors.unknown");
+			setFeatureError(message);
+			toast.error(t("context.featureScoutGenerateError"));
+		} finally {
+			setIsFeatureRunning(false);
+		}
+	};
+
 	useEffect(() => {
 		return () => {
 			setAgentRunId(null);
+			setFeatureRunId(null);
 		};
 	}, []);
 
@@ -112,6 +176,12 @@ export function ProductContextCard({
 			setIsAgentRunning(false);
 		}
 	}, [activeRun?.status]);
+
+	useEffect(() => {
+		if (activeFeatureRun?.status && activeFeatureRun.status !== "running") {
+			setIsFeatureRunning(false);
+		}
+	}, [activeFeatureRun?.status]);
 
 	return (
 		<Card>
@@ -139,11 +209,28 @@ export function ProductContextCard({
 							t("context.contextAgentGenerate")
 						)}
 					</Button>
+					<Button
+						variant="outline"
+						onClick={handleRunFeatureScout}
+						disabled={isFeatureRunning}
+					>
+						{isFeatureRunning ? (
+							<div className="flex items-center gap-2">
+								<span className="h-4 w-4 border-2 border-muted-foreground border-t-transparent rounded-full inline-block animate-spin" />
+								<span>{t("context.featureScoutGenerateRunning")}</span>
+							</div>
+						) : (
+							t("context.featureScoutGenerate")
+						)}
+					</Button>
 				</div>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				{agentError && (
 					<p className="text-fontSize-sm text-destructive">{agentError}</p>
+				)}
+				{featureError && (
+					<p className="text-fontSize-sm text-destructive">{featureError}</p>
 				)}
 				{!hasSources && !isLoading && (
 					<p className="text-fontSize-sm text-muted-foreground">
@@ -154,6 +241,14 @@ export function ProductContextCard({
 					<AgentProgress
 						productId={product._id}
 						runId={activeRun._id}
+						snapshot={snapshot}
+						isDirty={isDirty}
+					/>
+				) : null}
+				{showFeatureProgress && activeFeatureRun ? (
+					<AgentProgress
+						productId={product._id}
+						runId={activeFeatureRun._id}
 						snapshot={snapshot}
 						isDirty={isDirty}
 					/>

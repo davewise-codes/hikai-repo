@@ -34,34 +34,21 @@ type InterpretationOutput = {
 		title: string;
 		summary?: string;
 		narrative?: string;
-		kind: string;
-		tags?: string[];
-		audience?: string;
-		feature?: string;
-		relevance?: number;
-		rawEventIds: string[];
-		focusAreas?: string[];
-		features?: Array<{
-			title: string;
-			summary?: string;
-			focusArea?: string;
-			visibility?: "public" | "internal";
-		}>;
-		fixes?: Array<{
-			title: string;
-			summary?: string;
-			focusArea?: string;
-			visibility?: "public" | "internal";
-		}>;
-		improvements?: Array<{
-			title: string;
-			summary?: string;
-			focusArea?: string;
-			visibility?: "public" | "internal";
-		}>;
-		ongoingFocusAreas?: string[];
-		bucketImpact?: number;
+	kind: string;
+	domains?: string[];
+	relevance?: number;
+	rawEventIds: string[];
+	workItems?: Array<{
+		type: "feature" | "fix" | "improvement";
+		featureSlug: string;
+		title: string;
+		summary?: string;
+		visibility: "public" | "internal";
+		isNew?: boolean;
+		relatesTo?: string;
 	}>;
+	bucketImpact?: number;
+}>;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
 
@@ -259,7 +246,6 @@ export const interpretPendingEvents = action({
 			const now = Date.now();
 			let processed = 0;
 			const totalBuckets = buckets.length;
-			let previousFocusAreas: string[] = [];
 			for (const [index, bucket] of buckets.entries()) {
 				const bucketLabel = formatBucketLabel(bucket.bucketStartAt, bucket.bucketEndAt);
 				await recordStep(
@@ -297,12 +283,7 @@ export const interpretPendingEvents = action({
 
 				const { rawEventIds: _rawEventIds, ...narrativePayload } =
 					interpretation.narratives[0];
-				const focusAreas = narrativePayload.focusAreas ?? [];
-				const ongoingFocusAreas = focusAreas.filter((area) =>
-					previousFocusAreas.includes(area),
-				);
 				const bucketImpact = computeBucketImpact(bucket.rawEvents);
-				previousFocusAreas = focusAreas;
 				await recordStep(
 					`Writing narrative for bucket ${index + 1}/${totalBuckets}`,
 					"info",
@@ -315,7 +296,6 @@ export const interpretPendingEvents = action({
 						bucketStartAt: bucket.bucketStartAt,
 						bucketEndAt: bucket.bucketEndAt,
 						cadence: normalizedCadence,
-						ongoingFocusAreas: ongoingFocusAreas.length ? ongoingFocusAreas : undefined,
 						bucketImpact,
 					},
 					rawEventIds: bucket.rawEvents.map(
@@ -373,49 +353,25 @@ export const insertInterpretedEvent = internalMutation({
 			summary: v.optional(v.string()),
 			narrative: v.optional(v.string()),
 			kind: v.string(),
-			tags: v.optional(v.array(v.string())),
-			audience: v.optional(v.string()),
-			domain: v.optional(v.string()),
-			feature: v.optional(v.string()),
+			domains: v.optional(v.array(v.string())),
 			relevance: v.optional(v.number()),
-			focusAreas: v.optional(v.array(v.string())),
-			features: v.optional(
+			workItems: v.optional(
 				v.array(
 					v.object({
+						type: v.union(
+							v.literal("feature"),
+							v.literal("fix"),
+							v.literal("improvement"),
+						),
+						featureSlug: v.string(),
 						title: v.string(),
 						summary: v.optional(v.string()),
-						focusArea: v.optional(v.string()),
-						visibility: v.optional(
-							v.union(v.literal("public"), v.literal("internal")),
-						),
+						visibility: v.union(v.literal("public"), v.literal("internal")),
+						isNew: v.optional(v.boolean()),
+						relatesTo: v.optional(v.string()),
 					}),
 				),
 			),
-			fixes: v.optional(
-				v.array(
-					v.object({
-						title: v.string(),
-						summary: v.optional(v.string()),
-						focusArea: v.optional(v.string()),
-						visibility: v.optional(
-							v.union(v.literal("public"), v.literal("internal")),
-						),
-					}),
-				),
-			),
-			improvements: v.optional(
-				v.array(
-					v.object({
-						title: v.string(),
-						summary: v.optional(v.string()),
-						focusArea: v.optional(v.string()),
-						visibility: v.optional(
-							v.union(v.literal("public"), v.literal("internal")),
-						),
-					}),
-				),
-			),
-			ongoingFocusAreas: v.optional(v.array(v.string())),
 			bucketImpact: v.optional(v.number()),
 		}),
 		rawEventIds: v.array(v.id("rawEvents")),
@@ -441,16 +397,9 @@ export const insertInterpretedEvent = internalMutation({
 			summary: narrative.summary,
 			narrative: narrative.narrative,
 			kind: narrative.kind,
-			tags: narrative.tags,
-			audience: narrative.audience,
-			domain: narrative.domain,
-			feature: narrative.feature,
+			domains: narrative.domains,
 			relevance: narrative.relevance,
-			focusAreas: narrative.focusAreas,
-			features: narrative.features,
-			fixes: narrative.fixes,
-			improvements: narrative.improvements,
-			ongoingFocusAreas: narrative.ongoingFocusAreas,
+			workItems: narrative.workItems,
 			bucketImpact: narrative.bucketImpact,
 			rawEventIds,
 			rawEventCount: rawEventIds.length,

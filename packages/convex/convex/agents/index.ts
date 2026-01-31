@@ -11,5 +11,6 @@ export { generateDomainMap } from "./domainMap";
 export { generateStructureScout } from "./structureScout";
 export { generateGlossaryScout } from "./glossaryScout";
 export { generateFeatureScout } from "./featureScout";
+export { generateFeatureScoutFromContext } from "./featureScoutAgent";
 export { generateContextSnapshot, migrateLegacyContextSnapshot } from "./contextAgent";
 export { exportRunTrace } from "./agentRuns";

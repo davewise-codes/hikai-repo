@@ -4,7 +4,6 @@ import { ArrowDown, ArrowUp, Button, Input, Label, MultiSelectDropdown } from "@
 import { cn } from "@hikai/ui";
 
 export type TimelineFilterState = {
-	focusAreas: string[];
 	domains: string[];
 	categories: Array<"features" | "fixes" | "improvements">;
 	from: string;

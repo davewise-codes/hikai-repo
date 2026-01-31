@@ -124,6 +124,7 @@
     "internalSummary": "Internal foundations only",
     "focusAreasInternal": "Focus areas: Internal foundations",
     "feedbackPrompt": "Are you happy with this summary?",
+    "relatedTo": "Related to:",
     "focusAreasLabel": "Focus areas:",
     "focusAreaOther": "Other"
   }

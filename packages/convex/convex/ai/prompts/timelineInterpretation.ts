@@ -1,4 +1,4 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v1.6";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v2.1";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
@@ -12,11 +12,14 @@ export type TimelineRawEventInput = {
 	domainHint?: { name: string; matchedBy: "path" | "entity" | "none" };
 };
 
-export type TimelineNarrativeItem = {
+export type TimelineWorkItem = {
+	type: "feature" | "fix" | "improvement";
+	featureSlug: string;
 	title: string;
 	summary?: string;
-	focusArea?: string;
 	visibility?: "public" | "internal";
+	isNew?: boolean;
+	relatesTo?: string;
 };
 
 export type TimelineNarrativeEvent = {
@@ -25,25 +28,25 @@ export type TimelineNarrativeEvent = {
 	bucketEndAt: number;
 	cadence: string;
 	title: string;
-	summary: string;
-	narrative: string;
+	summary?: string;
+	narrative?: string;
 	kind: string;
-	tags?: string[];
-	audience?: string;
 	domain?: string;
-	feature?: string;
 	relevance?: number;
 	rawEventIds: string[];
-	focusAreas?: string[];
-	features?: TimelineNarrativeItem[];
-	fixes?: TimelineNarrativeItem[];
-	improvements?: TimelineNarrativeItem[];
-	ongoingFocusAreas?: string[];
+	workItems?: TimelineWorkItem[];
 	bucketImpact?: number;
 };
 
 export type TimelineInterpretationOutput = {
 	narratives: TimelineNarrativeEvent[];
+	newFeatures?: Array<{
+		slug: string;
+		name: string;
+		domain?: string;
+		description?: string;
+		visibility?: "public" | "internal";
+	}>;
 };
 
 export const timelineInterpretationPrompt = `
@@ -54,7 +57,6 @@ Principles:
 - Group related raw events into a single narrative when they describe one coherent product increment.
 - Align the narrative with product baseline + product context taxonomy (productDomains, audienceSegments, strategicPillars) and the featureMap.
 - Use releaseCadence to decide buckets and assign each rawEvent to one bucket.
-- Use consistent focusAreas derived from the baseline/context taxonomy (reuse existing labels; avoid inventing new ones).
 - Output ONLY valid JSON, no markdown, no commentary.
 
 Input JSON:
@@ -64,6 +66,9 @@ Input JSON:
   "bucket": { "bucketId": "...", "bucketStartAt": 0, "bucketEndAt": 0 },
   "baseline": { ... },
   "productContext": { ... },
+  "existingFeatures": [
+    { "slug": "...", "name": "...", "domain": "...", "visibility": "public|internal" }
+  ],
   "featureMap": { "features": [ { "id": "...", "slug": "...", "name": "...", "domain": "..." } ] },
   "repoDomains": [
     { "name": "...", "pathPatterns": ["..."], "schemaEntities": ["..."], "capabilities": ["..."] }
@@ -86,6 +91,15 @@ Input JSON:
 
 Output JSON:
 {
+  "newFeatures": [
+    {
+      "slug": "kebab-case-identifier",
+      "name": "Feature name",
+      "domain": "optional repo domain name (from repoDomains)",
+      "description": "...",
+      "visibility": "public|internal"
+    }
+  ],
   "narratives": [
     {
       "bucketId": "2026-W02",
@@ -96,17 +110,20 @@ Output JSON:
       "summary": "…",
       "narrative": "…",
       "kind": "feature|bugfix|release|docs|marketing|infra|other",
-      "tags": ["feature:...", "audience:...", "pillar:..."],
-      "audience": "optional audience segment name",
-      "domain": "optional repo domain name (from repoDomains)",
-      "feature": "optional featureMap name",
+      "domains": ["optional repo domain name (from repoDomains)"],
       "relevance": 1-5,
       "rawEventIds": ["rawEventId1", "rawEventId2"],
-      "focusAreas": ["Focus Area A", "Focus Area B"],
-      "features": [{ "title": "...", "summary": "...", "focusArea": "Focus Area A", "visibility": "public|internal" }],
-      "fixes": [{ "title": "...", "summary": "...", "focusArea": "Focus Area B", "visibility": "public|internal" }],
-      "improvements": [{ "title": "...", "summary": "...", "focusArea": "Focus Area A", "visibility": "public|internal" }],
-      "ongoingFocusAreas": ["Focus Area A"],
+      "workItems": [
+        {
+          "type": "feature|fix|improvement",
+          "featureSlug": "kebab-case-identifier",
+          "title": "...",
+          "summary": "...",
+          "visibility": "public|internal",
+          "isNew": true,
+          "relatesTo": "optional-feature-slug"
+        }
+      ],
       "bucketImpact": 1
     }
   ]
@@ -116,14 +133,18 @@ Rules:
 - Use the provided languagePreference for all text.
 - Each rawEventId must appear in exactly one narrative entry.
 - Do not include raw commit messages or hashes in titles; summarize as product impact.
-- Use tags derived from the product taxonomy when possible.
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
-- For focusAreas, prefer repoDomains names when available; otherwise use productDomains; if no match, use "Other".
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
 - Mark items "internal" when they are below-the-glass development work that does not change the value proposition.
-- Keep summary/narrative public-safe; internal items should only appear in improvements and not be mentioned in summary/narrative.
-- Every public item must map clearly to a featureMap feature or productDomain; if it doesn't, mark it internal.
-- When a featureMap match exists, use the featureMap name for "feature" and align the item's focusArea to the featureMap domain.
+- Keep summary/narrative public-safe; only mention public workItems in summary/narrative.
+- If all workItems are internal, you may omit summary/narrative or keep them minimal.
+- Every public item must map clearly to an existing feature or a new feature you define.
+- existingFeatures are canonical: if a work item matches one, use that slug and set isNew false.
+- Only include newFeatures whose slug is NOT in existingFeatures.
+- When an existing feature match exists, use its slug and name for workItems.featureSlug/title.
+- For new features, add an entry in newFeatures and use its slug for workItems.featureSlug.
+- Slugs must be kebab-case and stable. Use the same slug for the same feature across events.
+- Use relatesTo only for fix/improvement items to reference the related feature slug.
 - Use repoContexts, domainHint and surfaceHints to judge relevance: marketing_surface, docs, infra, experiments are usually internal unless they clearly map to value for the ICP.
 - If surfaceHints includes marketing_surface and product_core is not present, treat the item as internal by default.
 `.trim();

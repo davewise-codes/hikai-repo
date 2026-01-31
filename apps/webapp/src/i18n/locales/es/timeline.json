@@ -124,6 +124,7 @@
     "internalSummary": "Solo bases internas",
     "focusAreasInternal": "Áreas de foco: bases internas",
     "feedbackPrompt": "¿Te sirve este resumen?",
+    "relatedTo": "Relacionado con:",
     "focusAreasLabel": "Áreas de foco:",
     "focusAreaOther": "Otro"
   }

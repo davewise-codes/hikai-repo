@@ -697,7 +697,11 @@ export const refreshFeatureMap = action({
 				sourcesUsed?: string[];
 			};
 			if (!parsedResult || !Array.isArray(parsedResult.features)) {
-				throw new Error("Invalid JSON response from Feature Map Agent");
+				console.warn("Feature Map Agent returned invalid JSON; keeping previous map.");
+				return {
+					featureMap: previousFeatureMap,
+					updated: false,
+				};
 			}
 
 			const now = Date.now();
@@ -966,31 +970,18 @@ export const interpretTimelineEvents = action({
 			summary?: string;
 			narrative?: string;
 			kind: string;
-			tags?: string[];
-			audience?: string;
-			feature?: string;
 			relevance?: number;
+			domains?: string[];
 			rawEventIds: string[];
-			focusAreas?: string[];
-			features?: Array<{
+			workItems?: Array<{
+				type: "feature" | "fix" | "improvement";
+				featureSlug: string;
 				title: string;
 				summary?: string;
-				focusArea?: string;
-				visibility?: "public" | "internal";
+				visibility: "public" | "internal";
+				isNew?: boolean;
+				relatesTo?: string;
 			}>;
-			fixes?: Array<{
-				title: string;
-				summary?: string;
-				focusArea?: string;
-				visibility?: "public" | "internal";
-			}>;
-			improvements?: Array<{
-				title: string;
-				summary?: string;
-				focusArea?: string;
-				visibility?: "public" | "internal";
-			}>;
-			ongoingFocusAreas?: string[];
 			bucketImpact?: number;
 		}>;
 		inferenceLogId?: Id<"aiInferenceLogs">;
@@ -1052,6 +1043,13 @@ export const interpretTimelineEvents = action({
 		const featureMap =
 			(currentSnapshot as { featureMap?: Record<string, unknown> })?.featureMap ??
 			null;
+		const existingFeatures = await ctx.runQuery(
+			internal.products.features.listProductFeaturesInternal,
+			{ productId },
+		);
+		const existingFeatureMap = new Map(
+			existingFeatures.map((feature) => [feature.slug, feature]),
+		);
 		const repoDomains = extractRepoDomains(
 			(currentSnapshot as { contextDetail?: unknown })?.contextDetail,
 		);
@@ -1083,11 +1081,19 @@ export const interpretTimelineEvents = action({
 			bucket: bucket ?? undefined,
 			baseline,
 			productContext: context,
+			existingFeatures: existingFeatures.map((feature) => ({
+				slug: feature.slug,
+				name: feature.name,
+				domain: feature.domain,
+				visibility: feature.visibility,
+			})),
 			featureMap,
 			repoDomains,
 			repoContexts: repoContextSummary,
 			rawEvents: rawEventsWithDomain,
 		};
+		const lastEventAt =
+			typeof bucket?.bucketStartAt === "number" ? bucket.bucketStartAt : Date.now();
 
 		const promptPayload = JSON.stringify(input);
 		const tid = threadId ?? (await createThread(ctx, agentComponent));
@@ -1119,33 +1125,26 @@ export const interpretTimelineEvents = action({
 					summary?: string;
 					narrative?: string;
 					kind: string;
-					tags?: string[];
-					audience?: string;
-					domain?: string;
-					feature?: string;
 					relevance?: number;
+					domains?: string[];
 					rawEventIds: string[];
-					focusAreas?: string[];
-					features?: Array<{
-						title: string;
+					workItems?: Array<{
+						type?: string;
+						featureSlug?: string;
+						title?: string;
 						summary?: string;
-						focusArea?: string;
 						visibility?: "public" | "internal";
+						isNew?: boolean;
+						relatesTo?: string;
 					}>;
-					fixes?: Array<{
-						title: string;
-						summary?: string;
-						focusArea?: string;
-						visibility?: "public" | "internal";
-					}>;
-					improvements?: Array<{
-						title: string;
-						summary?: string;
-						focusArea?: string;
-						visibility?: "public" | "internal";
-					}>;
-					ongoingFocusAreas?: string[];
 					bucketImpact?: number;
+				}>;
+				newFeatures?: Array<{
+					slug?: string;
+					name?: string;
+					domain?: string;
+					description?: string;
+					visibility?: "public" | "internal";
 				}>;
 			};
 			if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.narratives)) {
@@ -1153,166 +1152,234 @@ export const interpretTimelineEvents = action({
 					"Invalid JSON response from Timeline Context Interpreter Agent",
 				);
 			}
-			const focusAreaSets = buildFocusAreaSets(context, featureMap);
-			focusAreaSets.all.add("Technical");
-			const shouldNormalizeFocusAreas = focusAreaSets.all.size > 0;
-			const normalizeFocusArea = (value: string | undefined) => {
+			const allowedDomains = new Set(
+				repoDomains.map((domain) => domain.name.toLowerCase()),
+			);
+			const normalizeDomain = (value: string | undefined) => {
 				const trimmed = value?.trim();
 				if (!trimmed) return undefined;
-				if (!shouldNormalizeFocusAreas) return trimmed;
-				return focusAreaSets.all.has(trimmed) ? trimmed : "Other";
+				const key = trimmed.toLowerCase();
+				return allowedDomains.has(key) ? trimmed : undefined;
 			};
-			const shouldForcePublic = (
-				focusArea: string | undefined,
-				text: string,
-			): boolean => {
-				const normalizedFocus = focusArea ?? "";
-				const isCoreArea =
-					focusAreaSets.domains.has(normalizedFocus);
-				const coreKeywords =
-					/(timeline|narrative|context|insight|distribution|stakeholder|reporting|content generation|changelog|release notes)/;
-				const technicalKeywords =
-					/(performance|reliability|stability|latency|security|scalability|availability|resilience)/;
-				if (normalizedFocus === "Technical") {
-					return technicalKeywords.test(text);
-				}
-				return isCoreArea && coreKeywords.test(text);
+			const normalizeDomains = (value: unknown): string[] => {
+				if (!Array.isArray(value)) return [];
+				const normalized = value
+					.map((entry) =>
+						typeof entry === "string" ? normalizeDomain(entry) : undefined,
+					)
+					.filter((entry): entry is string => Boolean(entry));
+				return uniqueSorted(normalized);
 			};
+			const normalizeNewFeatures = (
+				items: Array<{
+					slug?: string;
+					name?: string;
+					domain?: string;
+					description?: string;
+					visibility?: "public" | "internal";
+				}> | undefined,
+			) => {
+				if (!Array.isArray(items)) return [];
+				return items
+					.map((item) => {
+						const name = typeof item.name === "string" ? item.name.trim() : "";
+						if (!name) return null;
+						const slugValue =
+							typeof item.slug === "string" && item.slug.trim()
+								? slugifyFeatureId(item.slug.trim())
+								: slugifyFeatureId(name);
+						if (!slugValue) return null;
+						const domain = normalizeDomain(
+							typeof item.domain === "string" ? item.domain : undefined,
+						);
+						return {
+							slug: slugValue,
+							name,
+							domain,
+							description:
+								typeof item.description === "string" && item.description.trim()
+									? item.description.trim()
+									: undefined,
+							visibility: item.visibility === "internal" ? "internal" : "public",
+						};
+					})
+					.filter(
+						(item): item is {
+							slug: string;
+							name: string;
+							domain?: string;
+							description?: string;
+							visibility: "public" | "internal";
+						} => item !== null,
+					);
+			};
+			const normalizedNewFeatures = normalizeNewFeatures(parsed.newFeatures);
+			const newFeatureSlugs = new Set(
+				normalizedNewFeatures.map((feature) => feature.slug),
+			);
+			const normalizeWorkItems = (
+				items: Array<{
+					type?: string;
+					featureSlug?: string;
+					title?: string;
+					summary?: string;
+					visibility?: "public" | "internal";
+					isNew?: boolean;
+					relatesTo?: string;
+				}> | undefined,
+				narrativeDomains: string[],
+			) => {
+				if (!Array.isArray(items)) return [];
+				return items
+					.map((item) => {
+						const title =
+							typeof item.title === "string" ? item.title.trim() : "";
+						if (!title) return null;
+						const type =
+							item.type === "feature" ||
+							item.type === "fix" ||
+							item.type === "improvement"
+								? item.type
+								: "improvement";
+						const slugValue =
+							typeof item.featureSlug === "string" && item.featureSlug.trim()
+								? slugifyFeatureId(item.featureSlug.trim())
+								: slugifyFeatureId(title);
+						const relatesToRaw =
+							typeof item.relatesTo === "string" && item.relatesTo.trim()
+								? slugifyFeatureId(item.relatesTo.trim())
+								: undefined;
+						const relatesTo =
+							type === "feature" ? undefined : relatesToRaw;
+						const isNew =
+							typeof item.isNew === "boolean"
+								? item.isNew
+								: newFeatureSlugs.has(slugValue) && !existingFeatureMap.has(slugValue);
+						const domainFallback = narrativeDomains[0];
+						return {
+							type,
+							featureSlug: slugValue,
+							title,
+							summary:
+								typeof item.summary === "string" && item.summary.trim()
+									? item.summary.trim()
+									: undefined,
+							visibility: item.visibility === "internal" ? "internal" : "public",
+							isNew,
+							relatesTo,
+							_domainFallback: domainFallback,
+						};
+					})
+					.filter(
+						(item): item is {
+							type: "feature" | "fix" | "improvement";
+							featureSlug: string;
+							title: string;
+							summary?: string;
+							visibility: "public" | "internal";
+							isNew?: boolean;
+							relatesTo?: string;
+							_domainFallback?: string;
+						} => item !== null,
+					);
+			};
+
+			const inferredNewFeatures: Array<{
+				slug: string;
+				name: string;
+				domain?: string;
+				description?: string;
+				visibility: "public" | "internal";
+			}> = [];
 
 			parsed.narratives = parsed.narratives.map((narrative) => {
-			const normalizedFeatures =
-				narrative.features?.map((item) => ({
-					title: item.title,
-					summary: item.summary,
-					focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
-					visibility: item.visibility ?? "public",
-				})) ?? [];
-			const normalizedFixes =
-				narrative.fixes?.map((item) => ({
-					title: item.title,
-					summary: item.summary,
-					focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
-					visibility: item.visibility ?? "public",
-				})) ?? [];
-			const normalizedImprovements =
-				narrative.improvements?.map((item) => ({
-					title: item.title,
-					summary: item.summary,
-					focusArea: normalizeFocusArea(item.focusArea) ?? "Other",
-					visibility: item.visibility ?? "public",
-				})) ?? [];
+				const normalizedDomains = normalizeDomains(
+					(narrative as { domains?: string[] }).domains,
+				);
+				const workItems = normalizeWorkItems(
+					(narrative as { workItems?: Array<Record<string, unknown>> }).workItems,
+					normalizedDomains,
+				);
 
-			const splitByVisibility = (
-				items: Array<{
-					title: string;
-					summary?: string;
-					focusArea?: string;
-					visibility?: "public" | "internal";
-				}>,
-			) => {
-				const internalItems = [];
-				const publicItems = [];
-				for (const item of items) {
-					if (item.visibility === "internal") internalItems.push(item);
-					else publicItems.push(item);
-				}
-				return { internalItems, publicItems };
-			};
+				workItems.forEach((item) => {
+					if (existingFeatureMap.has(item.featureSlug)) return;
+					if (newFeatureSlugs.has(item.featureSlug)) return;
+					if (item.type !== "feature") return;
+					inferredNewFeatures.push({
+						slug: item.featureSlug,
+						name: item.title,
+						domain: item._domainFallback,
+						description: item.summary,
+						visibility: item.visibility,
+					});
+					newFeatureSlugs.add(item.featureSlug);
+				});
 
-			const adjustedFeatures = normalizedFeatures.map((item) => {
-				if (item.focusArea === "Other") {
-					return { ...item, visibility: "internal" as const };
-				}
-				if (item.visibility === "internal") {
-					const text = `${item.title} ${item.summary ?? ""}`.toLowerCase();
-					if (shouldForcePublic(item.focusArea, text)) {
-						return { ...item, visibility: "public" as const };
-					}
-				}
-				return item;
-			});
-			const adjustedFixes = normalizedFixes.map((item) => {
-				if (item.focusArea === "Other") {
-					return { ...item, visibility: "internal" as const };
-				}
-				if (item.visibility === "internal") {
-					const text = `${item.title} ${item.summary ?? ""}`.toLowerCase();
-					if (shouldForcePublic(item.focusArea, text)) {
-						return { ...item, visibility: "public" as const };
-					}
-				}
-				return item;
-			});
-			const adjustedImprovements = normalizedImprovements.map((item) => {
-				if (item.focusArea === "Other") {
-					return { ...item, visibility: "internal" as const };
-				}
-				if (item.visibility === "internal") return item;
-				const isCoreArea =
-					item.focusArea &&
-					(focusAreaSets.domains.has(item.focusArea) ||
-						item.focusArea === "Technical");
-				const text = `${item.title} ${item.summary ?? ""}`.toLowerCase();
-				if (!isCoreArea || (item.focusArea === "Technical" && !shouldForcePublic(item.focusArea, text))) {
-					return { ...item, visibility: "internal" as const };
-				}
-				return item;
-			});
-
-			const { internalItems: internalFeatures, publicItems: publicFeatures } =
-				splitByVisibility(adjustedFeatures);
-			const { internalItems: internalFixes, publicItems: publicFixes } =
-				splitByVisibility(adjustedFixes);
-			const { internalItems: internalImprovements, publicItems: publicImprovements } =
-				splitByVisibility(adjustedImprovements);
-			const mergedImprovements = [
-				...publicImprovements,
-				...internalImprovements,
-				...internalFeatures,
-				...internalFixes,
-			];
-
-				const normalizedFocusAreas = new Set<string>();
-				for (const item of adjustedFeatures) {
-					if (item.focusArea && item.focusArea !== "Other") {
-						normalizedFocusAreas.add(item.focusArea);
-					}
-				}
-				for (const item of adjustedFixes) {
-					if (item.focusArea && item.focusArea !== "Other") {
-						normalizedFocusAreas.add(item.focusArea);
-					}
-				}
-				for (const item of adjustedImprovements) {
-					if (item.focusArea && item.focusArea !== "Other") {
-						normalizedFocusAreas.add(item.focusArea);
-					}
-				}
-
-				const normalizedFeature =
-					typeof narrative.feature === "string"
-						? narrative.feature.trim()
-						: undefined;
-				const normalizedDomain =
-					typeof (narrative as { domain?: string }).domain === "string"
-						? (narrative as { domain?: string }).domain?.trim()
-						: undefined;
 				return {
-					...narrative,
-					feature: normalizedFeature || undefined,
-					domain: normalizedDomain || undefined,
-					focusAreas: normalizedFocusAreas.size
-						? Array.from(normalizedFocusAreas)
-						: undefined,
-					features: publicFeatures.length ? publicFeatures : undefined,
-					fixes: publicFixes.length ? publicFixes : undefined,
-					improvements: mergedImprovements.length
-						? mergedImprovements
-						: undefined,
-					ongoingFocusAreas: narrative.ongoingFocusAreas,
+					bucketId: narrative.bucketId,
+					bucketStartAt: narrative.bucketStartAt,
+					bucketEndAt: narrative.bucketEndAt,
+					cadence: narrative.cadence,
+					title: narrative.title,
+					summary: narrative.summary,
+					narrative: narrative.narrative,
+					kind: narrative.kind,
+					relevance: narrative.relevance,
+					rawEventIds: narrative.rawEventIds,
 					bucketImpact: narrative.bucketImpact,
+					domains: normalizedDomains.length ? normalizedDomains : undefined,
+					workItems: workItems.length
+						? workItems.map(({ _domainFallback, ...item }) => item)
+						: undefined,
 				};
 			});
+
+			const allNewFeatures = normalizedNewFeatures.concat(inferredNewFeatures);
+			if (allNewFeatures.length) {
+				await ctx.runMutation(internal.products.features.upsertProductFeatures, {
+					productId,
+					features: allNewFeatures.map((feature) => ({
+						...feature,
+						lastEventAt,
+					})),
+				});
+			}
+
+			const featureLookup = new Map(
+				existingFeatures.concat(allNewFeatures).map((feature) => [
+					feature.slug,
+					feature,
+				]),
+			);
+
+			parsed.narratives = parsed.narratives.map((narrative) => {
+				const workItems = narrative.workItems ?? [];
+				const derivedDomains = uniqueSorted(
+					workItems
+						.map((item) => featureLookup.get(item.featureSlug)?.domain)
+						.filter((value): value is string => Boolean(value)),
+				);
+				const domains =
+					derivedDomains.length > 0
+						? derivedDomains
+						: narrative.domains ?? undefined;
+
+				return {
+					...narrative,
+					domains,
+				};
+			});
+
+			const referencedFeatureSlugs = parsed.narratives.flatMap((narrative) =>
+				(narrative.workItems ?? []).map((item) => item.featureSlug),
+			);
+			if (referencedFeatureSlugs.length) {
+				await ctx.runMutation(internal.products.features.touchProductFeatures, {
+					productId,
+					slugs: referencedFeatureSlugs,
+					lastEventAt,
+				});
+			}
 
 			const telemetryConfig = getAgentTelemetryConfig(
 				TIMELINE_INTERPRETER_AGENT_NAME,
