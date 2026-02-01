@@ -3,6 +3,7 @@ type FeatureDomainScoutFeature = {
 	name: string;
 	description: string;
 	visibility: "public" | "internal";
+	layer: "ui" | "backend" | "infra";
 	entryPoints: string[];
 	relatedCapabilities: string[];
 };
@@ -88,6 +89,13 @@ export function validateFeatureDomainScoutOutput(
 				!feature.description.trim()
 			) {
 				errors.push(`features[${index}].description is required`);
+			}
+			if (
+				feature.layer !== "ui" &&
+				feature.layer !== "backend" &&
+				feature.layer !== "infra"
+			) {
+				errors.push(`features[${index}].layer must be ui|backend|infra`);
 			}
 			if (
 				feature.visibility !== "public" &&

@@ -217,6 +217,7 @@ const schema = defineSchema({
 		glossary: v.optional(v.any()),
 		domainMap: v.optional(v.any()),
 		features: v.optional(v.any()),
+		capabilities: v.optional(v.any()),
 		contextDetail: v.optional(v.any()),
 		generationMetrics: v.optional(
 			v.object({
@@ -234,6 +235,7 @@ const schema = defineSchema({
 				glossaryScout: v.optional(v.id("agentRuns")),
 				domainMapper: v.optional(v.id("agentRuns")),
 				featureScout: v.optional(v.id("agentRuns")),
+				capabilityAggregator: v.optional(v.id("agentRuns")),
 			}),
 		),
 		status: v.union(
@@ -248,6 +250,7 @@ const schema = defineSchema({
 				v.literal("glossary"),
 				v.literal("domains"),
 				v.literal("features"),
+				v.literal("capabilities"),
 			),
 		),
 		errors: v.array(
@@ -492,15 +495,58 @@ const schema = defineSchema({
     name: v.string(),
     domain: v.optional(v.string()),
     description: v.optional(v.string()),
+    layer: v.optional(
+      v.union(v.literal("ui"), v.literal("backend"), v.literal("infra"))
+    ),
     visibility: v.union(v.literal("public"), v.literal("internal")),
     status: v.union(v.literal("active"), v.literal("deprecated")),
+    userFeatureSlug: v.optional(v.string()),
+    entryPoints: v.optional(v.array(v.string())),
+    relatedCapabilities: v.optional(v.array(v.string())),
     createdAt: v.number(),
     lastEventAt: v.optional(v.number()),
     updatedAt: v.number(),
   })
     .index("by_product", ["productId"])
     .index("by_product_slug", ["productId", "slug"])
+    .index("by_product_domain", ["productId", "domain"])
+    .index("by_product_layer", ["productId", "layer"])
+    .index("by_product_user_feature", ["productId", "userFeatureSlug"]),
+
+  productCapabilities: defineTable({
+    productId: v.id("products"),
+    slug: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    visibility: v.union(v.literal("public"), v.literal("internal")),
+    featureSlugs: v.array(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_product", ["productId"])
+    .index("by_product_slug", ["productId", "slug"])
     .index("by_product_domain", ["productId", "domain"]),
+
+  userFeatures: defineTable({
+    productId: v.id("products"),
+    slug: v.string(),
+    name: v.string(),
+    headline: v.string(),
+    description: v.string(),
+    domain: v.string(),
+    order: v.optional(v.number()),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("active"),
+      v.literal("deprecated")
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_product", ["productId"])
+    .index("by_product_slug", ["productId", "slug"])
+    .index("by_product_status", ["productId", "status"]),
 
   interpretedEvents: defineTable({
     productId: v.id("products"),

@@ -1,2582 +1,1865 @@
-[
-	{
-		"metadata": { "hasFeedback": false },
-		"status": "info",
-		"step": "Feature scout attempt 1",
-		"timestamp": 1769803261293
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_N9Sl3PayKVfSI0b1zquqlBwp",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/organizations",
-							"pattern": "**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_N9Sl3PayKVfSI0b1zquqlBwp",
-					"name": "list_files"
-				}
+{
+	"domains": [
+		{
+			"capabilities": [
+				"create-organization",
+				"delete-organization",
+				"view-organization",
+				"invite-member",
+				"manage-member-role",
+				"switch-active-organization"
+			],
+			"name": "Organizations",
+			"pathPatterns": [
+				"apps/webapp/src/domains/organizations/**",
+				"packages/convex/convex/organizations/**"
+			],
+			"purpose": "Manage organizations (workspaces), their metadata, membership and access control.",
+			"schemaEntities": [
+				"organizations",
+				"organizationMembers",
+				"userPreferences"
 			]
 		},
-		"status": "info",
-		"step": "Model output (turn 1)",
-		"timestamp": 1769803268059
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/organizations",
-					"pattern": "**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "create-organization-form.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/create-organization-form.tsx",
-							"size": 7176
-						},
-						{
-							"name": "delete-organization-dialog.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/delete-organization-dialog.tsx",
-							"size": 2193
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/organizations/components/index.ts",
-							"size": 467
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/index.ts",
-							"size": 78
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/organizations/index.ts",
-							"size": 54
-						},
-						{
-							"name": "leave-organization-dialog.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/leave-organization-dialog.tsx",
-							"size": 2876
-						},
-						{
-							"name": "org-card.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/org-card.tsx",
-							"size": 8714
-						},
-						{
-							"name": "org-members.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/org-members.tsx",
-							"size": 4938
-						},
-						{
-							"name": "org-switcher.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/org-switcher.tsx",
-							"size": 10965
-						},
-						{
-							"name": "organization-list.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/organization-list.tsx",
-							"size": 2326
-						},
-						{
-							"name": "README.md",
-							"path": "apps/webapp/src/domains/organizations/README.md",
-							"size": 2490
-						},
-						{
-							"name": "transfer-ownership-dialog.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/transfer-ownership-dialog.tsx",
-							"size": 6570
-						},
-						{
-							"name": "use-current-org.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/use-current-org.ts",
-							"size": 2812
-						},
-						{
-							"name": "use-organizations-simple.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/use-organizations-simple.ts",
-							"size": 2403
-						},
-						{
-							"name": "use-organizations.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/use-organizations.ts",
-							"size": 4720
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2c3yykry6bcktge9309d75x9806tfs",
-					"sizeBytes": 1784
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 1784,
-					"limitBytes": 16000,
-					"originalSizeBytes": 1784
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_N9Sl3PayKVfSI0b1zquqlBwp",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/organizations",
-						"pattern": "**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
+		{
+			"capabilities": [
+				"create-product",
+				"delete-product",
+				"view-product",
+				"edit-product-baseline",
+				"publish-product-context-snapshot",
+				"update-domain-map"
+			],
+			"name": "Products",
+			"pathPatterns": [
+				"apps/webapp/src/domains/products/**",
+				"packages/convex/convex/products/**",
+				"packages/convex/convex/productContext*.ts"
+			],
+			"purpose": "Create and configure products within an organization, manage product-level settings, baselines and product context snapshots.",
+			"schemaEntities": [
+				"products",
+				"productMembers",
+				"productContextSnapshots"
 			]
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803269251
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_mX7uhgSCQljtKtZNnOxOrJ0e",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/products",
-							"pattern": "**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_mX7uhgSCQljtKtZNnOxOrJ0e",
-					"name": "list_files"
-				}
+		{
+			"capabilities": [
+				"list-connector-types",
+				"add-connection",
+				"configure-connection",
+				"disconnect-connection",
+				"sync-connection",
+				"view-connection-status",
+				"connect-github"
+			],
+			"name": "Connectors (Sources & Channels)",
+			"pathPatterns": [
+				"apps/webapp/src/domains/connectors/**",
+				"packages/convex/convex/connectors/**",
+				"packages/convex/convex/agents/core/tools/github_*.ts"
+			],
+			"purpose": "Configure external data sources (e.g., GitHub) and channels, manage connections and synchronization status for products.",
+			"schemaEntities": ["connectorTypes", "connections"]
+		},
+		{
+			"capabilities": [
+				"ingest-raw-events",
+				"view-raw-events",
+				"interpret-events",
+				"view-timeline",
+				"view-interpreted-event",
+				"export-interpreted-events"
+			],
+			"name": "Timeline / Events / Interpretation",
+			"pathPatterns": [
+				"apps/webapp/src/domains/timeline/**",
+				"packages/convex/convex/timeline/**",
+				"packages/convex/convex/agents/**"
+			],
+			"purpose": "Ingest raw events from connected sources, run interpretation to surface product-relevant events and provide a timeline/insights view.",
+			"schemaEntities": [
+				"rawEvents",
+				"interpretedEvents",
+				"surfaceSignalRuns",
+				"contextInputRuns"
 			]
 		},
-		"status": "info",
-		"step": "Model output (turn 2)",
-		"timestamp": 1769803277787
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/products",
-					"pattern": "**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "agent-progress.tsx",
-							"path": "apps/webapp/src/domains/products/components/agent-progress.tsx",
-							"size": 11219
-						},
-						{
-							"name": "baseline-editor.tsx",
-							"path": "apps/webapp/src/domains/products/components/baseline-editor.tsx",
-							"size": 33345
-						},
-						{
-							"name": "baseline-wizard.tsx",
-							"path": "apps/webapp/src/domains/products/components/baseline-wizard.tsx",
-							"size": 27975
-						},
-						{
-							"name": "create-product-form.tsx",
-							"path": "apps/webapp/src/domains/products/components/create-product-form.tsx",
-							"size": 12253
-						},
-						{
-							"name": "delete-product-dialog.tsx",
-							"path": "apps/webapp/src/domains/products/components/delete-product-dialog.tsx",
-							"size": 2280
-						},
-						{
-							"name": "domain-map-card.tsx",
-							"path": "apps/webapp/src/domains/products/components/domain-map-card.tsx",
-							"size": 4366
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/products/components/index.ts",
-							"size": 647
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/products/hooks/index.ts",
-							"size": 91
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/products/index.ts",
-							"size": 55
-						},
-						{
-							"name": "leave-product-dialog.tsx",
-							"path": "apps/webapp/src/domains/products/components/leave-product-dialog.tsx",
-							"size": 2957
-						},
-						{
-							"name": "product-card.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-card.tsx",
-							"size": 7762
-						},
-						{
-							"name": "product-context-card.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-context-card.tsx",
-							"size": 4105
-						},
-						{
-							"name": "product-list.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-list.tsx",
-							"size": 5508
-						},
-						{
-							"name": "product-members.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-members.tsx",
-							"size": 4728
-						},
-						{
-							"name": "product-switcher.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-switcher.tsx",
-							"size": 8148
-						},
-						{
-							"name": "README.md",
-							"path": "apps/webapp/src/domains/products/README.md",
-							"size": 3925
-						},
-						{
-							"name": "use-current-product.ts",
-							"path": "apps/webapp/src/domains/products/hooks/use-current-product.ts",
-							"size": 2330
-						},
-						{
-							"name": "use-products.ts",
-							"path": "apps/webapp/src/domains/products/hooks/use-products.ts",
-							"size": 3809
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2drh4mreb1w7bx9e9r09wsrs807729",
-					"sizeBytes": 2019
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 2019,
-					"limitBytes": 16000,
-					"originalSizeBytes": 2019
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_mX7uhgSCQljtKtZNnOxOrJ0e",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/products",
-						"pattern": "**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"capabilities": [
+				"run-agent",
+				"monitor-agent-run",
+				"view-agent-runs",
+				"view-agent-progress",
+				"view-ai-usage",
+				"rate-ai-inference"
+			],
+			"name": "Agents & AI Inference",
+			"pathPatterns": [
+				"packages/convex/convex/agents/**",
+				"packages/convex/convex/ai/**",
+				"apps/webapp/src/domains/core/components/ai-test-panel.tsx",
+				"apps/webapp/src/routes/app/$orgSlug/$productSlug/ai-test.tsx"
+			],
+			"purpose": "Run autonomous agents and AI-powered tasks (feature extraction, domain mapping, timeline interpretation), track agent runs and AI usage/inference logs.",
+			"schemaEntities": ["agentRuns", "aiUsage", "aiInferenceLogs"]
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803278069
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_qpYEwBwlNNojJb7Oul7tRo4g",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/connectors",
-							"pattern": "**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_qpYEwBwlNNojJb7Oul7tRo4g",
-					"name": "list_files"
-				}
-			]
+		{
+			"capabilities": [
+				"authenticate",
+				"reset-password",
+				"manage-user-preferences",
+				"view-user-profile"
+			],
+			"name": "Auth & Users",
+			"pathPatterns": [
+				"apps/webapp/src/domains/auth/**",
+				"packages/convex/convex/auth/**"
+			],
+			"purpose": "User authentication, account management and user-level preferences used by the app (last active org/product, access tracking).",
+			"schemaEntities": ["users", "userPreferences"]
+		}
+	],
+	"capabilities": [
+		{
+			"_creationTime": 1769934153115.2466,
+			"_id": "nn7cbcr8ma8ktadgpgsbyxrf8n80b2bz",
+			"createdAt": 1769934153115,
+			"description": "Request and complete password resets using emailed OTPs.",
+			"domain": "Auth & Users",
+			"featureSlugs": [
+				"password-reset-flow",
+				"resend-otp-reset",
+				"verification-code-form"
+			],
+			"name": "Reset Password",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "reset-password",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 3)",
-		"timestamp": 1769803283198
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/connectors",
-					"pattern": "**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "add-connection-dialog.tsx",
-							"path": "apps/webapp/src/domains/connectors/components/add-connection-dialog.tsx",
-							"size": 4680
-						},
-						{
-							"name": "connection-card.tsx",
-							"path": "apps/webapp/src/domains/connectors/components/connection-card.tsx",
-							"size": 9525
-						},
-						{
-							"name": "connection-list.tsx",
-							"path": "apps/webapp/src/domains/connectors/components/connection-list.tsx",
-							"size": 4184
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/connectors/components/index.ts",
-							"size": 167
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/connectors/hooks/index.ts",
-							"size": 35
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/connectors/index.ts",
-							"size": 55
-						},
-						{
-							"name": "README.md",
-							"path": "apps/webapp/src/domains/connectors/README.md",
-							"size": 2293
-						},
-						{
-							"name": "use-connections.ts",
-							"path": "apps/webapp/src/domains/connectors/hooks/use-connections.ts",
-							"size": 1015
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg22qgxap5wdfysa1xdcyrcf4x807zy8",
-					"sizeBytes": 860
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 860,
-					"limitBytes": 16000,
-					"originalSizeBytes": 860
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_qpYEwBwlNNojJb7Oul7tRo4g",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/connectors",
-						"pattern": "**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2463,
+			"_id": "nn729khywywj1hsfzt4f88ek4d80bhx1",
+			"createdAt": 1769934153115,
+			"description": "Sign up users with email/OTP verification and code entry.",
+			"domain": "Auth & Users",
+			"featureSlugs": [
+				"signup-with-verification",
+				"verification-code-form",
+				"resend-otp"
+			],
+			"name": "Register with Verification",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "register-with-verification",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803283484
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_VIGUkujXGd8e6OVTH4GgJ4RM",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/timeline",
-							"pattern": "**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_VIGUkujXGd8e6OVTH4GgJ4RM",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.246,
+			"_id": "nn7fhqtdf69gy1asw7t329c2n180agjr",
+			"createdAt": 1769934153115,
+			"description": "Sign in users via email/password or social OAuth providers.",
+			"domain": "Auth & Users",
+			"featureSlugs": ["signin-form", "social-login-buttons"],
+			"name": "Authenticate Users",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "authenticate-users",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 4)",
-		"timestamp": 1769803287469
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/timeline",
-					"pattern": "**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/timeline/components/index.ts",
-							"size": 69
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/timeline/hooks/index.ts",
-							"size": 32
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/timeline/index.ts",
-							"size": 55
-						},
-						{
-							"name": "timeline-filters.tsx",
-							"path": "apps/webapp/src/domains/timeline/components/timeline-filters.tsx",
-							"size": 2662
-						},
-						{
-							"name": "timeline-list.tsx",
-							"path": "apps/webapp/src/domains/timeline/components/timeline-list.tsx",
-							"size": 6726
-						},
-						{
-							"name": "use-timeline.ts",
-							"path": "apps/webapp/src/domains/timeline/hooks/use-timeline.ts",
-							"size": 1262
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2c1wtx98vsjrt76qwfqrm0jn807sqk",
-					"sizeBytes": 622
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 622,
-					"limitBytes": 16000,
-					"originalSizeBytes": 622
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_VIGUkujXGd8e6OVTH4GgJ4RM",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/timeline",
-						"pattern": "**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2458,
+			"_id": "nn74e3rg8zyxjs5cy35572g4kh80a6kt",
+			"createdAt": 1769934153115,
+			"description": "Manually send prompts, stream responses and inspect AI usage for testing.",
+			"domain": "Agents & AI Inference",
+			"featureSlugs": ["ai-test-panel", "hello-world-agent"],
+			"name": "Test AI Agents",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "test-ai-agents",
+			"updatedAt": 1769934153115,
+			"visibility": "internal"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803287750
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_yP16OIsWYA1gpA4mHq0KYPp4",
-						"input": {
-							"limit": 200,
-							"path": "packages/convex/convex/agents",
-							"pattern": "**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_yP16OIsWYA1gpA4mHq0KYPp4",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2456,
+			"_id": "nn71mgzabr8bhwjgg1r16xjrmx80axsd",
+			"createdAt": 1769934153115,
+			"description": "Aggregate product and source-level context for agent inferences.",
+			"domain": "Agents & AI Inference",
+			"featureSlugs": ["product-context-agent", "source-context-agent"],
+			"name": "Build Product and Source Context",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "build-product-and-source-context",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 5)",
-		"timestamp": 1769803294185
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "packages/convex/convex/agents",
-					"pattern": "**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "actions.ts",
-							"path": "packages/convex/convex/agents/actions.ts",
-							"size": 95752
-						},
-						{
-							"name": "agent_loop.ts",
-							"path": "packages/convex/convex/agents/core/agent_loop.ts",
-							"size": 12973
-						},
-						{
-							"name": "agentRuns.ts",
-							"path": "packages/convex/convex/agents/agentRuns.ts",
-							"size": 5456
-						},
-						{
-							"name": "contextInputs.ts",
-							"path": "packages/convex/convex/agents/contextInputs.ts",
-							"size": 2904
-						},
-						{
-							"name": "contextInputsData.ts",
-							"path": "packages/convex/convex/agents/contextInputsData.ts",
-							"size": 1842
-						},
-						{
-							"name": "contextTools.test.ts",
-							"path": "packages/convex/convex/agents/__tests__/contextTools.test.ts",
-							"size": 3499
-						},
-						{
-							"name": "contextTools.ts",
-							"path": "packages/convex/convex/agents/contextTools.ts",
-							"size": 24639
-						},
-						{
-							"name": "contextValidator.ts",
-							"path": "packages/convex/convex/agents/contextValidator.ts",
-							"size": 2101
-						},
-						{
-							"name": "domain_map.ts",
-							"path": "packages/convex/convex/agents/core/validators/domain_map.ts",
-							"size": 2694
-						},
-						{
-							"name": "domain_mapper.ts",
-							"path": "packages/convex/convex/agents/taxonomy/domain_mapper.ts",
-							"size": 6774
-						},
-						{
-							"name": "domain-map-agent.skill.md",
-							"path": "packages/convex/convex/agents/skills/source/domain-map-agent.skill.md",
-							"size": 2006
-						},
-						{
-							"name": "domain-taxonomy.skill.md",
-							"path": "packages/convex/convex/agents/skills/domain-taxonomy.skill.md",
-							"size": 1014
-						},
-						{
-							"name": "domainMap.ts",
-							"path": "packages/convex/convex/agents/domainMap.ts",
-							"size": 16939
-						},
-						{
-							"name": "domainMapData.ts",
-							"path": "packages/convex/convex/agents/domainMapData.ts",
-							"size": 446
-						},
-						{
-							"name": "feature_extractor.ts",
-							"path": "packages/convex/convex/agents/taxonomy/feature_extractor.ts",
-							"size": 9493
-						},
-						{
-							"name": "feature-extraction.skill.md",
-							"path": "packages/convex/convex/agents/skills/feature-extraction.skill.md",
-							"size": 2392
-						},
-						{
-							"name": "featureMapAgent.ts",
-							"path": "packages/convex/convex/agents/featureMapAgent.ts",
-							"size": 2000
-						},
-						{
-							"name": "github_helpers.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_helpers.ts",
-							"size": 4509
-						},
-						{
-							"name": "github_list_dirs.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_list_dirs.ts",
-							"size": 2870
-						},
-						{
-							"name": "github_list_files.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_list_files.ts",
-							"size": 3013
-						},
-						{
-							"name": "github_read_file.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_read_file.ts",
-							"size": 2269
-						},
-						{
-							"name": "github_search_code.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_search_code.ts",
-							"size": 3228
-						},
-						{
-							"name": "helloWorldAgent.ts",
-							"path": "packages/convex/convex/agents/helloWorldAgent.ts",
-							"size": 2045
-						},
-						{
-							"name": "index.ts",
-							"path": "packages/convex/convex/agents/core/tools/index.ts",
-							"size": 397
-						},
-						{
-							"name": "index.ts",
-							"path": "packages/convex/convex/agents/core/validators/index.ts",
-							"size": 73
-						},
-						{
-							"name": "index.ts",
-							"path": "packages/convex/convex/agents/index.ts",
-							"size": 581
-						},
-						{
-							"name": "index.ts",
-							"path": "packages/convex/convex/agents/skills/index.ts",
-							"size": 7823
-						},
-						{
-							"name": "json_utils.ts",
-							"path": "packages/convex/convex/agents/core/json_utils.ts",
-							"size": 3362
-						},
-						{
-							"name": "messages.ts",
-							"path": "packages/convex/convex/agents/messages.ts",
-							"size": 596
-						},
-						{
-							"name": "orchestrator.ts",
-							"path": "packages/convex/convex/agents/taxonomy/orchestrator.ts",
-							"size": 4159
-						},
-						{
-							"name": "plan_manager.ts",
-							"path": "packages/convex/convex/agents/core/plan_manager.ts",
-							"size": 2792
-						},
-						{
-							"name": "productContextAgent.ts",
-							"path": "packages/convex/convex/agents/productContextAgent.ts",
-							"size": 2037
-						},
-						{
-							"name": "productContextData.ts",
-							"path": "packages/convex/convex/agents/productContextData.ts",
-							"size": 5147
-						},
-						{
-							"name": "skill_loader.ts",
-							"path": "packages/convex/convex/agents/core/skill_loader.ts",
-							"size": 2083
-						},
-						{
-							"name": "sourceContext.ts",
-							"path": "packages/convex/convex/agents/sourceContext.ts",
-							"size": 439
-						},
-						{
-							"name": "sourceContextAgent.ts",
-							"path": "packages/convex/convex/agents/sourceContextAgent.ts",
-							"size": 4166
-						},
-						{
-							"name": "sourceContextData.ts",
-							"path": "packages/convex/convex/agents/sourceContextData.ts",
-							"size": 2943
-						},
-						{
-							"name": "stackDetector.ts",
-							"path": "packages/convex/convex/agents/stackDetector.ts",
-							"size": 1129
-						},
-						{
-							"name": "surface_classifier.ts",
-							"path": "packages/convex/convex/agents/taxonomy/surface_classifier.ts",
-							"size": 7330
-						},
-						{
-							"name": "surface_signal_mapper.ts",
-							"path": "packages/convex/convex/agents/surface_signal_mapper.ts",
-							"size": 8411
-						},
-						{
-							"name": "surface-classification.skill.md",
-							"path": "packages/convex/convex/agents/skills/surface-classification.skill.md",
-							"size": 1077
-						},
-						{
-							"name": "surfaceSignals.ts",
-							"path": "packages/convex/convex/agents/surfaceSignals.ts",
-							"size": 1776
-						},
-						{
-							"name": "surfaceSignalsData.ts",
-							"path": "packages/convex/convex/agents/surfaceSignalsData.ts",
-							"size": 1435
-						},
-						{
-							"name": "timelineContextInterpreterAgent.ts",
-							"path": "packages/convex/convex/agents/timelineContextInterpreterAgent.ts",
-							"size": 2136
-						},
-						{
-							"name": "todo_manager.ts",
-							"path": "packages/convex/convex/agents/core/tools/todo_manager.ts",
-							"size": 2593
-						},
-						{
-							"name": "tool_prompt_model.ts",
-							"path": "packages/convex/convex/agents/core/tool_prompt_model.ts",
-							"size": 3388
-						},
-						{
-							"name": "tool_registry.ts",
-							"path": "packages/convex/convex/agents/core/tool_registry.ts",
-							"size": 1029
-						},
-						{
-							"name": "validate_json.ts",
-							"path": "packages/convex/convex/agents/core/tools/validate_json.ts",
-							"size": 1034
-						},
-						{
-							"name": "validate.ts",
-							"path": "packages/convex/convex/agents/core/tools/validate.ts",
-							"size": 985
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg22bta4j5r03kt4qt91tk7f8n806htk",
-					"sizeBytes": 5116
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 5116,
-					"limitBytes": 16000,
-					"originalSizeBytes": 5116
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_yP16OIsWYA1gpA4mHq0KYPp4",
-					"input": {
-						"limit": 200,
-						"path": "packages/convex/convex/agents",
-						"pattern": "**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2454,
+			"_id": "nn74k01rrm4v6zwgh7ra2jcbz580bj33",
+			"createdAt": 1769934153115,
+			"description": "Extract product features, map domains and classify surface signals.",
+			"domain": "Agents & AI Inference",
+			"featureSlugs": [
+				"feature-extractor",
+				"domain-mapper",
+				"feature-map-agent",
+				"surface-signal-mapper"
+			],
+			"name": "Generate Feature Maps and Domain Taxonomy",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "generate-feature-maps",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803294567
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_I1773ao68veE7VKsH7xbcFJG",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/auth",
-							"pattern": "**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_I1773ao68veE7VKsH7xbcFJG",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.245,
+			"_id": "nn7e5w3knv7prevwr52cwfjzh980abtq",
+			"createdAt": 1769934153115,
+			"description": "Call LLM providers with adapters and capture inference telemetry.",
+			"domain": "Agents & AI Inference",
+			"featureSlugs": ["llm-adapters"],
+			"name": "LLM Inference Pipeline",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "llm-inference-pipeline",
+			"updatedAt": 1769934153115,
+			"visibility": "internal"
 		},
-		"status": "info",
-		"step": "Model output (turn 6)",
-		"timestamp": 1769803299241
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/auth",
-					"pattern": "**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "auth-form.tsx",
-							"path": "apps/webapp/src/domains/auth/components/auth-form.tsx",
-							"size": 5536
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/auth/hooks/index.ts",
-							"size": 37
-						},
-						{
-							"name": "password-reset-flow.tsx",
-							"path": "apps/webapp/src/domains/auth/components/password-reset-flow.tsx",
-							"size": 10369
-						},
-						{
-							"name": "README.md",
-							"path": "apps/webapp/src/domains/auth/README.md",
-							"size": 3361
-						},
-						{
-							"name": "signin-form.tsx",
-							"path": "apps/webapp/src/domains/auth/components/signin-form.tsx",
-							"size": 3472
-						},
-						{
-							"name": "signup-form.tsx",
-							"path": "apps/webapp/src/domains/auth/components/signup-form.tsx",
-							"size": 4872
-						},
-						{
-							"name": "signup-with-verification.tsx",
-							"path": "apps/webapp/src/domains/auth/components/signup-with-verification.tsx",
-							"size": 2672
-						},
-						{
-							"name": "social-login-buttons.tsx",
-							"path": "apps/webapp/src/domains/auth/components/social-login-buttons.tsx",
-							"size": 3168
-						},
-						{
-							"name": "use-auth.ts",
-							"path": "apps/webapp/src/domains/auth/hooks/use-auth.ts",
-							"size": 7968
-						},
-						{
-							"name": "validation.ts",
-							"path": "apps/webapp/src/domains/auth/utils/validation.ts",
-							"size": 756
-						},
-						{
-							"name": "verification-code-form.tsx",
-							"path": "apps/webapp/src/domains/auth/components/verification-code-form.tsx",
-							"size": 3729
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg21c874waar7bwcj03q9hwg35807fa7",
-					"sizeBytes": 1185
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 1185,
-					"limitBytes": 16000,
-					"originalSizeBytes": 1185
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_I1773ao68veE7VKsH7xbcFJG",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/auth",
-						"pattern": "**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2449,
+			"_id": "nn7c11m0kzm7zz4prc9dgbgc5580bfmm",
+			"createdAt": 1769934153115,
+			"description": "Read AI inference logs and let users rate inference outputs.",
+			"domain": "Agents & AI Inference",
+			"featureSlugs": ["inference-logs"],
+			"name": "Rate AI Inferences",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "rate-ai-inferences",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803299725
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_KlnPruFJt8wbnEl0qvXx2Zeo",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/core/components",
-							"pattern": "**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_KlnPruFJt8wbnEl0qvXx2Zeo",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2446,
+			"_id": "nn798ky3cr71my206pn52qfkkx80aprt",
+			"createdAt": 1769934153115,
+			"description": "Create, append steps, query and export agent run traces.",
+			"domain": "Agents & AI Inference",
+			"featureSlugs": ["agent-runs"],
+			"name": "Manage Agent Runs",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "manage-agent-runs",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 7)",
-		"timestamp": 1769803321645
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/core/components",
-					"pattern": "**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "ai-test-panel.tsx",
-							"path": "apps/webapp/src/domains/core/components/ai-test-panel.tsx",
-							"size": 8384
-						},
-						{
-							"name": "app-header.tsx",
-							"path": "apps/webapp/src/domains/core/components/app-header.tsx",
-							"size": 1044
-						},
-						{
-							"name": "app-shell.tsx",
-							"path": "apps/webapp/src/domains/core/components/app-shell.tsx",
-							"size": 753
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/core/components/index.ts",
-							"size": 267
-						},
-						{
-							"name": "sidebar.tsx",
-							"path": "apps/webapp/src/domains/core/components/sidebar.tsx",
-							"size": 2666
-						},
-						{
-							"name": "user-menu.tsx",
-							"path": "apps/webapp/src/domains/core/components/user-menu.tsx",
-							"size": 11840
-						},
-						{
-							"name": "workspace-shell.tsx",
-							"path": "apps/webapp/src/domains/core/components/workspace-shell.tsx",
-							"size": 925
-						},
-						{
-							"name": "workspace-sidebar.tsx",
-							"path": "apps/webapp/src/domains/core/components/workspace-sidebar.tsx",
-							"size": 5079
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2bj9kewmaykrtdkfqmqz69q180799v",
-					"sizeBytes": 851
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 851,
-					"limitBytes": 16000,
-					"originalSizeBytes": 851
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_KlnPruFJt8wbnEl0qvXx2Zeo",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/core/components",
-						"pattern": "**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2444,
+			"_id": "nn71w701fbsbf08nx8n3n8wr0180bk8y",
+			"createdAt": 1769934153115,
+			"description": "Convert raw events into product-relevant interpreted narratives.",
+			"domain": "Timeline / Events / Interpretation",
+			"featureSlugs": [
+				"interpretation-pipeline",
+				"timeline-context-interpreter-agent",
+				"agent-support-actions",
+				"raw-events-management"
+			],
+			"name": "Interpret Timeline Events",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "interpret-timeline-events",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803322006
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": null,
-				"hadExtraction": false,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "end"
+		{
+			"_creationTime": 1769934153115.2441,
+			"_id": "nn7cmqbc4nbsd8hsdqdrf816as80bezx",
+			"createdAt": 1769934153115,
+			"description": "Display and filter interpreted timeline events and details.",
+			"domain": "Timeline / Events / Interpretation",
+			"featureSlugs": [
+				"timeline-list",
+				"timeline-filters",
+				"timeline-events-api"
+			],
+			"name": "View Timeline",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "view-timeline",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 8)",
-		"timestamp": 1769803374744
-	},
-	{
-		"metadata": {
-			"maxTotalTokens": 300000,
-			"maxTurns": 20,
-			"status": "completed",
-			"tokensIn": 32514,
-			"tokensOut": 7354,
-			"totalTokens": 39868,
-			"turns": 8
+		{
+			"_creationTime": 1769934153115.244,
+			"_id": "nn78txec7fd4tyd1hsqc6f5mw980aatz",
+			"createdAt": 1769934153115,
+			"description": "Install GitHub connector, handle OAuth, fetch repos and ingest events.",
+			"domain": "Connectors (Sources & Channels)",
+			"featureSlugs": [
+				"github",
+				"github-list-dirs",
+				"github-list-files",
+				"github-read-file",
+				"github-search-code",
+				"github-helpers"
+			],
+			"name": "Integrate GitHub",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "integrate-github",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "success",
-		"step": "Budget",
-		"timestamp": 1769803374812
-	},
-	{
-		"metadata": {
-			"feedbackPreview": `Tu output no pasó validación. Corrige y devuelve SOLO el JSON requerido.
-Errores:
-- Empty output`
+		{
+			"_creationTime": 1769934153115.2437,
+			"_id": "nn71mvyq626a6jqamx7eq7cccn80bcab",
+			"createdAt": 1769934153115,
+			"description": "Add, list and manage external connections for a product.",
+			"domain": "Connectors (Sources & Channels)",
+			"featureSlugs": [
+				"add-connection-dialog",
+				"connection-list",
+				"connection-card",
+				"connections"
+			],
+			"name": "Configure Connectors",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "configure-connectors",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "warn",
-		"step": "Feature scout validation failed",
-		"timestamp": 1769803374876
-	},
-	{
-		"metadata": { "hasFeedback": true },
-		"status": "info",
-		"step": "Feature scout attempt 2",
-		"timestamp": 1769803374942
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_PZKmP48Mr5KD23Hth4tRGyg7",
-						"input": {
-							"limit": 100,
-							"path": "apps/webapp/src/domains/organizations/**",
-							"pattern": "apps/webapp/src/domains/organizations/**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_PZKmP48Mr5KD23Hth4tRGyg7",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2434,
+			"_id": "nn728z3mjf46j5xtexdg7azht980af3v",
+			"createdAt": 1769934153115,
+			"description": "View and update domain mappings for a product.",
+			"domain": "Products",
+			"featureSlugs": ["domain-map-card"],
+			"name": "Map Product Domains",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "map-product-domains",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 1)",
-		"timestamp": 1769803383853
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 100,
-					"path": "apps/webapp/src/domains/organizations/**",
-					"pattern": "apps/webapp/src/domains/organizations/**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": { "files": [], "truncated": false },
-				"outputRef": {
-					"fileId": "kg27hcbhd7b12pw9qqb2dt3j9s8068j3",
-					"sizeBytes": 30
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 30,
-					"limitBytes": 16000,
-					"originalSizeBytes": 30
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_PZKmP48Mr5KD23Hth4tRGyg7",
-					"input": {
-						"limit": 100,
-						"path": "apps/webapp/src/domains/organizations/**",
-						"pattern": "apps/webapp/src/domains/organizations/**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2432,
+			"_id": "nn7awrh40ygck3jqt520sp708x80byf5",
+			"createdAt": 1769934153115,
+			"description": "View and act on product context snapshots (publish, inspect).",
+			"domain": "Products",
+			"featureSlugs": ["product-context-card"],
+			"name": "Manage Product Context Snapshots",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "manage-product-context-snapshots",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803384817
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_yUL1LNa7EXA0cgE00zdPwT7q",
-						"input": {
-							"limit": 100,
-							"path": "apps/webapp/src/domains/products/**",
-							"pattern": "apps/webapp/src/domains/products/**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
-							"repoFullName": ""
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_yUL1LNa7EXA0cgE00zdPwT7q",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.243,
+			"_id": "nn7b6bqkdf4bh7a3vzjhrjq1px80bcav",
+			"createdAt": 1769934153115,
+			"description": "Edit baseline settings or use a guided wizard for setup.",
+			"domain": "Products",
+			"featureSlugs": ["baseline-editor", "baseline-wizard"],
+			"name": "Configure Product Baseline",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "configure-product-baseline",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 2)",
-		"timestamp": 1769803406341
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 100,
-					"path": "apps/webapp/src/domains/products/**",
-					"pattern": "apps/webapp/src/domains/products/**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
-					"repoFullName": ""
-				},
-				"name": "list_files",
-				"output": { "files": [], "truncated": false },
-				"outputRef": {
-					"fileId": "kg22y5g6rpqwrwghmtybd70mmx806w2w",
-					"sizeBytes": 30
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 30,
-					"limitBytes": 16000,
-					"originalSizeBytes": 30
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_yUL1LNa7EXA0cgE00zdPwT7q",
-					"input": {
-						"limit": 100,
-						"path": "apps/webapp/src/domains/products/**",
-						"pattern": "apps/webapp/src/domains/products/**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
-						"repoFullName": ""
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2427,
+			"_id": "nn769wq5jbk6r3b05trr31hh9980af9p",
+			"createdAt": 1769934153115,
+			"description": "View and manage product members, including leaving a product.",
+			"domain": "Products",
+			"featureSlugs": ["product-members", "leave-product-dialog"],
+			"name": "Manage Product Members",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "manage-product-members",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803406641
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_7QnIBaS2epFvVxEkIYSGRZsR",
-						"input": {
-							"limit": 100,
-							"path": "apps/webapp/src/domains/connectors/**",
-							"pattern": "apps/webapp/src/domains/connectors/**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
-							"repoFullName": ""
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_7QnIBaS2epFvVxEkIYSGRZsR",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2424,
+			"_id": "nn7dqyfgg41bd2rkn46apx8nc980adtn",
+			"createdAt": 1769934153115,
+			"description": "List, view and switch the active product context.",
+			"domain": "Products",
+			"featureSlugs": ["product-list", "product-card", "product-switcher"],
+			"name": "Browse and Switch Products",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "browse-and-switch-products",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 3)",
-		"timestamp": 1769803421060
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 100,
-					"path": "apps/webapp/src/domains/connectors/**",
-					"pattern": "apps/webapp/src/domains/connectors/**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
-					"repoFullName": ""
-				},
-				"name": "list_files",
-				"output": { "files": [], "truncated": false },
-				"outputRef": {
-					"fileId": "kg2416an74f65hap1t3t8rphtx806e33",
-					"sizeBytes": 30
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 30,
-					"limitBytes": 16000,
-					"originalSizeBytes": 30
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_7QnIBaS2epFvVxEkIYSGRZsR",
-					"input": {
-						"limit": 100,
-						"path": "apps/webapp/src/domains/connectors/**",
-						"pattern": "apps/webapp/src/domains/connectors/**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
-						"repoFullName": ""
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2422,
+			"_id": "nn74pydgq9z1p3dewex6d3bkv980bbsm",
+			"createdAt": 1769934153115,
+			"description": "Delete a product with confirmation and warnings.",
+			"domain": "Products",
+			"featureSlugs": ["delete-product-dialog"],
+			"name": "Delete Product",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "delete-product",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803421592
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_QXcrW6UZ2GexeGydVprvFj2E",
-						"input": {
-							"limit": 200,
-							"path": "packages/convex/convex/timeline/**",
-							"pattern": "packages/convex/convex/timeline/**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_QXcrW6UZ2GexeGydVprvFj2E",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.242,
+			"_id": "nn7a5pwctwm3r67kgz873ax5xd80b8ne",
+			"createdAt": 1769934153115,
+			"description": "Create a new product within an organization using a form-based flow.",
+			"domain": "Products",
+			"featureSlugs": ["create-product-form"],
+			"name": "Create Product",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "create-product",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 4)",
-		"timestamp": 1769803437317
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "packages/convex/convex/timeline/**",
-					"pattern": "packages/convex/convex/timeline/**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": { "files": [], "truncated": false },
-				"outputRef": {
-					"fileId": "kg2btjb9gy6btxc34ren9s1jah806awp",
-					"sizeBytes": 30
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 30,
-					"limitBytes": 16000,
-					"originalSizeBytes": 30
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_QXcrW6UZ2GexeGydVprvFj2E",
-					"input": {
-						"limit": 200,
-						"path": "packages/convex/convex/timeline/**",
-						"pattern": "packages/convex/convex/timeline/**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2417,
+			"_id": "nn72extrnsnzn4cqq2rhmvz19580b7c4",
+			"createdAt": 1769934153115,
+			"description": "List accessible organizations and switch the active organization.",
+			"domain": "Organizations",
+			"featureSlugs": [
+				"organization-list",
+				"org-switcher",
+				"list-organizations",
+				"get-user-organizations",
+				"get-user-organizations-with-details",
+				"get-recent-organizations",
+				"get-personal-org"
+			],
+			"name": "Browse and Switch Organizations",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "browse-and-switch-organizations",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803437640
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_VB9BZ4RzqlsDWTV0boh6gziJ",
-						"input": {
-							"limit": 200,
-							"path": "packages/convex/convex/agents/**",
-							"pattern": "packages/convex/convex/agents/**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_VB9BZ4RzqlsDWTV0boh6gziJ",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2415,
+			"_id": "nn7950jmsp53ctcs155y4rddmx80achg",
+			"createdAt": 1769934153115,
+			"description": "Allow a user to leave an organization (self-removal flow).",
+			"domain": "Organizations",
+			"featureSlugs": ["leave-organization-dialog", "remove-member"],
+			"name": "Leave Organization",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "leave-organization",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 5)",
-		"timestamp": 1769803446690
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "packages/convex/convex/agents/**",
-					"pattern": "packages/convex/convex/agents/**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": { "files": [], "truncated": false },
-				"outputRef": {
-					"fileId": "kg2fazysg38h8tc2sj0rwgke45806f7j",
-					"sizeBytes": 30
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 30,
-					"limitBytes": 16000,
-					"originalSizeBytes": 30
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_VB9BZ4RzqlsDWTV0boh6gziJ",
-					"input": {
-						"limit": 200,
-						"path": "packages/convex/convex/agents/**",
-						"pattern": "packages/convex/convex/agents/**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2412,
+			"_id": "nn774ane25bxh32gjjxwkx5gwx80apa4",
+			"createdAt": 1769934153115,
+			"description": "Transfer ownership from one member to another with role swaps.",
+			"domain": "Organizations",
+			"featureSlugs": ["transfer-ownership-dialog", "transfer-ownership"],
+			"name": "Transfer Organization Ownership",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "transfer-organization-ownership",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803447434
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_JqNNKDddG6sy7L2ysSeocmlO",
-						"input": {
-							"limit": 100,
-							"path": "apps/webapp/src/domains/auth/**",
-							"pattern": "apps/webapp/src/domains/auth/**",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_JqNNKDddG6sy7L2ysSeocmlO",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.241,
+			"_id": "nn70ztz9kszwxbzmmcahnmd79580an41",
+			"createdAt": 1769934153115,
+			"description": "List, invite/add, remove members and change member roles.",
+			"domain": "Organizations",
+			"featureSlugs": [
+				"org-members",
+				"get-organization-members",
+				"add-member",
+				"remove-member",
+				"update-member-role"
+			],
+			"name": "Manage Organization Members",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "manage-organization-members",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 6)",
-		"timestamp": 1769803454439
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 100,
-					"path": "apps/webapp/src/domains/auth/**",
-					"pattern": "apps/webapp/src/domains/auth/**",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": { "files": [], "truncated": false },
-				"outputRef": {
-					"fileId": "kg2fncjg3rx6x9ecmnbvhc89298079mb",
-					"sizeBytes": 30
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 30,
-					"limitBytes": 16000,
-					"originalSizeBytes": 30
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_JqNNKDddG6sy7L2ysSeocmlO",
-					"input": {
-						"limit": 100,
-						"path": "apps/webapp/src/domains/auth/**",
-						"pattern": "apps/webapp/src/domains/auth/**",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769934153115.2407,
+			"_id": "nn76gy2gbpyzr3q4r77mazf8p580awth",
+			"createdAt": 1769934153115,
+			"description": "Delete a non-personal organization (owner-only) via confirmation flow.",
+			"domain": "Organizations",
+			"featureSlugs": ["delete-organization-dialog", "delete-organization"],
+			"name": "Delete Organization",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "delete-organization",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803455005
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": null,
-				"hadExtraction": false,
-				"rawText": `{
-  "features": [],
-  "meta": {
-    "filesRead": [],
-    "domainsExplored": [
-      "Organizations",
-      "Products",
-      "Connectors (Sources & Channels)",
-      "Timeline / Events / Interpretation",
-      "Agents & AI Inference",
-      "Auth & Users"
-    ],
-    "expectedDomains": 6,
-    "toolCallsMade": 6,
-    "capabilityCoverage": {
-      "Organizations": {
-        "total": 6,
-        "covered": 0,
-        "uncovered": [
-          "create-organization (no UI files found)",
-          "delete-organization (no UI files found)",
-          "view-organization (no UI files found)",
-          "invite-member (no UI files found)",
-          "manage-member-role (no UI files found)",
-          "switch-active-organization (no UI files found)"
-        ]
-      },
-      "Products": {
-        "total": 6,
-        "covered": 0,
-        "uncovered": [
-          "create-product (no UI files found)",
-          "delete-product (no UI files found)",
-          "view-product (no UI files found)",
-          "edit-product-baseline (no UI files found)",
-          "publish-product-context-snapshot (no UI files found)",
-          "update-domain-map (no UI files found)"
-        ]
-      },
-      "Connectors (Sources & Channels)": {
-        "total": 7,
-        "covered": 0,
-        "uncovered": [
-          "list-connector-types (no UI files found)",
-          "add-connection (no UI files found)",
-          "configure-connection (no UI files found)",
-          "disconnect-connection (no UI files found)",
-          "sync-connection (no UI files found)",
-          "view-connection-status (no UI files found)",
-          "connect-github (no UI files found)"
-        ]
-      },
-      "Timeline / Events / Interpretation": {
-        "total": 6,
-        "covered": 0,
-        "uncovered": [
-          "ingest-raw-events (backend-only or no UI files found)",
-          "view-raw-events (no UI files found)",
-          "interpret-events (backend-only or no UI files found)",
-          "view-timeline (no UI files found)",
-          "view-interpreted-event (no UI files found)",
-          "export-interpreted-events (backend-only or no UI files found)"
-        ]
-      },
-      "Agents & AI Inference": {
-        "total": 6,
-        "covered": 0,
-        "uncovered": [
-          "run-agent (backend-only or no UI files found)",
-          "monitor-agent-run (no UI files found)",
-          "view-agent-runs (no UI files found)",
-          "view-agent-progress (no UI files found)",
-          "view-ai-usage (no UI files found)",
-          "rate-ai-inference (no UI files found)"
-        ]
-      },
-      "Auth & Users": {
-        "total": 4,
-        "covered": 0,
-        "uncovered": [
-          "authenticate (no UI files found)",
-          "reset-password (no UI files found)",
-          "manage-user-preferences (no UI files found)",
-          "view-user-profile (no UI files found)"
-        ]
-      }
-    },
-    "limitations": [
-      "All list_files calls for the domain path patterns returned no files; no UI components matching feature name signals (*-dialog, *-form, *-wizard, *-panel, *-list, *-settings, *-editor, *-flow) were found.",
-      "Because no candidate UI files were discovered, no concrete user-facing features could be identified.",
-      "Some capabilities are likely backend-only (ingest/interpret/sync/export/agent runs); these are marked as 'backend-only or no UI files found' where applicable.",
-      "If you expect UI features, verify the repository contains the code under the provided path patterns or provide alternate paths to explore."
-    ]
-  }
-}`
-			},
-			"modelOutputPreview": `{
-  "features": [],
-  "meta": {
-    "filesRead": [],
-    "domainsExplored": [
-      "Organizations",
-      "Products",
-      "Connectors (Sources & Channels)",
-      "Timeline / Events / Interpretation",
-      "Agents & AI Inference",
-      "Auth & Users"
-    ],
-    "expectedDomains": 6,
-    "toolCallsMade": 6,
-    "capabilityCoverage": {
-      "Organizations": {
-        "total": 6,
-        "covered": 0,
-        "uncovered": [
-          "create-organization (no UI files found)",
-          "delete-organization (no UI files found)",
-          "view-organization (no UI files found)",
-          "invite-member (no UI files found)",
-          "manage-member-role (no UI files found)",
-          "switch-active-organization (no UI files found)"
-        ]
-      },
-      "Products": {
-        "total": 6,
-        "covered": 0,
-        "uncovered": [
-          "create-product (no UI files found)",
-          "delete-product (no UI files found)",
-          "view-product (no UI files found)",
-          "edit-product-baseline (no UI files found)",
-          "publish-product-context-snapshot (no UI files found)",
-          "update-domain-map (no UI files found)"
-        ]
-      },
-      "Connectors (Sources & Channels)": {
-        "total": 7,
-        "covered": 0,
-        "uncovered": [
-          "list-connector-types (no UI files found)",
-          "add-connection (no UI files found)",
-          "configure-connection (no UI files found)",
-          "disconnect-connection (no UI files found)",
-          "sync-connection (no UI files found)",
-          "view-connection-status (no UI files found)",
-          "connect-github (no UI files found)"
-        ]
-      },
-      "Timeline / Events / Interpretation": {
-        "total": 6,
-        "covered": 0,
-        "uncovered": [
-          "ingest-raw-events (backend-only or no UI files found)",
-          "view-raw-events (no UI files found)",
-          "interpret-events (backend-only or no UI files found)",
-          "view-timeline (no UI fil`,
-			"stopReason": "end"
+		{
+			"_creationTime": 1769934153115.2405,
+			"_id": "nn71z6hdtnmvrmk66r24aaxkd580bbjc",
+			"createdAt": 1769934153115,
+			"description": "Update organization metadata with permission checks.",
+			"domain": "Organizations",
+			"featureSlugs": ["update-organization", "get-organization-by-slug"],
+			"name": "Update Organization",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "update-organization",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 7)",
-		"timestamp": 1769803483666
-	},
-	{
-		"metadata": {
-			"maxTotalTokens": 300000,
-			"maxTurns": 20,
-			"status": "completed",
-			"tokensIn": 17482,
-			"tokensOut": 6603,
-			"totalTokens": 24085,
-			"turns": 7
+		{
+			"_creationTime": 1769934153115.2402,
+			"_id": "nn74fy65wc2bz4647yj0zd6wtn80b9bc",
+			"createdAt": 1769934153115,
+			"description": "Create a new organization, enforce plan and slug rules, and add the owner.",
+			"domain": "Organizations",
+			"featureSlugs": [
+				"create-organization-form",
+				"create-organization",
+				"can-create-organization"
+			],
+			"name": "Create Organization",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"slug": "create-organization",
+			"updatedAt": 1769934153115,
+			"visibility": "public"
+		}
+	],
+	"features": [
+		{
+			"_creationTime": 1769870000423.287,
+			"_id": "nd77fwj94sckkav8jv9b9256dd808zvy",
+			"createdAt": 1769870000423,
+			"description": "Backend email provider and templates used to send password reset emails/OTPs to users (supports reset-password flows).",
+			"domain": "Auth & Users",
+			"entryPoints": [
+				"packages/convex/convex/auth/ResendOTPReset.ts",
+				"packages/convex/convex/auth/passwordResetTemplate.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Password Reset Email Provider",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["reset-password"],
+			"slug": "resend-otp-reset",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "success",
-		"step": "Budget",
-		"timestamp": 1769803483737
-	},
-	{
-		"metadata": {
-			"feedbackPreview": `Tu output no pasó validación. Corrige y devuelve SOLO el JSON requerido.
-Errores:
-- meta.filesRead must not be empty
-- Only 0 features found, expected at least 6`
+		{
+			"_creationTime": 1769870000423.2869,
+			"_id": "nd77v0sty94r30tw3kdjjn8mmn808m6q",
+			"createdAt": 1769870000423,
+			"description": "Backend email provider that generates short numeric verification tokens and sends them via the Resend API for account verification flows.",
+			"domain": "Auth & Users",
+			"entryPoints": [
+				"packages/convex/convex/auth/ResendOTP.ts",
+				"packages/convex/convex/auth/emailTemplate.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Resend OTP Email Provider",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["authenticate"],
+			"slug": "resend-otp",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "warn",
-		"step": "Feature scout validation failed",
-		"timestamp": 1769803483812
-	},
-	{
-		"metadata": { "hasFeedback": true },
-		"status": "info",
-		"step": "Feature scout attempt 3",
-		"timestamp": 1769803483893
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_9w4D8RvmmnuaSb4LaTDmiQjm",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/organizations",
-							"pattern": "**/*",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_9w4D8RvmmnuaSb4LaTDmiQjm",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2866,
+			"_id": "nd74t66ek549x9gx5aw4tktkgn80862g",
+			"createdAt": 1769870000423,
+			"description": "Reusable UI form for entering verification/OTP codes used across signup verification and password reset flows.",
+			"domain": "Auth & Users",
+			"entryPoints": [
+				"apps/webapp/src/domains/auth/components/verification-code-form.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Verification Code Entry",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["authenticate", "reset-password"],
+			"slug": "verification-code-form",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 1)",
-		"timestamp": 1769803490902
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/organizations",
-					"pattern": "**/*",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "create-organization-form.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/create-organization-form.tsx",
-							"size": 7176
-						},
-						{
-							"name": "delete-organization-dialog.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/delete-organization-dialog.tsx",
-							"size": 2193
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/organizations/components/index.ts",
-							"size": 467
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/index.ts",
-							"size": 78
-						},
-						{
-							"name": "leave-organization-dialog.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/leave-organization-dialog.tsx",
-							"size": 2876
-						},
-						{
-							"name": "org-card.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/org-card.tsx",
-							"size": 8714
-						},
-						{
-							"name": "org-members.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/org-members.tsx",
-							"size": 4938
-						},
-						{
-							"name": "org-switcher.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/org-switcher.tsx",
-							"size": 10965
-						},
-						{
-							"name": "organization-list.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/organization-list.tsx",
-							"size": 2326
-						},
-						{
-							"name": "transfer-ownership-dialog.tsx",
-							"path": "apps/webapp/src/domains/organizations/components/transfer-ownership-dialog.tsx",
-							"size": 6570
-						},
-						{
-							"name": "use-current-org.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/use-current-org.ts",
-							"size": 2812
-						},
-						{
-							"name": "use-organizations-simple.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/use-organizations-simple.ts",
-							"size": 2403
-						},
-						{
-							"name": "use-organizations.ts",
-							"path": "apps/webapp/src/domains/organizations/hooks/use-organizations.ts",
-							"size": 4720
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2apkbsheak2x78my9xp8dcnd8077hv",
-					"sizeBytes": 1608
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 1608,
-					"limitBytes": 16000,
-					"originalSizeBytes": 1608
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_9w4D8RvmmnuaSb4LaTDmiQjm",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/organizations",
-						"pattern": "**/*",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2864,
+			"_id": "nd7ff2fehqe1zxm40gp5ms154x809xye",
+			"createdAt": 1769870000423,
+			"description": "Full UI flow enabling users to request a password reset and submit verification codes to set a new password.",
+			"domain": "Auth & Users",
+			"entryPoints": [
+				"apps/webapp/src/domains/auth/components/password-reset-flow.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Password Reset Flow",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["reset-password"],
+			"slug": "password-reset-flow",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803491409
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_P7fyXMctNAI1v3KHcaIzFOrv",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/products",
-							"pattern": "**/*",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_P7fyXMctNAI1v3KHcaIzFOrv",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2861,
+			"_id": "nd772s6v18s51jw76z9pgz9sgd8091m0",
+			"createdAt": 1769870000423,
+			"description": "UI component exposing social authentication options (OAuth providers) as part of sign-in/sign-up flows.",
+			"domain": "Auth & Users",
+			"entryPoints": [
+				"apps/webapp/src/domains/auth/components/social-login-buttons.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Social Login Buttons",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["authenticate"],
+			"slug": "social-login-buttons",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 2)",
-		"timestamp": 1769803507613
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/products",
-					"pattern": "**/*",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "agent-progress.tsx",
-							"path": "apps/webapp/src/domains/products/components/agent-progress.tsx",
-							"size": 11219
-						},
-						{
-							"name": "baseline-editor.tsx",
-							"path": "apps/webapp/src/domains/products/components/baseline-editor.tsx",
-							"size": 33345
-						},
-						{
-							"name": "baseline-wizard.tsx",
-							"path": "apps/webapp/src/domains/products/components/baseline-wizard.tsx",
-							"size": 27975
-						},
-						{
-							"name": "create-product-form.tsx",
-							"path": "apps/webapp/src/domains/products/components/create-product-form.tsx",
-							"size": 12253
-						},
-						{
-							"name": "delete-product-dialog.tsx",
-							"path": "apps/webapp/src/domains/products/components/delete-product-dialog.tsx",
-							"size": 2280
-						},
-						{
-							"name": "domain-map-card.tsx",
-							"path": "apps/webapp/src/domains/products/components/domain-map-card.tsx",
-							"size": 4366
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/products/components/index.ts",
-							"size": 647
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/products/hooks/index.ts",
-							"size": 91
-						},
-						{
-							"name": "leave-product-dialog.tsx",
-							"path": "apps/webapp/src/domains/products/components/leave-product-dialog.tsx",
-							"size": 2957
-						},
-						{
-							"name": "product-card.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-card.tsx",
-							"size": 7762
-						},
-						{
-							"name": "product-context-card.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-context-card.tsx",
-							"size": 4105
-						},
-						{
-							"name": "product-list.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-list.tsx",
-							"size": 5508
-						},
-						{
-							"name": "product-members.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-members.tsx",
-							"size": 4728
-						},
-						{
-							"name": "product-switcher.tsx",
-							"path": "apps/webapp/src/domains/products/components/product-switcher.tsx",
-							"size": 8148
-						},
-						{
-							"name": "use-current-product.ts",
-							"path": "apps/webapp/src/domains/products/hooks/use-current-product.ts",
-							"size": 2330
-						},
-						{
-							"name": "use-products.ts",
-							"path": "apps/webapp/src/domains/products/hooks/use-products.ts",
-							"size": 3809
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg29r7nskaa4tsh3vjkm5enet9806tcm",
-					"sizeBytes": 1853
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 1853,
-					"limitBytes": 16000,
-					"originalSizeBytes": 1853
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_P7fyXMctNAI1v3KHcaIzFOrv",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/products",
-						"pattern": "**/*",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.286,
+			"_id": "nd73a7e53j5s6ra4saa2vkg9ms808jwp",
+			"createdAt": 1769870000423,
+			"description": "Sign-up flow that includes verification (email/OTP) to confirm new accounts before full access is granted.",
+			"domain": "Auth & Users",
+			"entryPoints": [
+				"apps/webapp/src/domains/auth/components/signup-with-verification.tsx",
+				"apps/webapp/src/domains/auth/components/signup-form.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Sign Up with Verification",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["authenticate"],
+			"slug": "signup-with-verification",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803508383
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_X0MdNMnHxqMXNuMrq1B3wplJ",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/connectors",
-							"pattern": "**/*",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_X0MdNMnHxqMXNuMrq1B3wplJ",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2856,
+			"_id": "nd76j2z1s1qpzv6y6ckakg1s3s808arr",
+			"createdAt": 1769870000423,
+			"description": "UI form for users to sign in with email/password or other configured auth methods.",
+			"domain": "Auth & Users",
+			"entryPoints": [
+				"apps/webapp/src/domains/auth/components/signin-form.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Sign In Form",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["authenticate"],
+			"slug": "signin-form",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 3)",
-		"timestamp": 1769803525689
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/connectors",
-					"pattern": "**/*",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "add-connection-dialog.tsx",
-							"path": "apps/webapp/src/domains/connectors/components/add-connection-dialog.tsx",
-							"size": 4680
-						},
-						{
-							"name": "connection-card.tsx",
-							"path": "apps/webapp/src/domains/connectors/components/connection-card.tsx",
-							"size": 9525
-						},
-						{
-							"name": "connection-list.tsx",
-							"path": "apps/webapp/src/domains/connectors/components/connection-list.tsx",
-							"size": 4184
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/connectors/components/index.ts",
-							"size": 167
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/connectors/hooks/index.ts",
-							"size": 35
-						},
-						{
-							"name": "use-connections.ts",
-							"path": "apps/webapp/src/domains/connectors/hooks/use-connections.ts",
-							"size": 1015
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2884kevm2q6mdh3zx0zfz92d806cdt",
-					"sizeBytes": 690
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 690,
-					"limitBytes": 16000,
-					"originalSizeBytes": 690
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_X0MdNMnHxqMXNuMrq1B3wplJ",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/connectors",
-						"pattern": "**/*",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2854,
+			"_id": "nd7e0kqhgwms8jbaep6b0dtc71809kyp",
+			"createdAt": 1769870000423,
+			"description": "Service/agent that classifies surfaces and maps signals from product artifacts into structured surface signals/taxonomy for downstream analysis.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/agents/surface_signal_mapper.ts",
+				"packages/convex/convex/agents/surfaceSignals.ts",
+				"packages/convex/convex/agents/taxonomy/surface_classifier.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Surface Signal Mapper",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent"],
+			"slug": "surface-signal-mapper",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803526258
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_XIj8vIn5Zwi2DYFTBNijvupv",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/timeline",
-							"pattern": "**/*",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_XIj8vIn5Zwi2DYFTBNijvupv",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2852,
+			"_id": "nd72mfksgg34mt9pypy99afeax809n1g",
+			"createdAt": 1769870000423,
+			"description": "Agent that creates a feature map of a product (maps features to taxonomy/domain), producing structured feature data used by UI and other agents.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/agents/featureMapAgent.ts",
+				"packages/convex/convex/agents/domainMapData.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Feature Map Agent",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent"],
+			"slug": "feature-map-agent",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 4)",
-		"timestamp": 1769803533236
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/timeline",
-					"pattern": "**/*",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/timeline/components/index.ts",
-							"size": 69
-						},
-						{
-							"name": "index.ts",
-							"path": "apps/webapp/src/domains/timeline/hooks/index.ts",
-							"size": 32
-						},
-						{
-							"name": "timeline-filters.tsx",
-							"path": "apps/webapp/src/domains/timeline/components/timeline-filters.tsx",
-							"size": 2662
-						},
-						{
-							"name": "timeline-list.tsx",
-							"path": "apps/webapp/src/domains/timeline/components/timeline-list.tsx",
-							"size": 6726
-						},
-						{
-							"name": "use-timeline.ts",
-							"path": "apps/webapp/src/domains/timeline/hooks/use-timeline.ts",
-							"size": 1262
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2350jszhmyfdvynh66t4795h8062se",
-					"sizeBytes": 541
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 541,
-					"limitBytes": 16000,
-					"originalSizeBytes": 541
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_XIj8vIn5Zwi2DYFTBNijvupv",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/timeline",
-						"pattern": "**/*",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.285,
+			"_id": "nd7dcw25e7zj713v5gbbc0py4d808sb4",
+			"createdAt": 1769870000423,
+			"description": "Simple test/demo agent used by the AI Test Panel for manual testing and smoke checks of agent interactions and streaming.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": ["packages/convex/convex/agents/helloWorldAgent.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Hello World Agent (test)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent"],
+			"slug": "hello-world-agent",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803533659
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_6ujVNqgek7zYBnx3pJLAQyt6",
-						"input": {
-							"limit": 200,
-							"path": "apps/webapp/src/domains/core/components",
-							"pattern": "**/*",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_6ujVNqgek7zYBnx3pJLAQyt6",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2847,
+			"_id": "nd7c7x8n11kb9mw6qt4zzh7wp9808kfc",
+			"createdAt": 1769870000423,
+			"description": "Agent that builds source-level context (repository/file-level content) used by other agents to answer questions about code or product sources.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/agents/sourceContextAgent.ts",
+				"packages/convex/convex/agents/sourceContextData.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Source Context Agent",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent"],
+			"slug": "source-context-agent",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 5)",
-		"timestamp": 1769803556777
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "apps/webapp/src/domains/core/components",
-					"pattern": "**/*",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": { "files": [], "truncated": false },
-				"outputRef": {
-					"fileId": "kg248dy9xfdqzg73y766sy9kg5807xa9",
-					"sizeBytes": 30
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 30,
-					"limitBytes": 16000,
-					"originalSizeBytes": 30
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_6ujVNqgek7zYBnx3pJLAQyt6",
-					"input": {
-						"limit": 200,
-						"path": "apps/webapp/src/domains/core/components",
-						"pattern": "**/*",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2844,
+			"_id": "nd7bb6nemrnt0anqyw8z8pjrvd8089dh",
+			"createdAt": 1769870000423,
+			"description": "Agent that constructs product context (knowledge about a product) by aggregating product-specific sources and metadata to provide context to inference calls and other agents.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/agents/productContextAgent.ts",
+				"packages/convex/convex/agents/productContextData.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Product Context Agent",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent", "view-ai-usage"],
+			"slug": "product-context-agent",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803557288
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": [
-					{
-						"id": "call_OUkcF8qYz2TKm7xhtVFRZTrb",
-						"input": {
-							"limit": 200,
-							"path": "packages/convex/convex/agents",
-							"pattern": "**/*",
-							"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-						},
-						"name": "list_files"
-					}
-				],
-				"hadExtraction": true,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "tool_use",
-			"toolCalls": [
-				{
-					"id": "call_OUkcF8qYz2TKm7xhtVFRZTrb",
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.2842,
+			"_id": "nd746z96chedmnjnaxan8c21pd80974t",
+			"createdAt": 1769870000423,
+			"description": "Agent that interprets timelines and contextualizes events (timeline interpretation pipeline). Used to convert timeline data into structured context for downstream agents/features.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/agents/timelineContextInterpreterAgent.ts",
+				"packages/convex/convex/ai/prompts/timelineInterpretation.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Timeline Context Interpreter Agent",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent"],
+			"slug": "timeline-context-interpreter",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 6)",
-		"timestamp": 1769803570016
-	},
-	{
-		"metadata": {
-			"result": {
-				"input": {
-					"limit": 200,
-					"path": "packages/convex/convex/agents",
-					"pattern": "**/*",
-					"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-				},
-				"name": "list_files",
-				"output": {
-					"files": [
-						{
-							"name": "agent_loop.ts",
-							"path": "packages/convex/convex/agents/core/agent_loop.ts",
-							"size": 12973
-						},
-						{
-							"name": "contextTools.test.ts",
-							"path": "packages/convex/convex/agents/__tests__/contextTools.test.ts",
-							"size": 3499
-						},
-						{
-							"name": "domain_map.ts",
-							"path": "packages/convex/convex/agents/core/validators/domain_map.ts",
-							"size": 2694
-						},
-						{
-							"name": "domain_mapper.ts",
-							"path": "packages/convex/convex/agents/taxonomy/domain_mapper.ts",
-							"size": 6774
-						},
-						{
-							"name": "domain-map-agent.skill.md",
-							"path": "packages/convex/convex/agents/skills/source/domain-map-agent.skill.md",
-							"size": 2006
-						},
-						{
-							"name": "domain-taxonomy.skill.md",
-							"path": "packages/convex/convex/agents/skills/domain-taxonomy.skill.md",
-							"size": 1014
-						},
-						{
-							"name": "feature_extractor.ts",
-							"path": "packages/convex/convex/agents/taxonomy/feature_extractor.ts",
-							"size": 9493
-						},
-						{
-							"name": "feature-extraction.skill.md",
-							"path": "packages/convex/convex/agents/skills/feature-extraction.skill.md",
-							"size": 2392
-						},
-						{
-							"name": "github_helpers.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_helpers.ts",
-							"size": 4509
-						},
-						{
-							"name": "github_list_dirs.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_list_dirs.ts",
-							"size": 2870
-						},
-						{
-							"name": "github_list_files.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_list_files.ts",
-							"size": 3013
-						},
-						{
-							"name": "github_read_file.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_read_file.ts",
-							"size": 2269
-						},
-						{
-							"name": "github_search_code.ts",
-							"path": "packages/convex/convex/agents/core/tools/github_search_code.ts",
-							"size": 3228
-						},
-						{
-							"name": "index.ts",
-							"path": "packages/convex/convex/agents/core/tools/index.ts",
-							"size": 397
-						},
-						{
-							"name": "index.ts",
-							"path": "packages/convex/convex/agents/core/validators/index.ts",
-							"size": 73
-						},
-						{
-							"name": "index.ts",
-							"path": "packages/convex/convex/agents/skills/index.ts",
-							"size": 7823
-						},
-						{
-							"name": "json_utils.ts",
-							"path": "packages/convex/convex/agents/core/json_utils.ts",
-							"size": 3362
-						},
-						{
-							"name": "orchestrator.ts",
-							"path": "packages/convex/convex/agents/taxonomy/orchestrator.ts",
-							"size": 4159
-						},
-						{
-							"name": "plan_manager.ts",
-							"path": "packages/convex/convex/agents/core/plan_manager.ts",
-							"size": 2792
-						},
-						{
-							"name": "skill_loader.ts",
-							"path": "packages/convex/convex/agents/core/skill_loader.ts",
-							"size": 2083
-						},
-						{
-							"name": "surface_classifier.ts",
-							"path": "packages/convex/convex/agents/taxonomy/surface_classifier.ts",
-							"size": 7330
-						},
-						{
-							"name": "surface-classification.skill.md",
-							"path": "packages/convex/convex/agents/skills/surface-classification.skill.md",
-							"size": 1077
-						},
-						{
-							"name": "todo_manager.ts",
-							"path": "packages/convex/convex/agents/core/tools/todo_manager.ts",
-							"size": 2593
-						},
-						{
-							"name": "tool_prompt_model.ts",
-							"path": "packages/convex/convex/agents/core/tool_prompt_model.ts",
-							"size": 3388
-						},
-						{
-							"name": "tool_registry.ts",
-							"path": "packages/convex/convex/agents/core/tool_registry.ts",
-							"size": 1029
-						},
-						{
-							"name": "validate_json.ts",
-							"path": "packages/convex/convex/agents/core/tools/validate_json.ts",
-							"size": 1034
-						},
-						{
-							"name": "validate.ts",
-							"path": "packages/convex/convex/agents/core/tools/validate.ts",
-							"size": 985
-						}
-					],
-					"truncated": false
-				},
-				"outputRef": {
-					"fileId": "kg2c0vqyy3ebvgb1a5sphkg729807q9w",
-					"sizeBytes": 2935
-				},
-				"truncation": {
-					"applied": false,
-					"finalSizeBytes": 2935,
-					"limitBytes": 16000,
-					"originalSizeBytes": 2935
-				}
-			},
-			"toolCalls": [
-				{
-					"id": "call_OUkcF8qYz2TKm7xhtVFRZTrb",
-					"input": {
-						"limit": 200,
-						"path": "packages/convex/convex/agents",
-						"pattern": "**/*",
-						"productId": "kd797jf743shwy0cxrbc224bv17zyqs0"
-					},
-					"name": "list_files"
-				}
-			]
+		{
+			"_creationTime": 1769870000423.284,
+			"_id": "nd7bdgcbnmbds0ajfc4rwhzs7x808mp1",
+			"createdAt": 1769870000423,
+			"description": "Agent and supporting code that maps repository and product data into domain taxonomy (domain mapper/orchestrator). Produces domain maps and taxonomy data used for domain discovery and product mapping.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/agents/taxonomy/domain_mapper.ts",
+				"packages/convex/convex/agents/domainMap.ts",
+				"packages/convex/convex/agents/skills/domain-taxonomy.skill.md"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Domain Mapping Agent",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent"],
+			"slug": "domain-mapper",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Tool: list_files",
-		"timestamp": 1769803570791
-	},
-	{
-		"metadata": {
-			"_debug": {
-				"extracted": null,
-				"hadExtraction": false,
-				"rawText": ""
-			},
-			"modelOutputPreview": "",
-			"stopReason": "end"
+		{
+			"_creationTime": 1769870000423.2837,
+			"_id": "nd70zgpqb1nk0bv8bw5qbnedch808s3y",
+			"createdAt": 1769870000423,
+			"description": "Agent that extracts product/domain features from source (taxonomy/feature extraction pipeline). Implements logic to analyze sources and produce feature maps/taxonomies used by other systems.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/agents/taxonomy/feature_extractor.ts",
+				"packages/convex/convex/agents/skills/feature-extraction.skill.md"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Feature Extraction Agent",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent"],
+			"slug": "feature-extractor",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "info",
-		"step": "Model output (turn 7)",
-		"timestamp": 1769803625478
-	},
-	{
-		"metadata": {
-			"maxTotalTokens": 300000,
-			"maxTurns": 20,
-			"status": "completed",
-			"tokensIn": 23718,
-			"tokensOut": 9231,
-			"totalTokens": 32949,
-			"turns": 7
+		{
+			"_creationTime": 1769870000423.2834,
+			"_id": "nd74r8pbgjvay0seyj1s5q47sd809nwq",
+			"createdAt": 1769870000423,
+			"description": "Backend adapters and port abstraction for calling LLM providers (OpenAI, Anthropic), prompts library and telemetry/config for inference calls. Implements provider-specific request/response handling and usage telemetry capture.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"packages/convex/convex/ai/adapters/openai.ts",
+				"packages/convex/convex/ai/adapters/anthropic.ts",
+				"packages/convex/convex/ai/ports/llmPort.ts",
+				"packages/convex/convex/ai/config.ts",
+				"packages/convex/convex/ai/telemetry.ts",
+				"packages/convex/convex/ai/prompts/featureMap.ts",
+				"packages/convex/convex/ai/prompts/productContext.ts",
+				"packages/convex/convex/ai/prompts/timelineInterpretation.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "LLM Adapter & Inference Pipeline",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["run-agent", "view-ai-usage"],
+			"slug": "llm-adapters",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
 		},
-		"status": "success",
-		"step": "Budget",
-		"timestamp": 1769803625561
-	},
-	{
-		"metadata": {
-			"feedbackPreview": `Tu output no pasó validación. Corrige y devuelve SOLO el JSON requerido.
-Errores:
-- Empty output`
+		{
+			"_creationTime": 1769870000423.2832,
+			"_id": "nd7bzm7k1bxenhm82xz383tmb980948s",
+			"createdAt": 1769870000423,
+			"description": "Backend queries and mutations to read inference log ratings and to let users rate AI inferences (by product+agent+context or by inference id). Enforces agent telemetry config and access checks.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": ["packages/convex/convex/ai/inferenceLogs.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "AI Inference Logs & Rating",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["rate-ai-inference", "view-ai-usage"],
+			"slug": "inference-logs",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
 		},
-		"status": "warn",
-		"step": "Feature scout validation failed",
-		"timestamp": 1769803625657
-	}
-]
+		{
+			"_creationTime": 1769870000423.283,
+			"_id": "nd7emsjc8bx9rpjy99st8ce99n8088bz",
+			"createdAt": 1769870000423,
+			"description": "Backend API to create and manage agent runs: create runs, append step entries, finish runs, query runs (single and lists by use case), export an expanded run trace (including stored output files), and cleanup old runs.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": ["packages/convex/convex/agents/agentRuns.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Agent Run Lifecycle & Traces",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"run-agent",
+				"monitor-agent-run",
+				"view-agent-runs",
+				"view-agent-progress"
+			],
+			"slug": "agent-runs",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2827,
+			"_id": "nd7d13npay652brdwkpktdcmfn8089dr",
+			"createdAt": 1769870000423,
+			"description": "Internal UI to send prompts to agents (supports streaming), view conversation threads, and show recent AI usage/metrics for the ai_test use case. Lets users reset threads and inspect message history.",
+			"domain": "Agents & AI Inference",
+			"entryPoints": [
+				"apps/webapp/src/domains/core/components/ai-test-panel.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "AI Test Panel",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"run-agent",
+				"view-agent-progress",
+				"view-ai-usage"
+			],
+			"slug": "ai-test-panel",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2825,
+			"_id": "nd74xc5pdd9x05kscj5s7a832x808rts",
+			"createdAt": 1769870000423,
+			"description": "Supporting backend agent actions invoked by the interpretation pipeline, including source-context classification and feature-map refresh flows (actions implemented in agents/actions.ts). These prepare context & feature data used during interpretation.",
+			"domain": "Timeline / Events / Interpretation",
+			"entryPoints": ["packages/convex/convex/agents/actions.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Agent Support Actions (classification / feature-map)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["interpret-events", "ingest-raw-events"],
+			"slug": "agent-support-actions",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2822,
+			"_id": "nd77abff23cgvyjvvwdayxr86x8091sz",
+			"createdAt": 1769870000423,
+			"description": "Agent implementation that provides the interpretation skill/logic used to convert raw event buckets into product-relevant narratives. Invoked by the interpretation pipeline to produce the InterpretationOutput (narratives, inferred features, focus areas, impact, inference logs).",
+			"domain": "Timeline / Events / Interpretation",
+			"entryPoints": [
+				"packages/convex/convex/agents/timelineContextInterpreterAgent.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Timeline Context Interpreter Agent",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["interpret-events"],
+			"slug": "timeline-context-interpreter-agent",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.282,
+			"_id": "nd7ed7h1f0wzhcfcxcv60bmfgd809yd7",
+			"createdAt": 1769870000423,
+			"description": "Backend queries and mutations to manage raw events lifecycle: fetch pending or product raw events, fetch by ids, mark raw events processed, and delete interpreted events for a product. Supports ingestion lifecycle and the interpretation pipeline.",
+			"domain": "Timeline / Events / Interpretation",
+			"entryPoints": ["packages/convex/convex/timeline/interpret.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Raw Events Management",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["ingest-raw-events", "view-raw-events"],
+			"slug": "raw-events-management",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2817,
+			"_id": "nd73yc8qcntq4k42g4n7rvbfjs8091xb",
+			"createdAt": 1769870000423,
+			"description": "Core backend action that drives interpretation: loads pending/raw events, buckets them by cadence, orchestrates agent actions to interpret bucket(s), writes interpreted events, records agentRun steps and finalizes runs. Implements the end-to-end pipeline that converts raw events into surfaced interpreted events.",
+			"domain": "Timeline / Events / Interpretation",
+			"entryPoints": ["packages/convex/convex/timeline/interpret.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Interpretation Pipeline",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["interpret-events", "view-interpreted-event"],
+			"slug": "interpretation-pipeline",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2815,
+			"_id": "nd79x33fkw8wb3883nvhj3hs91808b6z",
+			"createdAt": 1769870000423,
+			"description": "Backend API surface for listing timeline items and fetching timeline/interpreted-event details used by the webapp. (entrypoint file provides queries/actions for timeline consumption).",
+			"domain": "Timeline / Events / Interpretation",
+			"entryPoints": ["packages/convex/convex/timeline/events.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Timeline Events API",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-timeline", "view-interpreted-event"],
+			"slug": "timeline-events-api",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2812,
+			"_id": "nd70sav8z47ywyre54en6rfy418080ve",
+			"createdAt": 1769870000423,
+			"description": "UI for filtering timeline/events (kinds, dates, tags, cadence/impact filters). Provides controls used to refine the timeline view.",
+			"domain": "Timeline / Events / Interpretation",
+			"entryPoints": [
+				"apps/webapp/src/domains/timeline/components/timeline-filters.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Timeline Filters",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-timeline"],
+			"slug": "timeline-filters",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.281,
+			"_id": "nd78tpjtdcvp4c48pfdv2w0tax808tgk",
+			"createdAt": 1769870000423,
+			"description": "UI list that displays interpreted timeline events with date, impact, summary and badges for features/fixes/improvements. Supports loading and empty states, selection (scroll-into-view) and summary display.",
+			"domain": "Timeline / Events / Interpretation",
+			"entryPoints": [
+				"apps/webapp/src/domains/timeline/components/timeline-list.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Timeline List",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-timeline", "view-interpreted-event"],
+			"slug": "timeline-list",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2808,
+			"_id": "nd7cjrqg3v7qh8e33m3z0z3pys808bdc",
+			"createdAt": 1769870000423,
+			"description": "Reusable helper functions for GitHub agent tools (authentication helpers, request helpers, pagination, etc.).",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"packages/convex/convex/agents/core/tools/github_helpers.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "GitHub helpers (agent utilities)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["connect-github", "sync-connection"],
+			"slug": "github-helpers",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2805,
+			"_id": "nd76npnka4tf01q8ehas9ckg7s808s58",
+			"createdAt": 1769870000423,
+			"description": "Agent/tool to perform code search against GitHub repositories (used for repo analysis and indexing during syncs).",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"packages/convex/convex/agents/core/tools/github_search_code.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "GitHub search code tool",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["connect-github", "sync-connection"],
+			"slug": "github-search-code",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2803,
+			"_id": "nd75461rfz5391qskawgma2fkh808pw7",
+			"createdAt": 1769870000423,
+			"description": "Agent/tool to read file contents from GitHub (used to ingest code/content during syncs and repo analysis).",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"packages/convex/convex/agents/core/tools/github_read_file.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "GitHub read file tool",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["connect-github", "sync-connection"],
+			"slug": "github-read-file",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.28,
+			"_id": "nd72tetjad6a3nx9azg6w3smh5808e64",
+			"createdAt": 1769870000423,
+			"description": "Agent/tool to list files in a GitHub repository path (used by sync, repo analysis and ingestion flows).",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"packages/convex/convex/agents/core/tools/github_list_files.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "GitHub list files tool",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["connect-github", "sync-connection"],
+			"slug": "github-list-files",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2798,
+			"_id": "nd71cfqmvm2qagdax5pjhhbj3180992e",
+			"createdAt": 1769870000423,
+			"description": "Agent/tool to list directories in a GitHub repository (used by backend sync/analysis flows).",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"packages/convex/convex/agents/core/tools/github_list_dirs.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "GitHub list directories tool",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["connect-github", "sync-connection"],
+			"slug": "github-list-dirs",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2795,
+			"_id": "nd7cc46e3ak8pmwn5b8cy5x1rd808t0m",
+			"createdAt": 1769870000423,
+			"description": "Backend implementation for the GitHub connector: OAuth install flow, handling app callbacks, storing/updating credentials, fetching installation tokens, fetching repo structure summaries, inserting raw events, and orchestrating sync handlers for a GitHub connection.",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": ["packages/convex/convex/connectors/github.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "GitHub Connector (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"connect-github",
+				"sync-connection",
+				"view-connection-status"
+			],
+			"slug": "github",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2793,
+			"_id": "nd77hzhpaegkkv2s6t862jk54x808t0y",
+			"createdAt": 1769870000423,
+			"description": "Backend queries & mutations for managing connections and connector types: list connector types, list connections by product, create connections (admin-only), update connection status, remove connection, update credentials after OAuth, retrieve connection details, and update sync state. Also seeds initial connector types.",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": ["packages/convex/convex/connectors/connections.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Connections Service / API",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"list-connector-types",
+				"add-connection",
+				"configure-connection",
+				"disconnect-connection",
+				"sync-connection",
+				"view-connection-status"
+			],
+			"slug": "connections",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.279,
+			"_id": "nd7evr85x94rb82jw1p261p4zd809zh9",
+			"createdAt": 1769870000423,
+			"description": "UI component that renders an individual connection with details and inline actions (configure, disconnect, trigger sync, view status/errors).",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"apps/webapp/src/domains/connectors/components/connection-card.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Connection Card / Item",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"configure-connection",
+				"disconnect-connection",
+				"sync-connection",
+				"view-connection-status"
+			],
+			"slug": "connection-card",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2788,
+			"_id": "nd77e7xdqgfrgqs7x4ej4hqr9n808b40",
+			"createdAt": 1769870000423,
+			"description": "UI list view that displays all connections for a product, including connector type, status, last sync time and actions to manage each connection.",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"apps/webapp/src/domains/connectors/components/connection-list.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Connections List",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["list-connector-types", "view-connection-status"],
+			"slug": "connection-list",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2786,
+			"_id": "nd7132dnzfsrq4mwef44sec0an808p4n",
+			"createdAt": 1769870000423,
+			"description": "UI flow/dialog to create a new connector connection for a product (select connector type, enter config, start OAuth flows). Visible to product admins to add external sources/channels.",
+			"domain": "Connectors (Sources & Channels)",
+			"entryPoints": [
+				"apps/webapp/src/domains/connectors/components/add-connection-dialog.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Add Connection Dialog",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["add-connection", "connect-github"],
+			"slug": "add-connection-dialog",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2783,
+			"_id": "nd7d807527d5ejaw7e7e9pxfn5809kcp",
+			"createdAt": 1769870000423,
+			"description": "Dialog that allows a user to leave a product (self-removal flow with confirmation).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/leave-product-dialog.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Leave Product",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [],
+			"slug": "leave-product-dialog",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.278,
+			"_id": "nd74xhjeffd3j4b1qkky824wx1809gkc",
+			"createdAt": 1769870000423,
+			"description": "UI to view and manage members of a product (list roles, changes, possibly invite/role changes).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/product-members.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Product Members Management",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [],
+			"slug": "product-members",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2778,
+			"_id": "nd76ybydmrshzn8s370wbrhrr580862k",
+			"createdAt": 1769870000423,
+			"description": "UI card to view and update domain mapping information for a product (visualizes domain map and provides update actions).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/domain-map-card.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Domain Map Card",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["update-domain-map"],
+			"slug": "domain-map-card",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2776,
+			"_id": "nd7dh43jh2qjyddwgc2nr40155809705",
+			"createdAt": 1769870000423,
+			"description": "Guided multi-step wizard to help users create or update a product baseline (onboarding/config flow).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/baseline-wizard.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Baseline Setup Wizard",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["edit-product-baseline"],
+			"slug": "baseline-wizard",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2773,
+			"_id": "nd787x16f7t1ek5gjzexps68tn809emt",
+			"createdAt": 1769870000423,
+			"description": "Editor interface to configure and edit a product's baseline settings and defaults.",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/baseline-editor.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Baseline Editor",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["edit-product-baseline"],
+			"slug": "baseline-editor",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.277,
+			"_id": "nd7cekvbx5016a4351g1yfn135808n1k",
+			"createdAt": 1769870000423,
+			"description": "Displays product context snapshot details and exposes actions related to product context snapshots (e.g. publish snapshot).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/product-context-card.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Product Context Snapshot Card",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"publish-product-context-snapshot",
+				"view-product"
+			],
+			"slug": "product-context-card",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2769,
+			"_id": "nd76jr2rpceepxt0k55wk464g1808r19",
+			"createdAt": 1769870000423,
+			"description": "Switcher UI component that lets users change the current active product/context across the application.",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/product-switcher.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Product Switcher",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-product"],
+			"slug": "product-switcher",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2766,
+			"_id": "nd72ybaybye65aqh85rdfwf115808rkv",
+			"createdAt": 1769870000423,
+			"description": "Visual card used across the UI to present a product summary (used in lists and selection flows).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/product-card.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Product Card",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-product"],
+			"slug": "product-card",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2764,
+			"_id": "nd7ef5qyfwf3hnxqc9ey4m0sbs8094r3",
+			"createdAt": 1769870000423,
+			"description": "List/table view that displays products the user can access, with actions to open, manage or select a product.",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/product-list.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Product List View",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-product"],
+			"slug": "product-list",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2761,
+			"_id": "nd755v8ggrrgth7nvm4jsj4yj18098f8",
+			"createdAt": 1769870000423,
+			"description": "Confirmation dialog to delete a product (handles confirmation, warnings and triggers delete action).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/delete-product-dialog.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Delete Product",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["delete-product"],
+			"slug": "delete-product-dialog",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.276,
+			"_id": "nd78kxzb8j4nq4d12dvhnngh79809nvc",
+			"createdAt": 1769870000423,
+			"description": "Form UI to create a new product within an organization (collects product name, initial settings and triggers creation).",
+			"domain": "Products",
+			"entryPoints": [
+				"apps/webapp/src/domains/products/components/create-product-form.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Create Product",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["create-product"],
+			"slug": "create-product-form",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2756,
+			"_id": "nd70gbks3w6ctjjd5ye5hnxmw58086n5",
+			"createdAt": 1769870000423,
+			"description": "Query returning the user's organizations with extra metadata (role, joinedAt, memberCount) and ordering (personal first), used to populate richer organization lists.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Get User Organizations With Details (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"view-organization",
+				"switch-active-organization"
+			],
+			"slug": "get-user-organizations-with-details",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2754,
+			"_id": "nd7b6d15xmmbwypn3eyw91g26d809mj8",
+			"createdAt": 1769870000423,
+			"description": "Internal mutation used by auth callback to automatically create a personal 'free' organization for a new user, ensuring unique slug and adding owner membership. Internal API (not called directly by UI).",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Create Personal Organization (internal backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["create-organization"],
+			"slug": "create-personal-org-internal",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "internal"
+		},
+		{
+			"_creationTime": 1769870000423.2751,
+			"_id": "nd79rde453g90wnq4sx1vsssmd8088wa",
+			"createdAt": 1769870000423,
+			"description": "Query that returns recently accessed organizations for the authenticated user (based on membership.lastAccessAt), limited to top N for quick switching.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Get Recent Organizations (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["switch-active-organization"],
+			"slug": "get-recent-organizations",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.275,
+			"_id": "nd74wy2zerw5hpzsejet7z5zm5808q1f",
+			"createdAt": 1769870000423,
+			"description": "Mutation to transfer organization ownership to another member (owner-only), swap roles (old owner -> admin, new owner -> owner) and validate constraints (no personal org transfers, cannot transfer to self).",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Transfer Ownership (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["manage-member-role"],
+			"slug": "transfer-ownership",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2747,
+			"_id": "nd77amq07stwc8dq3axw4xcej9808we3",
+			"createdAt": 1769870000423,
+			"description": "Mutation to delete an organization (owner only), prevent deleting personal orgs, and cascade-delete members.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Delete Organization (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["delete-organization"],
+			"slug": "delete-organization",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2744,
+			"_id": "nd747p7vw87b1mrjme6s8c29vs8080rn",
+			"createdAt": 1769870000423,
+			"description": "Mutation to change a member's role (admin/member) with permission checks and prevention of changing owner role.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Update Member Role (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["manage-member-role"],
+			"slug": "update-member-role",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2742,
+			"_id": "nd7bv6ate9pznc89vwg27t2e6x8087vs",
+			"createdAt": 1769870000423,
+			"description": "Mutation to remove a member from an organization with permission checks (owner/admin or self-removal) and cascade deletion of product memberships for that user.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Remove Member (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["manage-member-role"],
+			"slug": "remove-member",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.274,
+			"_id": "nd7c3y4rkkb8ay8ncnv42swwcx809abj",
+			"createdAt": 1769870000423,
+			"description": "Mutation to add/invite a member by email to an organization, validate requester permissions (owner/admin), check plan member limits, find user by email and insert organizationMembers.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Add Member (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["invite-member"],
+			"slug": "add-member",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2737,
+			"_id": "nd7cs8nseb4sy5649m91tsk2vh808hms",
+			"createdAt": 1769870000423,
+			"description": "Mutation to update organization metadata (name, description) with permission checks (owner/admin).",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Update Organization (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["manage-member-role", "view-organization"],
+			"slug": "update-organization",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2734,
+			"_id": "nd74np29ppxrf7s8bh62jwp5en809wrn",
+			"createdAt": 1769870000423,
+			"description": "Mutation to create a new organization (personal or professional), enforce plan rules, ensure slug uniqueness, and add the creator as owner in organizationMembers.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Create Organization (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["create-organization"],
+			"slug": "create-organization",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2732,
+			"_id": "nd7cw02jsg0m5yzj8ah7pj5p958083sx",
+			"createdAt": 1769870000423,
+			"description": "Query to determine whether the authenticated user can create a new organization and the reason if not.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Can Create Organization (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["create-organization"],
+			"slug": "can-create-organization",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.273,
+			"_id": "nd7ah2k4pynec2jc8msgneae5d808d1t",
+			"createdAt": 1769870000423,
+			"description": "Query to obtain the personal (auto-created) organization associated with the authenticated user.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Get Personal Organization (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["create-organization", "view-organization"],
+			"slug": "get-personal-org",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2727,
+			"_id": "nd71wfzkr405d0h2aqrpg71z3n808zg6",
+			"createdAt": 1769870000423,
+			"description": "Query to list members of an organization including user info for each member.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Get Organization Members (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-organization", "manage-member-role"],
+			"slug": "get-organization-members",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2725,
+			"_id": "nd76jjhp2yynt0rem8kh0byjjn809sy7",
+			"createdAt": 1769870000423,
+			"description": "Query that returns organizations where the authenticated user is a member, including role and joinedAt.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Get User Organizations (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": [
+				"view-organization",
+				"switch-active-organization"
+			],
+			"slug": "get-user-organizations",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2722,
+			"_id": "nd79t53gqpz20309mrwset5sbs8084zd",
+			"createdAt": 1769870000423,
+			"description": "Query that fetches an organization by slug and verifies the requesting user's membership and role; returns organization with userRole and memberCount.",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "Get Organization By Slug (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-organization"],
+			"slug": "get-organization-by-slug",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.272,
+			"_id": "nd72v947wzh18bxyf02gv1bbas808fyh",
+			"createdAt": 1769870000423,
+			"description": "Query that returns all organizations (public listing).",
+			"domain": "Organizations",
+			"entryPoints": ["packages/convex/convex/organizations/organizations.ts"],
+			"lastEventAt": 1769870000423,
+			"layer": "backend",
+			"name": "List Organizations (backend)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-organization"],
+			"slug": "list-organizations",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2717,
+			"_id": "nd7fsc0e2mcesqc6d58he8xhtx809ztt",
+			"createdAt": 1769870000423,
+			"description": "Switcher UI (probably in header) that shows recent or accessible organizations and allows switching the active organization/session.",
+			"domain": "Organizations",
+			"entryPoints": [
+				"apps/webapp/src/domains/organizations/components/org-switcher.tsx",
+				"apps/webapp/src/domains/organizations/hooks/use-current-org.ts"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Organization Switcher (UI)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["switch-active-organization"],
+			"slug": "org-switcher",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2715,
+			"_id": "nd77k7ee07m23pv43m0m8vgzf9809rz0",
+			"createdAt": 1769870000423,
+			"description": "UI to list organizations the user can access or browse (uses org-card for visual items).",
+			"domain": "Organizations",
+			"entryPoints": [
+				"apps/webapp/src/domains/organizations/components/organization-list.tsx",
+				"apps/webapp/src/domains/organizations/components/org-card.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Organization List / Directory (UI)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["view-organization"],
+			"slug": "organization-list",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2712,
+			"_id": "nd7c94ddcadsv7q0whkq9c91kn8095cf",
+			"createdAt": 1769870000423,
+			"description": "Members management UI: list members, view roles, invite/add members by email, remove members and change roles (admin/member). Likely contains invitation input and role controls.",
+			"domain": "Organizations",
+			"entryPoints": [
+				"apps/webapp/src/domains/organizations/components/org-members.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Organization Members Management (UI)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["invite-member", "manage-member-role"],
+			"slug": "org-members",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.271,
+			"_id": "nd70zmja48j80gg21p1evq6gnh808np6",
+			"createdAt": 1769870000423,
+			"description": "Dialog UI used by the owner to transfer organization ownership to another member (select member, confirm transfer).",
+			"domain": "Organizations",
+			"entryPoints": [
+				"apps/webapp/src/domains/organizations/components/transfer-ownership-dialog.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Transfer Ownership (UI)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["manage-member-role"],
+			"slug": "transfer-ownership-dialog",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2708,
+			"_id": "nd7cwhccwc7reh4rf2adewd7qx809ytq",
+			"createdAt": 1769870000423,
+			"description": "Dialog that lets a user leave an organization (self-removal flow).",
+			"domain": "Organizations",
+			"entryPoints": [
+				"apps/webapp/src/domains/organizations/components/leave-organization-dialog.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Leave Organization (UI)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["manage-member-role"],
+			"slug": "leave-organization-dialog",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2705,
+			"_id": "nd7etggzwceqb138t03h2qb335809fdh",
+			"createdAt": 1769870000423,
+			"description": "Dialog UI that allows an organization owner to delete a non-personal organization (confirmation flow).",
+			"domain": "Organizations",
+			"entryPoints": [
+				"apps/webapp/src/domains/organizations/components/delete-organization-dialog.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Delete Organization (UI)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["delete-organization"],
+			"slug": "delete-organization-dialog",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		},
+		{
+			"_creationTime": 1769870000423.2703,
+			"_id": "nd7e3wmpzh6tanw42mwr94nwn9808jfa",
+			"createdAt": 1769870000423,
+			"description": "Form UI to create a new organization (personal or professional) including name, slug, description and plan selection for professional orgs.",
+			"domain": "Organizations",
+			"entryPoints": [
+				"apps/webapp/src/domains/organizations/components/create-organization-form.tsx"
+			],
+			"lastEventAt": 1769870000423,
+			"layer": "ui",
+			"name": "Create Organization (UI)",
+			"productId": "kd797jf743shwy0cxrbc224bv17zyqs0",
+			"relatedCapabilities": ["create-organization"],
+			"slug": "create-organization-form",
+			"status": "active",
+			"updatedAt": 1769870000423,
+			"visibility": "public"
+		}
+	]
+}

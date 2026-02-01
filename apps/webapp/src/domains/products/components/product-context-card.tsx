@@ -4,7 +4,14 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "@hikai/convex";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { useConnections } from "@/domains/connectors/hooks";
-import { Button, Card, CardContent, CardHeader, CardTitle, toast } from "@hikai/ui";
+import {
+	Button,
+	Card,
+	CardContent,
+	CardHeader,
+	CardTitle,
+	toast,
+} from "@hikai/ui";
 import { AgentProgress } from "./agent-progress";
 
 type ProductContextCardProps = {
@@ -23,7 +30,10 @@ type ProductContextCardProps = {
 		errors?: Array<{ phase?: string; error?: string; timestamp?: number }>;
 	};
 	isDirty?: boolean;
-	onRunStart?: (payload: { startedAt: number; runId?: Id<"agentRuns"> | null }) => void;
+	onRunStart?: (payload: {
+		startedAt: number;
+		runId?: Id<"agentRuns"> | null;
+	}) => void;
 };
 
 const CONTEXT_AGENT_USE_CASE = "context_agent";
@@ -46,7 +56,9 @@ export function ProductContextCard({
 	const [isAgentRunning, setIsAgentRunning] = useState(false);
 	const [agentError, setAgentError] = useState<string | null>(null);
 	const [triggerStartedAt, setTriggerStartedAt] = useState<number | null>(null);
-	const [featureRunId, setFeatureRunId] = useState<Id<"agentRuns"> | null>(null);
+	const [featureRunId, setFeatureRunId] = useState<Id<"agentRuns"> | null>(
+		null,
+	);
 	const [isFeatureRunning, setIsFeatureRunning] = useState(false);
 	const [featureError, setFeatureError] = useState<string | null>(null);
 	const [featureTriggerStartedAt, setFeatureTriggerStartedAt] = useState<
@@ -72,13 +84,10 @@ export function ProductContextCard({
 				}
 			: "skip",
 	);
-	const latestRun = useQuery(
-		api.agents.agentRuns.getLatestRunForUseCase,
-		{
-			productId: product._id,
-			useCase: CONTEXT_AGENT_USE_CASE,
-		},
-	);
+	const latestRun = useQuery(api.agents.agentRuns.getLatestRunForUseCase, {
+		productId: product._id,
+		useCase: CONTEXT_AGENT_USE_CASE,
+	});
 	const latestFeatureRun = useQuery(
 		api.agents.agentRuns.getLatestRunForUseCase,
 		{

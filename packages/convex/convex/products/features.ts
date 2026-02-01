@@ -13,6 +13,10 @@ type FeatureInput = {
 	domain?: string;
 	description?: string;
 	visibility: "public" | "internal";
+	layer?: "ui" | "backend" | "infra";
+	userFeatureSlug?: string;
+	entryPoints?: string[];
+	relatedCapabilities?: string[];
 	status?: "active" | "deprecated";
 	lastEventAt?: number;
 };
@@ -48,7 +52,17 @@ export const upsertProductFeatures = internalMutation({
 				name: v.string(),
 				domain: v.optional(v.string()),
 				description: v.optional(v.string()),
+				layer: v.optional(
+					v.union(
+						v.literal("ui"),
+						v.literal("backend"),
+						v.literal("infra"),
+					),
+				),
 				visibility: v.union(v.literal("public"), v.literal("internal")),
+				userFeatureSlug: v.optional(v.string()),
+				entryPoints: v.optional(v.array(v.string())),
+				relatedCapabilities: v.optional(v.array(v.string())),
 				status: v.optional(v.union(v.literal("active"), v.literal("deprecated"))),
 				lastEventAt: v.optional(v.number()),
 			}),
@@ -81,6 +95,11 @@ export const upsertProductFeatures = internalMutation({
 					domain: feature.domain ?? existing.domain,
 					description: feature.description ?? existing.description,
 					visibility: feature.visibility ?? existing.visibility,
+					layer: feature.layer ?? existing.layer ?? "ui",
+					userFeatureSlug: feature.userFeatureSlug ?? existing.userFeatureSlug,
+					entryPoints: feature.entryPoints ?? existing.entryPoints,
+					relatedCapabilities:
+						feature.relatedCapabilities ?? existing.relatedCapabilities,
 					status: feature.status ?? existing.status,
 					lastEventAt,
 					updatedAt: now,
@@ -95,6 +114,10 @@ export const upsertProductFeatures = internalMutation({
 				domain: feature.domain,
 				description: feature.description,
 				visibility: feature.visibility,
+				layer: feature.layer ?? "ui",
+				userFeatureSlug: feature.userFeatureSlug,
+				entryPoints: feature.entryPoints,
+				relatedCapabilities: feature.relatedCapabilities,
 				status: feature.status ?? "active",
 				createdAt: now,
 				lastEventAt: nextLastEventAt ?? now,
@@ -113,6 +136,16 @@ export const updateProductFeature = mutation({
 		name: v.optional(v.string()),
 		domain: v.optional(v.string()),
 		description: v.optional(v.string()),
+		layer: v.optional(
+			v.union(
+				v.literal("ui"),
+				v.literal("backend"),
+				v.literal("infra"),
+			),
+		),
+		userFeatureSlug: v.optional(v.string()),
+		entryPoints: v.optional(v.array(v.string())),
+		relatedCapabilities: v.optional(v.array(v.string())),
 		visibility: v.optional(v.union(v.literal("public"), v.literal("internal"))),
 		status: v.optional(v.union(v.literal("active"), v.literal("deprecated"))),
 	},

@@ -7,11 +7,12 @@ import { SettingsLayout, SettingsHeader } from "@/domains/shared";
 import { useCurrentOrg } from "@/domains/organizations/hooks";
 import {
 	ContextSnapshotCard,
-	ProductContextCard,
 	useGetProductBySlug,
 } from "@/domains/products";
 
 const CONTEXT_AGENT_USE_CASE = "context_agent";
+const FEATURE_SCOUT_USE_CASE = "feature_scout";
+const CAPABILITY_AGGREGATOR_USE_CASE = "capability_aggregator";
 
 export const Route = createFileRoute("/settings/product/$slug/context")({
 	component: ProductContextPage,
@@ -35,10 +36,30 @@ function ProductContextPage() {
 				}
 			: "skip",
 	);
+	const latestFeatureRun = useQuery(
+		api.agents.agentRuns.getLatestRunForUseCase,
+		product?._id
+			? {
+					productId: product._id,
+					useCase: FEATURE_SCOUT_USE_CASE,
+				}
+			: "skip",
+	);
+	const latestCapabilityRun = useQuery(
+		api.agents.agentRuns.getLatestRunForUseCase,
+		product?._id
+			? {
+					productId: product._id,
+					useCase: CAPABILITY_AGGREGATOR_USE_CASE,
+				}
+			: "skip",
+	);
 	const isDirty = useMemo(() => {
-		if (!currentSnapshot?.createdAt || !latestRun?.startedAt) return false;
-		return latestRun.startedAt > currentSnapshot.createdAt;
-	}, [currentSnapshot?.createdAt, latestRun?.startedAt]);
+		const contextRunning = latestRun?.status === "running";
+		const featureRunning = latestFeatureRun?.status === "running";
+		const capabilityRunning = latestCapabilityRun?.status === "running";
+		return Boolean(contextRunning || featureRunning || capabilityRunning);
+	}, [latestRun?.status, latestFeatureRun?.status, latestCapabilityRun?.status]);
 
 	if (!product) {
 		return (
@@ -57,12 +78,11 @@ function ProductContextPage() {
 				subtitle={t("context.sectionDescription")}
 			/>
 			<div className="space-y-6">
-				<ProductContextCard
-					product={product}
-					snapshot={currentSnapshot ?? undefined}
+				<ContextSnapshotCard
+					productId={product._id}
+					snapshot={currentSnapshot}
 					isDirty={isDirty}
 				/>
-				<ContextSnapshotCard snapshot={currentSnapshot} isDirty={isDirty} />
 			</div>
 		</SettingsLayout>
 	);

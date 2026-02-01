@@ -200,6 +200,9 @@ export const generateFeatureScoutFromContext = action({
 				description: feature.description,
 				domain: feature.domain,
 				visibility: feature.visibility,
+				layer: feature.layer,
+				entryPoints: feature.entryPoints,
+				relatedCapabilities: feature.relatedCapabilities,
 			}));
 
 			await ctx.runMutation(internal.products.features.upsertProductFeatures, {
@@ -303,16 +306,42 @@ export async function runFeatureScoutAgent(params: {
 	const limitations: string[] = [];
 	const capabilityCoverage: FeatureScoutOutput["meta"]["capabilityCoverage"] =
 		{};
+	const chosenBySlug = new Map<
+		string,
+		{ feature: FeatureScoutOutput["features"][number]; domain: string; score: number }
+	>();
 
 	for (const [index, result] of domainResults.entries()) {
-		const domainName = repoDomains[index]?.name ?? result.domain;
+		const domain = repoDomains[index];
+		const domainName = domain?.name ?? result.domain;
 		if (result.status === "completed" && result.output) {
 			domainsExplored.push(domainName);
 			result.output.features.forEach((feature) => {
-				allFeatures.push({
-					...feature,
-					domain: domainName,
-				});
+				const candidate = { ...feature, domain: domainName };
+				const score = scoreFeatureOwnership(candidate, domain);
+				const existing = chosenBySlug.get(candidate.slug);
+				if (!existing) {
+					chosenBySlug.set(candidate.slug, {
+						feature: candidate,
+						domain: domainName,
+						score,
+					});
+					return;
+				}
+				if (score > existing.score) {
+					chosenBySlug.set(candidate.slug, {
+						feature: candidate,
+						domain: domainName,
+						score,
+					});
+					limitations.push(
+						`Duplicate slug "${candidate.slug}" resolved to domain "${domainName}" (score ${score} > ${existing.score})`,
+					);
+					return;
+				}
+				limitations.push(
+					`Duplicate slug "${candidate.slug}" in domain "${domainName}" skipped (score ${score} <= ${existing.score})`,
+				);
 			});
 			result.output.meta.filesExplored.forEach((path) => filesRead.add(path));
 			capabilityCoverage[domainName] = result.output.meta.capabilityCoverage;
@@ -324,6 +353,10 @@ export async function runFeatureScoutAgent(params: {
 				}`,
 			);
 		}
+	}
+
+	for (const entry of chosenBySlug.values()) {
+		allFeatures.push(entry.feature);
 	}
 
 	const merged: FeatureScoutOutput = {
@@ -433,7 +466,7 @@ async function runFeatureDomainScoutAgent(params: {
 			model,
 			{
 				maxTurns: 12,
-				maxTokens: 4000,
+				maxTokens: 8000,
 				maxTotalTokens: 200_000,
 				timeoutMs: 180_000,
 				timeWarning: {
@@ -441,6 +474,8 @@ async function runFeatureDomainScoutAgent(params: {
 					message:
 						"IMPORTANTE: queda poco tiempo. Produce el JSON ahora con lo que tengas.",
 				},
+				emptyResponseReminder:
+					"Tu respuesta fue vacía. Produce el JSON con las features encontradas hasta ahora.",
 				compaction: { enabled: false },
 				tools,
 				sampling: { temperature: 0 },
@@ -493,6 +528,35 @@ async function runFeatureDomainScoutAgent(params: {
 
 		lastResult = result;
 		await recordBudget(ctx, productId, runId, result);
+		if (result.status === "error" || result.status === "timeout" || result.status === "budget_exceeded") {
+			const message =
+				result.errorMessage ??
+				(result.status === "timeout"
+					? "Feature domain scout timed out"
+					: result.status === "budget_exceeded"
+						? "Feature domain scout exceeded budget"
+						: "Feature domain scout failed to call model");
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId,
+				step: "Feature domain scout error",
+				status: "error",
+				metadata: { error: message },
+			});
+			await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+				productId,
+				runId,
+				status: "error",
+				errorMessage: message,
+			});
+			return {
+				status: "failed",
+				domain: domain.name,
+				output: null,
+				errorMessage: message,
+				metrics: result.metrics,
+			};
+		}
 		const rawText = result.rawText ?? result.text ?? "";
 		const parsed =
 			result.output && typeof result.output === "object"
@@ -590,6 +654,40 @@ function buildFeedback(errors: string[]): string {
 	].join("\n");
 }
 
+function scoreFeatureOwnership(
+	feature: FeatureScoutOutput["features"][number],
+	domain?: RepoDomainInput,
+): number {
+	if (!domain?.pathPatterns?.length) return 0;
+	const entryPoints = feature.entryPoints ?? [];
+	let score = 0;
+	for (const entryPoint of entryPoints) {
+		for (const pattern of domain.pathPatterns) {
+			if (matchesGlob(entryPoint, pattern)) {
+				score += 1;
+				break;
+			}
+		}
+	}
+	return score;
+}
+
+function matchesGlob(path: string, pattern: string): boolean {
+	const normalizedPath = path.replace(/^\.\/+/, "");
+	const normalizedPattern = pattern.replace(/^\.\/+/, "");
+	const regex = globToRegex(normalizedPattern);
+	return regex.test(normalizedPath);
+}
+
+function globToRegex(pattern: string): RegExp {
+	const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+	const withWildcards = escaped
+		.replace(/\*\*/g, ".*")
+		.replace(/\*/g, "[^/]*")
+		.replace(/\?/g, ".");
+	return new RegExp(`^${withWildcards}$`, "i");
+}
+
 async function recordValidationFailure(
 	ctx: ActionCtx,
 	productId: Id<"products">,
@@ -613,15 +711,17 @@ async function recordBudget(
 	runId: Id<"agentRuns">,
 	result: AgentLoopResult,
 ) {
+	const budgetStatus = result.status === "error" ? "error" : "info";
 	await ctx.runMutation(internal.agents.agentRuns.appendStep, {
 		productId,
 		runId,
 		step: "Budget",
-		status: "info",
+		status: budgetStatus,
 		metadata: {
 			maxTotalTokens: result.metrics?.maxTotalTokens,
 			maxTurns: result.metrics?.maxTurns,
-			status: result.metrics?.status,
+			loopStatus: result.status,
+			errorMessage: result.errorMessage,
 			tokensIn: result.metrics?.tokensIn,
 			tokensOut: result.metrics?.tokensOut,
 			totalTokens: result.metrics?.totalTokens,

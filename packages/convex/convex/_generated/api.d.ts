@@ -10,6 +10,7 @@
 
 import type * as agents_actions from "../agents/actions.js";
 import type * as agents_agentRuns from "../agents/agentRuns.js";
+import type * as agents_capabilityAggregator from "../agents/capabilityAggregator.js";
 import type * as agents_contextAgent from "../agents/contextAgent.js";
 import type * as agents_contextInputs from "../agents/contextInputs.js";
 import type * as agents_contextInputsData from "../agents/contextInputsData.js";
@@ -73,6 +74,7 @@ import type * as ai_config from "../ai/config.js";
 import type * as ai_index from "../ai/index.js";
 import type * as ai_inferenceLogs from "../ai/inferenceLogs.js";
 import type * as ai_ports_llmPort from "../ai/ports/llmPort.js";
+import type * as ai_prompts_capabilityAggregator from "../ai/prompts/capabilityAggregator.js";
 import type * as ai_prompts_featureDomainScout from "../ai/prompts/featureDomainScout.js";
 import type * as ai_prompts_featureMap from "../ai/prompts/featureMap.js";
 import type * as ai_prompts_featureScout from "../ai/prompts/featureScout.js";
@@ -94,6 +96,7 @@ import type * as lib_access from "../lib/access.js";
 import type * as lib_aiUsage from "../lib/aiUsage.js";
 import type * as lib_planLimits from "../lib/planLimits.js";
 import type * as organizations_organizations from "../organizations/organizations.js";
+import type * as products_capabilities from "../products/capabilities.js";
 import type * as products_features from "../products/features.js";
 import type * as products_index from "../products/index.js";
 import type * as products_products from "../products/products.js";
@@ -112,6 +115,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "agents/actions": typeof agents_actions;
   "agents/agentRuns": typeof agents_agentRuns;
+  "agents/capabilityAggregator": typeof agents_capabilityAggregator;
   "agents/contextAgent": typeof agents_contextAgent;
   "agents/contextInputs": typeof agents_contextInputs;
   "agents/contextInputsData": typeof agents_contextInputsData;
@@ -175,6 +179,7 @@ declare const fullApi: ApiFromModules<{
   "ai/index": typeof ai_index;
   "ai/inferenceLogs": typeof ai_inferenceLogs;
   "ai/ports/llmPort": typeof ai_ports_llmPort;
+  "ai/prompts/capabilityAggregator": typeof ai_prompts_capabilityAggregator;
   "ai/prompts/featureDomainScout": typeof ai_prompts_featureDomainScout;
   "ai/prompts/featureMap": typeof ai_prompts_featureMap;
   "ai/prompts/featureScout": typeof ai_prompts_featureScout;
@@ -196,6 +201,7 @@ declare const fullApi: ApiFromModules<{
   "lib/aiUsage": typeof lib_aiUsage;
   "lib/planLimits": typeof lib_planLimits;
   "organizations/organizations": typeof organizations_organizations;
+  "products/capabilities": typeof products_capabilities;
   "products/features": typeof products_features;
   "products/index": typeof products_index;
   "products/products": typeof products_products;

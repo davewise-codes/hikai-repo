@@ -203,6 +203,7 @@ export const createContextSnapshot = internalMutation({
 				v.literal("glossary"),
 				v.literal("domains"),
 				v.literal("features"),
+				v.literal("capabilities"),
 			),
 		),
 		errors: v.array(
@@ -219,12 +220,14 @@ export const createContextSnapshot = internalMutation({
 				glossaryScout: v.optional(v.id("agentRuns")),
 				domainMapper: v.optional(v.id("agentRuns")),
 				featureScout: v.optional(v.id("agentRuns")),
+				capabilityAggregator: v.optional(v.id("agentRuns")),
 			}),
 		),
 		repoStructure: v.optional(v.any()),
 		glossary: v.optional(v.any()),
 		domainMap: v.optional(v.any()),
 		features: v.optional(v.any()),
+		capabilities: v.optional(v.any()),
 		contextDetail: v.optional(v.any()),
 		generationMetrics: v.optional(
 			v.object({
@@ -254,6 +257,7 @@ export const updateContextSnapshot = internalMutation({
 		glossary: v.optional(v.any()),
 		domainMap: v.optional(v.any()),
 		features: v.optional(v.any()),
+		capabilities: v.optional(v.any()),
 		contextDetail: v.optional(v.any()),
 		generationMetrics: v.optional(
 			v.object({
@@ -271,6 +275,7 @@ export const updateContextSnapshot = internalMutation({
 				glossaryScout: v.optional(v.id("agentRuns")),
 				domainMapper: v.optional(v.id("agentRuns")),
 				featureScout: v.optional(v.id("agentRuns")),
+				capabilityAggregator: v.optional(v.id("agentRuns")),
 			}),
 		),
 		status: v.optional(
@@ -288,6 +293,7 @@ export const updateContextSnapshot = internalMutation({
 					v.literal("glossary"),
 					v.literal("domains"),
 					v.literal("features"),
+					v.literal("capabilities"),
 				),
 			),
 		),
