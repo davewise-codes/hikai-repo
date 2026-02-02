@@ -1,4 +1,4 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v2.1";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.0";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
@@ -12,41 +12,35 @@ export type TimelineRawEventInput = {
 	domainHint?: { name: string; matchedBy: "path" | "entity" | "none" };
 };
 
-export type TimelineWorkItem = {
-	type: "feature" | "fix" | "improvement";
-	featureSlug: string;
-	title: string;
-	summary?: string;
-	visibility?: "public" | "internal";
-	isNew?: boolean;
-	relatesTo?: string;
-};
-
-export type TimelineNarrativeEvent = {
-	bucketId: string;
-	bucketStartAt: number;
-	bucketEndAt: number;
-	cadence: string;
-	title: string;
-	summary?: string;
-	narrative?: string;
-	kind: string;
-	domain?: string;
-	relevance?: number;
-	rawEventIds: string[];
-	workItems?: TimelineWorkItem[];
-	bucketImpact?: number;
-};
-
 export type TimelineInterpretationOutput = {
-	narratives: TimelineNarrativeEvent[];
-	newFeatures?: Array<{
+	bucket: {
+		bucketId: string;
+		bucketStartAt: number;
+		bucketEndAt: number;
+		cadence: string;
+		title: string;
+		narrative?: string;
+		domains?: string[];
+	};
+	events: Array<{
+		capabilitySlug?: string | null;
+		domain?: string;
+		type: "feature" | "fix" | "improvement" | "work";
+		title: string;
+		summary?: string;
+		visibility?: "public" | "internal";
+		relevance?: number;
+		rawEventIds: string[];
+	}>;
+	newCapabilities?: Array<{
 		slug: string;
 		name: string;
 		domain?: string;
 		description?: string;
 		visibility?: "public" | "internal";
+		featureSlugs?: string[];
 	}>;
+	newDomains?: Array<{ name: string; purpose?: string }>;
 };
 
 export const timelineInterpretationPrompt = `
@@ -66,12 +60,11 @@ Input JSON:
   "bucket": { "bucketId": "...", "bucketStartAt": 0, "bucketEndAt": 0 },
   "baseline": { ... },
   "productContext": { ... },
-  "existingFeatures": [
-    { "slug": "...", "name": "...", "domain": "...", "visibility": "public|internal" }
+  "capabilities": [
+    { "slug": "...", "name": "...", "domain": "...", "visibility": "public|internal", "featureSlugs": ["..."] }
   ],
-  "featureMap": { "features": [ { "id": "...", "slug": "...", "name": "...", "domain": "..." } ] },
   "repoDomains": [
-    { "name": "...", "pathPatterns": ["..."], "schemaEntities": ["..."], "capabilities": ["..."] }
+    { "name": "...", "pathPatterns": ["..."], "schemaEntities": ["..."] }
   ],
   "repoContexts": [
     { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|unknown", "notes": "..." }
@@ -91,60 +84,54 @@ Input JSON:
 
 Output JSON:
 {
-  "newFeatures": [
+  "bucket": {
+    "bucketId": "2026-W02",
+    "bucketStartAt": 0,
+    "bucketEndAt": 0,
+    "cadence": "weekly",
+    "title": "…",
+    "narrative": "…",
+    "domains": ["optional repo domain name (from repoDomains)"]
+  },
+  "events": [
     {
-      "slug": "kebab-case-identifier",
-      "name": "Feature name",
-      "domain": "optional repo domain name (from repoDomains)",
-      "description": "...",
-      "visibility": "public|internal"
+      "capabilitySlug": "invite-member",
+      "domain": "Organizations",
+      "type": "feature|fix|improvement|work",
+      "title": "...",
+      "summary": "...",
+      "visibility": "public|internal",
+      "relevance": 1-5,
+      "rawEventIds": ["rawEventId1", "rawEventId2"]
     }
   ],
-  "narratives": [
+  "newCapabilities": [
     {
-      "bucketId": "2026-W02",
-      "bucketStartAt": 0,
-      "bucketEndAt": 0,
-      "cadence": "weekly",
-      "title": "…",
-      "summary": "…",
-      "narrative": "…",
-      "kind": "feature|bugfix|release|docs|marketing|infra|other",
-      "domains": ["optional repo domain name (from repoDomains)"],
-      "relevance": 1-5,
-      "rawEventIds": ["rawEventId1", "rawEventId2"],
-      "workItems": [
-        {
-          "type": "feature|fix|improvement",
-          "featureSlug": "kebab-case-identifier",
-          "title": "...",
-          "summary": "...",
-          "visibility": "public|internal",
-          "isNew": true,
-          "relatesTo": "optional-feature-slug"
-        }
-      ],
-      "bucketImpact": 1
+      "slug": "kebab-case-identifier",
+      "name": "Capability name",
+      "domain": "optional repo domain name (from repoDomains)",
+      "description": "...",
+      "visibility": "public|internal",
+      "featureSlugs": ["..."]
     }
+  ],
+  "newDomains": [
+    { "name": "New Domain", "purpose": "..." }
   ]
 }
 
 Rules:
 - Use the provided languagePreference for all text.
-- Each rawEventId must appear in exactly one narrative entry.
+- Each rawEventId must appear in exactly one event.
 - Do not include raw commit messages or hashes in titles; summarize as product impact.
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
 - Mark items "internal" when they are below-the-glass development work that does not change the value proposition.
-- Keep summary/narrative public-safe; only mention public workItems in summary/narrative.
-- If all workItems are internal, you may omit summary/narrative or keep them minimal.
-- Every public item must map clearly to an existing feature or a new feature you define.
-- existingFeatures are canonical: if a work item matches one, use that slug and set isNew false.
-- Only include newFeatures whose slug is NOT in existingFeatures.
-- When an existing feature match exists, use its slug and name for workItems.featureSlug/title.
-- For new features, add an entry in newFeatures and use its slug for workItems.featureSlug.
-- Slugs must be kebab-case and stable. Use the same slug for the same feature across events.
-- Use relatesTo only for fix/improvement items to reference the related feature slug.
+- Keep bucket narrative public-safe; only mention public events in narrative.
+- If all events are internal, you may omit narrative or keep it minimal.
+- Capabilities are canonical: if an event matches one, use its slug.
+- Only include newCapabilities whose slug is NOT in the input capabilities list.
+- Slugs must be kebab-case and stable. Use the same slug for the same capability across events.
 - Use repoContexts, domainHint and surfaceHints to judge relevance: marketing_surface, docs, infra, experiments are usually internal unless they clearly map to value for the ICP.
 - If surfaceHints includes marketing_surface and product_core is not present, treat the item as internal by default.
 `.trim();

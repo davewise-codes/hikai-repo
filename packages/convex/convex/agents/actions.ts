@@ -941,6 +941,183 @@ function jaccardSimilarity(baseline: Set<string>, sample: string[]): number {
 	return intersection.length / union.size;
 }
 
+function normalizeNewCapabilities(
+	items: Array<{
+		slug?: string;
+		name?: string;
+		domain?: string;
+		description?: string;
+		visibility?: "public" | "internal";
+		featureSlugs?: string[];
+	}> | undefined,
+	allowedDomains: Set<string>,
+	existingSlugs: Set<string>,
+) {
+	if (!Array.isArray(items)) return [];
+	return items
+		.map((item) => {
+			const name = typeof item.name === "string" ? item.name.trim() : "";
+			if (!name) return null;
+			const slugValue =
+				typeof item.slug === "string" && item.slug.trim()
+					? slugifyFeatureId(item.slug.trim())
+					: slugifyFeatureId(name);
+			if (!slugValue || existingSlugs.has(slugValue)) return null;
+			const domain =
+				typeof item.domain === "string" && item.domain.trim()
+					? normalizeDomainValue(item.domain.trim(), allowedDomains)
+					: undefined;
+			const featureSlugs = Array.isArray(item.featureSlugs)
+				? uniqueSorted(
+						item.featureSlugs.filter((slug) => typeof slug === "string"),
+					)
+				: [];
+			return {
+				slug: slugValue,
+				name,
+				domain,
+				description:
+					typeof item.description === "string" && item.description.trim()
+						? item.description.trim()
+						: undefined,
+				visibility: item.visibility === "internal" ? "internal" : "public",
+				featureSlugs,
+			};
+		})
+		.filter(
+			(item): item is {
+				slug: string;
+				name: string;
+				domain?: string;
+				description?: string;
+				visibility: "public" | "internal";
+				featureSlugs: string[];
+			} => item !== null,
+		);
+}
+
+function normalizeDomainValue(
+	value: string | undefined,
+	allowedDomains: Set<string>,
+): string | undefined {
+	const trimmed = value?.trim();
+	if (!trimmed) return undefined;
+	const key = trimmed.toLowerCase();
+	return allowedDomains.has(key) ? trimmed : undefined;
+}
+
+function normalizeBucket(
+	bucket: {
+		bucketId?: string;
+		bucketStartAt?: number;
+		bucketEndAt?: number;
+		cadence?: string;
+		title?: string;
+		narrative?: string;
+		domains?: string[];
+	},
+	normalizeDomain: (value: string | undefined) => string | undefined,
+) {
+	const bucketId = typeof bucket.bucketId === "string" ? bucket.bucketId : "";
+	const bucketStartAt =
+		typeof bucket.bucketStartAt === "number" ? bucket.bucketStartAt : 0;
+	const bucketEndAt =
+		typeof bucket.bucketEndAt === "number" ? bucket.bucketEndAt : 0;
+	const cadence = typeof bucket.cadence === "string" ? bucket.cadence : "unknown";
+	const title = typeof bucket.title === "string" ? bucket.title : "Update";
+	const narrative =
+		typeof bucket.narrative === "string" && bucket.narrative.trim()
+			? bucket.narrative.trim()
+			: undefined;
+	const domains = Array.isArray(bucket.domains)
+		? uniqueSorted(
+				bucket.domains
+					.map((entry) =>
+						typeof entry === "string" ? normalizeDomain(entry) : undefined,
+					)
+					.filter((entry): entry is string => Boolean(entry)),
+			)
+		: undefined;
+
+	return { bucketId, bucketStartAt, bucketEndAt, cadence, title, narrative, domains };
+}
+
+function normalizeEvents(
+	items: Array<{
+		capabilitySlug?: string | null;
+		domain?: string;
+		type?: string;
+		title?: string;
+		summary?: string;
+		visibility?: "public" | "internal";
+		relevance?: number;
+		rawEventIds?: string[];
+	}>,
+	normalizeDomain: (value: string | undefined) => string | undefined,
+	existingCapabilities: Set<string>,
+	newCapabilitySlugs: Set<string>,
+) {
+	return items
+		.map((item) => {
+			const title =
+				typeof item.title === "string" ? item.title.trim() : "";
+			if (!title) return null;
+			const type =
+				item.type === "feature" ||
+				item.type === "fix" ||
+				item.type === "improvement" ||
+				item.type === "work" ||
+				item.type === "other"
+					? item.type === "other"
+						? "work"
+						: item.type
+					: "work";
+			const capabilitySlugRaw =
+				typeof item.capabilitySlug === "string"
+					? slugifyFeatureId(item.capabilitySlug)
+					: null;
+			const capabilitySlug =
+				capabilitySlugRaw &&
+				(existingCapabilities.has(capabilitySlugRaw) ||
+					newCapabilitySlugs.has(capabilitySlugRaw))
+					? capabilitySlugRaw
+					: null;
+			const domain =
+				typeof item.domain === "string"
+					? normalizeDomain(item.domain)
+					: undefined;
+			const rawEventIds = Array.isArray(item.rawEventIds)
+				? item.rawEventIds.filter((id) => typeof id === "string")
+				: [];
+			if (rawEventIds.length === 0) return null;
+			return {
+				capabilitySlug,
+				domain,
+				type,
+				title,
+				summary:
+					typeof item.summary === "string" && item.summary.trim()
+						? item.summary.trim()
+						: undefined,
+				visibility: item.visibility === "internal" ? "internal" : "public",
+				relevance: typeof item.relevance === "number" ? item.relevance : undefined,
+				rawEventIds,
+			};
+		})
+		.filter(
+			(item): item is {
+				capabilitySlug?: string | null;
+				domain?: string;
+				type: "feature" | "fix" | "improvement" | "work";
+				title: string;
+				summary?: string;
+				visibility?: "public" | "internal";
+				relevance?: number;
+				rawEventIds: string[];
+			} => item !== null,
+		);
+}
+
 export const interpretTimelineEvents = action({
 	args: {
 		productId: v.id("products"),
@@ -961,29 +1138,34 @@ export const interpretTimelineEvents = action({
 		{ productId, rawEventIds, limit, threadId, debugUi, bucket },
 	): Promise<{
 		threadId: string;
-		narratives: Array<{
+		bucket: {
 			bucketId: string;
 			bucketStartAt: number;
 			bucketEndAt: number;
 			cadence: string;
 			title: string;
-			summary?: string;
 			narrative?: string;
-			kind: string;
-			relevance?: number;
 			domains?: string[];
+		};
+		events: Array<{
+			capabilitySlug?: string | null;
+			domain?: string;
+			type: "feature" | "fix" | "improvement" | "work";
+			title: string;
+			summary?: string;
+			visibility?: "public" | "internal";
+			relevance?: number;
 			rawEventIds: string[];
-			workItems?: Array<{
-				type: "feature" | "fix" | "improvement";
-				featureSlug: string;
-				title: string;
-				summary?: string;
-				visibility: "public" | "internal";
-				isNew?: boolean;
-				relatesTo?: string;
-			}>;
-			bucketImpact?: number;
 		}>;
+		newCapabilities?: Array<{
+			slug: string;
+			name: string;
+			domain?: string;
+			description?: string;
+			visibility?: "public" | "internal";
+			featureSlugs?: string[];
+		}>;
+		newDomains?: Array<{ name: string; purpose?: string }>;
 		inferenceLogId?: Id<"aiInferenceLogs">;
 		}> => {
 		const aiConfig = getAgentAIConfig(TIMELINE_INTERPRETER_AGENT_NAME);
@@ -1040,15 +1222,9 @@ export const interpretTimelineEvents = action({
 
 		const baseline = currentSnapshot?.baseline ?? product.baseline ?? {};
 		const context = currentSnapshot?.context ?? {};
-		const featureMap =
-			(currentSnapshot as { featureMap?: Record<string, unknown> })?.featureMap ??
-			null;
-		const existingFeatures = await ctx.runQuery(
-			internal.products.features.listProductFeaturesInternal,
+		const capabilities = await ctx.runQuery(
+			internal.products.capabilities.listProductCapabilitiesInternal,
 			{ productId },
-		);
-		const existingFeatureMap = new Map(
-			existingFeatures.map((feature) => [feature.slug, feature]),
 		);
 		const repoDomains = extractRepoDomains(
 			(currentSnapshot as { contextDetail?: unknown })?.contextDetail,
@@ -1081,13 +1257,13 @@ export const interpretTimelineEvents = action({
 			bucket: bucket ?? undefined,
 			baseline,
 			productContext: context,
-			existingFeatures: existingFeatures.map((feature) => ({
-				slug: feature.slug,
-				name: feature.name,
-				domain: feature.domain,
-				visibility: feature.visibility,
+			capabilities: capabilities.map((capability) => ({
+				slug: capability.slug,
+				name: capability.name,
+				domain: capability.domain,
+				visibility: capability.visibility,
+				featureSlugs: capability.featureSlugs,
 			})),
-			featureMap,
 			repoDomains,
 			repoContexts: repoContextSummary,
 			rawEvents: rawEventsWithDomain,
@@ -1116,38 +1292,41 @@ export const interpretTimelineEvents = action({
 			);
 
 			const parsed = parseJsonSafely(result.text) as {
-				narratives?: Array<{
-					bucketId: string;
-					bucketStartAt: number;
-					bucketEndAt: number;
-					cadence: string;
-					title: string;
-					summary?: string;
+				bucket?: {
+					bucketId?: string;
+					bucketStartAt?: number;
+					bucketEndAt?: number;
+					cadence?: string;
+					title?: string;
 					narrative?: string;
-					kind: string;
-					relevance?: number;
 					domains?: string[];
-					rawEventIds: string[];
-					workItems?: Array<{
-						type?: string;
-						featureSlug?: string;
-						title?: string;
-						summary?: string;
-						visibility?: "public" | "internal";
-						isNew?: boolean;
-						relatesTo?: string;
-					}>;
-					bucketImpact?: number;
+				};
+				events?: Array<{
+					capabilitySlug?: string | null;
+					domain?: string;
+					type?: string;
+					title?: string;
+					summary?: string;
+					visibility?: "public" | "internal";
+					relevance?: number;
+					rawEventIds?: string[];
 				}>;
-				newFeatures?: Array<{
+				newCapabilities?: Array<{
 					slug?: string;
 					name?: string;
 					domain?: string;
 					description?: string;
 					visibility?: "public" | "internal";
+					featureSlugs?: string[];
 				}>;
+				newDomains?: Array<{ name?: string; purpose?: string }>;
 			};
-			if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.narratives)) {
+			if (
+				!parsed ||
+				typeof parsed !== "object" ||
+				!parsed.bucket ||
+				!Array.isArray(parsed.events)
+			) {
 				throw new Error(
 					"Invalid JSON response from Timeline Context Interpreter Agent",
 				);
@@ -1155,229 +1334,41 @@ export const interpretTimelineEvents = action({
 			const allowedDomains = new Set(
 				repoDomains.map((domain) => domain.name.toLowerCase()),
 			);
+			const existingCapabilities = new Set(
+				capabilities.map((capability) => capability.slug),
+			);
+			const normalizedNewCapabilities = normalizeNewCapabilities(
+				parsed.newCapabilities,
+				allowedDomains,
+				existingCapabilities,
+			);
+			const newCapabilitySlugs = new Set(
+				normalizedNewCapabilities.map((capability) => capability.slug),
+			);
 			const normalizeDomain = (value: string | undefined) => {
 				const trimmed = value?.trim();
 				if (!trimmed) return undefined;
 				const key = trimmed.toLowerCase();
 				return allowedDomains.has(key) ? trimmed : undefined;
 			};
-			const normalizeDomains = (value: unknown): string[] => {
-				if (!Array.isArray(value)) return [];
-				const normalized = value
-					.map((entry) =>
-						typeof entry === "string" ? normalizeDomain(entry) : undefined,
-					)
-					.filter((entry): entry is string => Boolean(entry));
-				return uniqueSorted(normalized);
-			};
-			const normalizeNewFeatures = (
-				items: Array<{
-					slug?: string;
-					name?: string;
-					domain?: string;
-					description?: string;
-					visibility?: "public" | "internal";
-				}> | undefined,
-			) => {
-				if (!Array.isArray(items)) return [];
-				return items
-					.map((item) => {
-						const name = typeof item.name === "string" ? item.name.trim() : "";
-						if (!name) return null;
-						const slugValue =
-							typeof item.slug === "string" && item.slug.trim()
-								? slugifyFeatureId(item.slug.trim())
-								: slugifyFeatureId(name);
-						if (!slugValue) return null;
-						const domain = normalizeDomain(
-							typeof item.domain === "string" ? item.domain : undefined,
-						);
-						return {
-							slug: slugValue,
-							name,
-							domain,
-							description:
-								typeof item.description === "string" && item.description.trim()
-									? item.description.trim()
-									: undefined,
-							visibility: item.visibility === "internal" ? "internal" : "public",
-						};
-					})
-					.filter(
-						(item): item is {
-							slug: string;
-							name: string;
-							domain?: string;
-							description?: string;
-							visibility: "public" | "internal";
-						} => item !== null,
-					);
-			};
-			const normalizedNewFeatures = normalizeNewFeatures(parsed.newFeatures);
-			const newFeatureSlugs = new Set(
-				normalizedNewFeatures.map((feature) => feature.slug),
+			const normalizedBucket = normalizeBucket(
+				parsed.bucket,
+				normalizeDomain,
 			);
-			const normalizeWorkItems = (
-				items: Array<{
-					type?: string;
-					featureSlug?: string;
-					title?: string;
-					summary?: string;
-					visibility?: "public" | "internal";
-					isNew?: boolean;
-					relatesTo?: string;
-				}> | undefined,
-				narrativeDomains: string[],
-			) => {
-				if (!Array.isArray(items)) return [];
-				return items
-					.map((item) => {
-						const title =
-							typeof item.title === "string" ? item.title.trim() : "";
-						if (!title) return null;
-						const type =
-							item.type === "feature" ||
-							item.type === "fix" ||
-							item.type === "improvement"
-								? item.type
-								: "improvement";
-						const slugValue =
-							typeof item.featureSlug === "string" && item.featureSlug.trim()
-								? slugifyFeatureId(item.featureSlug.trim())
-								: slugifyFeatureId(title);
-						const relatesToRaw =
-							typeof item.relatesTo === "string" && item.relatesTo.trim()
-								? slugifyFeatureId(item.relatesTo.trim())
-								: undefined;
-						const relatesTo =
-							type === "feature" ? undefined : relatesToRaw;
-						const isNew =
-							typeof item.isNew === "boolean"
-								? item.isNew
-								: newFeatureSlugs.has(slugValue) && !existingFeatureMap.has(slugValue);
-						const domainFallback = narrativeDomains[0];
-						return {
-							type,
-							featureSlug: slugValue,
-							title,
-							summary:
-								typeof item.summary === "string" && item.summary.trim()
-									? item.summary.trim()
-									: undefined,
-							visibility: item.visibility === "internal" ? "internal" : "public",
-							isNew,
-							relatesTo,
-							_domainFallback: domainFallback,
-						};
-					})
-					.filter(
-						(item): item is {
-							type: "feature" | "fix" | "improvement";
-							featureSlug: string;
-							title: string;
-							summary?: string;
-							visibility: "public" | "internal";
-							isNew?: boolean;
-							relatesTo?: string;
-							_domainFallback?: string;
-						} => item !== null,
-					);
-			};
+			const normalizedEvents = normalizeEvents(
+				parsed.events,
+				normalizeDomain,
+				existingCapabilities,
+				newCapabilitySlugs,
+			);
 
-			const inferredNewFeatures: Array<{
-				slug: string;
-				name: string;
-				domain?: string;
-				description?: string;
-				visibility: "public" | "internal";
-			}> = [];
-
-			parsed.narratives = parsed.narratives.map((narrative) => {
-				const normalizedDomains = normalizeDomains(
-					(narrative as { domains?: string[] }).domains,
-				);
-				const workItems = normalizeWorkItems(
-					(narrative as { workItems?: Array<Record<string, unknown>> }).workItems,
-					normalizedDomains,
-				);
-
-				workItems.forEach((item) => {
-					if (existingFeatureMap.has(item.featureSlug)) return;
-					if (newFeatureSlugs.has(item.featureSlug)) return;
-					if (item.type !== "feature") return;
-					inferredNewFeatures.push({
-						slug: item.featureSlug,
-						name: item.title,
-						domain: item._domainFallback,
-						description: item.summary,
-						visibility: item.visibility,
-					});
-					newFeatureSlugs.add(item.featureSlug);
-				});
-
-				return {
-					bucketId: narrative.bucketId,
-					bucketStartAt: narrative.bucketStartAt,
-					bucketEndAt: narrative.bucketEndAt,
-					cadence: narrative.cadence,
-					title: narrative.title,
-					summary: narrative.summary,
-					narrative: narrative.narrative,
-					kind: narrative.kind,
-					relevance: narrative.relevance,
-					rawEventIds: narrative.rawEventIds,
-					bucketImpact: narrative.bucketImpact,
-					domains: normalizedDomains.length ? normalizedDomains : undefined,
-					workItems: workItems.length
-						? workItems.map(({ _domainFallback, ...item }) => item)
-						: undefined,
-				};
-			});
-
-			const allNewFeatures = normalizedNewFeatures.concat(inferredNewFeatures);
-			if (allNewFeatures.length) {
-				await ctx.runMutation(internal.products.features.upsertProductFeatures, {
+			if (normalizedNewCapabilities.length) {
+				await ctx.runMutation(internal.products.capabilities.upsertProductCapabilities, {
 					productId,
-					features: allNewFeatures.map((feature) => ({
-						...feature,
-						lastEventAt,
+					capabilities: normalizedNewCapabilities.map((capability) => ({
+						...capability,
+						featureSlugs: capability.featureSlugs ?? [],
 					})),
-				});
-			}
-
-			const featureLookup = new Map(
-				existingFeatures.concat(allNewFeatures).map((feature) => [
-					feature.slug,
-					feature,
-				]),
-			);
-
-			parsed.narratives = parsed.narratives.map((narrative) => {
-				const workItems = narrative.workItems ?? [];
-				const derivedDomains = uniqueSorted(
-					workItems
-						.map((item) => featureLookup.get(item.featureSlug)?.domain)
-						.filter((value): value is string => Boolean(value)),
-				);
-				const domains =
-					derivedDomains.length > 0
-						? derivedDomains
-						: narrative.domains ?? undefined;
-
-				return {
-					...narrative,
-					domains,
-				};
-			});
-
-			const referencedFeatureSlugs = parsed.narratives.flatMap((narrative) =>
-				(narrative.workItems ?? []).map((item) => item.featureSlug),
-			);
-			if (referencedFeatureSlugs.length) {
-				await ctx.runMutation(internal.products.features.touchProductFeatures, {
-					productId,
-					slugs: referencedFeatureSlugs,
-					lastEventAt,
 				});
 			}
 
@@ -1387,13 +1378,9 @@ export const interpretTimelineEvents = action({
 			let inferenceLogId: Id<"aiInferenceLogs"> | undefined;
 			if (telemetryConfig.persistInferenceLogs) {
 				const usage = getUsageTotals(result);
-				const bucketIds = parsed.narratives
-					.map((item) =>
-						item && typeof item === "object"
-							? (item as { bucketId?: string }).bucketId
-							: undefined,
-					)
-					.filter((value): value is string => Boolean(value));
+				const bucketIds = normalizedBucket?.bucketId
+					? [normalizedBucket.bucketId]
+					: [];
 
 				inferenceLogId = await ctx.runMutation(
 					internal.ai.telemetry.recordInferenceLog,
@@ -1425,7 +1412,14 @@ export const interpretTimelineEvents = action({
 				);
 			}
 
-			return { threadId: tid, narratives: parsed.narratives, inferenceLogId };
+			return {
+				threadId: tid,
+				bucket: normalizedBucket,
+				events: normalizedEvents,
+				newCapabilities: normalizedNewCapabilities,
+				newDomains: parsed.newDomains ?? [],
+				inferenceLogId,
+			};
 		} catch (error) {
 			await ctx.runMutation(internal.ai.telemetry.recordError, {
 				organizationId,

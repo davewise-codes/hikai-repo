@@ -15,24 +15,16 @@ type TimelineItem = {
 	bucketStartAt: number;
 	bucketEndAt: number;
 	cadence: string;
-	kind: string;
+	capabilitySlug?: string;
+	domain?: string;
+	type: "feature" | "fix" | "improvement" | "work" | "other";
 	title: string;
 	summary?: string;
-	narrative?: string;
 	occurredAt: number;
 	relevance?: number;
-	domains?: string[];
+	visibility?: "public" | "internal";
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;
-	workItems?: Array<{
-		type: "feature" | "fix" | "improvement";
-		featureSlug: string;
-		title: string;
-		summary?: string;
-		visibility: "public" | "internal";
-		isNew?: boolean;
-		relatesTo?: string;
-	}>;
 	bucketImpact?: number;
 	contextSnapshotId?: Id<"productContextSnapshots">;
 	inferenceLogId?: Id<"aiInferenceLogs">;
@@ -68,6 +60,43 @@ export const listTimelineByProduct = query({
 			.take(resolvedLimit);
 
 		return { items: interpreted as TimelineItem[] };
+	},
+});
+
+export const listBucketSummariesByProduct = query({
+	args: {
+		productId: v.id("products"),
+		limit: v.optional(v.number()),
+		refreshKey: v.optional(v.number()),
+	},
+	handler: async (ctx, { productId, limit }) => {
+		await assertProductAccess(ctx, productId);
+
+		const resolvedLimit = Math.min(Math.max(limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
+
+		const summaries = await ctx.db
+			.query("bucketSummaries")
+			.withIndex("by_product_time", (q) => q.eq("productId", productId))
+			.order("desc")
+			.take(resolvedLimit);
+
+		return { items: summaries };
+	},
+});
+
+export const listBucketEventsByBucket = query({
+	args: {
+		productId: v.id("products"),
+		bucketId: v.string(),
+	},
+	handler: async (ctx, { productId, bucketId }) => {
+		await assertProductAccess(ctx, productId);
+		return ctx.db
+			.query("interpretedEvents")
+			.withIndex("by_product_bucket", (q) =>
+				q.eq("productId", productId).eq("bucketId", bucketId),
+			)
+			.collect();
 	},
 });
 
@@ -179,7 +208,7 @@ export const regenerateTimeline = action({
 			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
 				productId,
 				runId: created.runId,
-				step: "Clearing existing narratives",
+				step: "Clearing existing interpretations",
 				status: "info",
 			});
 		} catch {

@@ -13,6 +13,8 @@
     "filter": "Filtros",
     "domain": "Dominio",
     "domainPlaceholder": "Todos los dominios",
+    "capability": "Capacidad",
+    "capabilityPlaceholder": "Todas las capacidades",
     "date": "Fecha",
     "last7": "Últimos 7 días",
     "last30": "Últimos 30 días",
@@ -27,11 +29,17 @@
     "internalWork": "Trabajo interno",
     "technicalWork": "Técnico",
     "categories": "Categorías",
+    "visibility": "Visibilidad",
     "domains": "Dominios",
     "noDomains": "No hay dominios disponibles",
+    "capabilities": "Capacidades",
+    "noCapabilities": "No hay capacidades disponibles",
+    "public": "Público",
+    "internal": "Interno",
     "features": "Features",
     "fixes": "Fixes",
     "improvements": "Improvements",
+    "work": "Trabajo",
     "date": "Fecha",
     "anyTime": "Cualquier fecha",
     "from": "Desde",
@@ -82,12 +90,24 @@
   "navigator": {
     "title": "Navegador",
     "today": "Más reciente",
-    "loading": "Cargando densidad..."
+    "loading": "Cargando densidad...",
+    "copyTimeline": "Copiar timeline"
   },
   "empty": {
     "title": "Sin eventos en este rango",
     "description": "Lanza un sync o ajusta los filtros.",
     "connectSource": "Conectar una fuente"
+  },
+  "events": {
+    "title": "Eventos",
+    "subtitle": "{{count}} eventos",
+    "count": "{{count}} eventos",
+    "unclassified": "Sin clasificar",
+    "unassigned": "Sin asignar",
+    "public": "Público",
+    "rawCount": "{{count}} eventos raw",
+    "emptyTitle": "No hay eventos para mostrar",
+    "emptyDescription": "Ajusta los filtros o regenera el timeline."
   },
   "list": {
     "rawStatus": {
@@ -126,6 +146,11 @@
     "feedbackPrompt": "¿Te sirve este resumen?",
     "relatedTo": "Relacionado con:",
     "focusAreasLabel": "Áreas de foco:",
-    "focusAreaOther": "Otro"
+    "focusAreaOther": "Otro",
+    "badges": {
+      "domain": "Dominio",
+      "capability": "Capacidad",
+      "type": "Tipo"
+    }
   }
 }

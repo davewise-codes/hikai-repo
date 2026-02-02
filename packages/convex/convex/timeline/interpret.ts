@@ -26,29 +26,25 @@ type InterpretResult = {
 };
 
 type InterpretationOutput = {
-	narratives: Array<{
+	bucket: {
 		bucketId: string;
 		bucketStartAt: number;
 		bucketEndAt: number;
 		cadence: string;
 		title: string;
-		summary?: string;
 		narrative?: string;
-	kind: string;
-	domains?: string[];
-	relevance?: number;
-	rawEventIds: string[];
-	workItems?: Array<{
-		type: "feature" | "fix" | "improvement";
-		featureSlug: string;
+		domains?: string[];
+	};
+	events: Array<{
+		capabilitySlug?: string | null;
+		domain?: string;
+		type: "feature" | "fix" | "improvement" | "work" | "other";
 		title: string;
 		summary?: string;
-		visibility: "public" | "internal";
-		isNew?: boolean;
-		relatesTo?: string;
+		visibility?: "public" | "internal";
+		relevance?: number;
+		rawEventIds: string[];
 	}>;
-	bucketImpact?: number;
-}>;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
 
@@ -108,7 +104,15 @@ export const deleteInterpretedEventsByProduct = internalMutation({
 			await ctx.db.delete(event._id);
 		}
 
-		return { deleted: existing.length };
+		const summaries = await ctx.db
+			.query("bucketSummaries")
+			.withIndex("by_product_time", (q) => q.eq("productId", productId))
+			.collect();
+		for (const summary of summaries) {
+			await ctx.db.delete(summary._id);
+		}
+
+		return { deleted: existing.length + summaries.length };
 	},
 });
 
@@ -270,42 +274,56 @@ export const interpretPendingEvents = action({
 					},
 				);
 
-				if (!interpretation.narratives.length) {
-					throw new Error(
-						`No narrative returned for bucket ${bucket.bucketId}`,
-					);
-				}
-				if (interpretation.narratives.length > 1) {
-					throw new Error(
-						`Expected one narrative for bucket ${bucket.bucketId}, got ${interpretation.narratives.length}`,
-					);
-				}
-
-				const { rawEventIds: _rawEventIds, ...narrativePayload } =
-					interpretation.narratives[0];
 				const bucketImpact = computeBucketImpact(bucket.rawEvents);
 				await recordStep(
-					`Writing narrative for bucket ${index + 1}/${totalBuckets}`,
+					`Writing interpretation for bucket ${index + 1}/${totalBuckets}`,
 					"info",
 				);
-				await ctx.runMutation(internal.timeline.interpret.insertInterpretedEvent, {
+				await ctx.runMutation(internal.timeline.interpret.insertBucketSummary, {
 					productId,
-					narrative: {
-						...narrativePayload,
-						bucketId: bucket.bucketId,
-						bucketStartAt: bucket.bucketStartAt,
-						bucketEndAt: bucket.bucketEndAt,
-						cadence: normalizedCadence,
-						bucketImpact,
+					bucket: {
+						bucketId: interpretation.bucket.bucketId,
+						bucketStartAt: interpretation.bucket.bucketStartAt,
+						bucketEndAt: interpretation.bucket.bucketEndAt,
+						cadence: interpretation.bucket.cadence,
+						title: interpretation.bucket.title,
+						narrative: interpretation.bucket.narrative,
+						domains: interpretation.bucket.domains,
+						eventCount: interpretation.events.length,
 					},
-					rawEventIds: bucket.rawEvents.map(
-						(event: { _id: Id<"rawEvents"> }) => event._id,
-					),
-					inferenceLogId: interpretation.inferenceLogId,
 					createdAt: now,
 				});
 
-				processed += 1;
+				for (const event of interpretation.events) {
+					const normalizedType =
+						event.type === "other"
+							? "work"
+							: ["feature", "fix", "improvement", "work"].includes(event.type)
+								? event.type
+								: "work";
+					await ctx.runMutation(internal.timeline.interpret.insertInterpretedEvent, {
+					productId,
+					event: {
+						bucketId: interpretation.bucket.bucketId,
+						bucketStartAt: interpretation.bucket.bucketStartAt,
+						bucketEndAt: interpretation.bucket.bucketEndAt,
+						cadence: interpretation.bucket.cadence,
+						capabilitySlug: event.capabilitySlug ?? undefined,
+						domain: event.domain,
+						type: normalizedType,
+						title: event.title,
+						summary: event.summary,
+						visibility: event.visibility ?? "public",
+						relevance: event.relevance,
+						bucketImpact,
+					},
+					rawEventIds: event.rawEventIds.map((rawEventId) => rawEventId as Id<"rawEvents">),
+					inferenceLogId: interpretation.inferenceLogId,
+					createdAt: now,
+				});
+				}
+
+				processed += interpretation.events.length;
 			}
 
 			await ctx.runMutation(internal.timeline.interpret.markRawEventsProcessed, {
@@ -315,7 +333,7 @@ export const interpretPendingEvents = action({
 			});
 
 			await recordStep(
-				`Created ${processed} narratives from ${targetRawEvents.length} raw events`,
+				`Created ${processed} interpreted events from ${targetRawEvents.length} raw events`,
 				"success",
 			);
 			await finishRun("success");
@@ -341,37 +359,60 @@ export const interpretPendingEvents = action({
 	},
 });
 
-export const insertInterpretedEvent = internalMutation({
+export const insertBucketSummary = internalMutation({
 	args: {
 		productId: v.id("products"),
-		narrative: v.object({
+		bucket: v.object({
 			bucketId: v.string(),
 			bucketStartAt: v.number(),
 			bucketEndAt: v.number(),
 			cadence: v.string(),
 			title: v.string(),
-			summary: v.optional(v.string()),
 			narrative: v.optional(v.string()),
-			kind: v.string(),
 			domains: v.optional(v.array(v.string())),
-			relevance: v.optional(v.number()),
-			workItems: v.optional(
-				v.array(
-					v.object({
-						type: v.union(
-							v.literal("feature"),
-							v.literal("fix"),
-							v.literal("improvement"),
-						),
-						featureSlug: v.string(),
-						title: v.string(),
-						summary: v.optional(v.string()),
-						visibility: v.union(v.literal("public"), v.literal("internal")),
-						isNew: v.optional(v.boolean()),
-						relatesTo: v.optional(v.string()),
-					}),
-				),
+			eventCount: v.number(),
+		}),
+		createdAt: v.number(),
+	},
+	handler: async (ctx, { productId, bucket, createdAt }) => {
+		const now = createdAt;
+		await ctx.db.insert("bucketSummaries", {
+			productId,
+			bucketId: bucket.bucketId,
+			bucketStartAt: bucket.bucketStartAt,
+			bucketEndAt: bucket.bucketEndAt,
+			cadence: bucket.cadence,
+			title: bucket.title,
+			narrative: bucket.narrative,
+			domains: bucket.domains,
+			eventCount: bucket.eventCount,
+			createdAt: now,
+			updatedAt: now,
+		});
+	},
+});
+
+export const insertInterpretedEvent = internalMutation({
+	args: {
+		productId: v.id("products"),
+		event: v.object({
+			bucketId: v.string(),
+			bucketStartAt: v.number(),
+			bucketEndAt: v.number(),
+			cadence: v.string(),
+			capabilitySlug: v.optional(v.string()),
+			domain: v.optional(v.string()),
+			type: v.union(
+				v.literal("feature"),
+				v.literal("fix"),
+				v.literal("improvement"),
+				v.literal("work"),
+				v.literal("other"),
 			),
+			title: v.string(),
+			summary: v.optional(v.string()),
+			visibility: v.union(v.literal("public"), v.literal("internal")),
+			relevance: v.optional(v.number()),
 			bucketImpact: v.optional(v.number()),
 		}),
 		rawEventIds: v.array(v.id("rawEvents")),
@@ -380,7 +421,7 @@ export const insertInterpretedEvent = internalMutation({
 	},
 	handler: async (
 		ctx,
-		{ productId, narrative, rawEventIds, inferenceLogId, createdAt },
+		{ productId, event, rawEventIds, inferenceLogId, createdAt },
 	) => {
 		const now = createdAt;
 		const product = await ctx.db.get(productId);
@@ -388,19 +429,19 @@ export const insertInterpretedEvent = internalMutation({
 
 		await ctx.db.insert("interpretedEvents", {
 			productId,
-			bucketId: narrative.bucketId,
-			bucketStartAt: narrative.bucketStartAt,
-			bucketEndAt: narrative.bucketEndAt,
-			cadence: narrative.cadence,
-			occurredAt: narrative.bucketStartAt,
-			title: narrative.title,
-			summary: narrative.summary,
-			narrative: narrative.narrative,
-			kind: narrative.kind,
-			domains: narrative.domains,
-			relevance: narrative.relevance,
-			workItems: narrative.workItems,
-			bucketImpact: narrative.bucketImpact,
+			bucketId: event.bucketId,
+			bucketStartAt: event.bucketStartAt,
+			bucketEndAt: event.bucketEndAt,
+			cadence: event.cadence,
+			occurredAt: event.bucketStartAt,
+			capabilitySlug: event.capabilitySlug,
+			domain: event.domain,
+			type: event.type,
+			title: event.title,
+			summary: event.summary,
+			visibility: event.visibility,
+			relevance: event.relevance,
+			bucketImpact: event.bucketImpact,
 			rawEventIds,
 			rawEventCount: rawEventIds.length,
 			contextSnapshotId: contextSnapshotId ?? undefined,

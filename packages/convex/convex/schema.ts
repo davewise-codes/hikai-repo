@@ -555,29 +555,19 @@ const schema = defineSchema({
     bucketEndAt: v.number(),
     cadence: v.string(),
     occurredAt: v.number(),
+    capabilitySlug: v.optional(v.string()),
+    domain: v.optional(v.string()),
+    type: v.union(
+      v.literal("feature"),
+      v.literal("fix"),
+      v.literal("improvement"),
+      v.literal("work"),
+      v.literal("other")
+    ),
     title: v.string(),
     summary: v.optional(v.string()),
-    narrative: v.optional(v.string()),
-    kind: v.string(),
-    domains: v.optional(v.array(v.string())),
+    visibility: v.union(v.literal("public"), v.literal("internal")),
     relevance: v.optional(v.number()),
-    workItems: v.optional(
-      v.array(
-        v.object({
-          type: v.union(
-            v.literal("feature"),
-            v.literal("fix"),
-            v.literal("improvement")
-          ),
-          featureSlug: v.string(),
-          title: v.string(),
-          summary: v.optional(v.string()),
-          visibility: v.union(v.literal("public"), v.literal("internal")),
-          isNew: v.optional(v.boolean()),
-          relatesTo: v.optional(v.string()),
-        })
-      )
-    ),
     bucketImpact: v.optional(v.number()),
     rawEventIds: v.array(v.id("rawEvents")),
     rawEventCount: v.number(),
@@ -587,6 +577,24 @@ const schema = defineSchema({
     updatedAt: v.number(),
   })
     .index("by_product_time", ["productId", "occurredAt"])
+    .index("by_product_bucket", ["productId", "bucketId"])
+    .index("by_product_capability", ["productId", "capabilitySlug"])
+    .index("by_product_domain", ["productId", "domain"]),
+
+  bucketSummaries: defineTable({
+    productId: v.id("products"),
+    bucketId: v.string(),
+    bucketStartAt: v.number(),
+    bucketEndAt: v.number(),
+    cadence: v.string(),
+    title: v.string(),
+    narrative: v.optional(v.string()),
+    domains: v.optional(v.array(v.string())),
+    eventCount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_product_time", ["productId", "bucketStartAt"])
     .index("by_product_bucket", ["productId", "bucketId"]),
 
 	// Telemetría de uso de IA

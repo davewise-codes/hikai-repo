@@ -5,7 +5,9 @@ import { cn } from "@hikai/ui";
 
 export type TimelineFilterState = {
 	domains: string[];
-	categories: Array<"features" | "fixes" | "improvements">;
+	capabilities: string[];
+	categories: Array<"features" | "fixes" | "improvements" | "work">;
+	visibility: Array<"public" | "internal">;
 	from: string;
 	to: string;
 };
@@ -14,6 +16,7 @@ interface TimelineFiltersProps {
 	filters: TimelineFilterState;
 	onChange: (next: TimelineFilterState) => void;
 	domainOptions?: Array<{ value: string; label: string }>;
+	capabilityOptions?: Array<{ value: string; label: string }>;
 	onPrev?: () => void;
 	onNext?: () => void;
 	disablePrev?: boolean;
@@ -26,6 +29,7 @@ export function TimelineFilters({
 	filters,
 	onChange,
 	domainOptions = [],
+	capabilityOptions = [],
 	onPrev,
 	onNext,
 	disablePrev,
@@ -110,6 +114,22 @@ export function TimelineFilters({
 							onChange={(next) => onChange({ ...filters, domains: next })}
 							className="h-9 min-w-[180px]"
 							placeholder={t("controls.domainPlaceholder")}
+						/>
+					</div>
+				) : null}
+				{capabilityOptions.length ? (
+					<div className="hidden items-center gap-2 md:flex">
+						<Label className="text-fontSize-xs text-muted-foreground">
+							{t("controls.capability")}
+						</Label>
+						<MultiSelectDropdown
+							options={capabilityOptions}
+							selected={filters.capabilities}
+							onChange={(next) =>
+								onChange({ ...filters, capabilities: next })
+							}
+							className="h-9 min-w-[200px]"
+							placeholder={t("controls.capabilityPlaceholder")}
 						/>
 					</div>
 				) : null}

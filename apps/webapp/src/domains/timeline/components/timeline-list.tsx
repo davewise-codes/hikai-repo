@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useRef } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
 	Badge,
@@ -12,6 +12,7 @@ import {
 	Sparkles,
 	ShieldCheck,
 	TrendingUp,
+	Cog,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { formatShortDate } from "@/domains/shared/utils";
@@ -23,52 +24,65 @@ export type TimelineListEvent = {
 	bucketStartAt: number;
 	bucketEndAt: number;
 	cadence: string;
-	kind: string;
+	capabilitySlug?: string;
+	domain?: string;
+	type: "feature" | "fix" | "improvement" | "work" | "other";
 	title: string;
 	summary?: string;
-	narrative?: string;
 	occurredAt: number;
 	relevance?: number;
-	domains?: string[];
+	visibility?: "public" | "internal";
 	rawEventIds: Id<"rawEvents">[];
 	rawEventCount: number;
-	workItems?: Array<{
-		type: "feature" | "fix" | "improvement";
-		featureSlug: string;
-		title: string;
-		summary?: string;
-		visibility: "public" | "internal";
-		isNew?: boolean;
-		relatesTo?: string;
-	}>;
 	bucketImpact?: number;
 	inferenceLogId?: Id<"aiInferenceLogs">;
 };
 
+export type TimelineBucketSummary = {
+	_id: Id<"bucketSummaries">;
+	productId: Id<"products">;
+	bucketId: string;
+	bucketStartAt: number;
+	bucketEndAt: number;
+	cadence: string;
+	title: string;
+	narrative?: string;
+	domains?: string[];
+	eventCount: number;
+};
+
 interface TimelineListProps {
-	events: TimelineListEvent[];
+	buckets: Array<{
+		summary: TimelineBucketSummary;
+		events: TimelineListEvent[];
+	}>;
+	domainColorMap?: Record<
+		string,
+		{ border: string; background: string; text: string; dot: string }
+	>;
 	isLoading?: boolean;
-	selectedId?: string | null;
-	onSelect: (id: string) => void;
+	selectedBucketId?: string | null;
+	onSelectBucket: (bucketId: string) => void;
 	emptyAction?: ReactNode;
 }
 
 export function TimelineList({
-	events,
+	buckets,
+	domainColorMap,
 	isLoading,
-	selectedId,
-	onSelect,
+	selectedBucketId,
+	onSelectBucket,
 	emptyAction,
 }: TimelineListProps) {
 	const { i18n, t } = useTranslation("timeline");
 	const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
 	useEffect(() => {
-		if (!selectedId) return;
-		const element = itemRefs.current[selectedId];
+		if (!selectedBucketId) return;
+		const element = itemRefs.current[selectedBucketId];
 		if (!element) return;
 		element.scrollIntoView({ behavior: "smooth", block: "center" });
-	}, [selectedId]);
+	}, [selectedBucketId]);
 
 	if (isLoading) {
 		return (
@@ -101,7 +115,7 @@ export function TimelineList({
 		);
 	}
 
-	if (!events.length) {
+	if (!buckets.length) {
 		return (
 			<div className="flex min-h-[60vh] items-center justify-center">
 				<div className="flex flex-col items-center justify-center gap-2 rounded-lg border p-6 text-center">
@@ -118,17 +132,18 @@ export function TimelineList({
 	return (
 		<div className="relative py-8 space-y-8">
 			<div className="pointer-events-none absolute left-[124px] top-0 h-full w-px bg-border" />
-			{events.map((event) => {
-				const isSelected = selectedId === event._id;
-				const formattedDate = formatShortDate(event.occurredAt, i18n.language);
-				const workItems = event.workItems ?? [];
-				const hasFeatures = workItems.some((item) => item.type === "feature");
-				const hasFixes = workItems.some((item) => item.type === "fix");
-				const hasImprovements = workItems.some(
-					(item) => item.type === "improvement",
-				);
-				const domainLabel = event.domains?.[0]?.trim();
-				const impact = event.bucketImpact ?? 1;
+			{buckets.map(({ summary, events }) => {
+				const formattedDate = `${formatShortDate(
+					summary.bucketStartAt,
+					i18n.language,
+				)} → ${formatShortDate(summary.bucketEndAt, i18n.language)}`;
+				const domainSet = new Set<string>();
+				(summary.domains ?? []).forEach((domain) => domain && domainSet.add(domain));
+				events.forEach((event) => {
+					if (event.domain) domainSet.add(event.domain);
+				});
+				const allDomains = Array.from(domainSet);
+				const impact = Math.max(1, events.length);
 				const impactSize =
 					impact >= 4 ? "h-4 w-4" : impact >= 2 ? "h-3 w-3" : "h-2 w-2";
 				const impactColor =
@@ -140,7 +155,7 @@ export function TimelineList({
 
 				return (
 					<div
-						key={event._id}
+						key={summary.bucketId}
 						className="grid grid-cols-[96px_24px_minmax(0,1fr)] items-start gap-4"
 					>
 						<div className="pt-1 text-right text-fontSize-xs text-muted-foreground">
@@ -166,52 +181,67 @@ export function TimelineList({
 						</div>
 						<div
 							ref={(node) => {
-								itemRefs.current[event._id] = node;
+								itemRefs.current[summary.bucketId] = node;
 							}}
 						>
 							<Card
-								onClick={() => onSelect(event._id)}
+								onClick={() => onSelectBucket(summary.bucketId)}
 								className={cn(
 									"cursor-pointer border transition-shadow duration-150 hover:shadow-sm",
-									isSelected ? "border-primary shadow-sm" : "bg-muted/30",
+									selectedBucketId === summary.bucketId
+										? "border-primary shadow-sm"
+										: "bg-muted/30",
 								)}
 							>
-								<CardContent className="space-y-2 p-3">
-									<div className="flex items-start justify-between gap-3">
-										<div>
-											<p className="text-fontSize-sm font-semibold leading-snug">
-												{event.title}
-											</p>
-											{event.bucketImpact ? (
-												<span className="sr-only">
-													{t("list.impact", { value: event.bucketImpact })}
-												</span>
+								<CardContent className="space-y-3 p-4">
+									<div className="flex items-center justify-between gap-3">
+										<p className="min-w-0 flex-1 truncate text-fontSize-sm font-semibold leading-snug">
+											{summary.title}
+										</p>
+										<div className="flex items-center gap-2 text-muted-foreground">
+											{events.some((event) => event.type === "feature") ? (
+												<Sparkles className="h-3.5 w-3.5" />
+											) : null}
+											{events.some((event) => event.type === "fix") ? (
+												<ShieldCheck className="h-3.5 w-3.5" />
+											) : null}
+											{events.some((event) => event.type === "improvement") ? (
+												<TrendingUp className="h-3.5 w-3.5" />
+											) : null}
+											{events.some(
+												(event) =>
+													event.type === "work" || event.type === "other",
+											) ? (
+												<Cog className="h-3.5 w-3.5" />
 											) : null}
 										</div>
-										{hasFeatures || hasFixes || hasImprovements ? (
-											<div className="flex items-center gap-1.5 text-muted-foreground">
-												{hasFeatures ? (
-													<Sparkles className="h-3.5 w-3.5" />
-												) : null}
-												{hasFixes ? (
-													<ShieldCheck className="h-3.5 w-3.5" />
-												) : null}
-												{hasImprovements ? (
-													<TrendingUp className="h-3.5 w-3.5" />
-												) : null}
-											</div>
-										) : null}
 									</div>
-									{event.summary ? (
+									{summary.narrative ? (
 										<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
-											{event.summary}
+											{summary.narrative}
 										</p>
 									) : null}
-									{domainLabel ? (
-										<div className="pt-1">
-											<Badge variant="outline" className="text-fontSize-2xs">
-												{domainLabel}
-											</Badge>
+									{allDomains.length ? (
+										<div className="flex flex-wrap gap-1.5 pt-1">
+											{allDomains.map((domain) => (
+												<Badge
+													key={domain}
+													variant="outline"
+													className="text-fontSize-2xs"
+													style={(() => {
+														const color =
+															domainColorMap?.[domain] ??
+															getDomainBadgeClass(domain);
+														return {
+															borderColor: color.border,
+															backgroundColor: color.background,
+															color: color.text,
+														};
+													})()}
+												>
+													{domain}
+												</Badge>
+											))}
 										</div>
 									) : null}
 								</CardContent>
@@ -224,6 +254,20 @@ export function TimelineList({
 	);
 }
 
-export function useTimelineKinds(events: TimelineListEvent[]) {
-	return useMemo(() => Array.from(new Set(events.map((event) => event.kind))), [events]);
+function getDomainBadgeClass(domain: string) {
+	let hash = 0;
+	for (let i = 0; i < domain.length; i += 1) {
+		hash = (hash * 31 + domain.charCodeAt(i)) % 2147483647;
+	}
+	const hue = Math.abs(hash) % 360;
+	return buildDomainColor(hue);
+}
+
+function buildDomainColor(hue: number) {
+	return {
+		border: `hsla(${hue}, 70%, 55%, 0.5)`,
+		background: `hsla(${hue}, 70%, 20%, 0.4)`,
+		text: `hsl(${hue}, 75%, 82%)`,
+		dot: `hsl(${hue}, 75%, 55%)`,
+	};
 }

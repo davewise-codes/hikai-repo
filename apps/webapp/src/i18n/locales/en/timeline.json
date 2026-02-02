@@ -13,6 +13,8 @@
     "filter": "Filters",
     "domain": "Domain",
     "domainPlaceholder": "All domains",
+    "capability": "Capability",
+    "capabilityPlaceholder": "All capabilities",
     "date": "Date",
     "last7": "Last 7 days",
     "last30": "Last 30 days",
@@ -27,11 +29,17 @@
     "internalWork": "Internal work",
     "technicalWork": "Technical",
     "categories": "Categories",
+    "visibility": "Visibility",
     "domains": "Domains",
     "noDomains": "No domains available",
+    "capabilities": "Capabilities",
+    "noCapabilities": "No capabilities available",
+    "public": "Public",
+    "internal": "Internal",
     "features": "Features",
     "fixes": "Fixes",
     "improvements": "Improvements",
+    "work": "Work",
     "date": "Date",
     "anyTime": "Any time",
     "from": "From",
@@ -82,12 +90,24 @@
   "navigator": {
     "title": "Navigator",
     "today": "Most recent",
-    "loading": "Loading density..."
+    "loading": "Loading density...",
+    "copyTimeline": "Copy timeline"
   },
   "empty": {
     "title": "No events in this range",
     "description": "Try syncing data or adjusting filters.",
     "connectSource": "Connect a source"
+  },
+  "events": {
+    "title": "Events",
+    "subtitle": "{{count}} events",
+    "count": "{{count}} events",
+    "unclassified": "Unclassified",
+    "unassigned": "Unassigned",
+    "public": "Public",
+    "rawCount": "{{count}} raw events",
+    "emptyTitle": "No events to show",
+    "emptyDescription": "Adjust filters or regenerate the timeline."
   },
   "list": {
     "rawStatus": {
@@ -126,6 +146,11 @@
     "feedbackPrompt": "Are you happy with this summary?",
     "relatedTo": "Related to:",
     "focusAreasLabel": "Focus areas:",
-    "focusAreaOther": "Other"
+    "focusAreaOther": "Other",
+    "badges": {
+      "domain": "Domain",
+      "capability": "Capability",
+      "type": "Type"
+    }
   }
 }

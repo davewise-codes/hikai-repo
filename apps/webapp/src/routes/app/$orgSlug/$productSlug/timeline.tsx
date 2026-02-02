@@ -2,6 +2,7 @@ import {
 	useCallback,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
@@ -9,6 +10,8 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import {
 	Button,
+	Badge,
+	Check,
 	Card,
 	CardContent,
 	CardHeader,
@@ -39,6 +42,7 @@ import {
 	DropdownMenuSub,
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
+	Copy,
 	DatePicker,
 	ThumbsDown,
 	ThumbsUp,
@@ -51,9 +55,6 @@ import {
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
 	Accordion,
 	AccordionContent,
 	AccordionItem,
@@ -66,11 +67,11 @@ import {
 	Refresh,
 	RotateCcw,
 	ArrowUpToLine,
-	Database,
 	Filter as FilterIcon,
 	Sparkles,
 	ShieldCheck,
 	TrendingUp,
+	Cog,
 	X,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
@@ -80,7 +81,6 @@ import { useGetProductBySlug } from "@/domains/products/hooks";
 import { useConnections } from "@/domains/connectors/hooks";
 import {
 	useTimeline,
-	useTimelineEventDetails,
 	useTriggerSync,
 } from "@/domains/timeline/hooks";
 import { TimelineFilterState, TimelineList, TimelineListEvent } from "@/domains/timeline";
@@ -97,35 +97,66 @@ function TimelinePage() {
 	const product = useGetProductBySlug(currentOrg?._id, productSlug);
 	const productId = product?._id;
 	const [refreshKey, setRefreshKey] = useState(0);
-	const { timeline, isLoading } = useTimeline({ productId, refreshKey });
+	const { timeline, buckets, isLoading } = useTimeline({ productId, refreshKey });
+	const capabilities = useQuery(
+		api.products.capabilities.listProductCapabilities,
+		productId ? { productId } : "skip",
+	);
 	const isTimelineLoading = isLoading || product === undefined;
 	const { connections, isLoading: isConnectionsLoading } =
 		useConnections(productId);
 	const triggerSync = useTriggerSync();
 	const [isSyncing, setIsSyncing] = useState(false);
 	const [isRegenerating, setIsRegenerating] = useState(false);
-	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
 	const [filters, setFilters] = useState<TimelineFilterState>({
 		domains: [],
+		capabilities: [],
 		categories: [],
+		visibility: [],
 		from: "",
 		to: "",
 	});
+	const eventsScrollRef = useRef<HTMLDivElement | null>(null);
+	const bucketRefs = useRef<Record<string, HTMLDivElement | null>>({});
 	const [datePreset, setDatePreset] = useState<
 		"all" | "last7" | "last30" | "lastMonth"
 	>("all");
-	const domainOptions = useMemo(() => {
-		if (!timeline?.length) return [];
-		const names = new Set<string>();
-		timeline.forEach((event) => {
-			(event.domains ?? []).forEach((domain) => {
-				if (domain) names.add(domain);
-			});
+	const capabilitiesByDomain = useMemo(() => {
+		const map = new Map<string, Array<{ value: string; label: string }>>();
+		(capabilities ?? []).forEach((capability) => {
+			const domain = capability.domain ?? "Unassigned";
+			const list = map.get(domain) ?? [];
+			list.push({ value: capability.slug, label: capability.name });
+			map.set(domain, list);
 		});
-		return Array.from(names)
-			.sort((a, b) => a.localeCompare(b))
-			.map((name) => ({ value: name, label: name }));
-	}, [timeline]);
+		Array.from(map.values()).forEach((list) =>
+			list.sort((a, b) => a.label.localeCompare(b.label)),
+		);
+		return map;
+	}, [capabilities]);
+	const capabilityBySlug = useMemo(() => {
+		const map = new Map<string, string>();
+		(capabilities ?? []).forEach((capability) => {
+			if (capability.slug) {
+				map.set(capability.slug, capability.name);
+			}
+		});
+		return map;
+	}, [capabilities]);
+
+	useEffect(() => {
+		if (!filters.capabilities.length || !capabilities?.length) return;
+		if (!filters.domains.length) return;
+		const allowed = new Set(
+			capabilities
+				.filter((capability) => filters.domains.includes(capability.domain ?? ""))
+				.map((capability) => capability.slug),
+		);
+		const nextCapabilities = filters.capabilities.filter((slug) => allowed.has(slug));
+		if (nextCapabilities.length === filters.capabilities.length) return;
+		setFilters((prev) => ({ ...prev, capabilities: nextCapabilities }));
+	}, [capabilities, filters.capabilities, filters.domains]);
 
 	const activeConnection = useMemo(
 		() => connections?.find((connection) => connection.status === "active"),
@@ -137,76 +168,99 @@ function TimelinePage() {
 		return timeline.filter((event) => {
 			const matchDomains =
 				filters.domains.length === 0 ||
-				(event.domains ?? []).some((domain) =>
-					filters.domains.includes(domain),
-				);
+				(event.domain ? filters.domains.includes(event.domain) : false);
+			const matchCapabilities =
+				filters.capabilities.length === 0 ||
+				(event.capabilitySlug
+					? filters.capabilities.includes(event.capabilitySlug)
+					: false);
 			const matchCategories =
 				filters.categories.length === 0 ||
 				filters.categories.some((category) => {
-					const items = event.workItems ?? [];
-					if (category === "features")
-						return items.some((item) => item.type === "feature");
-					if (category === "fixes")
-						return items.some((item) => item.type === "fix");
-					if (category === "improvements")
-						return items.some((item) => item.type === "improvement");
+					if (category === "features") return event.type === "feature";
+					if (category === "fixes") return event.type === "fix";
+					if (category === "improvements") return event.type === "improvement";
+					if (category === "work")
+						return event.type === "work" || event.type === "other";
 					return false;
 				});
+			const matchVisibility =
+				filters.visibility.length === 0 ||
+				filters.visibility.includes(event.visibility ?? "public");
 			const matchFrom =
 				!filters.from || event.occurredAt >= new Date(filters.from).getTime();
 			const matchTo =
 				!filters.to || event.occurredAt <= new Date(filters.to).getTime();
-			return matchDomains && matchCategories && matchFrom && matchTo;
+			return (
+				matchDomains &&
+				matchCapabilities &&
+				matchCategories &&
+				matchVisibility &&
+				matchFrom &&
+				matchTo
+			);
 		});
 	}, [filters, timeline]);
 
-	const sortedEvents = useMemo(
-		() => [...filteredEvents].sort((a, b) => a.occurredAt - b.occurredAt),
-		[filteredEvents],
-	);
-
-	const timeScale = useMemo(() => {
-		if (!filteredEvents.length) return null;
-		const min = Math.min(...filteredEvents.map((e) => e.occurredAt));
-		const max = Math.max(...filteredEvents.map((e) => e.occurredAt));
-		return { min, max };
-	}, [filteredEvents]);
-
-	const bucketedLayout = useMemo(() => {
-		if (!timeScale) return null;
-		const recentFirst = [...sortedEvents].sort(
-			(a, b) => b.occurredAt - a.occurredAt,
-		);
-		const spacing = 220;
-		const paddingPx = 300;
-		const totalHeight = Math.max(
-			paddingPx * 2 + recentFirst.length * spacing,
-			1600,
-		);
-
-		const positionedEvents = recentFirst.map((event, index) => ({
-			...event,
-			positionPercent: ((paddingPx + index * spacing) / totalHeight) * 100,
-		}));
-
-		return {
-			positionedEvents,
-			totalHeight,
-			timeTicks: [],
-			densitySegments: [],
-		};
-	}, [i18n.language, sortedEvents, timeScale]);
-
+	const bucketGroups = useMemo(() => {
+		if (!buckets?.length) return [];
+		const eventsByBucket = new Map<string, TimelineListEvent[]>();
+		filteredEvents.forEach((event) => {
+			const list = eventsByBucket.get(event.bucketId) ?? [];
+			list.push(event);
+			eventsByBucket.set(event.bucketId, list);
+		});
+		return buckets
+			.map((bucket) => ({
+				summary: bucket,
+				events: (eventsByBucket.get(bucket.bucketId) ?? []).sort(
+					(a, b) => b.occurredAt - a.occurredAt,
+				),
+			}))
+			.filter((group) => group.events.length > 0);
+	}, [buckets, filteredEvents]);
+	const domainColorMap = useMemo(() => {
+		const domains = new Set<string>();
+		bucketGroups.forEach((group) => {
+			(group.summary.domains ?? []).forEach((domain) => {
+				if (domain) domains.add(domain);
+			});
+			group.events.forEach((event) => {
+				if (event.domain) domains.add(event.domain);
+			});
+		});
+		return createDomainColorMap(Array.from(domains));
+	}, [bucketGroups]);
 
 	useEffect(() => {
-		if (!filteredEvents.length) {
-			setSelectedId(null);
+		if (!bucketGroups.length) {
+			setSelectedBucketId(null);
 			return;
 		}
-		if (selectedId && filteredEvents.some((event) => event._id === selectedId))
+		if (
+			selectedBucketId &&
+			bucketGroups.some(
+				(group) => group.summary.bucketId === selectedBucketId,
+			)
+		)
 			return;
-		setSelectedId(filteredEvents[0]._id);
-	}, [filteredEvents, selectedId]);
+		setSelectedBucketId(bucketGroups[0].summary.bucketId);
+	}, [bucketGroups, selectedBucketId]);
+
+	useEffect(() => {
+		if (!selectedBucketId) return;
+		const node = bucketRefs.current[selectedBucketId];
+		const container = eventsScrollRef.current;
+		if (!node || !container) return;
+		const offset = 16;
+		const containerTop = container.getBoundingClientRect().top;
+		const nodeTop = node.getBoundingClientRect().top;
+		const delta = nodeTop - containerTop;
+		container.scrollTo({
+			top: container.scrollTop + delta - offset,
+			behavior: "smooth",
+		});
+	}, [selectedBucketId]);
 
 	const applyDatePreset = useCallback(
 		(preset: "all" | "last7" | "last30" | "lastMonth") => {
@@ -246,24 +300,27 @@ function TimelinePage() {
 		[],
 	);
 
-	const selectPrev = useCallback(() => {
-		if (!filteredEvents.length || !selectedId) return;
-		const currentIndex = filteredEvents.findIndex(
-			(item) => item._id === selectedId,
+	const currentBucketIndex = useMemo(() => {
+		if (!selectedBucketId) return -1;
+		return bucketGroups.findIndex(
+			(group) => group.summary.bucketId === selectedBucketId,
 		);
-		if (currentIndex <= 0) return;
-		setSelectedId(filteredEvents[currentIndex - 1]._id);
-	}, [filteredEvents, selectedId]);
+	}, [bucketGroups, selectedBucketId]);
+
+	const selectPrev = useCallback(() => {
+		if (!bucketGroups.length || currentBucketIndex < 0) return;
+		if (currentBucketIndex >= bucketGroups.length - 1) return;
+		setSelectedBucketId(
+			bucketGroups[currentBucketIndex + 1].summary.bucketId,
+		);
+	}, [bucketGroups, currentBucketIndex]);
 
 	const selectNext = useCallback(() => {
-		if (!filteredEvents.length || !selectedId) return;
-		const currentIndex = filteredEvents.findIndex(
-			(item) => item._id === selectedId,
+		if (!bucketGroups.length || currentBucketIndex <= 0) return;
+		setSelectedBucketId(
+			bucketGroups[currentBucketIndex - 1].summary.bucketId,
 		);
-		if (currentIndex === -1 || currentIndex >= filteredEvents.length - 1)
-			return;
-		setSelectedId(filteredEvents[currentIndex + 1]._id);
-	}, [filteredEvents, selectedId]);
+	}, [bucketGroups, currentBucketIndex]);
 
 	const handleKeyboardNav = useCallback(
 		(event: KeyboardEvent) => {
@@ -350,10 +407,6 @@ function TimelinePage() {
 			? { productId, useCase: "timeline_interpretation", limit: 12 }
 			: "skip",
 	);
-	const sourceContexts = useQuery(
-		api.agents.sourceContext.listSourceContexts,
-		productId ? { productId } : "skip",
-	);
 	const latestStep =
 		latestRun?.steps?.length
 			? latestRun.steps[latestRun.steps.length - 1]
@@ -365,6 +418,7 @@ function TimelinePage() {
 		: "";
 	const isRegenerationRun =
 		latestRun?.steps?.some((step) =>
+			step.step.toLowerCase().includes("clearing existing interpretations") ||
 			step.step.toLowerCase().includes("clearing existing narratives"),
 		) ?? false;
 	const progressLabel =
@@ -378,36 +432,8 @@ function TimelinePage() {
 			: runStatus === "error"
 				? t("progress.failed", { time: completedLabel })
 				: latestStep?.step ?? t("progress.running");
-	const sourceContextLabels = useMemo(
-		() => ({
-			product_core: t("progress.sourceProductCore"),
-			marketing_surface: t("progress.sourceMarketingSurface"),
-			infra: t("progress.sourceInfra"),
-			docs: t("progress.sourceDocs"),
-			experiments: t("progress.sourceExperiments"),
-			mixed: t("progress.sourceMixed"),
-			unknown: t("progress.sourceUnknown"),
-		}),
-		[t],
-	);
-	const orderedSourceContexts = useMemo(() => {
-		if (!sourceContexts?.length) return [];
-		return [...sourceContexts].sort((a, b) =>
-			a.sourceId.localeCompare(b.sourceId),
-		);
-	}, [sourceContexts]);
-
-	const selectedEvent = useMemo(
-		() => filteredEvents.find((event) => event._id === selectedId) ?? null,
-		[filteredEvents, selectedId],
-	);
-	const eventDetails = useTimelineEventDetails(
-		productId,
-		selectedId ? (selectedId as Id<"interpretedEvents">) : undefined,
-	);
-
 	const showConnectCta = !isConnectionsLoading && !activeConnection;
-	const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improvements") => {
+const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improvements" | "work") => {
 		setFilters((prev) => ({
 			...prev,
 			categories: prev.categories.includes(value)
@@ -415,12 +441,31 @@ function TimelinePage() {
 				: [...prev.categories, value],
 		}));
 	}, []);
+	const handleVisibilityToggle = useCallback(
+		(value: "public" | "internal") => {
+			setFilters((prev) => ({
+				...prev,
+				visibility: prev.visibility.includes(value)
+					? prev.visibility.filter((item) => item !== value)
+					: [...prev.visibility, value],
+			}));
+		},
+		[],
+	);
 	const handleDomainToggle = useCallback((value: string) => {
 		setFilters((prev) => ({
 			...prev,
 			domains: prev.domains.includes(value)
 				? prev.domains.filter((item) => item !== value)
 				: [...prev.domains, value],
+		}));
+	}, []);
+	const handleCapabilityToggle = useCallback((value: string) => {
+		setFilters((prev) => ({
+			...prev,
+			capabilities: prev.capabilities.includes(value)
+				? prev.capabilities.filter((item) => item !== value)
+				: [...prev.capabilities, value],
 		}));
 	}, []);
 
@@ -456,14 +501,29 @@ function TimelinePage() {
 
 	const clearAllFilters = useCallback(() => {
 		setDatePreset("all");
-		setFilters({ domains: [], categories: [], from: "", to: "" });
+		setFilters({
+			domains: [],
+			capabilities: [],
+			categories: [],
+			visibility: [],
+			from: "",
+			to: "",
+		});
 	}, []);
 
 	const hasActiveFilters =
 		filters.domains.length > 0 ||
+		filters.capabilities.length > 0 ||
 		filters.categories.length > 0 ||
+		filters.visibility.length > 0 ||
 		!!filters.from ||
 		!!filters.to;
+	const activeFilterCount =
+		filters.domains.length +
+		filters.capabilities.length +
+		filters.categories.length +
+		filters.visibility.length +
+		(filters.from || filters.to ? 1 : 0);
 
 	const dateFilterLabel = useMemo(() => {
 		if (!filters.from && !filters.to) return null;
@@ -477,13 +537,33 @@ function TimelinePage() {
 	}, [filters.from, filters.to, i18n.language, t]);
 	const handleToday = useCallback(() => {
 		setFilters((prev) => ({ ...prev, from: "", to: "" }));
-		if (filteredEvents.length) setSelectedId(filteredEvents[0]._id);
-	}, [filteredEvents]);
+		if (bucketGroups.length)
+			setSelectedBucketId(bucketGroups[0].summary.bucketId);
+	}, [bucketGroups]);
+	const handleCopyTimeline = useCallback(async () => {
+		try {
+			await navigator.clipboard.writeText(
+				JSON.stringify(
+					{
+						buckets: bucketGroups.map((group) => group.summary),
+						events: filteredEvents,
+					},
+					null,
+					2,
+				),
+			);
+			toast.success(t("navigator.copyTimeline"));
+		} catch (error) {
+			toast.error(
+				error instanceof Error ? error.message : t("errors.unknown"),
+			);
+		}
+	}, [bucketGroups, filteredEvents, t]);
 
 	return (
-		<div className="flex h-[calc(100vh-64px)] flex-col gap-4 overflow-hidden p-5">
-			<div className="grid flex-1 grid-rows-[auto_1fr] gap-4 overflow-hidden xl:grid-cols-[minmax(0,1fr)_560px]">
-				<div className="col-start-1 row-start-1 flex flex-col gap-2 px-2 md:px-6">
+		<div className="flex h-[calc(100vh-64px)] flex-col gap-6 overflow-hidden p-6">
+			<div className="grid flex-1 grid-rows-[auto_1fr] gap-8 overflow-hidden xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+				<div className="col-start-1 row-start-1 flex flex-col gap-3 px-2 md:px-6">
 					<div className="flex items-start justify-between gap-4">
 						<h1 className="text-2xl font-semibold">{t("title")}</h1>
 						<div className="flex h-8 flex-wrap items-center gap-2">
@@ -491,10 +571,14 @@ function TimelinePage() {
 								variant="outline"
 								size="ultra"
 								onClick={selectPrev}
-								disabled={!filteredEvents.length || !selectedId}
+								disabled={
+									!bucketGroups.length ||
+									!selectedBucketId ||
+									currentBucketIndex >= bucketGroups.length - 1
+								}
 								aria-label={t("controls.prev")}
 							>
-								<ArrowUp className="h-4 w-4" />
+							<ArrowDown className="h-4 w-4" />
 								<span className="text-fontSize-sm">{t("controls.prev")}</span>
 							</Button>
 							<Button
@@ -502,213 +586,62 @@ function TimelinePage() {
 								size="ultra"
 								onClick={selectNext}
 								disabled={
-									!filteredEvents.length ||
-									!selectedId ||
-									filteredEvents[filteredEvents.length - 1]?._id === selectedId
+									!bucketGroups.length ||
+									!selectedBucketId ||
+									currentBucketIndex <= 0
 								}
 								aria-label={t("controls.next")}
 							>
-								<ArrowDown className="h-4 w-4" />
+							<ArrowUp className="h-4 w-4" />
 								<span className="text-fontSize-sm">{t("controls.next")}</span>
 							</Button>
-						<Button variant="outline" size="ultra" onClick={handleToday}>
-							<ArrowUpToLine className="h-4 w-4" />
-							<span className="text-fontSize-sm">{t("navigator.today")}</span>
-						</Button>
-					</div>
-				</div>
-					<div className="flex min-h-[22px] items-center justify-end gap-4">
-						<div className="flex flex-wrap items-center justify-end gap-2 text-fontSize-xs text-muted-foreground">
-							{hasActiveFilters ? (
-								<Button
-									variant="ghost"
-									size="icon"
-									onClick={clearAllFilters}
-									aria-label={t("filters.clearAll")}
-								>
-									<X className="h-3.5 w-3.5" />
-								</Button>
-							) : null}
-							{filters.categories.map((category) => (
-								<span
-									key={category}
-									className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
-								>
-									{t(`filters.${category}`)}
-									<button
-										type="button"
-										onClick={() => handleCategoryToggle(category)}
-										className="text-muted-foreground hover:text-foreground"
-									>
-										<X className="h-3 w-3" />
-									</button>
+							<Button variant="outline" size="ultra" onClick={handleToday}>
+								<ArrowUpToLine className="h-4 w-4" />
+								<span className="text-fontSize-sm">{t("navigator.today")}</span>
+							</Button>
+							<Button
+								variant="outline"
+								size="ultra"
+								onClick={handleCopyTimeline}
+								disabled={!filteredEvents.length}
+							>
+								<Copy className="h-4 w-4" />
+								<span className="text-fontSize-sm">
+									{t("navigator.copyTimeline")}
 								</span>
-							))}
-							{filters.domains.map((domain) => (
-								<span
-									key={domain}
-									className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5"
-								>
-									{domain}
-									<button
-										type="button"
-										onClick={() => handleDomainToggle(domain)}
-										className="text-muted-foreground hover:text-foreground"
-									>
-										<X className="h-3 w-3" />
-									</button>
-								</span>
-							))}
-							{dateFilterLabel ? (
-								<span className="flex items-center gap-1 rounded-full border border-border px-2 py-0.5">
-									{t("filters.date")} {dateFilterLabel}
-									<button
-										type="button"
-										onClick={clearDates}
-										className="text-muted-foreground hover:text-foreground"
-									>
-										<X className="h-3 w-3" />
-									</button>
-								</span>
-							) : null}
+							</Button>
 						</div>
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<Button variant="ghost" size="ultra">
-									<FilterIcon
-										className="h-4 w-4"
-										{...(hasActiveFilters
-											? { fill: "currentColor", stroke: "none" }
-											: {})}
-									/>
-									<span className="text-fontSize-sm">
-										{t("controls.filter")}
-									</span>
-								</Button>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent align="end" className="w-56">
-								<DropdownMenuSub>
-									<DropdownMenuSubTrigger>
-										{t("filters.categories")}
-									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent className="w-56">
-										{(["features", "fixes", "improvements"] as const).map(
-											(category) => (
-												<DropdownMenuCheckboxItem
-													key={category}
-													checked={filters.categories.includes(category)}
-													onCheckedChange={() => handleCategoryToggle(category)}
-													onSelect={(event) => event.preventDefault()}
-													className="text-fontSize-sm"
-												>
-													{t(`filters.${category}`)}
-												</DropdownMenuCheckboxItem>
-											),
-										)}
-									</DropdownMenuSubContent>
-								</DropdownMenuSub>
-								<DropdownMenuSub>
-									<DropdownMenuSubTrigger>
-										{t("filters.domains")}
-									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent className="w-56">
-										{domainOptions.length ? (
-											domainOptions.map((domain) => (
-												<DropdownMenuCheckboxItem
-													key={domain.value}
-													checked={filters.domains.includes(domain.value)}
-													onCheckedChange={() => handleDomainToggle(domain.value)}
-													onSelect={(event) => event.preventDefault()}
-													className="text-fontSize-sm"
-												>
-													{domain.label}
-												</DropdownMenuCheckboxItem>
-											))
-										) : (
-											<DropdownMenuItem disabled className="text-fontSize-sm">
-												{t("filters.noDomains")}
-											</DropdownMenuItem>
-										)}
-									</DropdownMenuSubContent>
-								</DropdownMenuSub>
-								<DropdownMenuSub>
-									<DropdownMenuSubTrigger>
-										{t("filters.date")}
-									</DropdownMenuSubTrigger>
-									<DropdownMenuSubContent className="w-60">
-										<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
-											{t("filters.date")}
-										</DropdownMenuLabel>
-										<DropdownMenuItem
-											onSelect={() => applyDatePreset("last7")}
-											className={cn(
-												datePreset === "last7" ? "font-semibold" : "",
-												"text-fontSize-sm",
-											)}
-										>
-											{t("controls.last7")}
-										</DropdownMenuItem>
-										<DropdownMenuItem
-											onSelect={() => applyDatePreset("last30")}
-											className={cn(
-												datePreset === "last30" ? "font-semibold" : "",
-												"text-fontSize-sm",
-											)}
-										>
-											{t("controls.last30")}
-										</DropdownMenuItem>
-										<DropdownMenuItem
-											onSelect={() => applyDatePreset("lastMonth")}
-											className={cn(
-												datePreset === "lastMonth" ? "font-semibold" : "",
-												"text-fontSize-sm",
-											)}
-										>
-											{t("controls.lastMonth")}
-										</DropdownMenuItem>
-										<DropdownMenuItem
-											onSelect={() => applyDatePreset("all")}
-											className={cn(
-												datePreset === "all" ? "font-semibold" : "",
-												"text-fontSize-sm",
-											)}
-										>
-											{t("controls.allDates")}
-										</DropdownMenuItem>
-										<DropdownMenuSeparator />
-										<div className="px-2 pb-2 pt-2">
-											<div className="grid gap-2">
-												<DatePicker
-													value={parseDateString(filters.from)}
-													onChange={(date) =>
-														handleFromChange(toDateString(date))
-													}
-													placeholder={t("filters.from")}
-												/>
-												<DatePicker
-													value={parseDateString(filters.to)}
-													onChange={(date) => handleToChange(toDateString(date))}
-													placeholder={t("filters.to")}
-												/>
-												<Button
-													variant="ghost"
-													size="sm"
-													onClick={clearDates}
-													disabled={!filters.from && !filters.to}
-												>
-													{t("filters.clearDates")}
-												</Button>
-											</div>
-										</div>
-									</DropdownMenuSubContent>
-								</DropdownMenuSub>
-							</DropdownMenuContent>
-						</DropdownMenu>
 					</div>
 				</div>
-				<div className="col-start-2 row-start-1 flex items-start justify-end px-2 md:px-6">
+				<div className="col-start-2 row-start-1 flex items-start justify-end">
 					<TooltipProvider>
-						<div className="flex flex-col items-end gap-2">
+						<div className="flex w-full items-center justify-between gap-4">
+							{latestRun ? (
+								<div
+									className={cn(
+										"flex items-center gap-2 text-fontSize-xs",
+										runStatus === "error"
+											? "text-destructive"
+											: runStatus === "success"
+												? "text-success"
+												: "text-muted-foreground",
+									)}
+								>
+									<span
+										className={cn(
+											"h-2 w-2 rounded-full",
+											runStatus === "error"
+												? "bg-destructive"
+												: runStatus === "success"
+													? "bg-success"
+													: "bg-primary animate-pulse",
+										)}
+									/>
+									<span>{progressLabel}</span>
+								</div>
+							) : (
+								<span />
+							)}
 							<div className="flex h-8 flex-wrap items-center gap-2">
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -796,6 +729,9 @@ function TimelinePage() {
 													run.steps?.some((step) =>
 														step.step
 															.toLowerCase()
+															.includes("clearing existing interpretations") ||
+														step.step
+															.toLowerCase()
 															.includes("clearing existing narratives"),
 													) ?? false;
 												return (
@@ -851,87 +787,13 @@ function TimelinePage() {
 									</SheetContent>
 								</Sheet>
 							</div>
-							{latestRun ? (
-								<div className="flex w-full items-center justify-between text-fontSize-xs">
-									<Popover>
-										<PopoverTrigger asChild>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="h-7 gap-2 px-2 text-fontSize-xs"
-											>
-												<Database className="h-3.5 w-3.5" />
-												<span>{t("progress.sources")}</span>
-											</Button>
-										</PopoverTrigger>
-										<PopoverContent align="start" className="w-64">
-											<div className="space-y-3">
-												<div className="text-fontSize-sm font-medium">
-													{t("progress.sourcesTitle")}
-												</div>
-												{orderedSourceContexts.length ? (
-													<div className="space-y-2">
-														{orderedSourceContexts.map((context) => (
-															<div key={context._id} className="space-y-1">
-																<div className="flex items-center justify-between gap-3">
-																	<span className="truncate text-fontSize-sm">
-																		{context.sourceId}
-																	</span>
-																	<span className="text-fontSize-xs text-muted-foreground">
-																		{
-																			sourceContextLabels[
-																				context.classification
-																			]
-																		}
-																	</span>
-																</div>
-																{context.notes ? (
-																	<p className="text-fontSize-xs text-muted-foreground">
-																		{context.notes}
-																	</p>
-																) : null}
-															</div>
-														))}
-													</div>
-												) : (
-													<p className="text-fontSize-sm text-muted-foreground">
-														{t("progress.sourcesEmpty")}
-													</p>
-												)}
-											</div>
-										</PopoverContent>
-									</Popover>
-									<div
-										className={cn(
-											"flex items-center gap-2",
-											runStatus === "error"
-												? "text-destructive"
-												: runStatus === "success"
-													? "text-success"
-													: "text-muted-foreground",
-										)}
-									>
-										<span
-											className={cn(
-												"h-2 w-2 rounded-full",
-												runStatus === "error"
-													? "bg-destructive"
-													: runStatus === "success"
-														? "bg-success"
-														: "bg-primary animate-pulse",
-											)}
-										/>
-										<span>{progressLabel}</span>
-									</div>
-								</div>
-							) : null}
 						</div>
 					</TooltipProvider>
 				</div>
 
 				<div className="relative col-start-1 row-span-2 h-full overflow-hidden rounded-lg bg-background">
 					<div
-						className="relative h-full overflow-y-auto px-2 py-4"
+						className="relative h-full overflow-y-auto px-2 md:px-6 py-4 pr-6"
 						style={{
 							maskImage:
 								"linear-gradient(to bottom, transparent 0px, black 72px, black calc(100% - 72px), transparent 100%)",
@@ -939,15 +801,13 @@ function TimelinePage() {
 								"linear-gradient(to bottom, transparent 0px, black 72px, black calc(100% - 72px), transparent 100%)",
 						}}
 					>
-						<div className="px-2 md:px-6">
+						<div className="px-0">
 							<TimelineList
-								events={
-									(bucketedLayout?.positionedEvents ??
-										sortedEvents) as TimelineListEvent[]
-								}
+								buckets={bucketGroups}
+								domainColorMap={domainColorMap}
 								isLoading={isTimelineLoading}
-								selectedId={selectedId}
-								onSelect={(id) => setSelectedId(id)}
+								selectedBucketId={selectedBucketId}
+								onSelectBucket={(id) => setSelectedBucketId(id)}
 								emptyAction={
 									showConnectCta ? (
 										<Button asChild size="sm" variant="secondary">
@@ -965,13 +825,498 @@ function TimelinePage() {
 					</div>
 				</div>
 
-				<DetailPanel
-					event={eventDetails?.event ?? selectedEvent}
-					rawEvents={eventDetails?.rawEvents ?? []}
-					isLoading={isTimelineLoading}
-					locale={i18n.language}
-					className="col-start-2 row-start-2"
-				/>
+				<div className="col-start-2 row-start-2 flex h-full min-h-0 flex-col rounded-lg border border-border bg-card">
+					<div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+						<div className="flex flex-wrap items-center gap-2">
+							<div className="flex items-center gap-2">
+								<DropdownMenu>
+									<DropdownMenuTrigger asChild>
+										<Button variant="ghost" size="sm">
+											<FilterIcon
+												className="h-4 w-4"
+												{...(hasActiveFilters
+													? { fill: "currentColor", stroke: "none" }
+													: {})}
+											/>
+											<span className="text-fontSize-sm">
+												{t("controls.filter")}
+											</span>
+										</Button>
+									</DropdownMenuTrigger>
+									<DropdownMenuContent align="end" className="w-56">
+										<DropdownMenuSub>
+											<DropdownMenuSubTrigger>
+												{t("filters.categories")}
+											</DropdownMenuSubTrigger>
+											<DropdownMenuSubContent className="w-56">
+												{(["features", "fixes", "improvements", "work"] as const).map(
+													(category) => (
+														<DropdownMenuCheckboxItem
+															key={category}
+															checked={filters.categories.includes(category)}
+															onCheckedChange={() => handleCategoryToggle(category)}
+															onSelect={(event) => event.preventDefault()}
+															className="text-fontSize-sm"
+														>
+															<span className="mr-2 inline-flex items-center">
+																{category === "features" ? (
+																	<Sparkles className="h-3 w-3" />
+																) : category === "fixes" ? (
+																	<ShieldCheck className="h-3 w-3" />
+																) : category === "improvements" ? (
+																	<TrendingUp className="h-3 w-3" />
+																) : (
+																	<Cog className="h-3 w-3" />
+																)}
+															</span>
+															{t(`filters.${category}`)}
+														</DropdownMenuCheckboxItem>
+													),
+												)}
+											</DropdownMenuSubContent>
+										</DropdownMenuSub>
+										<DropdownMenuSub>
+											<DropdownMenuSubTrigger>
+												{t("filters.visibility")}
+											</DropdownMenuSubTrigger>
+											<DropdownMenuSubContent className="w-48">
+												{(["public", "internal"] as const).map((value) => (
+													<DropdownMenuCheckboxItem
+														key={value}
+														checked={filters.visibility.includes(value)}
+														onCheckedChange={() => handleVisibilityToggle(value)}
+														onSelect={(event) => event.preventDefault()}
+														className="text-fontSize-sm"
+													>
+														{t(`filters.${value}`)}
+													</DropdownMenuCheckboxItem>
+												))}
+											</DropdownMenuSubContent>
+										</DropdownMenuSub>
+										<DropdownMenuSub>
+											<DropdownMenuSubTrigger>
+												{t("filters.capabilities")}
+											</DropdownMenuSubTrigger>
+											<DropdownMenuSubContent className="w-80">
+												{capabilitiesByDomain.size ? (
+													Array.from(capabilitiesByDomain.entries()).map(
+														([domain, capabilityList]) => (
+															<DropdownMenuSub key={domain}>
+																<DropdownMenuSubTrigger
+																	onSelect={(event) => {
+																		event.preventDefault();
+																		handleDomainToggle(domain);
+																	}}
+																	onClick={(event) => {
+																		event.preventDefault();
+																		handleDomainToggle(domain);
+																	}}
+																	className="text-fontSize-xs font-semibold"
+																>
+																	<div className="flex w-full items-center justify-between gap-2">
+																		<div className="flex items-center gap-2">
+																			<span
+																				className="h-2.5 w-2.5 rounded-full"
+																				style={{
+																					backgroundColor:
+																						(domainColorMap[domain] ??
+																							getDomainBadgeClass(domain)).dot,
+																				}}
+																			/>
+																			{filters.domains.includes(domain) ? (
+																				<Check className="h-3 w-3" />
+																			) : null}
+																			<span className="max-w-[200px] truncate whitespace-nowrap">
+																				{domain}
+																			</span>
+																		</div>
+																		<span className="text-[10px] text-muted-foreground">
+																			{capabilityList.length}
+																		</span>
+																	</div>
+																</DropdownMenuSubTrigger>
+																<DropdownMenuSubContent className="w-72">
+																	{capabilityList.map((capability) => (
+																		<DropdownMenuCheckboxItem
+																			key={capability.value}
+																			checked={filters.capabilities.includes(
+																				capability.value,
+																			)}
+																			onCheckedChange={() =>
+																				handleCapabilityToggle(capability.value)
+																			}
+																			onSelect={(event) =>
+																				event.preventDefault()
+																			}
+																			className="text-fontSize-sm"
+																		>
+																			{capability.label}
+																		</DropdownMenuCheckboxItem>
+																	))}
+																</DropdownMenuSubContent>
+															</DropdownMenuSub>
+														),
+													)
+												) : (
+													<DropdownMenuItem disabled className="text-fontSize-sm">
+														{t("filters.noCapabilities")}
+													</DropdownMenuItem>
+												)}
+											</DropdownMenuSubContent>
+										</DropdownMenuSub>
+										<DropdownMenuSub>
+											<DropdownMenuSubTrigger>
+												{t("filters.date")}
+											</DropdownMenuSubTrigger>
+											<DropdownMenuSubContent className="w-60">
+												<DropdownMenuLabel className="text-fontSize-xs text-muted-foreground">
+													{t("filters.date")}
+												</DropdownMenuLabel>
+												<DropdownMenuItem
+													onSelect={() => applyDatePreset("last7")}
+													className={cn(
+														datePreset === "last7" ? "font-semibold" : "",
+														"text-fontSize-sm",
+													)}
+												>
+													{t("controls.last7")}
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onSelect={() => applyDatePreset("last30")}
+													className={cn(
+														datePreset === "last30" ? "font-semibold" : "",
+														"text-fontSize-sm",
+													)}
+												>
+													{t("controls.last30")}
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onSelect={() => applyDatePreset("lastMonth")}
+													className={cn(
+														datePreset === "lastMonth" ? "font-semibold" : "",
+														"text-fontSize-sm",
+													)}
+												>
+													{t("controls.lastMonth")}
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onSelect={() => applyDatePreset("all")}
+													className={cn(
+														datePreset === "all" ? "font-semibold" : "",
+														"text-fontSize-sm",
+													)}
+												>
+													{t("controls.allDates")}
+												</DropdownMenuItem>
+												<DropdownMenuSeparator />
+												<div className="px-2 pb-2 pt-2">
+													<div className="grid gap-2">
+														<DatePicker
+															value={parseDateString(filters.from)}
+															onChange={(date) =>
+																handleFromChange(toDateString(date))
+															}
+															placeholder={t("filters.from")}
+														/>
+														<DatePicker
+															value={parseDateString(filters.to)}
+															onChange={(date) =>
+																handleToChange(toDateString(date))
+															}
+															placeholder={t("filters.to")}
+														/>
+														<Button
+															variant="ghost"
+															size="sm"
+															onClick={clearDates}
+															disabled={!filters.from && !filters.to}
+														>
+															{t("filters.clearDates")}
+														</Button>
+													</div>
+												</div>
+											</DropdownMenuSubContent>
+										</DropdownMenuSub>
+									</DropdownMenuContent>
+								</DropdownMenu>
+							</div>
+							{hasActiveFilters ? (
+								<div className="flex flex-wrap items-center gap-2">
+									{filters.categories.map((category) => (
+										<span
+											key={category}
+											className="flex items-center gap-1 rounded-full border border-border px-1.5 py-0 text-[11px] leading-5 text-muted-foreground"
+										>
+											{category === "features" ? (
+												<Sparkles className="h-3 w-3" />
+											) : category === "fixes" ? (
+												<ShieldCheck className="h-3 w-3" />
+											) : category === "improvements" ? (
+												<TrendingUp className="h-3 w-3" />
+											) : (
+												<Cog className="h-3 w-3" />
+											)}
+											{t(`filters.${category}`)}
+											<button
+												type="button"
+												onClick={() => handleCategoryToggle(category)}
+												className="text-muted-foreground hover:text-foreground"
+											>
+												<X className="h-3 w-3" />
+											</button>
+										</span>
+									))}
+									{filters.visibility.map((value) => (
+										<span
+											key={value}
+											className="flex items-center gap-1 rounded-full border border-border px-1.5 py-0 text-[11px] leading-5 text-muted-foreground"
+										>
+											{t(`filters.${value}`)}
+											<button
+												type="button"
+												onClick={() => handleVisibilityToggle(value)}
+												className="text-muted-foreground hover:text-foreground"
+											>
+												<X className="h-3 w-3" />
+											</button>
+										</span>
+									))}
+									{filters.domains.map((domain) => {
+										const color =
+											domainColorMap[domain] ?? getDomainBadgeClass(domain);
+										return (
+											<span
+												key={domain}
+												className="flex items-center gap-1 rounded-full border border-border px-1.5 py-0 text-[11px] leading-5"
+												style={{
+													borderColor: color.border,
+													backgroundColor: color.background,
+													color: color.text,
+												}}
+											>
+												<span
+													className="h-2 w-2 rounded-full"
+													style={{ backgroundColor: color.dot }}
+												/>
+												{domain}
+												<button
+													type="button"
+													onClick={() => handleDomainToggle(domain)}
+													className="text-muted-foreground hover:text-foreground"
+												>
+													<X className="h-3 w-3" />
+												</button>
+											</span>
+										);
+									})}
+									{filters.capabilities.map((capability) => (
+										<span
+											key={capability}
+											className="flex items-center gap-1 rounded-full border border-border px-1.5 py-0 text-[11px] leading-5 text-muted-foreground"
+										>
+											{capabilityBySlug.get(capability) ?? capability}
+											<button
+												type="button"
+												onClick={() => handleCapabilityToggle(capability)}
+												className="text-muted-foreground hover:text-foreground"
+											>
+												<X className="h-3 w-3" />
+											</button>
+										</span>
+									))}
+									{dateFilterLabel ? (
+										<span className="flex items-center gap-1 rounded-full border border-border px-1.5 py-0 text-[11px] leading-5 text-muted-foreground">
+											{t("filters.date")} {dateFilterLabel}
+											<button
+												type="button"
+												onClick={clearDates}
+												className="text-muted-foreground hover:text-foreground"
+											>
+												<X className="h-3 w-3" />
+											</button>
+										</span>
+									) : null}
+									{hasActiveFilters && activeFilterCount > 1 ? (
+										<Button
+											variant="ghost"
+											size="icon"
+											onClick={clearAllFilters}
+											aria-label={t("filters.clearAll")}
+										>
+											<X className="h-3 w-3" />
+										</Button>
+									) : null}
+								</div>
+							) : null}
+						</div>
+						<div className="flex items-center text-fontSize-xs text-muted-foreground whitespace-nowrap">
+							{t("events.count", { count: filteredEvents.length })}
+						</div>
+					</div>
+					<div
+						ref={eventsScrollRef}
+						className="flex-1 overflow-y-auto px-5 py-5"
+					>
+						{bucketGroups.length ? (
+							<div className="space-y-6">
+								{bucketGroups.map((group, index) => {
+									const dateLabel = `${formatShortDate(
+										group.summary.bucketStartAt,
+										i18n.language,
+									)} → ${formatShortDate(
+										group.summary.bucketEndAt,
+										i18n.language,
+									)}`;
+									const isSelected =
+										selectedBucketId === group.summary.bucketId;
+									const isLast = index === bucketGroups.length - 1;
+
+									return (
+										<div key={group.summary.bucketId} className="space-y-3">
+											<div
+												ref={(node) => {
+													bucketRefs.current[group.summary.bucketId] = node;
+												}}
+												className={cn(
+													"relative space-y-3 pt-2",
+													index === 0 ? "" : "pt-4",
+													isSelected ? "rounded-lg px-3 pb-3 pt-4" : "",
+												)}
+											>
+												{isSelected ? (
+													<div className="pointer-events-none absolute inset-0 rounded-lg border border-primary/40 bg-primary/5" />
+												) : null}
+												<div className="space-y-3">
+													<div
+														className={cn(
+															"relative z-10 flex items-start justify-between gap-3 rounded-md px-2 py-2",
+														)}
+													>
+														<div className="flex-1 min-w-0">
+															<p className="truncate text-fontSize-xs font-semibold uppercase tracking-wide">
+																{group.summary.title}
+															</p>
+															<p className="text-fontSize-xs text-muted-foreground">
+																{dateLabel}
+															</p>
+														</div>
+														<div className="whitespace-nowrap text-fontSize-xs text-muted-foreground">
+															{t("events.count", {
+																count: group.events.length,
+															})}
+														</div>
+													</div>
+												</div>
+												<div className="relative z-10 space-y-3">
+												{group.events.map((event) => {
+													const capabilityLabel =
+														(event.capabilitySlug
+															? capabilityBySlug.get(event.capabilitySlug)
+															: null) ?? t("events.unclassified");
+													const domainLabel =
+														event.domain ?? t("events.unassigned");
+													const typeIcon =
+														event.type === "feature" ? (
+															<Sparkles className="h-3.5 w-3.5" />
+														) : event.type === "fix" ? (
+															<ShieldCheck className="h-3.5 w-3.5" />
+														) : event.type === "improvement" ? (
+															<TrendingUp className="h-3.5 w-3.5" />
+														) : (
+															<Cog className="h-3.5 w-3.5" />
+														);
+													return (
+														<div
+															key={event._id}
+															className="rounded-md border border-border/60 bg-card px-3 py-2"
+														>
+															<div className="flex items-start justify-between gap-3">
+																<div className="flex flex-1">
+																	<div className="grid w-full grid-cols-[16px_16px_minmax(0,1fr)] items-start gap-x-2 gap-y-2">
+																		<TooltipProvider>
+																			<Tooltip>
+																				<TooltipTrigger asChild>
+																					{(() => {
+																						const color =
+																							domainColorMap[domainLabel] ??
+																							getDomainBadgeClass(domainLabel);
+																						return (
+																							<span
+																								className="mt-1 h-2.5 w-2.5 rounded-full border border-border/60"
+																								style={{
+																									borderColor: color.border,
+																									backgroundColor: color.dot,
+																								}}
+																							/>
+																						);
+																					})()}
+																				</TooltipTrigger>
+																				<TooltipContent side="right">
+																					{domainLabel}
+																				</TooltipContent>
+																			</Tooltip>
+																		</TooltipProvider>
+																		<TooltipProvider>
+																			<Tooltip>
+																				<TooltipTrigger asChild>
+																					<span className="mt-0.5 inline-flex items-center">
+																						{typeIcon}
+																					</span>
+																				</TooltipTrigger>
+																				<TooltipContent side="right">
+																					{event.type === "feature"
+																						? t("filters.features")
+																						: event.type === "fix"
+																							? t("filters.fixes")
+																							: event.type === "improvement"
+																								? t("filters.improvements")
+																								: t("filters.work")}
+																				</TooltipContent>
+																			</Tooltip>
+																		</TooltipProvider>
+																		<p className="line-clamp-1 text-fontSize-sm font-medium">
+																			{event.title}
+																		</p>
+																		<p className="col-span-3 text-fontSize-xs text-muted-foreground mt-1">
+																			{capabilityLabel}
+																		</p>
+																		{event.summary ? (
+																			<p className="col-span-3 text-fontSize-sm text-muted-foreground">
+																				{event.summary}
+																			</p>
+																		) : null}
+																	</div>
+																</div>
+																<span className="text-fontSize-xs text-muted-foreground">
+																	{event.visibility === "internal"
+																		? t("detail.internal")
+																		: t("events.public")}
+																</span>
+															</div>
+														</div>
+													);
+												})}
+												</div>
+											</div>
+											{isLast ? null : (
+												<div className="border-t border-border/60" />
+											)}
+										</div>
+									);
+								})}
+							</div>
+						) : (
+							<div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+								<p className="text-fontSize-sm font-medium">
+									{t("events.emptyTitle")}
+								</p>
+								<p className="text-fontSize-sm text-muted-foreground">
+									{t("events.emptyDescription")}
+								</p>
+							</div>
+						)}
+					</div>
+				</div>
 			</div>
 		</div>
 	);
@@ -987,7 +1332,46 @@ interface DetailPanelProps {
 	}>;
 	isLoading: boolean;
 	locale: string;
+	capabilityLabelBySlug: Map<string, string>;
 	className?: string;
+}
+
+type DomainColor = {
+	border: string;
+	background: string;
+	text: string;
+	dot: string;
+};
+
+function getDomainBadgeClass(domain: string) {
+	let hash = 0;
+	for (let i = 0; i < domain.length; i += 1) {
+		hash = (hash * 31 + domain.charCodeAt(i)) % 2147483647;
+	}
+	const hue = Math.abs(hash) % 360;
+	return buildDomainColor(hue);
+}
+
+function createDomainColorMap(domains: string[]) {
+	const map: Record<string, DomainColor> = {};
+	if (!domains.length) return map;
+	domains.forEach((domain, index) => {
+		const hue = Math.round((index / domains.length) * 360);
+		map[domain] = buildDomainColor(hue);
+	});
+	return map;
+}
+
+function buildDomainColor(hue: number): DomainColor {
+	const border = `color-mix(in srgb, hsl(${hue} 70% 55%) 45%, hsl(var(--border)) 55%)`;
+	const background = `color-mix(in srgb, hsl(${hue} 70% 55%) 18%, hsl(var(--background)) 82%)`;
+	const text = `color-mix(in srgb, hsl(${hue} 70% 35%) 55%, hsl(var(--foreground)) 45%)`;
+	return {
+		border,
+		background,
+		text,
+		dot: `hsl(${hue} 70% 50%)`,
+	};
 }
 
 function DetailPanel({
@@ -995,6 +1379,7 @@ function DetailPanel({
 	rawEvents,
 	isLoading,
 	locale,
+	capabilityLabelBySlug,
 	className,
 }: DetailPanelProps) {
 	const { t } = useTranslation("timeline");
@@ -1007,9 +1392,7 @@ function DetailPanel({
 	);
 	const [isRating, setIsRating] = useState(false);
 	const currentRating = ratingData?.rating ?? null;
-	const workItems = event?.workItems ?? [];
-	const hasPublicItems = workItems.some((item) => item.visibility === "public");
-	const shouldShowInternalNote = !!event && !hasPublicItems;
+	const shouldShowInternalNote = event?.visibility === "internal";
 	const shouldShowFeedback = !!event?.inferenceLogId && currentRating === null;
 	const [activeTab, setActiveTab] = useState("overview");
 
@@ -1028,50 +1411,30 @@ function DetailPanel({
 	};
 
 	const renderCategory = (
-		items: Array<{
-			type: "feature" | "fix" | "improvement";
-			featureSlug: string;
-			title: string;
-			summary?: string;
-			visibility?: "public" | "internal";
-			isNew?: boolean;
-			relatesTo?: string;
-		}>,
+		type: "feature" | "fix" | "improvement",
 		emptyLabel: string,
 	) => {
-		if (!items.length) {
+		if (!event || event.type !== type) {
 			return (
 				<p className="text-fontSize-sm text-muted-foreground">{emptyLabel}</p>
 			);
 		}
 
 		return (
-			<div className="space-y-2">
-				{items.map((item, index) => (
-					<div
-						key={`${item.featureSlug}-${index}`}
-						className="rounded-md border border-border p-3"
-					>
-						<div className="flex items-center justify-between gap-2">
-							<p className="text-fontSize-sm font-medium">{item.title}</p>
-							{item.visibility === "internal" ? (
-								<span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-									{t("detail.internal")}
-								</span>
-							) : null}
-						</div>
-						{item.summary ? (
-							<p className="mt-1 text-fontSize-xs text-muted-foreground">
-								{item.summary}
-							</p>
-						) : null}
-						{item.relatesTo ? (
-							<p className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-								{t("detail.relatedTo")} {item.relatesTo}
-							</p>
-						) : null}
-					</div>
-				))}
+			<div className="rounded-md border border-border p-3">
+				<div className="flex items-center justify-between gap-2">
+					<p className="text-fontSize-sm font-medium">{event.title}</p>
+					{event.visibility === "internal" ? (
+						<span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+							{t("detail.internal")}
+						</span>
+					) : null}
+				</div>
+				{event.summary ? (
+					<p className="mt-1 text-fontSize-xs text-muted-foreground">
+						{event.summary}
+					</p>
+				) : null}
 			</div>
 		);
 	};
@@ -1173,11 +1536,48 @@ function DetailPanel({
 												{t("detail.noSummary")}
 											</p>
 										)}
-											{event.narrative ? (
-												<p className="text-fontSize-sm whitespace-pre-wrap break-words">
-													{event.narrative}
-												</p>
+										<div className="flex flex-wrap items-center gap-2 pt-2">
+											{event.domain ? (
+												<Badge
+													variant="outline"
+													className="flex items-center gap-1.5"
+													style={(() => {
+														const color = getDomainBadgeClass(event.domain ?? "");
+														return {
+															borderColor: color.border,
+															backgroundColor: color.background,
+															color: color.text,
+														};
+													})()}
+												>
+													<span className="text-[10px] uppercase tracking-wide">
+														{t("detail.badges.domain")}
+													</span>
+													<span className="text-fontSize-xs font-medium">
+														{event.domain}
+													</span>
+												</Badge>
 											) : null}
+											{event.capabilitySlug ? (
+												<Badge variant="secondary" className="flex items-center gap-1.5">
+													<span className="text-[10px] uppercase tracking-wide">
+														{t("detail.badges.capability")}
+													</span>
+													<span className="text-fontSize-xs font-medium">
+														{capabilityLabelBySlug.get(event.capabilitySlug) ??
+															event.capabilitySlug}
+													</span>
+												</Badge>
+											) : null}
+											<Badge variant="outline" className="flex items-center gap-1.5">
+												<span className="text-[10px] uppercase tracking-wide">
+													{t("detail.badges.type")}
+												</span>
+												<span className="text-fontSize-xs font-medium">
+													{event.type}
+												</span>
+											</Badge>
+										</div>
 									</div>
 								</div>
 							</TabsContent>
@@ -1188,9 +1588,7 @@ function DetailPanel({
 								<div className="h-full overflow-y-auto rounded-lg border">
 									<div className="space-y-4 p-4">
 										{renderCategory(
-											(event.workItems ?? []).filter(
-												(item) => item.type === "feature",
-											),
+											"feature",
 											t("detail.empty.features"),
 										)}
 									</div>
@@ -1203,9 +1601,7 @@ function DetailPanel({
 								<div className="h-full overflow-y-auto rounded-lg border">
 									<div className="space-y-4 p-4">
 										{renderCategory(
-											(event.workItems ?? []).filter(
-												(item) => item.type === "fix",
-											),
+											"fix",
 											t("detail.empty.fixes"),
 										)}
 									</div>
@@ -1218,9 +1614,7 @@ function DetailPanel({
 								<div className="h-full overflow-y-auto rounded-lg border">
 									<div className="space-y-4 p-4">
 										{renderCategory(
-											(event.workItems ?? []).filter(
-												(item) => item.type === "improvement",
-											),
+											"improvement",
 											t("detail.empty.improvements"),
 										)}
 									</div>

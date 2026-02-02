@@ -20,14 +20,25 @@ export function useTimeline({ productId, limit, refreshKey }: UseTimelineArgs) {
 				}
 			: "skip"
 	);
+	const bucketSummaries = useQuery(
+		api.timeline.events.listBucketSummariesByProduct,
+		productId
+			? {
+					productId,
+					...(limit ? { limit } : {}),
+					...(refreshKey !== undefined ? { refreshKey } : {}),
+				}
+			: "skip"
+	);
 
 	return useMemo(
 		() => ({
 			timeline: timeline?.items ?? [],
+			buckets: bucketSummaries?.items ?? [],
 			isLoading: timeline === undefined && !!productId,
 			error: timeline === null ? new Error("Timeline unavailable") : null,
 		}),
-		[productId, timeline]
+		[productId, timeline, bucketSummaries]
 	);
 }
 
