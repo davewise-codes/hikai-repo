@@ -1233,6 +1233,9 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 															<div className="flex items-start justify-between gap-3">
 																<div className="flex flex-1">
 																	<div className="grid w-full grid-cols-[16px_16px_minmax(0,1fr)] items-start gap-x-2 gap-y-2">
+																		<p className="col-span-3 text-fontSize-xs text-muted-foreground">
+																			{capabilityLabel}
+																		</p>
 																		<TooltipProvider>
 																			<Tooltip>
 																				<TooltipTrigger asChild>
@@ -1277,11 +1280,8 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 																		<p className="line-clamp-1 text-fontSize-sm font-medium">
 																			{event.title}
 																		</p>
-																		<p className="col-span-3 text-fontSize-xs text-muted-foreground mt-1">
-																			{capabilityLabel}
-																		</p>
 																		{event.summary ? (
-																			<p className="col-span-3 text-fontSize-sm text-muted-foreground">
+																			<p className="col-span-3 text-fontSize-sm text-muted-foreground mt-1.5">
 																				{event.summary}
 																			</p>
 																		) : null}
