@@ -442,25 +442,38 @@ export const generateProductContext = action({
 
 		const currentVersion = currentSnapshot?.context?.version ?? 0;
 		const baselineSource = fetchedProduct.baseline ?? {};
+		const productCategory = baselineSource.productCategory ?? "";
+		const industry = baselineSource.industry ?? "";
+		const icps = Array.isArray(baselineSource.icps) ? baselineSource.icps : [];
+		const icpSegments = icps
+			.map((icp) => (typeof icp.segment === "string" ? icp.segment : ""))
+			.filter((segment) => segment.length > 0);
+		const mappedPersonas = icps.map((icp) => ({
+			role: icp.segment ?? "",
+			goals: Array.isArray(icp.goals) ? icp.goals : [],
+			painPoints: Array.isArray(icp.pains) ? icp.pains : [],
+			preferredTone: "",
+		}));
 		const baseline = {
 			productName: fetchedProduct.name,
-		description: baselineSource.description ?? "",
-			productCategory: "",
+			description: baselineSource.description ?? "",
+			productCategory,
 			valueProposition: baselineSource.valueProposition ?? "",
 			problemSolved: baselineSource.problemSolved ?? "",
 			targetMarket: baselineSource.targetMarket ?? "",
-			productType: baselineSource.productType ?? "",
+			productType: productCategory,
 			businessModel: baselineSource.businessModel ?? "",
 			stage: baselineSource.stage ?? "",
-			industries: baselineSource.industries ?? [],
-			audiences: baselineSource.audiences ?? [],
+			industry,
+			audiences: icpSegments,
 			productVision: baselineSource.productVision ?? "",
 			strategicPillars: getStrategicPillarsForPrompt(
 				baselineSource.strategicPillars ?? [],
 				language,
 			),
 			metricsOfInterest: baselineSource.metricsOfInterest ?? [],
-			personas: baselineSource.personas ?? [],
+			icps,
+			personas: mappedPersonas,
 			platforms: [],
 			releaseCadence: fetchedProduct.releaseCadence ?? "",
 			languagePreference,
@@ -1538,10 +1551,12 @@ export const classifySourceContext = action({
 			const promptInput = {
 				product: {
 					name: product.name,
-					productType: product.baseline?.productType ?? "",
+					productType: product.baseline?.productCategory ?? "",
 					valueProposition: product.baseline?.valueProposition ?? "",
 					targetMarket: product.baseline?.targetMarket ?? "",
-					audiences: product.baseline?.audiences ?? [],
+					audiences:
+						product.baseline?.icps?.map((icp) => icp.segment).filter(Boolean) ??
+						[],
 					stage: product.baseline?.stage ?? "",
 				},
 				repo: {

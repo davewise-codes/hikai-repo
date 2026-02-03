@@ -11,6 +11,12 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@hikai/ui";
 import { useTranslation } from "react-i18next";
 import { useCreateProduct, useCanCreateProduct } from "../hooks";
@@ -23,7 +29,7 @@ import {
 import {
   BaselineWizard,
   type BaselineWizardValues,
-  type PersonaProfile,
+  type IcpProfile,
 } from "./baseline-wizard";
 
 interface CreateProductFormProps {
@@ -31,26 +37,27 @@ interface CreateProductFormProps {
 }
 
 export function CreateProductForm({ organizationId }: CreateProductFormProps) {
-  const { t } = useTranslation("products");
+  const { t, i18n } = useTranslation("products");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<EntityFieldsValues>({
     name: "",
     slug: "",
   });
+  const [languagePreference, setLanguagePreference] = useState("");
+  const [releaseCadence, setReleaseCadence] = useState("");
   const [baselineValues, setBaselineValues] = useState<BaselineWizardValues>({
-    valueProposition: "",
-    problemSolved: "",
     targetMarket: "",
-    productType: "",
+    productCategory: "",
     businessModel: "",
     stage: "",
-    industries: [],
-    audiences: [],
+    industry: "",
+    valueProposition: "",
+    problemSolved: "",
     productVision: "",
     strategicPillars: [],
     metricsOfInterest: [],
-    personas: [],
+    icps: [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,44 +66,74 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
   const canCreateResult = useCanCreateProduct(organizationId);
   const createProduct = useCreateProduct();
 
+  const languageOptions = useMemo(
+    () => [
+      { value: "en", label: t("settings.languageOptions.english") },
+      { value: "es", label: t("settings.languageOptions.spanish") },
+    ],
+    [t, i18n.language]
+  );
+
+  const releaseCadenceOptions = useMemo(
+    () => [
+      {
+        value: "every_2_days",
+        label: t("settings.releaseCadenceOptions.every2Days"),
+      },
+      {
+        value: "twice_weekly",
+        label: t("settings.releaseCadenceOptions.twiceWeekly"),
+      },
+      { value: "weekly", label: t("settings.releaseCadenceOptions.weekly") },
+      { value: "biweekly", label: t("settings.releaseCadenceOptions.biweekly") },
+      { value: "monthly", label: t("settings.releaseCadenceOptions.monthly") },
+    ],
+    [t, i18n.language]
+  );
+
   const stepLabels = useMemo(
     () => [
       t("wizard.steps.details"),
       t("baseline.tabs.basics"),
-      t("baseline.tabs.market"),
       t("baseline.tabs.strategy"),
-      t("baseline.tabs.personas"),
+      t("baseline.tabs.icps"),
     ],
-    [t]
+    [t, i18n.language]
   );
 
   const isProductInfoValid =
-    formData.name.trim().length > 0 && formData.slug.trim().length > 0;
+    formData.name.trim().length > 0 &&
+    formData.slug.trim().length > 0 &&
+    languagePreference.trim().length > 0 &&
+    releaseCadence.trim().length > 0;
 
   const isBasicsValid =
-    baselineValues.valueProposition.trim().length > 0 &&
-    baselineValues.problemSolved.trim().length > 0 &&
-    baselineValues.productType.trim().length > 0 &&
+    baselineValues.targetMarket.trim().length > 0 &&
+    baselineValues.productCategory.trim().length > 0 &&
     baselineValues.businessModel.trim().length > 0 &&
     baselineValues.stage.trim().length > 0 &&
-    baselineValues.targetMarket.trim().length > 0;
+    baselineValues.industry.trim().length > 0;
 
-  const isMarketValid =
-    baselineValues.industries.length > 0 && baselineValues.audiences.length > 0;
+  const isStrategyValid =
+    baselineValues.problemSolved.trim().length > 0 &&
+    baselineValues.valueProposition.trim().length > 0 &&
+    baselineValues.productVision.trim().length > 0 &&
+    baselineValues.strategicPillars.length > 0 &&
+    baselineValues.metricsOfInterest.length > 0;
 
-  const isPersonaValid = (persona: PersonaProfile) =>
-    (persona.role?.trim() ?? "").length > 0 &&
-    (persona.preferredTone?.trim() ?? "").length > 0 &&
-    (persona.goals ?? []).length > 0 &&
-    (persona.painPoints ?? []).length > 0;
+  const isIcpValid = (icp: IcpProfile) =>
+    (icp.segment?.trim() ?? "").length > 0 &&
+    (icp.pains ?? []).length > 0 &&
+    (icp.goals ?? []).length > 0;
 
-  const isPersonasValid = baselineValues.personas.every(isPersonaValid);
+  const isIcpsValid =
+    baselineValues.icps.length > 0 && baselineValues.icps.every(isIcpValid);
 
   const getFirstInvalidStep = () => {
     if (!isProductInfoValid) return 1;
     if (!isBasicsValid) return 2;
-    if (!isMarketValid) return 3;
-    if (!isPersonasValid) return 5;
+    if (!isStrategyValid) return 3;
+    if (!isIcpsValid) return 4;
     return null;
   };
 
@@ -105,33 +142,18 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
     return trimmed.length > 0 ? trimmed : undefined;
   };
 
-  const normalizeArray = (values?: string[]) =>
-    (values ?? []).map((value) => value.trim()).filter((value) => value.length > 0);
-
-  const sanitizePersonas = (personas: PersonaProfile[]) =>
-    personas.map((persona) => ({
-      role: persona.role?.trim() ?? "",
-      goals: normalizeArray(persona.goals),
-      painPoints: normalizeArray(persona.painPoints),
-      preferredTone: persona.preferredTone?.trim() ?? "",
-    }));
-
   const buildBaselinePayload = (values: BaselineWizardValues) => ({
-    valueProposition: normalizeString(values.valueProposition),
-    problemSolved: normalizeString(values.problemSolved),
-    targetMarket: normalizeString(values.targetMarket),
-    productType: normalizeString(values.productType),
-    businessModel: normalizeString(values.businessModel),
-    stage: normalizeString(values.stage),
-    industries: values.industries.length > 0 ? values.industries : undefined,
-    audiences: values.audiences.length > 0 ? values.audiences : undefined,
-    productVision: normalizeString(values.productVision),
-    strategicPillars:
-      values.strategicPillars.length > 0 ? values.strategicPillars : undefined,
-    metricsOfInterest:
-      values.metricsOfInterest.length > 0 ? values.metricsOfInterest : undefined,
-    personas:
-      values.personas.length > 0 ? sanitizePersonas(values.personas) : undefined,
+    targetMarket: normalizeString(values.targetMarket) ?? "",
+    productCategory: normalizeString(values.productCategory) ?? "",
+    businessModel: normalizeString(values.businessModel) ?? "",
+    stage: normalizeString(values.stage) ?? "",
+    industry: normalizeString(values.industry) ?? "",
+    valueProposition: normalizeString(values.valueProposition) ?? "",
+    problemSolved: normalizeString(values.problemSolved) ?? "",
+    productVision: normalizeString(values.productVision) ?? "",
+    strategicPillars: values.strategicPillars,
+    metricsOfInterest: values.metricsOfInterest,
+    icps: values.icps,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -153,22 +175,25 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
         organizationId,
         name: formData.name.trim(),
         slug: formData.slug.trim().toLowerCase(),
+        languagePreference,
+        releaseCadence,
         baseline: buildBaselinePayload(baselineValues),
       });
       setFormData({ name: "", slug: "" });
+      setLanguagePreference("");
+      setReleaseCadence("");
       setBaselineValues({
-        valueProposition: "",
-        problemSolved: "",
         targetMarket: "",
-        productType: "",
+        productCategory: "",
         businessModel: "",
         stage: "",
-        industries: [],
-        audiences: [],
+        industry: "",
+        valueProposition: "",
+        problemSolved: "",
         productVision: "",
         strategicPillars: [],
         metricsOfInterest: [],
-        personas: [],
+        icps: [],
       });
       setIsDialogOpen(false);
       setStep(1);
@@ -183,19 +208,20 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
     setIsDialogOpen(false);
     setStep(1);
     setFormData({ name: "", slug: "" });
+    setLanguagePreference("");
+    setReleaseCadence("");
     setBaselineValues({
-      valueProposition: "",
-      problemSolved: "",
       targetMarket: "",
-      productType: "",
+      productCategory: "",
       businessModel: "",
       stage: "",
-      industries: [],
-      audiences: [],
+      industry: "",
+      valueProposition: "",
+      problemSolved: "",
       productVision: "",
       strategicPillars: [],
       metricsOfInterest: [],
-      personas: [],
+      icps: [],
     });
     setError(null);
     setShowBaselineErrors(false);
@@ -222,9 +248,8 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
 
     const isCurrentStepValid =
       (step === 2 && isBasicsValid) ||
-      (step === 3 && isMarketValid) ||
-      step === 4 ||
-      (step === 5 && isPersonasValid);
+      (step === 3 && isStrategyValid) ||
+      (step === 4 && isIcpsValid);
 
     if (!isCurrentStepValid) {
       setShowBaselineErrors(true);
@@ -232,7 +257,7 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
     }
 
     setShowBaselineErrors(false);
-    setStep((prev) => Math.min(prev + 1, 5));
+    setStep((prev) => Math.min(prev + 1, 4));
   };
 
   const handleBack = () => {
@@ -304,47 +329,104 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
               })}
             </div>
             <p className="text-fontSize-sm text-muted-foreground">
-              {step === 1
+      {step === 1
                 ? t("wizard.stepDescriptions.details")
                 : step === 2
                 ? t("wizard.stepDescriptions.basics")
                 : step === 3
-                ? t("wizard.stepDescriptions.market")
-                : step === 4
                 ? t("wizard.stepDescriptions.strategy")
-                : t("wizard.stepDescriptions.personas")}
+                : t("wizard.stepDescriptions.icps")}
             </p>
 
             {step === 1 ? (
-              <EntityFields
-                values={formData}
-                onValuesChange={setFormData}
-                labels={{
-                  name: t("form.name"),
-                  namePlaceholder: t("form.namePlaceholder"),
-                  nameHelp: t("wizard.helpers.name"),
-                  slug: t("form.slug"),
-                  slugPlaceholder: t("form.slugPlaceholder"),
-                  slugHint: t("form.slugHint"),
-                  slugHelp: t("wizard.helpers.slug"),
-                }}
-                isLoading={isLoading}
-                idPrefix="product"
-                showDescription={false}
-              />
+              <div className="space-y-[var(--spacing-field-group)]">
+                <EntityFields
+                  values={formData}
+                  onValuesChange={setFormData}
+                  labels={{
+                    name: t("form.name"),
+                    namePlaceholder: t("form.namePlaceholder"),
+                    nameHelp: t("wizard.helpers.name"),
+                    slug: t("form.slug"),
+                    slugPlaceholder: t("form.slugPlaceholder"),
+                    slugHint: t("form.slugHint"),
+                    slugHelp: t("wizard.helpers.slug"),
+                  }}
+                  isLoading={isLoading}
+                  idPrefix="product"
+                  showDescription={false}
+                />
+
+                <div>
+                  <Label htmlFor="product-language-preference">
+                    {t("settings.languagePreference")}
+                    <span className="ml-1 text-destructive">*</span>
+                  </Label>
+                  <p className="text-fontSize-xs text-muted-foreground mt-[var(--spacing-field-description)]">
+                    {t("settings.languagePreferenceHelp")}
+                  </p>
+                  <Select
+                    value={languagePreference || undefined}
+                    onValueChange={setLanguagePreference}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger
+                      id="product-language-preference"
+                      className="mt-[var(--spacing-field-description)]"
+                    >
+                      <SelectValue placeholder={t("baseline.placeholders.select")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {languageOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="product-release-cadence">
+                    {t("settings.releaseCadence")}
+                    <span className="ml-1 text-destructive">*</span>
+                  </Label>
+                  <p className="text-fontSize-xs text-muted-foreground mt-[var(--spacing-field-description)]">
+                    {t("settings.releaseCadenceHelp")}
+                  </p>
+                  <Select
+                    value={releaseCadence || undefined}
+                    onValueChange={setReleaseCadence}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger
+                      id="product-release-cadence"
+                      className="mt-[var(--spacing-field-description)]"
+                    >
+                      <SelectValue placeholder={t("baseline.placeholders.select")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {releaseCadenceOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             ) : (
               <BaselineWizard
                 values={baselineValues}
                 onValuesChange={setBaselineValues}
                 isLoading={isLoading}
+                productName={formData.name.trim() || t("baseline.productNameGeneric")}
                 step={
                   step === 2
                     ? "basics"
                     : step === 3
-                    ? "market"
-                    : step === 4
                     ? "strategy"
-                    : "personas"
+                    : "icps"
                 }
                 showErrors={showBaselineErrors}
               />
@@ -362,12 +444,12 @@ export function CreateProductForm({ organizationId }: CreateProductFormProps) {
                   {t("wizard.actions.next")}
                 </Button>
               ) : null}
-              {step > 1 && step < 5 ? (
+              {step > 1 && step < 4 ? (
                 <Button type="button" onClick={handleNext} disabled={isLoading}>
                   {t("wizard.actions.next")}
                 </Button>
               ) : null}
-              {step === 5 ? (
+              {step === 4 ? (
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? t("creating") : t("createButton")}
                 </Button>

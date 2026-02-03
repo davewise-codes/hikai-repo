@@ -116,27 +116,29 @@ const productContextEntry = v.object({
 });
 
 const productBaseline = v.object({
-	description: v.optional(v.string()),
-	valueProposition: v.optional(v.string()),
-	problemSolved: v.optional(v.string()),
-	targetMarket: v.optional(v.string()),
-	productType: v.optional(v.string()),
-	businessModel: v.optional(v.string()),
-	stage: v.optional(v.string()),
-	industries: v.optional(v.array(v.string())),
-	audiences: v.optional(v.array(v.string())),
-	productVision: v.optional(v.string()),
-	strategicPillars: v.optional(v.array(v.string())),
-	metricsOfInterest: v.optional(v.array(v.string())),
-	personas: v.optional(
-		v.array(
-			v.object({
-				role: v.string(),
-				goals: v.array(v.string()),
-				painPoints: v.array(v.string()),
-				preferredTone: v.string(),
-			}),
-		),
+	// === PROFILE ===
+	targetMarket: v.string(),
+	productCategory: v.string(),
+	businessModel: v.string(),
+	stage: v.string(),
+	industry: v.string(),
+
+	// === STRATEGY ===
+	problemSolved: v.string(),
+	valueProposition: v.string(),
+	productVision: v.string(),
+	strategicPillars: v.array(v.string()),
+	metricsOfInterest: v.array(v.string()),
+
+	// === ICPs ===
+	icps: v.array(
+		v.object({
+			id: v.string(),
+			name: v.optional(v.string()),
+			segment: v.string(),
+			pains: v.array(v.string()),
+			goals: v.array(v.string()),
+		}),
 	),
 });
 

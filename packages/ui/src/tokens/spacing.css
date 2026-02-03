@@ -36,4 +36,8 @@
   --gap-nav-items: 0.125rem;     /* 2px - very tight */
   --gap-section: 1.5rem;         /* 24px - between sections */
   --gap-content: 0.5rem;         /* 8px - between content elements */
+
+  /* === FORM FIELD SPACING === */
+  --spacing-field-description: 0.5rem; /* 8px between description and input */
+  --spacing-field-group: 1.5rem; /* 24px between groups of fields */
 }

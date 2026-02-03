@@ -6,6 +6,7 @@ import {
 	Button,
 	Card,
 	CardContent,
+	Input,
 	Label,
 	Select,
 	SelectContent,
@@ -22,32 +23,32 @@ import {
 } from "@hikai/ui";
 import { useUpdateBaseline } from "../hooks";
 
-type PersonaProfile = {
-	role: string;
+type IcpProfile = {
+	id: string;
+	name?: string;
+	segment: string;
+	pains: string[];
 	goals: string[];
-	painPoints: string[];
-	preferredTone: string;
 };
 
 type ProductBaseline = {
-	description?: string;
-	valueProposition?: string;
-	problemSolved?: string;
 	targetMarket?: string;
-	productType?: string;
+	productCategory?: string;
 	businessModel?: string;
 	stage?: string;
-	industries?: string[];
-	audiences?: string[];
+	industry?: string;
+	valueProposition?: string;
+	problemSolved?: string;
 	productVision?: string;
 	strategicPillars?: string[];
 	metricsOfInterest?: string[];
-	personas?: PersonaProfile[];
+	icps?: IcpProfile[];
 };
 
 type BaselineEditorProps = {
 	product: {
 		_id: Id<"products">;
+		name?: string;
 		baseline?: ProductBaseline;
 	};
 	onSave?: () => void;
@@ -61,641 +62,520 @@ type Option = {
 
 const normalizeString = (value?: string) => {
 	const trimmed = value?.trim() ?? "";
-	return trimmed.length > 0 ? trimmed : undefined;
+	return trimmed.length > 0 ? trimmed : "";
 };
 
 const normalizeArray = (values?: string[]) =>
 	(values ?? []).map((value) => value.trim()).filter((value) => value.length > 0);
 
-const sanitizePersonas = (personas: PersonaProfile[]) =>
-	personas.map((persona) => ({
-		role: persona.role?.trim() ?? "",
-		goals: normalizeArray(persona.goals),
-		painPoints: normalizeArray(persona.painPoints),
-		preferredTone: persona.preferredTone?.trim() ?? "",
-	}));
+const ensureIcpId = (id?: string) => {
+	if (id && id.trim().length > 0) return id;
+	if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+		return crypto.randomUUID();
+	}
+	return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
 
-const isPersonaValid = (persona: PersonaProfile) =>
-	(persona.role?.trim() ?? "").length > 0 &&
-	(persona.preferredTone?.trim() ?? "").length > 0 &&
-	(persona.goals ?? []).length > 0 &&
-	(persona.painPoints ?? []).length > 0;
+const normalizeIcp = (icp: IcpProfile): IcpProfile => ({
+	...icp,
+	id: ensureIcpId(icp.id),
+	name: normalizeString(icp.name) || undefined,
+	segment: normalizeString(icp.segment),
+	pains: normalizeArray(icp.pains),
+	goals: normalizeArray(icp.goals),
+});
+
+const normalizeBaseline = (baseline: ProductBaseline | undefined) => {
+	if (!baseline) return undefined;
+
+	const icps =
+		baseline.icps && baseline.icps.length > 0
+			? baseline.icps.map(normalizeIcp)
+			: undefined;
+
+	return {
+		targetMarket: normalizeString(baseline.targetMarket) || undefined,
+		productCategory: normalizeString(baseline.productCategory) || undefined,
+		businessModel: normalizeString(baseline.businessModel) || undefined,
+		stage: normalizeString(baseline.stage) || undefined,
+		industry: normalizeString(baseline.industry) || undefined,
+		problemSolved: normalizeString(baseline.problemSolved) || undefined,
+		valueProposition: normalizeString(baseline.valueProposition) || undefined,
+		productVision: normalizeString(baseline.productVision) || undefined,
+		strategicPillars:
+			baseline.strategicPillars && baseline.strategicPillars.length > 0
+				? baseline.strategicPillars
+				: undefined,
+		metricsOfInterest:
+			baseline.metricsOfInterest && baseline.metricsOfInterest.length > 0
+				? baseline.metricsOfInterest
+				: undefined,
+		icps,
+	};
+};
+
+const isIcpValid = (icp: IcpProfile) =>
+	(icp.segment?.trim() ?? "").length > 0 &&
+	(icp.pains ?? []).length > 0 &&
+	(icp.goals ?? []).length > 0;
 
 const buildBaselinePayload = (values: {
-	valueProposition: string;
-	problemSolved: string;
 	targetMarket: string;
-	productType: string;
+	productCategory: string;
 	businessModel: string;
 	stage: string;
-	industries: string[];
-	audiences: string[];
+	industry: string;
+	valueProposition: string;
+	problemSolved: string;
 	productVision: string;
 	strategicPillars: string[];
 	metricsOfInterest: string[];
-	personas: PersonaProfile[];
+	icps: IcpProfile[];
 }): ProductBaseline => ({
-	valueProposition: normalizeString(values.valueProposition),
-	problemSolved: normalizeString(values.problemSolved),
 	targetMarket: normalizeString(values.targetMarket),
-	productType: normalizeString(values.productType),
+	productCategory: normalizeString(values.productCategory),
 	businessModel: normalizeString(values.businessModel),
 	stage: normalizeString(values.stage),
-	industries: values.industries.length > 0 ? values.industries : undefined,
-	audiences: values.audiences.length > 0 ? values.audiences : undefined,
+	industry: normalizeString(values.industry),
+	valueProposition: normalizeString(values.valueProposition),
+	problemSolved: normalizeString(values.problemSolved),
 	productVision: normalizeString(values.productVision),
-	strategicPillars:
-		values.strategicPillars.length > 0 ? values.strategicPillars : undefined,
-	metricsOfInterest:
-		values.metricsOfInterest.length > 0 ? values.metricsOfInterest : undefined,
-	personas:
-		values.personas.length > 0 ? sanitizePersonas(values.personas) : undefined,
+	strategicPillars: values.strategicPillars,
+	metricsOfInterest: values.metricsOfInterest,
+	icps: values.icps.map((icp) => ({
+		id: ensureIcpId(icp.id),
+		name: normalizeString(icp.name) || undefined,
+		segment: normalizeString(icp.segment),
+		pains: normalizeArray(icp.pains),
+		goals: normalizeArray(icp.goals),
+	})),
 });
 
 const buildBaselineFromProduct = (
 	baseline: ProductBaseline | undefined,
-): ProductBaseline => ({
-	valueProposition: baseline?.valueProposition,
-	problemSolved: baseline?.problemSolved,
-	targetMarket: baseline?.targetMarket,
-	productType: baseline?.productType,
-	businessModel: baseline?.businessModel,
-	stage: baseline?.stage,
-	industries: baseline?.industries,
-	audiences: baseline?.audiences,
-	productVision: baseline?.productVision,
-	strategicPillars: baseline?.strategicPillars,
-	metricsOfInterest: baseline?.metricsOfInterest,
-	personas: baseline?.personas,
-});
+): ProductBaseline => {
+	const normalized = normalizeBaseline(baseline);
+	return {
+		targetMarket: normalized?.targetMarket,
+		productCategory: normalized?.productCategory,
+		businessModel: normalized?.businessModel,
+		stage: normalized?.stage,
+		industry: normalized?.industry,
+		problemSolved: normalized?.problemSolved,
+		valueProposition: normalized?.valueProposition,
+		productVision: normalized?.productVision,
+		strategicPillars: normalized?.strategicPillars,
+		metricsOfInterest: normalized?.metricsOfInterest,
+		icps: normalized?.icps,
+	};
+};
 
 export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
-	const { t } = useTranslation("products");
+	const { t, i18n } = useTranslation("products");
 	const updateBaseline = useUpdateBaseline();
 	const [isSaving, setIsSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [expandedPersonas, setExpandedPersonas] = useState<number[]>([]);
+	const [isEditing, setIsEditing] = useState(false);
 
-	const [valueProposition, setValueProposition] = useState("");
-	const [problemSolved, setProblemSolved] = useState("");
 	const [targetMarket, setTargetMarket] = useState("");
-	const [productType, setProductType] = useState("");
+	const [productCategory, setProductCategory] = useState("");
 	const [businessModel, setBusinessModel] = useState("");
 	const [stage, setStage] = useState("");
-	const [industries, setIndustries] = useState<string[]>([]);
-	const [audiences, setAudiences] = useState<string[]>([]);
+	const [industry, setIndustry] = useState("");
+	const [valueProposition, setValueProposition] = useState("");
+	const [problemSolved, setProblemSolved] = useState("");
 	const [productVision, setProductVision] = useState("");
 	const [strategicPillars, setStrategicPillars] = useState<string[]>([]);
 	const [metricsOfInterest, setMetricsOfInterest] = useState<string[]>([]);
-	const [personas, setPersonas] = useState<PersonaProfile[]>([]);
+	const [icps, setIcps] = useState<IcpProfile[]>([]);
+
+	const productName =
+		product.name?.trim() || t("baseline.productNameGeneric");
 
 	const targetMarketOptions = useMemo<Option[]>(
 		() => [
-			{ value: "B2B", label: t("baseline.options.targetMarket.b2b") },
-			{ value: "B2C", label: t("baseline.options.targetMarket.b2c") },
-			{ value: "B2B2C", label: t("baseline.options.targetMarket.b2b2c") },
-			{ value: "Internal", label: t("baseline.options.targetMarket.internal") },
-			{ value: "Mixed", label: t("baseline.options.targetMarket.mixed") },
+			{
+				value: "b2b",
+				label: t("baseline.options.targetMarket.b2b.label"),
+				description: t("baseline.options.targetMarket.b2b.description"),
+			},
+			{
+				value: "b2c",
+				label: t("baseline.options.targetMarket.b2c.label"),
+				description: t("baseline.options.targetMarket.b2c.description"),
+			},
+			{
+				value: "b2b2c",
+				label: t("baseline.options.targetMarket.b2b2c.label"),
+				description: t("baseline.options.targetMarket.b2b2c.description"),
+			},
+			{
+				value: "internal",
+				label: t("baseline.options.targetMarket.internal.label"),
+				description: t("baseline.options.targetMarket.internal.description"),
+			},
 		],
-		[t],
+		[t, i18n.language],
 	);
 
-	const productTypeOptions = useMemo<Option[]>(
+	const productCategoryOptions = useMemo<Option[]>(
 		() => [
-			{ value: "Web App", label: t("baseline.options.productType.webApp") },
 			{
-				value: "Mobile App",
-				label: t("baseline.options.productType.mobileApp"),
-			},
-			{ value: "Desktop App", label: t("baseline.options.productType.desktopApp") },
-			{ value: "API", label: t("baseline.options.productType.api") },
-			{
-				value: "Developer Tool",
-				label: t("baseline.options.productType.developerTool"),
+				value: "digital-service",
+				label: t("baseline.options.productCategory.digitalService.label"),
+				description: t(
+					"baseline.options.productCategory.digitalService.description",
+				),
 			},
 			{
-				value: "Marketplace",
-				label: t("baseline.options.productType.marketplace"),
+				value: "platform",
+				label: t("baseline.options.productCategory.platform.label"),
+				description: t(
+					"baseline.options.productCategory.platform.description",
+				),
 			},
 			{
-				value: "Internal Tool",
-				label: t("baseline.options.productType.internalTool"),
+				value: "tool",
+				label: t("baseline.options.productCategory.tool.label"),
+				description: t("baseline.options.productCategory.tool.description"),
 			},
 			{
-				value: "Data Platform",
-				label: t("baseline.options.productType.dataPlatform"),
+				value: "content",
+				label: t("baseline.options.productCategory.content.label"),
+				description: t(
+					"baseline.options.productCategory.content.description",
+				),
 			},
 			{
-				value: "Content Platform",
-				label: t("baseline.options.productType.contentPlatform"),
+				value: "commerce",
+				label: t("baseline.options.productCategory.commerce.label"),
+				description: t(
+					"baseline.options.productCategory.commerce.description",
+				),
 			},
 			{
-				value: "E-commerce",
-				label: t("baseline.options.productType.ecommerce"),
+				value: "connected",
+				label: t("baseline.options.productCategory.connected.label"),
+				description: t(
+					"baseline.options.productCategory.connected.description",
+				),
 			},
-			{ value: "Other", label: t("baseline.options.common.other") },
 		],
-		[t],
+		[t, i18n.language],
 	);
 
 	const businessModelOptions = useMemo<Option[]>(
 		() => [
-			{ value: "SaaS", label: t("baseline.options.businessModel.saas") },
 			{
-				value: "Freemium",
-				label: t("baseline.options.businessModel.freemium"),
+				value: "subscription",
+				label: t("baseline.options.businessModel.subscription.label"),
+				description: t(
+					"baseline.options.businessModel.subscription.description",
+				),
 			},
 			{
-				value: "Subscription",
-				label: t("baseline.options.businessModel.subscription"),
+				value: "usage-based",
+				label: t("baseline.options.businessModel.usageBased.label"),
+				description: t("baseline.options.businessModel.usageBased.description"),
 			},
 			{
-				value: "Usage-based",
-				label: t("baseline.options.businessModel.usageBased"),
+				value: "transactional",
+				label: t("baseline.options.businessModel.transactional.label"),
+				description: t(
+					"baseline.options.businessModel.transactional.description",
+				),
 			},
 			{
-				value: "Transactional",
-				label: t("baseline.options.businessModel.transactional"),
+				value: "freemium",
+				label: t("baseline.options.businessModel.freemium.label"),
+				description: t(
+					"baseline.options.businessModel.freemium.description",
+				),
 			},
 			{
-				value: "Marketplace fees",
-				label: t("baseline.options.businessModel.marketplaceFees"),
+				value: "marketplace",
+				label: t("baseline.options.businessModel.marketplace.label"),
+				description: t(
+					"baseline.options.businessModel.marketplace.description",
+				),
 			},
 			{
-				value: "Advertising",
-				label: t("baseline.options.businessModel.advertising"),
+				value: "advertising",
+				label: t("baseline.options.businessModel.advertising.label"),
+				description: t(
+					"baseline.options.businessModel.advertising.description",
+				),
 			},
 			{
-				value: "Enterprise licensing",
-				label: t("baseline.options.businessModel.enterprise"),
+				value: "licensing",
+				label: t("baseline.options.businessModel.licensing.label"),
+				description: t(
+					"baseline.options.businessModel.licensing.description",
+				),
 			},
 			{
-				value: "Open Source",
-				label: t("baseline.options.businessModel.openSource"),
+				value: "internal",
+				label: t("baseline.options.businessModel.internal.label"),
+				description: t(
+					"baseline.options.businessModel.internal.description",
+				),
 			},
-			{
-				value: "Internal cost center",
-				label: t("baseline.options.businessModel.internalCost"),
-			},
-			{ value: "Other", label: t("baseline.options.common.other") },
 		],
-		[t],
+		[t, i18n.language],
 	);
 
 	const stageOptions = useMemo<Option[]>(
 		() => [
-			{ value: "idea", label: t("baseline.options.stage.idea") },
-			{ value: "mvp", label: t("baseline.options.stage.mvp") },
-			{ value: "beta", label: t("baseline.options.stage.beta") },
 			{
-				value: "early-production",
-				label: t("baseline.options.stage.earlyProduction"),
+				value: "mvp",
+				label: t("baseline.options.stage.mvp.label"),
+				description: t("baseline.options.stage.mvp.description"),
 			},
-			{ value: "production", label: t("baseline.options.stage.production") },
-			{ value: "scaling", label: t("baseline.options.stage.scaling") },
-			{ value: "mature", label: t("baseline.options.stage.mature") },
+			{
+				value: "growth",
+				label: t("baseline.options.stage.growth.label"),
+				description: t("baseline.options.stage.growth.description"),
+			},
+			{
+				value: "scale",
+				label: t("baseline.options.stage.scale.label"),
+				description: t("baseline.options.stage.scale.description"),
+			},
+			{
+				value: "mature",
+				label: t("baseline.options.stage.mature.label"),
+				description: t("baseline.options.stage.mature.description"),
+			},
 		],
-		[t],
+		[t, i18n.language],
 	);
 
 	const industryOptions = useMemo<Option[]>(
 		() => [
-			{ value: "Productivity", label: t("baseline.options.industries.productivity") },
+			{ value: "technology", label: t("baseline.options.industry.technology") },
+			{ value: "healthcare", label: t("baseline.options.industry.healthcare") },
+			{ value: "financial", label: t("baseline.options.industry.financial") },
+			{ value: "retail", label: t("baseline.options.industry.retail") },
 			{
-				value: "Marketing Tech",
-				label: t("baseline.options.industries.marketingTech"),
+				value: "manufacturing",
+				label: t("baseline.options.industry.manufacturing"),
 			},
+			{ value: "education", label: t("baseline.options.industry.education") },
 			{
-				value: "Customer Success",
-				label: t("baseline.options.industries.customerSuccess"),
+				value: "hospitality",
+				label: t("baseline.options.industry.hospitality"),
 			},
+			{ value: "realestate", label: t("baseline.options.industry.realestate") },
+			{ value: "agriculture", label: t("baseline.options.industry.agriculture") },
 			{
-				value: "Developer Tools",
-				label: t("baseline.options.industries.developerTools"),
+				value: "transportation",
+				label: t("baseline.options.industry.transportation"),
 			},
-			{ value: "Fintech", label: t("baseline.options.industries.fintech") },
-			{ value: "Healthtech", label: t("baseline.options.industries.healthtech") },
-			{ value: "Edtech", label: t("baseline.options.industries.edtech") },
-			{ value: "E-commerce", label: t("baseline.options.industries.ecommerce") },
-			{ value: "AI / ML", label: t("baseline.options.industries.ai") },
+			{ value: "media", label: t("baseline.options.industry.media") },
 			{
-				value: "Data & Analytics",
-				label: t("baseline.options.industries.dataAnalytics"),
+				value: "professional",
+				label: t("baseline.options.industry.professional"),
 			},
-			{
-				value: "Cybersecurity",
-				label: t("baseline.options.industries.cybersecurity"),
-			},
-			{ value: "HR Tech", label: t("baseline.options.industries.hrTech") },
-			{ value: "Legal Tech", label: t("baseline.options.industries.legalTech") },
-			{ value: "Proptech", label: t("baseline.options.industries.proptech") },
-			{ value: "Gaming", label: t("baseline.options.industries.gaming") },
-			{
-				value: "Media & Content",
-				label: t("baseline.options.industries.mediaContent"),
-			},
-			{ value: "IoT", label: t("baseline.options.industries.iot") },
-			{
-				value: "Enterprise Software",
-				label: t("baseline.options.industries.enterpriseSoftware"),
-			},
-			{ value: "Open Source", label: t("baseline.options.industries.openSource") },
-			{ value: "Other", label: t("baseline.options.common.other") },
+			{ value: "energy", label: t("baseline.options.industry.energy") },
+			{ value: "government", label: t("baseline.options.industry.government") },
+			{ value: "nonprofit", label: t("baseline.options.industry.nonprofit") },
 		],
-		[t],
-	);
-
-	const audienceOptions = useMemo<Option[]>(
-		() => [
-			{
-				value: "Product teams",
-				label: t("baseline.options.audiences.productTeams"),
-			},
-			{
-				value: "Engineering teams",
-				label: t("baseline.options.audiences.engineeringTeams"),
-			},
-			{
-				value: "Marketing teams",
-				label: t("baseline.options.audiences.marketingTeams"),
-			},
-			{
-				value: "Customer success teams",
-				label: t("baseline.options.audiences.customerSuccessTeams"),
-			},
-			{
-				value: "Sales teams",
-				label: t("baseline.options.audiences.salesTeams"),
-			},
-			{ value: "Founders", label: t("baseline.options.audiences.founders") },
-			{ value: "Executives", label: t("baseline.options.audiences.executives") },
-			{
-				value: "Stakeholders",
-				label: t("baseline.options.audiences.stakeholders"),
-			},
-			{ value: "Market", label: t("baseline.options.audiences.market") },
-			{ value: "End users", label: t("baseline.options.audiences.endUsers") },
-			{
-				value: "Developers",
-				label: t("baseline.options.audiences.developers"),
-			},
-			{ value: "Partners", label: t("baseline.options.audiences.partners") },
-			{ value: "Investors", label: t("baseline.options.audiences.investors") },
-			{ value: "Other", label: t("baseline.options.common.other") },
-		],
-		[t],
+		[t, i18n.language],
 	);
 
 	const strategicPillarOptions = useMemo<Option[]>(
 		() => [
 			{
-				value: "product_excellence",
-				label: t("baseline.options.strategicPillars.productExcellence"),
+				value: "product-excellence",
+				label: t("baseline.options.strategicPillars.productExcellence.label"),
 				description: t(
-					"baseline.options.strategicPillarsDescriptions.productExcellence",
+					"baseline.options.strategicPillars.productExcellence.description",
 				),
 			},
 			{
-				value: "user_adoption_retention",
-				label: t("baseline.options.strategicPillars.userAdoptionRetention"),
+				value: "user-engagement",
+				label: t("baseline.options.strategicPillars.userEngagement.label"),
 				description: t(
-					"baseline.options.strategicPillarsDescriptions.userAdoptionRetention",
+					"baseline.options.strategicPillars.userEngagement.description",
 				),
 			},
 			{
-				value: "growth_acquisition",
-				label: t("baseline.options.strategicPillars.growthAcquisition"),
+				value: "growth",
+				label: t("baseline.options.strategicPillars.growth.label"),
 				description: t(
-					"baseline.options.strategicPillarsDescriptions.growthAcquisition",
+					"baseline.options.strategicPillars.growth.description",
 				),
 			},
 			{
-				value: "narrative_brand",
-				label: t("baseline.options.strategicPillars.narrativeBrand"),
+				value: "operational",
+				label: t("baseline.options.strategicPillars.operational.label"),
 				description: t(
-					"baseline.options.strategicPillarsDescriptions.narrativeBrand",
+					"baseline.options.strategicPillars.operational.description",
 				),
 			},
 			{
-				value: "operational_efficiency",
-				label: t("baseline.options.strategicPillars.operationalEfficiency"),
+				value: "market-position",
+				label: t("baseline.options.strategicPillars.marketPosition.label"),
 				description: t(
-					"baseline.options.strategicPillarsDescriptions.operationalEfficiency",
+					"baseline.options.strategicPillars.marketPosition.description",
 				),
 			},
-			{
-				value: "scalability_business_impact",
-				label: t("baseline.options.strategicPillars.scalabilityImpact"),
-				description: t(
-					"baseline.options.strategicPillarsDescriptions.scalabilityImpact",
-				),
-			},
-			{ value: "Other", label: t("baseline.options.common.other") },
 		],
-		[t],
+		[t, i18n.language],
 	);
 
 	const metricsOptions = useMemo<Option[]>(
 		() => [
 			{
-				value: "User adoption",
-				label: t("baseline.options.metrics.userAdoption"),
+				value: "acquisition",
+				label: t("baseline.options.metrics.acquisition.label"),
+				description: t("baseline.options.metrics.acquisition.description"),
 			},
 			{
-				value: "Feature usage",
-				label: t("baseline.options.metrics.featureUsage"),
+				value: "activation",
+				label: t("baseline.options.metrics.activation.label"),
+				description: t("baseline.options.metrics.activation.description"),
 			},
 			{
-				value: "Time to value",
-				label: t("baseline.options.metrics.timeToValue"),
+				value: "engagement",
+				label: t("baseline.options.metrics.engagement.label"),
+				description: t("baseline.options.metrics.engagement.description"),
 			},
 			{
-				value: "Performance improvements",
-				label: t("baseline.options.metrics.performance"),
+				value: "retention",
+				label: t("baseline.options.metrics.retention.label"),
+				description: t("baseline.options.metrics.retention.description"),
 			},
 			{
-				value: "Reliability / uptime",
-				label: t("baseline.options.metrics.reliability"),
+				value: "revenue",
+				label: t("baseline.options.metrics.revenue.label"),
+				description: t("baseline.options.metrics.revenue.description"),
 			},
 			{
-				value: "Customer satisfaction",
-				label: t("baseline.options.metrics.satisfaction"),
+				value: "satisfaction",
+				label: t("baseline.options.metrics.satisfaction.label"),
+				description: t("baseline.options.metrics.satisfaction.description"),
 			},
 			{
-				value: "Churn reduction",
-				label: t("baseline.options.metrics.churn"),
+				value: "efficiency",
+				label: t("baseline.options.metrics.efficiency.label"),
+				description: t("baseline.options.metrics.efficiency.description"),
 			},
 			{
-				value: "Conversion rate",
-				label: t("baseline.options.metrics.conversion"),
+				value: "performance",
+				label: t("baseline.options.metrics.performance.label"),
+				description: t("baseline.options.metrics.performance.description"),
 			},
-			{
-				value: "Content consistency",
-				label: t("baseline.options.metrics.contentConsistency"),
-			},
-			{
-				value: "Time saved",
-				label: t("baseline.options.metrics.timeSaved"),
-			},
-			{ value: "Other", label: t("baseline.options.common.other") },
 		],
-		[t],
-	);
-
-	const personaRoleOptions = useMemo<Option[]>(
-		() => [
-			{
-				value: "Founder",
-				label: t("baseline.options.personaRoles.founder"),
-			},
-			{
-				value: "Product Manager",
-				label: t("baseline.options.personaRoles.productManager"),
-			},
-			{
-				value: "Engineer",
-				label: t("baseline.options.personaRoles.engineer"),
-			},
-			{
-				value: "Marketing Manager",
-				label: t("baseline.options.personaRoles.marketingManager"),
-			},
-			{
-				value: "Customer Success Manager",
-				label: t("baseline.options.personaRoles.customerSuccess"),
-			},
-			{
-				value: "Sales Manager",
-				label: t("baseline.options.personaRoles.salesManager"),
-			},
-			{
-				value: "Executive",
-				label: t("baseline.options.personaRoles.executive"),
-			},
-			{
-				value: "Developer Advocate",
-				label: t("baseline.options.personaRoles.developerAdvocate"),
-			},
-			{
-				value: "Operations",
-				label: t("baseline.options.personaRoles.operations"),
-			},
-			{ value: "Other", label: t("baseline.options.common.other") },
-		],
-		[t],
-	);
-
-	const personaGoalOptions = useMemo<Option[]>(
-		() => [
-			{
-				value: "Increase visibility into product progress",
-				label: t("baseline.options.personaGoals.visibility"),
-			},
-			{
-				value: "Align internal teams",
-				label: t("baseline.options.personaGoals.alignment"),
-			},
-			{
-				value: "Reduce manual reporting",
-				label: t("baseline.options.personaGoals.reduceManual"),
-			},
-			{
-				value: "Create a compelling product narrative",
-				label: t("baseline.options.personaGoals.narrative"),
-			},
-			{
-				value: "Ship updates faster",
-				label: t("baseline.options.personaGoals.shipFaster"),
-			},
-			{
-				value: "Improve customer adoption",
-				label: t("baseline.options.personaGoals.adoption"),
-			},
-			{
-				value: "Communicate impact to stakeholders",
-				label: t("baseline.options.personaGoals.impact"),
-			},
-			{ value: "Other", label: t("baseline.options.common.other") },
-		],
-		[t],
-	);
-
-	const personaPainOptions = useMemo<Option[]>(
-		() => [
-			{
-				value: "Information scattered across tools",
-				label: t("baseline.options.personaPains.scatteredInfo"),
-			},
-			{
-				value: "Lack of time to document progress",
-				label: t("baseline.options.personaPains.noTime"),
-			},
-			{
-				value: "Misalignment between product and marketing",
-				label: t("baseline.options.personaPains.misalignment"),
-			},
-			{
-				value: "Inconsistent messaging",
-				label: t("baseline.options.personaPains.inconsistent"),
-			},
-			{
-				value: "Hard to prove impact",
-				label: t("baseline.options.personaPains.proveImpact"),
-			},
-			{
-				value: "Overreliance on engineers",
-				label: t("baseline.options.personaPains.overreliance"),
-			},
-			{
-				value: "Manual, repetitive updates",
-				label: t("baseline.options.personaPains.manualUpdates"),
-			},
-			{ value: "Other", label: t("baseline.options.common.other") },
-		],
-		[t],
-	);
-
-	const personaToneOptions = useMemo<Option[]>(
-		() => [
-			{
-				value: "technical",
-				label: t("baseline.options.personaTone.technical"),
-			},
-			{
-				value: "professional",
-				label: t("baseline.options.personaTone.professional"),
-			},
-			{
-				value: "friendly",
-				label: t("baseline.options.personaTone.friendly"),
-			},
-			{
-				value: "enthusiastic",
-				label: t("baseline.options.personaTone.enthusiastic"),
-			},
-			{
-				value: "minimal",
-				label: t("baseline.options.personaTone.minimal"),
-			},
-			{ value: "Other", label: t("baseline.options.common.other") },
-		],
-		[t],
-	);
-	const personaToneLabels = useMemo(
-		() => new Map(personaToneOptions.map((option) => [option.value, option.label])),
-		[personaToneOptions],
+		[t, i18n.language],
 	);
 
 	useEffect(() => {
-		const baseline = product.baseline;
-		setValueProposition(baseline?.valueProposition ?? "");
-		setProblemSolved(baseline?.problemSolved ?? "");
-		setTargetMarket(baseline?.targetMarket ?? "");
-		setProductType(baseline?.productType ?? "");
-		setBusinessModel(baseline?.businessModel ?? "");
-		setStage(baseline?.stage ?? "");
-		setIndustries(baseline?.industries ?? []);
-		setAudiences(baseline?.audiences ?? []);
-		setProductVision(baseline?.productVision ?? "");
-		setStrategicPillars(baseline?.strategicPillars ?? []);
-		setMetricsOfInterest(baseline?.metricsOfInterest ?? []);
-		const rawPersonas = (baseline?.personas ?? []) as Array<
-			Partial<PersonaProfile> & { name?: string }
-		>;
-		setPersonas(
-			rawPersonas.map((persona) => ({
-				role: persona.role ?? persona.name ?? "",
-				goals: persona.goals ?? [],
-				painPoints: persona.painPoints ?? [],
-				preferredTone: persona.preferredTone ?? "",
-			})),
-		);
-		setExpandedPersonas([]);
+		const normalized = normalizeBaseline(product.baseline);
+		setTargetMarket(normalized?.targetMarket ?? "");
+		setProductCategory(normalized?.productCategory ?? "");
+		setBusinessModel(normalized?.businessModel ?? "");
+		setStage(normalized?.stage ?? "");
+		setIndustry(normalized?.industry ?? "");
+		setValueProposition(normalized?.valueProposition ?? "");
+		setProblemSolved(normalized?.problemSolved ?? "");
+		setProductVision(normalized?.productVision ?? "");
+		setStrategicPillars(normalized?.strategicPillars ?? []);
+		setMetricsOfInterest(normalized?.metricsOfInterest ?? []);
+		setIcps(normalized?.icps ?? []);
+		setIsEditing(false);
 	}, [product]);
 
-	const personaErrors = personas.map((persona) => !isPersonaValid(persona));
+	const icpErrors = icps.map((icp) => !isIcpValid(icp));
 
-	const missingIndustries = industries.length === 0;
-	const missingAudiences = audiences.length === 0;
-
-	const valuePropositionInvalid = valueProposition.trim().length === 0;
-	const problemSolvedInvalid = problemSolved.trim().length === 0;
 	const targetMarketInvalid = targetMarket.trim().length === 0;
-	const productTypeInvalid = productType.trim().length === 0;
+	const productCategoryInvalid = productCategory.trim().length === 0;
 	const businessModelInvalid = businessModel.trim().length === 0;
 	const stageInvalid = stage.trim().length === 0;
+	const industryInvalid = industry.trim().length === 0;
+	const valuePropositionInvalid = valueProposition.trim().length === 0;
+	const problemSolvedInvalid = problemSolved.trim().length === 0;
+	const productVisionInvalid = productVision.trim().length === 0;
+	const strategicPillarsInvalid = strategicPillars.length === 0;
+	const metricsInvalid = metricsOfInterest.length === 0;
+	const icpsMissing = icps.length === 0;
+
 	const basicsPendingCount = [
-		valuePropositionInvalid,
-		problemSolvedInvalid,
 		targetMarketInvalid,
-		productTypeInvalid,
+		productCategoryInvalid,
 		businessModelInvalid,
 		stageInvalid,
+		industryInvalid,
 	].filter(Boolean).length;
-	const marketPendingCount = [missingIndustries, missingAudiences].filter(Boolean)
-		.length;
-	const personasPendingCount = personaErrors.filter(Boolean).length;
+
+	const strategyPendingCount = [
+		problemSolvedInvalid,
+		valuePropositionInvalid,
+		productVisionInvalid,
+		strategicPillarsInvalid,
+		metricsInvalid,
+	].filter(Boolean).length;
+
+	const icpsPendingCount =
+		(icpsMissing ? 1 : 0) + icpErrors.filter(Boolean).length;
 
 	const baselinePayload = useMemo(
 		() =>
 			buildBaselinePayload({
-				valueProposition,
-				problemSolved,
 				targetMarket,
-				productType,
+				productCategory,
 				businessModel,
 				stage,
-				industries,
-				audiences,
+				industry,
+				valueProposition,
+				problemSolved,
 				productVision,
 				strategicPillars,
 				metricsOfInterest,
-				personas,
+				icps,
 			}),
 		[
-			valueProposition,
-			problemSolved,
 			targetMarket,
-			productType,
+			productCategory,
 			businessModel,
 			stage,
-			industries,
-			audiences,
+			industry,
+			valueProposition,
+			problemSolved,
 			productVision,
 			strategicPillars,
 			metricsOfInterest,
-			personas,
+			icps,
 		],
 	);
 
 	const hasChanges = useMemo(() => {
 		const initialBaseline = buildBaselineFromProduct(product.baseline);
-		const baselineChanged =
-			JSON.stringify(baselinePayload) !== JSON.stringify(initialBaseline);
-		return baselineChanged;
+		return JSON.stringify(baselinePayload) !== JSON.stringify(initialBaseline);
 	}, [baselinePayload, product]);
 
-	const hasPersonaErrors = personaErrors.some(Boolean);
+	const hasIcpErrors = icpErrors.some(Boolean);
 
 	const isSaveDisabled =
 		isSaving ||
+		!isEditing ||
 		!hasChanges ||
-		valuePropositionInvalid ||
-		problemSolvedInvalid ||
 		targetMarketInvalid ||
-		productTypeInvalid ||
+		productCategoryInvalid ||
 		businessModelInvalid ||
 		stageInvalid ||
-		missingIndustries ||
-		missingAudiences ||
-		hasPersonaErrors;
+		industryInvalid ||
+		valuePropositionInvalid ||
+		problemSolvedInvalid ||
+		productVisionInvalid ||
+		strategicPillarsInvalid ||
+		metricsInvalid ||
+		icpsMissing ||
+		hasIcpErrors;
 
 	const handleSave = async () => {
 		setError(null);
-
-		if (isSaveDisabled) {
-			return;
-		}
+		if (isSaveDisabled) return;
 
 		setIsSaving(true);
 
@@ -706,6 +586,7 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 			});
 
 			toast.success(t("baseline.saved"));
+			setIsEditing(false);
 			onSave?.();
 		} catch (err) {
 			setError(err instanceof Error ? err.message : t("errors.unknown"));
@@ -714,51 +595,39 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 		}
 	};
 
-	const handlePersonaChange = (
+	const handleIcpChange = <K extends keyof IcpProfile>(
 		index: number,
-		field: keyof PersonaProfile,
-		value: string | string[],
+		field: K,
+		value: IcpProfile[K],
 	) => {
-		setPersonas((prev) =>
-			prev.map((persona, personaIndex) =>
-				personaIndex === index
-					? { ...persona, [field]: value }
-					: persona,
+		setIcps((prev) =>
+			prev.map((icp, icpIndex) =>
+				icpIndex === index ? { ...icp, [field]: value } : icp,
 			),
 		);
 	};
 
-	const togglePersonaExpansion = (index: number) => {
-		setExpandedPersonas((prev) =>
-			prev.includes(index)
-				? prev.filter((item) => item !== index)
-				: [...prev, index],
-		);
-	};
-
-	const handleAddPersona = () => {
-		setPersonas((prev) => [
+	const handleAddIcp = () => {
+		setIcps((prev) => [
 			...prev,
 			{
-				role: "",
+				id: ensureIcpId(),
+				segment: "",
+				pains: [],
 				goals: [],
-				painPoints: [],
-				preferredTone: "",
 			},
 		]);
-		setExpandedPersonas((prev) => [...prev, personas.length]);
 	};
 
-	const handleRemovePersona = (index: number) => {
-		setPersonas((prev) => prev.filter((_, personaIndex) => personaIndex !== index));
-		setExpandedPersonas((prev) => prev.filter((item) => item !== index));
+	const handleRemoveIcp = (index: number) => {
+		setIcps((prev) => prev.filter((_, icpIndex) => icpIndex !== index));
 	};
 
 	return (
 		<Card>
-			<CardContent className="p-6 space-y-6">
-				<Tabs defaultValue="basics" className="space-y-6">
-					<TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+			<CardContent className="p-6 space-y-[var(--spacing-field-group)]">
+				<Tabs defaultValue="basics" className="space-y-[var(--spacing-field-group)]">
+					<TabsList className="grid w-full grid-cols-3">
 						<TabsTrigger value="basics" className="gap-2">
 							{t("baseline.tabs.basics")}
 							{basicsPendingCount > 0 ? (
@@ -767,304 +636,341 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 								</Badge>
 							) : null}
 						</TabsTrigger>
-						<TabsTrigger value="market" className="gap-2">
-							{t("baseline.tabs.market")}
-							{marketPendingCount > 0 ? (
+						<TabsTrigger value="strategy" className="gap-2">
+							{t("baseline.tabs.strategy")}
+							{strategyPendingCount > 0 ? (
 								<Badge variant="secondary" className="h-5 px-1.5">
-									{marketPendingCount}
+									{strategyPendingCount}
 								</Badge>
 							) : null}
 						</TabsTrigger>
-						<TabsTrigger value="strategy">{t("baseline.tabs.strategy")}</TabsTrigger>
-						<TabsTrigger value="personas" className="gap-2">
-							{t("baseline.tabs.personas")}
-							{personasPendingCount > 0 ? (
+						<TabsTrigger value="icps" className="gap-2">
+							{t("baseline.tabs.icps")}
+							{icpsPendingCount > 0 ? (
 								<Badge variant="secondary" className="h-5 px-1.5">
-									{personasPendingCount}
+									{icpsPendingCount}
 								</Badge>
 							) : null}
 						</TabsTrigger>
 					</TabsList>
 
-					<TabsContent value="basics" className="space-y-6">
-						<div className="space-y-2">
-							<Label htmlFor="baseline-value-proposition">
-								{t("baseline.fields.valueProposition")}
-							</Label>
-							<Textarea
-								id="baseline-value-proposition"
-								value={valueProposition}
-								onChange={(event) => setValueProposition(event.target.value)}
-								disabled={isSaving}
-								rows={3}
-								placeholder={t("baseline.placeholders.valueProposition")}
-							/>
-							{valuePropositionInvalid ? (
-								<p className="text-fontSize-xs text-destructive">
-									{t("baseline.errors.valuePropositionRequired")}
-								</p>
-							) : null}
-						</div>
+					<TabsContent value="basics" className="space-y-[var(--spacing-field-group)]">
+						<SelectField
+							id="baseline-target-market"
+							question={t("baseline.questions.targetMarket", { productName })}
+							description={t("baseline.descriptions.targetMarket")}
+							required
+							value={targetMarket}
+							options={targetMarketOptions}
+							onChange={setTargetMarket}
+							disabled={isSaving || !isEditing}
+							showError={isEditing && targetMarketInvalid}
+							errorMessage={t("baseline.errors.targetMarketRequired")}
+						/>
 
-						<div className="space-y-2">
-							<Label htmlFor="baseline-problem-solved">
-								{t("baseline.fields.problemSolved")}
-							</Label>
+						<SelectField
+							id="baseline-product-category"
+							question={t("baseline.questions.productCategory", { productName })}
+							description={t("baseline.descriptions.productCategory")}
+							required
+							value={productCategory}
+							options={productCategoryOptions}
+							onChange={setProductCategory}
+							disabled={isSaving || !isEditing}
+							showError={isEditing && productCategoryInvalid}
+							errorMessage={t("baseline.errors.productCategoryRequired")}
+						/>
+
+						<SelectField
+							id="baseline-business-model"
+							question={t("baseline.questions.businessModel", { productName })}
+							description={t("baseline.descriptions.businessModel")}
+							required
+							value={businessModel}
+							options={businessModelOptions}
+							onChange={setBusinessModel}
+							disabled={isSaving || !isEditing}
+							showError={isEditing && businessModelInvalid}
+							errorMessage={t("baseline.errors.businessModelRequired")}
+						/>
+
+						<SelectField
+							id="baseline-stage"
+							question={t("baseline.questions.stage", { productName })}
+							description={t("baseline.descriptions.stage")}
+							required
+							value={stage}
+							options={stageOptions}
+							onChange={setStage}
+							disabled={isSaving || !isEditing}
+							showError={isEditing && stageInvalid}
+							errorMessage={t("baseline.errors.stageRequired")}
+						/>
+
+						<SelectField
+							id="baseline-industry"
+							question={t("baseline.questions.industry", { productName })}
+							description={t("baseline.descriptions.industry")}
+							required
+							value={industry}
+							options={industryOptions}
+							onChange={setIndustry}
+							disabled={isSaving || !isEditing}
+							showError={isEditing && industryInvalid}
+							errorMessage={t("baseline.errors.industryRequired")}
+						/>
+					</TabsContent>
+
+					<TabsContent value="strategy" className="space-y-[var(--spacing-field-group)]">
+						<div className="space-y-[var(--spacing-field-description)]">
+							<FieldHeader
+								id="baseline-problem-solved"
+								question={t("baseline.questions.problemSolved", {
+									productName,
+								})}
+								description={t("baseline.descriptions.problemSolved")}
+								required
+							/>
 							<Textarea
 								id="baseline-problem-solved"
 								value={problemSolved}
 								onChange={(event) => setProblemSolved(event.target.value)}
-								disabled={isSaving}
+								disabled={isSaving || !isEditing}
 								rows={3}
 								placeholder={t("baseline.placeholders.problemSolved")}
 							/>
-							{problemSolvedInvalid ? (
+							{isEditing && problemSolvedInvalid ? (
 								<p className="text-fontSize-xs text-destructive">
 									{t("baseline.errors.problemSolvedRequired")}
 								</p>
 							) : null}
 						</div>
 
-						<div className="grid gap-4 md:grid-cols-2">
-							<SelectField
-								id="baseline-product-type"
-								label={t("baseline.fields.productType")}
-								value={productType}
-								options={productTypeOptions}
-								onChange={setProductType}
-								disabled={isSaving}
-								showError={productTypeInvalid}
-								errorMessage={t("baseline.errors.productTypeRequired")}
+						<div className="space-y-[var(--spacing-field-description)]">
+							<FieldHeader
+								id="baseline-value-proposition"
+								question={t("baseline.questions.valueProposition", {
+									productName,
+								})}
+								description={t("baseline.descriptions.valueProposition")}
+								required
 							/>
-							<SelectField
-								id="baseline-business-model"
-								label={t("baseline.fields.businessModel")}
-								value={businessModel}
-								options={businessModelOptions}
-								onChange={setBusinessModel}
-								disabled={isSaving}
-								showError={businessModelInvalid}
-								errorMessage={t("baseline.errors.businessModelRequired")}
+							<Textarea
+								id="baseline-value-proposition"
+								value={valueProposition}
+								onChange={(event) =>
+									setValueProposition(event.target.value)
+								}
+								disabled={isSaving || !isEditing}
+								rows={3}
+								placeholder={t("baseline.placeholders.valueProposition")}
 							/>
-							<SelectField
-								id="baseline-stage"
-								label={t("baseline.fields.stage")}
-								value={stage}
-								options={stageOptions}
-								onChange={setStage}
-								disabled={isSaving}
-								showError={stageInvalid}
-								errorMessage={t("baseline.errors.stageRequired")}
-							/>
-							<SelectField
-								id="baseline-target-market"
-								label={t("baseline.fields.targetMarket")}
-								value={targetMarket}
-								options={targetMarketOptions}
-								onChange={setTargetMarket}
-								disabled={isSaving}
-								showError={targetMarketInvalid}
-								errorMessage={t("baseline.errors.targetMarketRequired")}
-							/>
-						</div>
-					</TabsContent>
-
-					<TabsContent value="market" className="space-y-6">
-						<div className="space-y-2">
-							<Label>{t("baseline.fields.industries")}</Label>
-							<MultiSelectDropdown
-								options={industryOptions}
-								selected={industries}
-								onChange={setIndustries}
-								disabled={isSaving}
-								filterPlaceholder={t("baseline.actions.filter")}
-								placeholder={t("baseline.placeholders.select")}
-							/>
-							{missingIndustries ? (
+							{isEditing && valuePropositionInvalid ? (
 								<p className="text-fontSize-xs text-destructive">
-									{t("baseline.errors.industriesRequired")}
+									{t("baseline.errors.valuePropositionRequired")}
 								</p>
 							) : null}
 						</div>
-						<div className="space-y-2">
-							<Label>{t("baseline.fields.audiences")}</Label>
-							<MultiSelectDropdown
-								options={audienceOptions}
-								selected={audiences}
-								onChange={setAudiences}
-								disabled={isSaving}
-								filterPlaceholder={t("baseline.actions.filter")}
-								placeholder={t("baseline.placeholders.select")}
-							/>
-							{missingAudiences ? (
-								<p className="text-fontSize-xs text-destructive">
-									{t("baseline.errors.audiencesRequired")}
-								</p>
-							) : null}
-						</div>
-					</TabsContent>
 
-					<TabsContent value="strategy" className="space-y-6">
-						<div className="space-y-2">
-							<Label htmlFor="baseline-product-vision">
-								{t("baseline.fields.productVision")}
-							</Label>
+						<div className="space-y-[var(--spacing-field-description)]">
+							<FieldHeader
+								id="baseline-product-vision"
+								question={t("baseline.questions.productVision", { productName })}
+								description={t("baseline.descriptions.productVision")}
+								required
+							/>
 							<Textarea
 								id="baseline-product-vision"
 								value={productVision}
 								onChange={(event) => setProductVision(event.target.value)}
-								disabled={isSaving}
+								disabled={isSaving || !isEditing}
 								rows={3}
 								placeholder={t("baseline.placeholders.productVision")}
 							/>
+							{isEditing && productVisionInvalid ? (
+								<p className="text-fontSize-xs text-destructive">
+									{t("baseline.errors.productVisionRequired")}
+								</p>
+							) : null}
 						</div>
 
-						<div className="space-y-2">
-							<Label>{t("baseline.fields.strategicPillars")}</Label>
+						<div className="space-y-[var(--spacing-field-description)]">
+							<FieldHeader
+								question={t("baseline.questions.strategicPillars", {
+									productName,
+								})}
+								description={t("baseline.descriptions.strategicPillars")}
+								required
+							/>
 							<MultiSelectDropdown
 								options={strategicPillarOptions}
 								selected={strategicPillars}
 								onChange={setStrategicPillars}
-								disabled={isSaving}
+								disabled={isSaving || !isEditing}
 								filterPlaceholder={t("baseline.actions.filter")}
 								placeholder={t("baseline.placeholders.select")}
 							/>
+							{isEditing && strategicPillarsInvalid ? (
+								<p className="text-fontSize-xs text-destructive">
+									{t("baseline.errors.strategicPillarsRequired")}
+								</p>
+							) : null}
 						</div>
-						<div className="space-y-2">
-							<Label>{t("baseline.fields.metricsOfInterest")}</Label>
+
+						<div className="space-y-[var(--spacing-field-description)]">
+							<FieldHeader
+								question={t("baseline.questions.metricsOfInterest", {
+									productName,
+								})}
+								description={t("baseline.descriptions.metricsOfInterest")}
+								required
+							/>
 							<MultiSelectDropdown
 								options={metricsOptions}
 								selected={metricsOfInterest}
 								onChange={setMetricsOfInterest}
-								disabled={isSaving}
+								disabled={isSaving || !isEditing}
 								filterPlaceholder={t("baseline.actions.filter")}
 								placeholder={t("baseline.placeholders.select")}
 							/>
+							{isEditing && metricsInvalid ? (
+								<p className="text-fontSize-xs text-destructive">
+									{t("baseline.errors.metricsRequired")}
+								</p>
+							) : null}
 						</div>
 					</TabsContent>
 
-					<TabsContent value="personas" className="space-y-6">
-						{personas.length === 0 ? (
-							<p className="text-fontSize-sm text-muted-foreground">
-								{t("baseline.emptyPersonas")}
+					<TabsContent value="icps" className="space-y-[var(--spacing-field-group)]">
+						{icps.length > 0 ? (
+							<p className="text-fontSize-sm text-muted-foreground mb-[var(--spacing-field-description)]">
+								{t("baseline.icpsIntro")}
 							</p>
 						) : null}
 
-						<div className="space-y-4">
-							{personas.map((persona, index) => {
-								const isExpanded = expandedPersonas.includes(index);
-								const hasError = personaErrors[index];
+						{icps.length === 0 ? (
+							<div className="space-y-[var(--spacing-field-description)]">
+								<p className="text-fontSize-sm text-muted-foreground">
+									{t("baseline.icpsIntro")}
+								</p>
+								<p className="text-fontSize-sm text-muted-foreground">
+									{t("baseline.emptyIcps")}
+								</p>
+							</div>
+						) : null}
+
+						<div className="space-y-[var(--spacing-field-group)]">
+							{icps.map((icp, index) => {
+								const hasError = icpErrors[index];
 
 								return (
 									<div
-										key={`persona-${index}`}
-										className="rounded-lg border p-4 space-y-4"
+										key={`icp-${icp.id}`}
+										className="rounded-lg border p-4 space-y-[var(--spacing-field-group)]"
 									>
-										<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-											<div>
+										<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+											<div className="space-y-[var(--spacing-field-group)]">
 												<p className="text-fontSize-sm font-medium">
-													{persona.role || t("baseline.persona.untitled")}
+													{icp.segment ||
+														t("baseline.icp.untitled", { index: index + 1 })}
 												</p>
 												<div className="flex flex-wrap gap-2 text-fontSize-xs text-muted-foreground">
 													<Badge variant="secondary">
-														{t("baseline.persona.goalsCount", {
-															count: persona.goals.length,
+														{t("baseline.icp.painsCount", {
+															count: icp.pains.length,
 														})}
 													</Badge>
 													<Badge variant="secondary">
-														{t("baseline.persona.painsCount", {
-															count: persona.painPoints.length,
+														{t("baseline.icp.goalsCount", {
+															count: icp.goals.length,
 														})}
 													</Badge>
-									{persona.preferredTone ? (
-										<Badge variant="outline">
-											{personaToneLabels.get(persona.preferredTone) ??
-												persona.preferredTone}
-										</Badge>
-									) : null}
 												</div>
 											</div>
 											<div className="flex gap-2">
 												<Button
 													type="button"
-													variant="outline"
-													size="sm"
-													onClick={() => togglePersonaExpansion(index)}
-													disabled={isSaving}
-												>
-													{isExpanded
-														? t("baseline.actions.collapse")
-														: t("baseline.actions.edit")}
-												</Button>
-												<Button
-													type="button"
 													variant="ghost-destructive"
 													size="sm"
-													onClick={() => handleRemovePersona(index)}
-													disabled={isSaving}
+													onClick={() => handleRemoveIcp(index)}
+													disabled={isSaving || !isEditing}
 												>
 													{t("baseline.actions.remove")}
 												</Button>
 											</div>
 										</div>
 
-										{isExpanded ? (
-											<div className="space-y-4">
-												<SelectField
-													id={`persona-role-${index}`}
-													label={t("baseline.persona.role")}
-													value={persona.role}
-													options={personaRoleOptions}
-													onChange={(value) =>
-														handlePersonaChange(index, "role", value)
-													}
-													disabled={isSaving}
+										<div className="space-y-[var(--spacing-field-group)]">
+											<div className="space-y-[var(--spacing-field-description)]">
+												<FieldHeader
+													id={`icp-segment-${icp.id}`}
+													question={t("baseline.icp.segment.question")}
+													description={t("baseline.icp.segment.description")}
+													required
 												/>
-
-												<div className="space-y-2">
-													<Label>{t("baseline.persona.goals")}</Label>
-													<MultiSelectDropdown
-														options={personaGoalOptions}
-														selected={persona.goals}
-														onChange={(value) =>
-															handlePersonaChange(index, "goals", value)
-														}
-														disabled={isSaving}
-														filterPlaceholder={t("baseline.actions.filter")}
-														placeholder={t("baseline.placeholders.select")}
-													/>
-												</div>
-
-												<div className="space-y-2">
-													<Label>{t("baseline.persona.painPoints")}</Label>
-													<MultiSelectDropdown
-														options={personaPainOptions}
-														selected={persona.painPoints}
-														onChange={(value) =>
-															handlePersonaChange(index, "painPoints", value)
-														}
-														disabled={isSaving}
-														filterPlaceholder={t("baseline.actions.filter")}
-														placeholder={t("baseline.placeholders.select")}
-													/>
-												</div>
-
-												<SelectField
-													id={`persona-tone-${index}`}
-													label={t("baseline.persona.preferredTone")}
-													value={persona.preferredTone}
-													options={personaToneOptions}
-													onChange={(value) =>
-														handlePersonaChange(index, "preferredTone", value)
+												<Textarea
+													id={`icp-segment-${icp.id}`}
+													value={icp.segment}
+													onChange={(event) =>
+														handleIcpChange(index, "segment", event.target.value)
 													}
-													disabled={isSaving}
+													disabled={isSaving || !isEditing}
+													rows={2}
+													placeholder={t("baseline.placeholders.icpSegment")}
 												/>
+												{isEditing && hasError && icp.segment.trim().length === 0 ? (
+													<p className="text-fontSize-xs text-destructive">
+														{t("baseline.errors.icpSegmentRequired")}
+													</p>
+												) : null}
 											</div>
-										) : null}
 
-										{hasError ? (
+											<div className="space-y-[var(--spacing-field-description)]">
+												<FieldHeader
+													question={t("baseline.icp.pains.question")}
+													description={t("baseline.icp.pains.description")}
+													required
+												/>
+												<TagInput
+													values={icp.pains}
+													onChange={(next) =>
+														handleIcpChange(index, "pains", next)
+													}
+													disabled={isSaving || !isEditing}
+													placeholder={t("baseline.placeholders.icpPains")}
+												/>
+												{isEditing && hasError && icp.pains.length === 0 ? (
+													<p className="text-fontSize-xs text-destructive">
+														{t("baseline.errors.icpPainsRequired")}
+													</p>
+												) : null}
+											</div>
+
+											<div className="space-y-[var(--spacing-field-description)]">
+												<FieldHeader
+													question={t("baseline.icp.goals.question")}
+													description={t("baseline.icp.goals.description")}
+													required
+												/>
+												<TagInput
+													values={icp.goals}
+													onChange={(next) =>
+														handleIcpChange(index, "goals", next)
+													}
+													disabled={isSaving || !isEditing}
+													placeholder={t("baseline.placeholders.icpGoals")}
+												/>
+												{isEditing && hasError && icp.goals.length === 0 ? (
+													<p className="text-fontSize-xs text-destructive">
+														{t("baseline.errors.icpGoalsRequired")}
+													</p>
+												) : null}
+											</div>
+										</div>
+
+										{isEditing && hasError ? (
 											<p className="text-fontSize-xs text-destructive">
-												{t("baseline.errors.personaIncomplete")}
+												{t("baseline.errors.icpIncomplete")}
 											</p>
 										) : null}
 									</div>
@@ -1072,13 +978,19 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 							})}
 						</div>
 
+						{isEditing && icpsMissing ? (
+							<p className="text-fontSize-xs text-destructive">
+								{t("baseline.errors.icpRequired")}
+							</p>
+						) : null}
+
 						<Button
 							type="button"
 							variant="outline"
-							onClick={handleAddPersona}
-							disabled={isSaving}
+							onClick={handleAddIcp}
+							disabled={isSaving || !isEditing}
 						>
-							{t("baseline.actions.addPersona")}
+							{t("baseline.actions.addIcp")}
 						</Button>
 					</TabsContent>
 				</Tabs>
@@ -1088,9 +1000,19 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 				) : null}
 
 				<div className="flex justify-end">
-					<Button type="button" onClick={handleSave} disabled={isSaveDisabled}>
-						{isSaving ? t("baseline.saving") : t("baseline.save")}
-					</Button>
+					{isEditing ? (
+						<Button type="button" onClick={handleSave} disabled={isSaveDisabled}>
+							{isSaving ? t("baseline.saving") : t("baseline.save")}
+						</Button>
+					) : (
+						<Button
+							type="button"
+							onClick={() => setIsEditing(true)}
+							disabled={isSaving}
+						>
+							{t("baseline.actions.modifyBaseline")}
+						</Button>
+					)}
 				</div>
 			</CardContent>
 		</Card>
@@ -1099,35 +1021,49 @@ export function BaselineEditor({ product, onSave }: BaselineEditorProps) {
 
 type SelectFieldProps = {
 	id: string;
-	label: string;
+	question: string;
+	description: string;
 	value: string;
 	options: Option[];
 	onChange: (value: string) => void;
 	disabled: boolean;
+	required?: boolean;
 	showError?: boolean;
 	errorMessage?: string;
 };
 
 function SelectField({
 	id,
-	label,
+	question,
+	description,
 	value,
 	options,
 	onChange,
 	disabled,
+	required,
 	showError,
 	errorMessage,
 }: SelectFieldProps) {
+	const { t } = useTranslation("products");
 	return (
-		<div className="space-y-2">
-			<Label htmlFor={id}>{label}</Label>
+		<div className="space-y-[var(--spacing-field-description)]">
+			<FieldHeader
+				id={id}
+				question={question}
+				description={description}
+				required={required}
+			/>
 			<Select value={value || undefined} onValueChange={onChange} disabled={disabled}>
 				<SelectTrigger id={id}>
-					<SelectValue placeholder="-" />
+					<SelectValue placeholder={t("baseline.placeholders.select")} />
 				</SelectTrigger>
 				<SelectContent>
 					{options.map((option) => (
-						<SelectItem key={option.value} value={option.value}>
+						<SelectItem
+							key={option.value}
+							value={option.value}
+							description={option.description}
+						>
 							{option.label}
 						</SelectItem>
 					))}
@@ -1136,6 +1072,87 @@ function SelectField({
 			{showError && errorMessage ? (
 				<p className="text-fontSize-xs text-destructive">{errorMessage}</p>
 			) : null}
+		</div>
+	);
+}
+
+type FieldHeaderProps = {
+	id?: string;
+	question: string;
+	description: string;
+	required?: boolean;
+};
+
+function FieldHeader({ id, question, description, required }: FieldHeaderProps) {
+	return (
+		<div className="space-y-1">
+			<Label htmlFor={id} className="text-fontSize-sm font-medium">
+				{question}
+				{required ? <span className="ml-1 text-destructive">*</span> : null}
+			</Label>
+			<p className="text-fontSize-xs text-muted-foreground">{description}</p>
+		</div>
+	);
+}
+
+type TagInputProps = {
+	values: string[];
+	onChange: (next: string[]) => void;
+	disabled?: boolean;
+	placeholder?: string;
+};
+
+function TagInput({ values, onChange, disabled, placeholder }: TagInputProps) {
+	const { t } = useTranslation("products");
+	const [inputValue, setInputValue] = useState("");
+
+	const addValue = () => {
+		const trimmed = inputValue.trim();
+		if (!trimmed) return;
+		if (!values.includes(trimmed)) {
+			onChange([...values, trimmed]);
+		}
+		setInputValue("");
+	};
+
+	const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+		if (event.key === "Enter" || event.key === ",") {
+			event.preventDefault();
+			addValue();
+		}
+	};
+
+	return (
+		<div className="space-y-2">
+			<div className="flex flex-wrap gap-2">
+				{values.map((value) => (
+					<Badge key={value} variant="secondary" className="gap-1">
+						{value}
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon"
+							onClick={() => onChange(values.filter((item) => item !== value))}
+							disabled={disabled}
+							className="h-5 w-5"
+						>
+							x
+						</Button>
+					</Badge>
+				))}
+			</div>
+			<div className="flex gap-2">
+				<Input
+					value={inputValue}
+					onChange={(event) => setInputValue(event.target.value)}
+					onKeyDown={handleKeyDown}
+					disabled={disabled}
+					placeholder={placeholder}
+				/>
+				<Button type="button" variant="outline" onClick={addValue} disabled={disabled}>
+					{t("baseline.actions.addTag")}
+				</Button>
+			</div>
 		</div>
 	);
 }

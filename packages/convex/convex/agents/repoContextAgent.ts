@@ -188,7 +188,15 @@ export async function runRepoContextAgent(params: {
 type ProductBaseline = {
 	problemSolved?: string;
 	valueProposition?: string;
-	audiences?: string[];
+	targetMarket?: string;
+	productCategory?: string;
+	industry?: string;
+	icps?: Array<{
+		segment?: string;
+		pains?: string[];
+		goals?: string[];
+		name?: string;
+	}>;
 };
 
 function buildRepoContextPrompt(baseline?: ProductBaseline): string {

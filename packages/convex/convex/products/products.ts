@@ -10,8 +10,8 @@
  */
 
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { query, mutation } from "../_generated/server";
-import { api } from "../_generated/api";
+import { internalAction, internalMutation, mutation, query } from "../_generated/server";
+import { api, internal } from "../_generated/api";
 import { v } from "convex/values";
 import {
   assertOrgAccess,
@@ -19,6 +19,107 @@ import {
   getProductMembership,
 } from "../lib/access";
 import { checkLimit, type Plan } from "../lib/planLimits";
+import { createLLMAdapter } from "../ai/config";
+
+type IcpProfile = {
+  id: string;
+  name?: string;
+  segment: string;
+  pains: string[];
+  goals: string[];
+};
+
+type ProductBaseline = {
+  targetMarket: string;
+  productCategory: string;
+  businessModel: string;
+  stage: string;
+  industry: string;
+  problemSolved: string;
+  valueProposition: string;
+  productVision: string;
+  strategicPillars: string[];
+  metricsOfInterest: string[];
+  icps: IcpProfile[];
+};
+
+const normalizeString = (value?: string) => {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const normalizeArray = (values?: string[]) =>
+  (values ?? []).map((value) => value.trim()).filter((value) => value.length > 0);
+
+const ensureIcpId = (id?: string) => {
+  if (id && id.trim().length > 0) return id;
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const normalizeBaseline = (baseline: ProductBaseline): ProductBaseline => {
+  const targetMarket = normalizeString(baseline.targetMarket);
+  const productCategory = normalizeString(baseline.productCategory);
+  const businessModel = normalizeString(baseline.businessModel);
+  const stage = normalizeString(baseline.stage);
+  const industry = normalizeString(baseline.industry);
+  const problemSolved = normalizeString(baseline.problemSolved);
+  const valueProposition = normalizeString(baseline.valueProposition);
+  const productVision = normalizeString(baseline.productVision);
+  const strategicPillars = normalizeArray(baseline.strategicPillars);
+  const metricsOfInterest = normalizeArray(baseline.metricsOfInterest);
+
+  if (!targetMarket) throw new Error("targetMarket is required");
+  if (!productCategory) throw new Error("productCategory is required");
+  if (!businessModel) throw new Error("businessModel is required");
+  if (!stage) throw new Error("stage is required");
+  if (!industry) throw new Error("industry is required");
+  if (!problemSolved) throw new Error("problemSolved is required");
+  if (!valueProposition) throw new Error("valueProposition is required");
+  if (!productVision) throw new Error("productVision is required");
+  if (strategicPillars.length === 0)
+    throw new Error("strategicPillars is required");
+  if (metricsOfInterest.length === 0)
+    throw new Error("metricsOfInterest is required");
+  if (!baseline.icps || baseline.icps.length === 0)
+    throw new Error("icps is required");
+
+  const icps = baseline.icps.map((icp) => {
+    const segment = normalizeString(icp.segment);
+    const pains = normalizeArray(icp.pains);
+    const goals = normalizeArray(icp.goals);
+    if (!segment) throw new Error("icp.segment is required");
+    if (pains.length === 0) throw new Error("icp.pains is required");
+    if (goals.length === 0) throw new Error("icp.goals is required");
+    return {
+      ...icp,
+      id: ensureIcpId(icp.id),
+      name: normalizeString(icp.name),
+      segment,
+      pains,
+      goals,
+    };
+  });
+
+  return {
+    targetMarket,
+    productCategory,
+    businessModel,
+    stage,
+    industry,
+    problemSolved,
+    valueProposition,
+    productVision,
+    strategicPillars,
+    metricsOfInterest,
+    icps,
+  };
+};
+
+const hasUnnamedIcps = (icps: IcpProfile[]) =>
+  icps.some((icp) => !icp.name || icp.name.trim().length === 0);
 
 // ============================================================================
 // QUERIES
@@ -440,34 +541,36 @@ export const createProduct = mutation({
     organizationId: v.id("organizations"),
     name: v.string(),
     slug: v.string(),
-    baseline: v.optional(
-      v.object({
-        description: v.optional(v.string()),
-        valueProposition: v.optional(v.string()),
-        problemSolved: v.optional(v.string()),
-        targetMarket: v.optional(v.string()),
-        productType: v.optional(v.string()),
-        businessModel: v.optional(v.string()),
-        stage: v.optional(v.string()),
-        industries: v.optional(v.array(v.string())),
-        audiences: v.optional(v.array(v.string())),
-        productVision: v.optional(v.string()),
-        strategicPillars: v.optional(v.array(v.string())),
-        metricsOfInterest: v.optional(v.array(v.string())),
-        personas: v.optional(
-          v.array(
-            v.object({
-              role: v.string(),
-              goals: v.array(v.string()),
-              painPoints: v.array(v.string()),
-              preferredTone: v.string(),
-            })
-          )
-        ),
-      })
-    ),
+    languagePreference: v.string(),
+    releaseCadence: v.string(),
+    baseline: v.object({
+      // === PROFILE ===
+      targetMarket: v.string(),
+      productCategory: v.string(),
+      businessModel: v.string(),
+      stage: v.string(),
+      industry: v.string(),
+
+      // === STRATEGY ===
+      problemSolved: v.string(),
+      valueProposition: v.string(),
+      productVision: v.string(),
+      strategicPillars: v.array(v.string()),
+      metricsOfInterest: v.array(v.string()),
+
+      // === ICPs ===
+      icps: v.array(
+        v.object({
+          id: v.string(),
+          name: v.optional(v.string()),
+          segment: v.string(),
+          pains: v.array(v.string()),
+          goals: v.array(v.string()),
+        })
+      ),
+    }),
   },
-  handler: async (ctx, { organizationId, name, slug, baseline }) => {
+  handler: async (ctx, { organizationId, name, slug, baseline, languagePreference, releaseCadence }) => {
     const { membership, organization, userId } = await assertOrgAccess(
       ctx,
       organizationId
@@ -508,11 +611,14 @@ export const createProduct = mutation({
     const now = Date.now();
 
     // Crear producto
+    const normalizedBaseline = normalizeBaseline(baseline);
     const productId = await ctx.db.insert("products", {
       organizationId,
       name,
       slug,
-      baseline,
+      languagePreference,
+      releaseCadence,
+      baseline: normalizedBaseline,
       createdAt: now,
       updatedAt: now,
     });
@@ -541,27 +647,29 @@ export const updateProduct = mutation({
     releaseCadence: v.optional(v.string()),
     baseline: v.optional(
       v.object({
-        description: v.optional(v.string()),
-        valueProposition: v.optional(v.string()),
-        problemSolved: v.optional(v.string()),
-        targetMarket: v.optional(v.string()),
-        productType: v.optional(v.string()),
-        businessModel: v.optional(v.string()),
-        stage: v.optional(v.string()),
-        industries: v.optional(v.array(v.string())),
-        audiences: v.optional(v.array(v.string())),
-        productVision: v.optional(v.string()),
-        strategicPillars: v.optional(v.array(v.string())),
-        metricsOfInterest: v.optional(v.array(v.string())),
-        personas: v.optional(
-          v.array(
-            v.object({
-              role: v.string(),
-              goals: v.array(v.string()),
-              painPoints: v.array(v.string()),
-              preferredTone: v.string(),
-            })
-          )
+        // === PROFILE ===
+        targetMarket: v.string(),
+        productCategory: v.string(),
+        businessModel: v.string(),
+        stage: v.string(),
+        industry: v.string(),
+
+        // === STRATEGY ===
+        problemSolved: v.string(),
+        valueProposition: v.string(),
+        productVision: v.string(),
+        strategicPillars: v.array(v.string()),
+        metricsOfInterest: v.array(v.string()),
+
+        // === ICPs ===
+        icps: v.array(
+          v.object({
+            id: v.string(),
+            name: v.optional(v.string()),
+            segment: v.string(),
+            pains: v.array(v.string()),
+            goals: v.array(v.string()),
+          })
         ),
       })
     ),
@@ -583,7 +691,7 @@ export const updateProduct = mutation({
     if (name !== undefined) updates.name = name;
     if (languagePreference !== undefined) updates.languagePreference = languagePreference;
     if (releaseCadence !== undefined) updates.releaseCadence = releaseCadence;
-    if (baseline !== undefined) updates.baseline = baseline;
+    if (baseline !== undefined) updates.baseline = normalizeBaseline(baseline);
 
     await ctx.db.patch(productId, updates);
     return productId;
@@ -598,27 +706,29 @@ export const updateBaseline = mutation({
   args: {
     productId: v.id("products"),
     baseline: v.object({
-      description: v.optional(v.string()),
-      valueProposition: v.optional(v.string()),
-      problemSolved: v.optional(v.string()),
-      targetMarket: v.optional(v.string()),
-      productType: v.optional(v.string()),
-      businessModel: v.optional(v.string()),
-      stage: v.optional(v.string()),
-      industries: v.optional(v.array(v.string())),
-      audiences: v.optional(v.array(v.string())),
-      productVision: v.optional(v.string()),
-      strategicPillars: v.optional(v.array(v.string())),
-      metricsOfInterest: v.optional(v.array(v.string())),
-      personas: v.optional(
-        v.array(
-          v.object({
-            role: v.string(),
-            goals: v.array(v.string()),
-            painPoints: v.array(v.string()),
-            preferredTone: v.string(),
-          })
-        )
+      // === PROFILE ===
+      targetMarket: v.string(),
+      productCategory: v.string(),
+      businessModel: v.string(),
+      stage: v.string(),
+      industry: v.string(),
+
+      // === STRATEGY ===
+      problemSolved: v.string(),
+      valueProposition: v.string(),
+      productVision: v.string(),
+      strategicPillars: v.array(v.string()),
+      metricsOfInterest: v.array(v.string()),
+
+      // === ICPs ===
+      icps: v.array(
+        v.object({
+          id: v.string(),
+          name: v.optional(v.string()),
+          segment: v.string(),
+          pains: v.array(v.string()),
+          goals: v.array(v.string()),
+        })
       ),
     }),
   },
@@ -630,10 +740,19 @@ export const updateBaseline = mutation({
       throw new Error("Only admins can update product baseline");
     }
 
+    const normalizedBaseline = normalizeBaseline(baseline);
+
     await ctx.db.patch(productId, {
-      baseline,
+      baseline: normalizedBaseline,
       updatedAt: Date.now(),
     });
+
+    if (hasUnnamedIcps(normalizedBaseline.icps)) {
+      await ctx.scheduler.runAfter(0, internal.products.products.generateIcpNames, {
+        productId,
+        icps: normalizedBaseline.icps ?? [],
+      });
+    }
 
     // Disparar regeneración de contexto en background
     await ctx.scheduler.runAfter(0, api.agents.contextAgent.generateContextSnapshot, {
@@ -643,6 +762,130 @@ export const updateBaseline = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Aplica nombres generados para ICPs (uso interno).
+ */
+export const applyIcpNames = internalMutation({
+  args: {
+    productId: v.id("products"),
+    names: v.array(
+      v.object({
+        id: v.string(),
+        name: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, { productId, names }) => {
+    const product = await ctx.db.get(productId);
+    if (!product?.baseline?.icps || product.baseline.icps.length === 0) {
+      return { updated: 0 };
+    }
+
+    const nameMap = new Map(
+      names
+        .map((entry) => [entry.id, entry.name.trim()] as const)
+        .filter((entry) => entry[0] && entry[1])
+    );
+
+    const nextIcps = product.baseline.icps.map((icp) => {
+      if (!icp) return icp;
+      const existingName = icp.name?.trim();
+      if (existingName) return icp;
+      const generatedName = nameMap.get(icp.id);
+      if (!generatedName) return icp;
+      return { ...icp, name: generatedName.slice(0, 80) };
+    });
+
+    await ctx.db.patch(productId, {
+      baseline: {
+        ...product.baseline,
+        icps: nextIcps,
+      },
+      updatedAt: Date.now(),
+    });
+
+    return { updated: names.length };
+  },
+});
+
+/**
+ * Genera nombres de ICPs sin nombre usando IA (uso interno).
+ */
+export const generateIcpNames = internalAction({
+  args: {
+    productId: v.id("products"),
+    icps: v.array(
+      v.object({
+        id: v.string(),
+        name: v.optional(v.string()),
+        segment: v.string(),
+        pains: v.array(v.string()),
+        goals: v.array(v.string()),
+      })
+    ),
+  },
+  handler: async (ctx, { productId, icps }) => {
+    const icpsToName = icps.filter((icp) => !icp.name || icp.name.trim().length === 0);
+    if (icpsToName.length === 0) {
+      return { generated: 0 };
+    }
+
+    const prompt = `You are naming ideal customer profiles (ICPs). For each profile, generate a short, descriptive name in English.
+
+Rules:
+- 2 to 5 words
+- Title Case
+- No quotes, no punctuation, no emojis
+- Avoid terms like "ICP", "Persona", or "Profile"
+
+Return ONLY valid JSON: an array of objects with keys "id" and "name".
+
+Profiles:
+${icpsToName
+  .map(
+    (icp) =>
+      `- id: ${icp.id}\n  segment: ${icp.segment}\n  pains: ${icp.pains.join(
+        "; "
+      )}\n  goals: ${icp.goals.join("; ")}`
+  )
+  .join("\n")}
+`;
+
+    const adapter = createLLMAdapter();
+    const result = await adapter.generateText({
+      prompt,
+      temperature: 0.3,
+      maxTokens: 400,
+    });
+
+    let parsed: Array<{ id: string; name: string }> = [];
+    try {
+      const json = JSON.parse(result.text);
+      if (Array.isArray(json)) {
+        parsed = json
+          .map((entry) => ({
+            id: typeof entry?.id === "string" ? entry.id : "",
+            name: typeof entry?.name === "string" ? entry.name : "",
+          }))
+          .filter((entry) => entry.id && entry.name);
+      }
+    } catch {
+      parsed = [];
+    }
+
+    if (parsed.length === 0) {
+      return { generated: 0 };
+    }
+
+    await ctx.runMutation(internal.products.products.applyIcpNames, {
+      productId,
+      names: parsed,
+    });
+
+    return { generated: parsed.length };
   },
 });
 

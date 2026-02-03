@@ -125,7 +125,10 @@ export const generateContextSnapshot = action({
 			baseline: {
 				problemSolved: product.baseline?.problemSolved ?? "",
 				valueProposition: product.baseline?.valueProposition ?? "",
-				audiences: product.baseline?.audiences ?? [],
+				targetMarket: product.baseline?.targetMarket ?? "",
+				productCategory: product.baseline?.productCategory ?? "",
+				industry: product.baseline?.industry ?? "",
+				icps: product.baseline?.icps ?? [],
 			},
 		});
 		if (contextResult.metrics) {

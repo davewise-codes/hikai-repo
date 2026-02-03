@@ -73,11 +73,11 @@ export function EntityFields({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-[var(--spacing-field-group)]">
       <div>
         <Label htmlFor={`${idPrefix}-name`}>{labels.name} *</Label>
         {labels.nameHelp ? (
-          <p className="text-fontSize-xs text-muted-foreground mt-1">
+          <p className="text-fontSize-xs text-muted-foreground mt-[var(--spacing-field-description)]">
             {labels.nameHelp}
           </p>
         ) : null}
@@ -89,17 +89,17 @@ export function EntityFields({
           placeholder={labels.namePlaceholder}
           required
           disabled={isLoading}
-          className={placeholderClassName}
+          className={`${placeholderClassName} mt-[var(--spacing-field-description)]`}
         />
       </div>
 
       <div>
         <Label htmlFor={`${idPrefix}-slug`}>{labels.slug} *</Label>
-        <p className="text-fontSize-xs text-muted-foreground mt-1">
+        <p className="text-fontSize-xs text-muted-foreground mt-[var(--spacing-field-description)]">
           {labels.slugHint}
         </p>
         {labels.slugHelp ? (
-          <p className="text-fontSize-xs text-muted-foreground mt-1">
+          <p className="text-fontSize-xs text-muted-foreground mt-[var(--spacing-field-description)]">
             {labels.slugHelp}
           </p>
         ) : null}
@@ -113,7 +113,7 @@ export function EntityFields({
           disabled={isLoading}
           pattern="^[a-z0-9-]+$"
           title={labels.slugHint}
-          className={placeholderClassName}
+          className={`${placeholderClassName} mt-[var(--spacing-field-description)]`}
         />
       </div>
 
@@ -121,7 +121,7 @@ export function EntityFields({
         <div>
           <Label htmlFor={`${idPrefix}-description`}>{labels.description}</Label>
           {labels.descriptionHelp ? (
-            <p className="text-fontSize-xs text-muted-foreground mt-1">
+            <p className="text-fontSize-xs text-muted-foreground mt-[var(--spacing-field-description)]">
               {labels.descriptionHelp}
             </p>
           ) : null}
@@ -134,7 +134,7 @@ export function EntityFields({
             placeholder={labels.descriptionPlaceholder}
             rows={3}
             disabled={isLoading}
-            className={placeholderClassName}
+            className={`${placeholderClassName} mt-[var(--spacing-field-description)]`}
           />
         </div>
       ) : null}
