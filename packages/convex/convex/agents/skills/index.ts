@@ -142,17 +142,20 @@ description: Classifies code sources into product surfaces with explicit buckets
 
 ## Surface Taxonomy
 
-- product_core: Main user-facing product surface.
-- marketing_surface: Marketing site, landing pages, brand assets.
-- infra: Platform, backend, reliability, shared tooling.
-- docs: Documentation, guides, help center.
-- experiments: Spikes, prototypes, sandboxes.
+- product_front: Main user-facing product UI.
+- platform: Backend services, APIs, core platform logic.
+- infra: Deploy/CI/CD, cloud, reliability, build tooling.
+- marketing: Marketing site, landing pages, brand assets.
+- doc: Documentation, guides, help center.
+- management: Roadmaps, specs, planning artifacts.
+- admin: Internal admin/backoffice apps.
+- analytics: Analytics/telemetry systems and dashboards.
 - unknown: Not enough evidence.
 
 ## Classification Rules
 
 1. Do not use "mixed". Pick a primary surface.
-2. If multiple surfaces exist, return surfaceBuckets with pathPrefix evidence.
+2. If multiple surfaces exist, return surfaceMapping with pathPrefix evidence.
 3. Base decisions on structure signals (apps/, packages/, docs/).
 4. Use app paths before sample text.
 5. If evidence is weak, return "unknown" with a short reason.
@@ -160,11 +163,11 @@ description: Classifies code sources into product surfaces with explicit buckets
 ## Output Format
 
 {
-  "classification": "product_core",
+  "sourceCategory": "monorepo",
   "notes": "Monorepo with core app and marketing site",
-  "surfaceBuckets": [
-    { "surface": "product_core", "pathPrefix": "apps/app", "signalCount": 120 },
-    { "surface": "marketing_surface", "pathPrefix": "apps/website", "signalCount": 40 }
+  "surfaceMapping": [
+    { "surface": "product_front", "pathPrefix": "apps/app/src" },
+    { "surface": "marketing", "pathPrefix": "apps/website" }
   ]
 }
 `,

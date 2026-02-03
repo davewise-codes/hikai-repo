@@ -1,6 +1,5 @@
 import { internalMutation, internalQuery } from "../_generated/server";
 import { v } from "convex/values";
-import { Id } from "../_generated/dataModel";
 
 export const getSourceContext = internalQuery({
 	args: {
@@ -36,50 +35,25 @@ export const upsertSourceContext = internalMutation({
 		sourceType: v.string(),
 		sourceId: v.string(),
 		sourceLabel: v.optional(v.string()),
-		classification: v.union(
-			v.literal("product_core"),
-			v.literal("marketing_surface"),
-			v.literal("infra"),
-			v.literal("docs"),
-			v.literal("experiments"),
-			v.literal("mixed"),
-			v.literal("unknown"),
+		sourceCategory: v.optional(
+			v.union(v.literal("monorepo"), v.literal("repo")),
 		),
-		surfaceSignals: v.optional(
-			v.array(
-				v.object({
-					surface: v.union(
-						v.literal("management"),
-						v.literal("design"),
-						v.literal("product_front"),
-						v.literal("platform"),
-						v.literal("marketing"),
-						v.literal("admin"),
-						v.literal("docs"),
-					),
-					bucketId: v.string(),
-					evidence: v.optional(v.array(v.string())),
-				}),
-			),
-		),
-		surfaceBuckets: v.optional(
-			v.array(
-				v.object({
-					surface: v.union(
-						v.literal("product_core"),
-						v.literal("marketing_surface"),
-						v.literal("infra"),
-						v.literal("docs"),
-						v.literal("experiments"),
-						v.literal("unknown"),
-					),
-					pathPrefix: v.string(),
-					signalCount: v.optional(v.number()),
-				}),
-			),
+		surfaceMapping: v.array(
+			v.object({
+				pathPrefix: v.string(),
+				surface: v.union(
+					v.literal("product_front"),
+					v.literal("platform"),
+					v.literal("infra"),
+					v.literal("marketing"),
+					v.literal("doc"),
+					v.literal("management"),
+					v.literal("admin"),
+					v.literal("analytics"),
+				),
+			}),
 		),
 		notes: v.optional(v.string()),
-		structure: v.optional(v.any()),
 	},
 	handler: async (
 		ctx,
@@ -88,11 +62,9 @@ export const upsertSourceContext = internalMutation({
 			sourceType,
 			sourceId,
 			sourceLabel,
-			classification,
-			surfaceSignals,
-			surfaceBuckets,
+			sourceCategory,
+			surfaceMapping,
 			notes,
-			structure,
 		},
 	) => {
 		const existing = await ctx.db
@@ -105,12 +77,10 @@ export const upsertSourceContext = internalMutation({
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {
-				classification,
 				sourceLabel,
-				surfaceSignals,
-				surfaceBuckets,
+				sourceCategory,
+				surfaceMapping,
 				notes,
-				structure,
 				updatedAt: now,
 			});
 			return { id: existing._id };
@@ -121,11 +91,9 @@ export const upsertSourceContext = internalMutation({
 			sourceType,
 			sourceId,
 			sourceLabel,
-			classification,
-			surfaceSignals,
-			surfaceBuckets,
+			sourceCategory,
+			surfaceMapping,
 			notes,
-			structure,
 			createdAt: now,
 			updatedAt: now,
 		});

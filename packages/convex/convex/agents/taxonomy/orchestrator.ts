@@ -22,12 +22,11 @@ type OrchestratorParams = {
 type SurfaceSummary = {
 	surfaces: Array<{
 		sourceId: string;
-		classification: string;
+		sourceCategory: string;
 		notes?: string;
 	}>;
 	summary: Array<{
 		surface: string;
-		signalCount: number;
 		samplePaths: string[];
 	}>;
 };
@@ -87,8 +86,9 @@ export async function buildProductTaxonomy(
 			previousFeatureMap,
 			sources: sourceContexts.map((source) => ({
 				sourceId: source.sourceId,
-				classification: source.classification ?? "unknown",
-				structureSummary: source.structure?.summary ?? source.structure ?? null,
+				sourceCategory: source.sourceCategory ?? "repo",
+				surfaceMapping: source.surfaceMapping ?? [],
+				structureSummary: null,
 			})),
 		},
 		sampling: params.options?.sampling,
@@ -102,14 +102,12 @@ export async function buildProductTaxonomy(
 function summarizeSurfaces(
 	sourceContexts: Array<{
 		sourceId: string;
-		classification?: string;
+		sourceCategory?: string;
 		notes?: string;
-		surfaceBuckets?: Array<{
+		surfaceMapping?: Array<{
 			surface?: string;
 			pathPrefix?: string;
-			signalCount?: number;
 		}>;
-		structure?: unknown;
 	}>,
 ): SurfaceSummary {
 	const sorted = [...sourceContexts].sort((a, b) =>
@@ -118,27 +116,22 @@ function summarizeSurfaces(
 
 	const surfaces = sorted.map((item) => ({
 		sourceId: item.sourceId,
-		classification: item.classification ?? "unknown",
+		sourceCategory: item.sourceCategory ?? "repo",
 		notes: item.notes,
 	}));
 
-	const summaryMap = new Map<
-		string,
-		{ surface: string; signalCount: number; samplePaths: string[] }
-	>();
+	const summaryMap = new Map<string, { surface: string; samplePaths: string[] }>();
 
 	for (const item of sorted) {
-		const buckets = Array.isArray(item.surfaceBuckets)
-			? item.surfaceBuckets
+		const buckets = Array.isArray(item.surfaceMapping)
+			? item.surfaceMapping
 			: [];
 		for (const bucket of buckets) {
 			const surface = bucket.surface ?? "unknown";
 			const entry = summaryMap.get(surface) ?? {
 				surface,
-				signalCount: 0,
 				samplePaths: [],
 			};
-			entry.signalCount += bucket.signalCount ?? 0;
 			if (bucket.pathPrefix) {
 				entry.samplePaths.push(bucket.pathPrefix);
 			}

@@ -26,6 +26,15 @@ export type TimelineListEvent = {
 	cadence: string;
 	capabilitySlug?: string;
 	domain?: string;
+	surface:
+		| "product_front"
+		| "platform"
+		| "infra"
+		| "marketing"
+		| "doc"
+		| "management"
+		| "admin"
+		| "analytics";
 	type: "feature" | "fix" | "improvement" | "work" | "other";
 	title: string;
 	summary?: string;

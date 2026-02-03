@@ -41,6 +41,38 @@ export const getConnectionForOAuth = internalQuery({
 	},
 });
 
+export const listInstallationRepositories = internalAction({
+	args: {
+		productId: v.id("products"),
+		connectionId: v.id("connections"),
+	},
+	handler: async (ctx, { productId, connectionId }) => {
+		await ctx.runQuery(internal.lib.access.assertProductAccessInternal, {
+			productId,
+		});
+
+		const connection = await ctx.runQuery(
+			internal.connectors.connections.getConnectionWithType,
+			{ connectionId },
+		);
+		if (!connection || connection.connectorType?.provider !== "github") {
+			return [];
+		}
+
+		const installationId =
+			typeof connection.config?.installationId === "string"
+				? (connection.config.installationId as string)
+				: null;
+		if (!installationId) {
+			throw new Error("Missing installationId in connection config");
+		}
+
+		const refreshed = await refreshInstallationToken(installationId);
+		const repositories = await fetchInstallationRepositories(refreshed.token);
+		return repositories;
+	},
+});
+
 // Internal: persist GitHub App installation token and activate connection
 export const setGithubAppCredentials = internalMutation({
 	args: {

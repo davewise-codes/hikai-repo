@@ -38,6 +38,15 @@ type InterpretationOutput = {
 	events: Array<{
 		capabilitySlug?: string | null;
 		domain?: string;
+		surface:
+			| "product_front"
+			| "platform"
+			| "infra"
+			| "marketing"
+			| "doc"
+			| "management"
+			| "admin"
+			| "analytics";
 		type: "feature" | "fix" | "improvement" | "work" | "other";
 		title: string;
 		summary?: string;
@@ -228,7 +237,7 @@ export const interpretPendingEvents = action({
 			if (sourceContexts.length) {
 				const summary = sourceContexts
 					.slice(0, 5)
-					.map((item) => `${item.sourceId} → ${item.classification}`)
+					.map((item) => `${item.sourceId} → ${item.sourceCategory ?? "repo"}`)
 					.join(" · ");
 				const suffix =
 					sourceContexts.length > 5
@@ -274,7 +283,7 @@ export const interpretPendingEvents = action({
 					},
 				);
 
-				const bucketImpact = computeBucketImpact(bucket.rawEvents);
+			const bucketImpact = computeBucketImpact(bucket.rawEvents);
 				await recordStep(
 					`Writing interpretation for bucket ${index + 1}/${totalBuckets}`,
 					"info",
@@ -316,6 +325,7 @@ export const interpretPendingEvents = action({
 						visibility: event.visibility ?? "public",
 						relevance: event.relevance,
 						bucketImpact,
+						surface: event.surface,
 					},
 					rawEventIds: event.rawEventIds.map((rawEventId) => rawEventId as Id<"rawEvents">),
 					inferenceLogId: interpretation.inferenceLogId,
@@ -402,6 +412,16 @@ export const insertInterpretedEvent = internalMutation({
 			cadence: v.string(),
 			capabilitySlug: v.optional(v.string()),
 			domain: v.optional(v.string()),
+			surface: v.union(
+				v.literal("product_front"),
+				v.literal("platform"),
+				v.literal("infra"),
+				v.literal("marketing"),
+				v.literal("doc"),
+				v.literal("management"),
+				v.literal("admin"),
+				v.literal("analytics"),
+			),
 			type: v.union(
 				v.literal("feature"),
 				v.literal("fix"),
@@ -436,6 +456,7 @@ export const insertInterpretedEvent = internalMutation({
 			occurredAt: event.bucketStartAt,
 			capabilitySlug: event.capabilitySlug,
 			domain: event.domain,
+			surface: event.surface,
 			type: event.type,
 			title: event.title,
 			summary: event.summary,

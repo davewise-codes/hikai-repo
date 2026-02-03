@@ -38,8 +38,13 @@ export async function runRepoContextAgent(params: {
 	productId: Id<"products">;
 	runId: Id<"agentRuns">;
 	baseline?: ProductBaseline;
+	surfaceMapping?: Array<{
+		sourceId?: string;
+		pathPrefix: string;
+		surface: string;
+	}>;
 }): Promise<RepoContextResult> {
-	const { ctx, productId, runId, baseline } = params;
+	const { ctx, productId, runId, baseline, surfaceMapping } = params;
 	const aiConfig = getAgentAIConfig(AGENT_NAME);
 	const model = createToolPromptModel(createLLMAdapter(aiConfig), {
 		protocol: buildToolProtocol(productId),
@@ -52,7 +57,7 @@ export async function runRepoContextAgent(params: {
 	createSearchCodeTool(ctx, productId),
 ];
 
-	const prompt = buildRepoContextPrompt(baseline);
+	const prompt = buildRepoContextPrompt(baseline, surfaceMapping);
 	const startedAt = Date.now();
 	let lastResult: AgentLoopResult | null = null;
 	let feedback: string | null = null;
@@ -168,6 +173,21 @@ export async function runRepoContextAgent(params: {
 			continue;
 		}
 
+		const surfaceValidation = validatePathPatternsAgainstSurfaces(
+			validation.value,
+			surfaceMapping,
+		);
+		if (!surfaceValidation.valid) {
+			feedback = buildFeedback(surfaceValidation.errors);
+			await recordValidationFailure(
+				ctx,
+				productId,
+				runId,
+				feedback,
+			);
+			continue;
+		}
+
 		return {
 			status: "completed",
 			contextDetail: validation.value,
@@ -199,9 +219,26 @@ type ProductBaseline = {
 	}>;
 };
 
-function buildRepoContextPrompt(baseline?: ProductBaseline): string {
+function buildRepoContextPrompt(
+	baseline?: ProductBaseline,
+	surfaceMapping?: Array<{ sourceId?: string; pathPrefix: string; surface: string }>,
+): string {
+	const mappingText =
+		surfaceMapping && surfaceMapping.length > 0
+			? JSON.stringify(surfaceMapping, null, 2)
+			: "[]";
 	return [
 		"Eres un analista de producto. Tu objetivo es entender QUE HACE este producto y para quien, no como esta construido.",
+		"",
+		"## CONTEXTO PREVIO (surfaceMapping)",
+		"El surface_classifier ya clasificó el repo. Usa SOLO estos paths para explorar:",
+		mappingText,
+		"",
+		"## COMO USAR surfaceMapping",
+		"- product_front y platform contienen features del producto.",
+		"- IGNORA marketing, doc, infra, management, analytics.",
+		"- Tus pathPatterns DEBEN ser subpaths de los pathPrefix permitidos.",
+		"- NO explores paths fuera de surfaceMapping.",
 		"",
 		"## REGLAS (breve)",
 		"- El README puede ser incompleto o engañoso: valida siempre en src/ o codigo fuente.",
@@ -301,6 +338,52 @@ function buildFeedback(errors: string[]): string {
 		...errors.map((error) => `- ${error}`),
 	];
 	return lines.join("\n");
+}
+
+function validatePathPatternsAgainstSurfaces(
+	contextDetail: ContextDetail,
+	surfaceMapping?: Array<{ pathPrefix: string; surface: string }>,
+): { valid: boolean; errors: string[] } {
+	const allowedPrefixes = (surfaceMapping ?? [])
+		.filter(
+			(entry) => entry.surface === "product_front" || entry.surface === "platform",
+		)
+		.map((entry) => normalizePath(entry.pathPrefix));
+	if (allowedPrefixes.length === 0) {
+		return {
+			valid: false,
+			errors: [
+				"surfaceMapping is missing or empty. Run Source Context before generating domains.",
+			],
+		};
+	}
+
+	const errors: string[] = [];
+	contextDetail.domains.forEach((domain, domainIndex) => {
+		domain.pathPatterns.forEach((pattern, patternIndex) => {
+			const normalized = normalizePath(pattern);
+			const matches = allowedPrefixes.some((prefix) =>
+				matchesPrefix(normalized, prefix),
+			);
+			if (!matches) {
+				errors.push(
+					`domains[${domainIndex}].pathPatterns[${patternIndex}] must be within surfaceMapping paths: ${pattern}`,
+				);
+			}
+		});
+	});
+
+	return { valid: errors.length === 0, errors };
+}
+
+function normalizePath(path: string): string {
+	return path.trim().replace(/^\.\/+/, "").replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
+function matchesPrefix(value: string, prefix: string): boolean {
+	if (!prefix) return false;
+	if (value === prefix) return true;
+	return value.startsWith(`${prefix}/`);
 }
 
 async function recordValidationFailure(

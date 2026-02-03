@@ -331,50 +331,25 @@ const schema = defineSchema({
     sourceType: v.string(), // "repo"
     sourceId: v.string(), // repo fullName or identifier
     sourceLabel: v.optional(v.string()),
-    classification: v.union(
-      v.literal("product_core"),
-      v.literal("marketing_surface"),
-      v.literal("infra"),
-      v.literal("docs"),
-      v.literal("experiments"),
-      v.literal("mixed"),
-      v.literal("unknown")
+    sourceCategory: v.optional(
+      v.union(v.literal("monorepo"), v.literal("repo"))
     ),
-    surfaceSignals: v.optional(
-      v.array(
-        v.object({
-          surface: v.union(
-            v.literal("management"),
-            v.literal("design"),
-            v.literal("product_front"),
-            v.literal("platform"),
-            v.literal("marketing"),
-            v.literal("admin"),
-            v.literal("docs")
-          ),
-          bucketId: v.string(),
-          evidence: v.optional(v.array(v.string())),
-        })
-      )
-    ),
-    surfaceBuckets: v.optional(
-      v.array(
-        v.object({
-          surface: v.union(
-            v.literal("product_core"),
-            v.literal("marketing_surface"),
-            v.literal("infra"),
-            v.literal("docs"),
-            v.literal("experiments"),
-            v.literal("unknown")
-          ),
-          pathPrefix: v.string(),
-          signalCount: v.optional(v.number()),
-        })
-      )
+    surfaceMapping: v.array(
+      v.object({
+        pathPrefix: v.string(),
+        surface: v.union(
+          v.literal("product_front"),
+          v.literal("platform"),
+          v.literal("infra"),
+          v.literal("marketing"),
+          v.literal("doc"),
+          v.literal("management"),
+          v.literal("admin"),
+          v.literal("analytics")
+        ),
+      })
     ),
     notes: v.optional(v.string()),
-    structure: v.optional(v.any()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -571,6 +546,16 @@ const schema = defineSchema({
     visibility: v.union(v.literal("public"), v.literal("internal")),
     relevance: v.optional(v.number()),
     bucketImpact: v.optional(v.number()),
+    surface: v.union(
+      v.literal("product_front"),
+      v.literal("platform"),
+      v.literal("infra"),
+      v.literal("marketing"),
+      v.literal("doc"),
+      v.literal("management"),
+      v.literal("admin"),
+      v.literal("analytics")
+    ),
     rawEventIds: v.array(v.id("rawEvents")),
     rawEventCount: v.number(),
     contextSnapshotId: v.optional(v.id("productContextSnapshots")),

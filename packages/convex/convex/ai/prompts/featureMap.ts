@@ -86,7 +86,10 @@ Input JSON:
   "sources": [
     {
       "sourceId": "org/repo",
-      "classification": "product_core|product_platform|product_admin|product_marketing|product_docs|product_other|unknown",
+      "sourceCategory": "monorepo|repo",
+      "surfaceMapping": [
+        { "pathPrefix": "apps/webapp/src", "surface": "product_front" }
+      ],
       "structureSummary": {
         "appPaths": ["apps/app"],
         "packagePaths": ["packages/convex"],

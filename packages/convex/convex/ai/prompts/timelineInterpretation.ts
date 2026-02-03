@@ -1,4 +1,4 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.0";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.1";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
@@ -6,9 +6,15 @@ export type TimelineRawEventInput = {
 	sourceType: "commit" | "pull_request" | "release" | "other";
 	summary: string;
 	filePaths?: string[];
-	surfaceHints?: Array<
-		"product_core" | "marketing_surface" | "infra" | "docs" | "experiments" | "unknown"
-	>;
+	surface?:
+		| "product_front"
+		| "platform"
+		| "infra"
+		| "marketing"
+		| "doc"
+		| "management"
+		| "admin"
+		| "analytics";
 	domainHint?: { name: string; matchedBy: "path" | "entity" | "none" };
 };
 
@@ -25,6 +31,15 @@ export type TimelineInterpretationOutput = {
 	events: Array<{
 		capabilitySlug?: string | null;
 		domain?: string;
+		surface?:
+			| "product_front"
+			| "platform"
+			| "infra"
+			| "marketing"
+			| "doc"
+			| "management"
+			| "admin"
+			| "analytics";
 		type: "feature" | "fix" | "improvement" | "work";
 		title: string;
 		summary?: string;
@@ -67,7 +82,14 @@ Input JSON:
     { "name": "...", "pathPatterns": ["..."], "schemaEntities": ["..."] }
   ],
   "repoContexts": [
-    { "sourceId": "org/repo", "classification": "product_core|marketing_surface|infra|docs|experiments|unknown", "notes": "..." }
+    {
+      "sourceId": "org/repo",
+      "sourceCategory": "monorepo|repo",
+      "surfaceMapping": [
+        { "pathPrefix": "apps/webapp/src", "surface": "product_front" }
+      ],
+      "notes": "..."
+    }
   ],
   "rawEvents": [
     {
@@ -76,7 +98,7 @@ Input JSON:
       "sourceType": "commit|pull_request|release|other",
       "summary": "…",
       "filePaths": ["apps/app/..."],
-      "surfaceHints": ["product_core"],
+      "surface": "product_front",
       "domainHint": { "name": "...", "matchedBy": "path|entity|none" }
     }
   ]
@@ -97,6 +119,7 @@ Output JSON:
     {
       "capabilitySlug": "invite-member",
       "domain": "Organizations",
+      "surface": "product_front",
       "type": "feature|fix|improvement|work",
       "title": "...",
       "summary": "...",
@@ -132,6 +155,7 @@ Rules:
 - Capabilities are canonical: if an event matches one, use its slug.
 - Only include newCapabilities whose slug is NOT in the input capabilities list.
 - Slugs must be kebab-case and stable. Use the same slug for the same capability across events.
-- Use repoContexts, domainHint and surfaceHints to judge relevance: marketing_surface, docs, infra, experiments are usually internal unless they clearly map to value for the ICP.
-- If surfaceHints includes marketing_surface and product_core is not present, treat the item as internal by default.
+- Use repoContexts (sourceCategory + surfaceMapping), domainHint and surface to judge relevance: marketing, doc, infra, management, admin, analytics are usually internal unless they clearly map to value for the ICP.
+- If surface is marketing/doc/infra/management/admin/analytics and no product_front/platform evidence exists, treat the item as internal by default.
+- Keep each output event within a single surface and make the surface explicit.
 `.trim();

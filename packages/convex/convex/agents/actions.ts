@@ -15,7 +15,6 @@ import { productContextAgent } from "./productContextAgent";
 import { timelineContextInterpreterAgent } from "./timelineContextInterpreterAgent";
 import { classifySurface } from "./taxonomy/surface_classifier";
 import { extractFeatures } from "./taxonomy/feature_extractor";
-import { buildProductTaxonomy } from "./taxonomy/orchestrator";
 import type { SurfaceSignalResult } from "./surface_signal_mapper";
 import {
 	buildProductContextInputs,
@@ -306,7 +305,7 @@ export const generateProductContext = action({
 		};
 
 		await recordStep("Started product context generation");
-		await recordStep("Refreshing source context structure", "info");
+		await recordStep("Refreshing source contexts", "info");
 		await refreshSourceContextsForProduct(ctx, productId);
 
 		const tid = threadId ?? (await createThread(ctx, agentComponent));
@@ -679,8 +678,9 @@ export const refreshFeatureMap = action({
 		);
 		const sources = sourceContexts.map((source) => ({
 			sourceId: source.sourceId,
-			classification: source.classification,
-			structureSummary: source.structure?.summary ?? source.structure ?? null,
+			sourceCategory: source.sourceCategory,
+			surfaceMapping: source.surfaceMapping,
+			structureSummary: null,
 		}));
 
 		const promptPayload = JSON.stringify({
@@ -767,191 +767,9 @@ export const refreshFeatureMap = action({
 	},
 });
 
-export const runTaxonomyOrchestrator = action({
-	args: {
-		productId: v.id("products"),
-		debug: v.optional(v.boolean()),
-	},
-	handler: async (
-		ctx,
-		{ productId, debug },
-	): Promise<{
-		surfaceSummary: Record<string, unknown>;
-		domainMap: Record<string, unknown> | null;
-		featureMap: Record<string, unknown> | null;
-		rawFeatureResponse?: string | null;
-		featureMapInvalid?: boolean;
-	}> => {
-		const { organizationId, userId } = await ctx.runQuery(
-			internal.lib.access.assertProductAccessInternal,
-			{ productId },
-		);
-
-		const result = await buildProductTaxonomy({
-			ctx,
-			productId,
-			organizationId,
-			userId,
-			options: debug
-				? {
-						sampling: { temperature: 0 },
-						maxTokens: { domainMapper: 3000, featureExtractor: 6000 },
-						debug: true,
-					}
-				: undefined,
-		});
-
-		return {
-			surfaceSummary: result.surfaceSummary,
-			domainMap: result.domainMap as Record<string, unknown> | null,
-			featureMap: result.featureMap as Record<string, unknown> | null,
-			rawFeatureResponse: (() => {
-				const rawResponse = (result.featureMap as { rawResponse?: unknown } | null)
-					?.rawResponse;
-				return typeof rawResponse === "string" ? rawResponse : null;
-			})(),
-			featureMapInvalid:
-				(result.featureMap as { invalidOutput?: boolean } | null)?.invalidOutput ??
-				false,
-		};
-	},
-});
-
-export const runTaxonomyDeterminismCheck = action({
-	args: {
-		productId: v.id("products"),
-		runs: v.optional(v.number()),
-	},
-	handler: async (
-		ctx,
-		{ productId, runs },
-	): Promise<{
-		runs: number;
-		featureSimilarity: number;
-		domainSimilarity: number;
-		errors: string[];
-		runDurationsMs: number[];
-		tokenUsage: {
-			tokensIn: number;
-			tokensOut: number;
-			totalTokens: number;
-			costUsd: number;
-		};
-	}> => {
-		const { organizationId, userId } = await ctx.runQuery(
-			internal.lib.access.assertProductAccessInternal,
-			{ productId },
-		);
-		const totalRuns = Math.max(1, Math.min(runs ?? 5, 10));
-		const outputs: Array<{
-			domains: string[];
-			features: string[];
-		}> = [];
-		const errors: string[] = [];
-		const runDurationsMs: number[] = [];
-		const startWindow = Date.now();
-
-		for (let i = 0; i < totalRuns; i += 1) {
-			const start = Date.now();
-			const result = await buildProductTaxonomy({
-				ctx,
-				productId,
-				organizationId,
-				userId,
-				options: {
-					sampling: { temperature: 0 },
-					maxTokens: { domainMapper: 3000, featureExtractor: 6000 },
-				},
-			});
-			runDurationsMs.push(Date.now() - start);
-
-			if (!result.domainMap) {
-				errors.push(`run-${i + 1}: domainMap null`);
-			}
-			if (!result.featureMap) {
-				errors.push(`run-${i + 1}: featureMap null`);
-			}
-
-			const domainNames = Array.isArray(result.domainMap?.domains)
-				? result.domainMap.domains
-						.map((domain) =>
-							typeof domain?.name === "string" ? domain.name : null,
-						)
-						.filter((name): name is string => Boolean(name))
-				: [];
-			const featureNames = Array.isArray(result.featureMap?.features)
-				? result.featureMap.features
-						.map((feature) => {
-							if (typeof feature?.id === "string") return feature.id;
-							if (typeof feature?.slug === "string") return feature.slug;
-							if (typeof feature?.name === "string") return feature.name;
-							return null;
-						})
-						.filter((name): name is string => Boolean(name))
-				: [];
-
-			outputs.push({
-				domains: uniqueSorted(domainNames),
-				features: uniqueSorted(featureNames),
-			});
-		}
-
-		const [baseline] = outputs;
-		const domainSimilarity = averageSimilarity(
-			outputs.map((output) => output.domains),
-			baseline?.domains ?? [],
-		);
-		const featureSimilarity = averageSimilarity(
-			outputs.map((output) => output.features),
-			baseline?.features ?? [],
-		);
-
-		const usageSummary = await ctx.runQuery(api.lib.aiUsage.getProductUsage, {
-			productId,
-			startDate: startWindow,
-			endDate: Date.now(),
-		});
-		const tokenUsage = {
-			tokensIn: usageSummary.totals.tokensIn,
-			tokensOut: usageSummary.totals.tokensOut,
-			totalTokens: usageSummary.totals.totalTokens,
-			costUsd: usageSummary.totals.estimatedCostUsd,
-		};
-
-		return {
-			runs: totalRuns,
-			featureSimilarity,
-			domainSimilarity,
-			errors,
-			runDurationsMs,
-			tokenUsage,
-		};
-	},
-});
 
 function uniqueSorted(items: string[]): string[] {
 	return Array.from(new Set(items)).sort((a, b) => a.localeCompare(b));
-}
-
-function averageSimilarity(
-	runs: string[][],
-	baseline: string[],
-): number {
-	if (!baseline.length) return 0;
-	const baselineSet = new Set(baseline);
-	const scores = runs.map((run) => jaccardSimilarity(baselineSet, run));
-	const total = scores.reduce((sum, value) => sum + value, 0);
-	return Number((total / scores.length).toFixed(4));
-}
-
-function jaccardSimilarity(baseline: Set<string>, sample: string[]): number {
-	const sampleSet = new Set(sample);
-	const intersection = Array.from(sampleSet).filter((value) =>
-		baseline.has(value),
-	);
-	const union = new Set([...baseline, ...sampleSet]);
-	if (union.size === 0) return 1;
-	return intersection.length / union.size;
 }
 
 function normalizeNewCapabilities(
@@ -1131,6 +949,25 @@ function normalizeEvents(
 		);
 }
 
+function resolveEventSurface(
+	rawEventIds: string[],
+	surfaceByRawEventId: Map<string, TimelineSurface>,
+): TimelineSurface {
+	const counts = new Map<TimelineSurface, number>();
+	for (const rawEventId of rawEventIds) {
+		const surface = surfaceByRawEventId.get(rawEventId);
+		if (!surface) continue;
+		counts.set(surface, (counts.get(surface) ?? 0) + 1);
+	}
+	if (counts.size === 0) return "product_front";
+
+	return Array.from(counts.entries())
+		.sort((a, b) => {
+			if (b[1] !== a[1]) return b[1] - a[1];
+			return SURFACE_PRIORITY.indexOf(a[0]) - SURFACE_PRIORITY.indexOf(b[0]);
+		})[0]?.[0] ?? "product_front";
+}
+
 export const interpretTimelineEvents = action({
 	args: {
 		productId: v.id("products"),
@@ -1163,6 +1000,7 @@ export const interpretTimelineEvents = action({
 		events: Array<{
 			capabilitySlug?: string | null;
 			domain?: string;
+			surface: TimelineSurface;
 			type: "feature" | "fix" | "improvement" | "work";
 			title: string;
 			summary?: string;
@@ -1197,10 +1035,21 @@ export const interpretTimelineEvents = action({
 					{ productId, limit },
 				);
 
+		const repoContexts = await ctx.runQuery(
+			internal.agents.sourceContextData.listSourceContexts,
+			{ productId },
+		);
+		const surfaceMapping = normalizeSurfaceBuckets(
+			repoContexts.flatMap((context) =>
+				Array.isArray(context.surfaceMapping) ? context.surfaceMapping : [],
+			),
+		);
+
 		const rawEvents = rawSummaries.map((event) => {
 			const filePaths = Array.isArray((event as { filePaths?: string[] }).filePaths)
 				? ((event as { filePaths: string[] }).filePaths ?? [])
 				: [];
+			const surface = deriveSurface(filePaths, surfaceMapping);
 			return {
 				rawEventId: event.rawEventId,
 				occurredAt: event.occurredAt ?? 0,
@@ -1208,22 +1057,19 @@ export const interpretTimelineEvents = action({
 					event.type === "commit" ||
 					event.type === "pull_request" ||
 					event.type === "release"
-						? event.type
-						: "other",
+					? event.type
+					: "other",
 				summary: event.summary,
 				filePaths,
-				surfaceHints: deriveSurfaceHints(filePaths),
+				surface,
 			};
 		});
 
-		const repoContexts = await ctx.runQuery(
-			internal.agents.sourceContextData.listSourceContexts,
-			{ productId },
-		);
 		const repoContextSummary = repoContexts.map((item) => ({
 			sourceId: item.sourceId,
-			classification: item.classification,
+			sourceCategory: item.sourceCategory,
 			notes: item.notes,
+			surfaceMapping: item.surfaceMapping,
 		}));
 
 		const currentSnapshot = product.currentProductSnapshot
@@ -1257,6 +1103,10 @@ export const interpretTimelineEvents = action({
 				domainHint,
 			};
 		});
+
+		const surfaceByRawEventId = new Map(
+			rawEvents.map((event) => [event.rawEventId, event.surface]),
+		);
 
 		const snapshotPayload = {
 			baseline,
@@ -1373,7 +1223,10 @@ export const interpretTimelineEvents = action({
 				normalizeDomain,
 				existingCapabilities,
 				newCapabilitySlugs,
-			);
+			).map((event) => ({
+				...event,
+				surface: resolveEventSurface(event.rawEventIds, surfaceByRawEventId),
+			}));
 
 			if (normalizedNewCapabilities.length) {
 				await ctx.runMutation(internal.products.capabilities.upsertProductCapabilities, {
@@ -1464,139 +1317,189 @@ export const classifySourceContext = action({
 		ctx,
 		{ productId },
 	): Promise<{ classified: number }> => {
-		const { organizationId, userId, product } = await ctx.runQuery(
-			internal.lib.access.assertProductAccessInternal,
-			{ productId },
-		);
+		const run = await ctx.runMutation(api.agents.agentRuns.createAgentRun, {
+			productId,
+			useCase: "source_context_classification",
+			agentName: "Source Context Classifier Agent",
+		});
+		const runId = run.runId;
+		const recordStep = async (
+			step: string,
+			status: "info" | "success" | "warn" | "error",
+			metadata?: Record<string, unknown>,
+		) => {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId,
+				step,
+				status,
+				metadata,
+			});
+		};
 
-		const rawEvents = await ctx.runQuery(
-			internal.timeline.interpret.getAllRawEventsForProduct,
-			{ productId },
-		);
-		const existingContexts = await ctx.runQuery(
-			internal.agents.sourceContextData.listSourceContexts,
-			{ productId },
-		);
-		const existingByKey = new Map(
-			existingContexts.map((item) => [`${item.sourceType}:${item.sourceId}`, item]),
-		);
-		const repoSamples = new Map<
-			string,
-			{
-				sourceType: string;
-				summaries: Array<string>;
-				pathHints: Set<string>;
-				connectionId?: Id<"connections">;
-			}
-		>();
-		for (const event of rawEvents) {
-			const repoName =
-				typeof (event.payload as any)?.repo?.fullName === "string"
-					? ((event.payload as any).repo.fullName as string)
-					: null;
-			if (!repoName) continue;
-			const connectionId = (event as { connectionId?: Id<"connections"> })
-				.connectionId;
-			const entry = repoSamples.get(repoName) ?? {
-				sourceType: event.sourceType,
-				summaries: [],
-				pathHints: new Set<string>(),
-				connectionId,
-			};
-			if (entry.summaries.length < 6) {
-				entry.summaries.push(
-					buildSourceSummary(event.payload, event.sourceType),
-				);
-			}
-			const hints = extractPathHints(event.payload);
-			for (const hint of hints) {
-				entry.pathHints.add(hint);
-			}
-			if (!entry.connectionId && connectionId) {
-				entry.connectionId = connectionId;
-			}
-			repoSamples.set(repoName, entry);
-		}
+		try {
+			const { organizationId, userId, product } = await ctx.runQuery(
+				internal.lib.access.assertProductAccessInternal,
+				{ productId },
+			);
 
-		let classified = 0;
-		for (const [sourceId, entry] of repoSamples.entries()) {
-			const sourceType = "repo";
-			const key = `${sourceType}:${sourceId}`;
-			const existing = existingByKey.get(key);
-			const now = Date.now();
-			const isFresh =
-				typeof existing?.updatedAt === "number" && now - existing.updatedAt < 86400000;
-			let structureSummary: unknown = null;
-			if (isFresh && existing?.structure) {
-				structureSummary =
-					(existing.structure as { summary?: unknown }).summary ?? existing.structure;
-			} else if (entry.connectionId) {
-				try {
-					structureSummary = await ctx.runAction(
-						internal.connectors.github.fetchRepoStructureSummary,
-						{
-							productId,
-							connectionId: entry.connectionId,
-							repoFullName: sourceId,
-						},
+			await recordStep("Loading active connections", "info");
+			const connections = await ctx.runQuery(
+				internal.connectors.connections.listByProductInternal,
+				{ productId },
+			);
+			const activeConnections = connections.filter(
+				(connection) => connection.status === "active",
+			);
+			if (!activeConnections.length) {
+				await recordStep("No active connections found", "warn");
+				await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+					productId,
+					runId,
+					status: "success",
+				});
+				return { classified: 0 };
+			}
+
+			let classified = 0;
+			for (const connection of activeConnections) {
+				const provider =
+					typeof connection.connectorType?.provider === "string"
+						? connection.connectorType.provider
+						: "unknown";
+
+				if (provider === "github") {
+					await recordStep("github: listing repositories", "info", {
+						connectionId: connection._id,
+					});
+					const repositories = await ctx.runAction(
+						internal.connectors.github.listInstallationRepositories,
+						{ productId, connectionId: connection._id },
 					);
-				} catch (error) {
-					structureSummary = null;
-				}
-			}
-			const pathOverview = structureSummary
-				? buildPathOverviewFromStructure(structureSummary)
-				: buildPathOverview(Array.from(entry.pathHints));
+					if (!repositories.length) {
+						await recordStep("github: no repositories found", "warn", {
+							connectionId: connection._id,
+						});
+						continue;
+					}
 
-			const promptInput = {
-				product: {
-					name: product.name,
-					productType: product.baseline?.productCategory ?? "",
-					valueProposition: product.baseline?.valueProposition ?? "",
-					targetMarket: product.baseline?.targetMarket ?? "",
-					audiences:
-						product.baseline?.icps?.map((icp) => icp.segment).filter(Boolean) ??
-						[],
-					stage: product.baseline?.stage ?? "",
-				},
-				repo: {
+					for (const repo of repositories) {
+						const sourceType = "repo";
+						const sourceId = repo.fullName;
+						let structureSummary: unknown = null;
+						try {
+							structureSummary = await ctx.runAction(
+								internal.connectors.github.fetchRepoStructureSummary,
+								{
+									productId,
+									connectionId: connection._id,
+									repoFullName: sourceId,
+								},
+							);
+						} catch {
+							structureSummary = null;
+						}
+
+						const pathOverview = structureSummary
+							? buildPathOverviewFromStructure(structureSummary)
+							: buildPathOverview([]);
+						const promptInput = {
+							product: {
+								name: product.name,
+								productType: product.baseline?.productCategory ?? "",
+								valueProposition: product.baseline?.valueProposition ?? "",
+								targetMarket: product.baseline?.targetMarket ?? "",
+								audiences:
+									product.baseline?.icps
+										?.map((icp) => icp.segment)
+										.filter(Boolean) ?? [],
+								stage: product.baseline?.stage ?? "",
+							},
+							repo: {
+								sourceType,
+								sourceId,
+								samples: [],
+								pathOverview,
+								structureSummary,
+							},
+						};
+
+						const parsed = await classifySurface({
+							ctx,
+							organizationId,
+							productId,
+							userId,
+							runId,
+							input: promptInput,
+						});
+						const resolvedMapping = parsed?.surfaceMapping ?? [];
+						if (!resolvedMapping.length) {
+							await recordStep("Surface classification failed", "warn", {
+								sourceId,
+								reason: "empty_surface_mapping",
+							});
+							continue;
+						}
+						const resolvedSourceCategory = parsed?.sourceCategory ?? "repo";
+
+						await ctx.runMutation(
+							internal.agents.sourceContextData.upsertSourceContext,
+							{
+								productId,
+								sourceType,
+								sourceId,
+								sourceLabel: repo.name ?? sourceId,
+								sourceCategory: resolvedSourceCategory,
+								notes: parsed?.notes,
+								surfaceMapping: resolvedMapping,
+							},
+						);
+						classified += 1;
+					}
+					continue;
+				}
+
+				const surfaceForProvider = mapProviderToSurface(provider);
+				const sourceType = "connection";
+				const sourceId = `${connection._id}`;
+				await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
+					productId,
 					sourceType,
 					sourceId,
-					samples: entry.summaries,
-					pathOverview,
-					structureSummary,
-				},
-			};
-			const promptPayload = JSON.stringify(promptInput);
-			const parsed = await classifySurface({
-				ctx,
-				organizationId,
-				productId,
-				userId,
-				input: promptInput,
-			});
-			if (!parsed?.classification) continue;
+					sourceLabel: connection.name,
+					sourceCategory: "repo",
+					notes: `Source: ${provider}`,
+					surfaceMapping: [
+						{ surface: surfaceForProvider, pathPrefix: `provider/${provider}` },
+					],
+				});
+				classified += 1;
+			}
 
-			const derivedClassification = deriveClassificationFromStructure(
-				structureSummary,
+			await recordStep("Source context classification completed", "success", {
+				classified,
+				connectionCount: activeConnections.length,
+			});
+
+			await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+				productId,
+				runId,
+				status: "success",
+			});
+
+			return { classified };
+		} catch (error) {
+			await recordStep(
+				error instanceof Error ? error.message : "Unknown error",
+				"error",
 			);
-			const resolvedClassification = derivedClassification ?? parsed.classification;
-
-			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
+			await ctx.runMutation(internal.agents.agentRuns.finishRun, {
 				productId,
-				sourceType,
-				sourceId,
-				classification: resolvedClassification,
-				notes: parsed.notes,
-				surfaceBuckets: parsed.surfaceBuckets,
-				structure: structureSummary
-					? { summary: structureSummary, updatedAt: now, source: "github_tree" }
-					: existing?.structure,
+				runId,
+				status: "error",
 			});
-			classified += 1;
+			throw error;
 		}
-
-		return { classified };
 	},
 });
 
@@ -1661,13 +1564,6 @@ export const regenerateSurfaceSignals = action({
 
 		await recordStep("Collecting sources", "info");
 
-		const existingContexts = await ctx.runQuery(
-			internal.agents.sourceContextData.listSourceContexts,
-			{ productId },
-		);
-		const existingByKey = new Map(
-			existingContexts.map((item) => [`${item.sourceType}:${item.sourceId}`, item]),
-		);
 		const repoSamples = new Map<
 			string,
 			{
@@ -1844,20 +1740,6 @@ export const regenerateSurfaceSignals = action({
 		}
 
 		await recordStep("Persisting surface signals", "info");
-		for (const source of mapping.sources) {
-			const key = `${source.sourceType}:${source.sourceId}`;
-			const existing = existingByKey.get(key);
-			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
-				productId,
-				sourceType: source.sourceType,
-				sourceId: source.sourceId,
-				sourceLabel: source.sourceLabel,
-				classification: existing?.classification ?? "unknown",
-				surfaceSignals: source.surfaces,
-				notes: existing?.notes,
-				structure: existing?.structure,
-			});
-		}
 
 		await recordStep("Building UI sitemap", "info");
 		const toolSources = sourceInputs.map((source) => ({
@@ -2242,11 +2124,14 @@ function classifySurfaceFromPath(path: string): string | null {
 function deriveClassificationFromStructure(
 	structureSummary: unknown,
 ):
-	| "product_core"
-	| "marketing_surface"
+	| "product_front"
+	| "platform"
 	| "infra"
-	| "docs"
-	| "experiments"
+	| "marketing"
+	| "doc"
+	| "management"
+	| "admin"
+	| "analytics"
 	| "unknown"
 	| null {
 	const summary = structureSummary as {
@@ -2260,46 +2145,14 @@ function deriveClassificationFromStructure(
 		.filter(Boolean);
 	const has = (name: string) => names.includes(name);
 
-	if (has("product_core")) return "product_core";
-	if (has("product_platform")) return "infra";
-	if (has("product_admin")) return "infra";
-	if (has("product_marketing")) return "marketing_surface";
-	if (has("product_docs")) return "docs";
+	if (has("product_core")) return "product_front";
+	if (has("product_platform")) return "platform";
+	if (has("product_admin")) return "admin";
+	if (has("product_marketing")) return "marketing";
+	if (has("product_docs")) return "doc";
 	if (has("product_other")) return "unknown";
 
 	return null;
-}
-
-const SOURCE_CLASSIFICATIONS = new Set([
-	"product_core",
-	"marketing_surface",
-	"infra",
-	"docs",
-	"experiments",
-	"unknown",
-]);
-
-function normalizeSourceClassification(
-	value: unknown,
-):
-	| "product_core"
-	| "marketing_surface"
-	| "infra"
-	| "docs"
-	| "experiments"
-	| "unknown"
-	| null {
-	if (typeof value !== "string") return null;
-	if (value === "mixed") return "unknown";
-	return SOURCE_CLASSIFICATIONS.has(value)
-		? (value as
-				| "product_core"
-				| "marketing_surface"
-				| "infra"
-				| "docs"
-				| "experiments"
-				| "unknown")
-		: null;
 }
 
 function extractPathHints(payload: unknown): string[] {
@@ -2396,14 +2249,100 @@ function buildPathOverviewFromStructure(structureSummary: any): {
 	};
 }
 
-function deriveSurfaceHints(filePaths: string[]): Array<
-	"product_core" | "marketing_surface" | "infra" | "docs" | "experiments" | "unknown"
-> {
-	if (!filePaths.length) return ["unknown"];
+type TimelineSurface =
+	| "product_front"
+	| "platform"
+	| "infra"
+	| "marketing"
+	| "doc"
+	| "management"
+	| "admin"
+	| "analytics";
 
-	const hints = new Set<
-		"product_core" | "marketing_surface" | "infra" | "docs" | "experiments"
+type TimelineSurfaceMapping = {
+	surface: TimelineSurface;
+	pathPrefix: string;
+};
+
+const TIMELINE_SURFACES = new Set<TimelineSurface>([
+	"product_front",
+	"platform",
+	"infra",
+	"marketing",
+	"doc",
+	"management",
+	"admin",
+	"analytics",
+]);
+
+const SURFACE_PRIORITY: TimelineSurface[] = [
+	"product_front",
+	"platform",
+	"infra",
+	"marketing",
+	"doc",
+	"management",
+	"admin",
+	"analytics",
+];
+
+function normalizePath(value: string): string {
+	return value.replace(/^\.\/+/, "").replace(/\\/g, "/").toLowerCase();
+}
+
+function deriveSurface(
+	filePaths: string[],
+	surfaceMapping: TimelineSurfaceMapping[],
+): TimelineSurface {
+	if (!filePaths.length) return "product_front";
+
+	const normalizedBuckets = surfaceMapping
+		.map((bucket) => ({
+			...bucket,
+			pathPrefix: normalizePath(bucket.pathPrefix),
+		}))
+		.filter((bucket) => bucket.pathPrefix.length > 0);
+
+	const surfaceMatches = new Map<
+		TimelineSurface,
+		{ count: number; bestPrefixLength: number; signalCount: number }
 	>();
+
+	for (const rawPath of filePaths) {
+		const normalized = normalizePath(rawPath);
+		if (!normalized) continue;
+		for (const bucket of normalizedBuckets) {
+			const prefix = bucket.pathPrefix;
+			if (normalized === prefix || normalized.startsWith(`${prefix}/`)) {
+				const entry = surfaceMatches.get(bucket.surface) ?? {
+					count: 0,
+					bestPrefixLength: 0,
+					signalCount: 0,
+				};
+				entry.count += 1;
+				entry.bestPrefixLength = Math.max(entry.bestPrefixLength, prefix.length);
+				entry.signalCount += 0;
+				surfaceMatches.set(bucket.surface, entry);
+			}
+		}
+	}
+
+	if (surfaceMatches.size > 0) {
+		return Array.from(surfaceMatches.entries())
+			.sort((a, b) => {
+				if (b[1].count !== a[1].count) return b[1].count - a[1].count;
+				if (b[1].bestPrefixLength !== a[1].bestPrefixLength) {
+					return b[1].bestPrefixLength - a[1].bestPrefixLength;
+				}
+				if (b[1].signalCount !== a[1].signalCount) {
+					return b[1].signalCount - a[1].signalCount;
+				}
+				return (
+					SURFACE_PRIORITY.indexOf(a[0]) - SURFACE_PRIORITY.indexOf(b[0])
+				);
+			})[0]?.[0] ?? "product_front";
+	}
+
 	const marketingTokens = [
 		"marketing",
 		"website",
@@ -2420,48 +2359,94 @@ function deriveSurfaceHints(filePaths: string[]): Array<
 		"frontend",
 		"portal",
 	];
-	const infraTokens = [
+	const platformTokens = [
 		"backend",
 		"server",
 		"api",
-		"infra",
-		"convex",
-		"functions",
+		"platform",
+		"core",
 		"services",
-		"packages",
+		"convex",
 	];
-	const docTokens = ["docs", "doc", "guides"];
-	const experimentTokens = ["experiments", "sandbox", "playground", "prototype"];
+	const infraTokens = [
+		"infra",
+		"deploy",
+		"deployment",
+		"ops",
+		"docker",
+		"k8s",
+		"terraform",
+		"ci",
+		"cd",
+		"pipeline",
+		"github",
+	];
+	const docTokens = ["docs", "doc", "guides", "readme"];
+	const managementTokens = [
+		"roadmap",
+		"strategy",
+		"requirements",
+		"prd",
+		"spec",
+		"planning",
+	];
+	const adminTokens = ["admin", "backoffice", "back-office", "console"];
+	const analyticsTokens = ["analytics", "metrics", "telemetry", "tracking"];
 
-	for (const path of filePaths) {
-		const normalized = path.replace(/^\.\/+/, "");
-		const segments = normalized.toLowerCase().split("/");
+	for (const rawPath of filePaths) {
+		const normalized = normalizePath(rawPath);
+		const segments = normalized.split("/").filter(Boolean);
 		const hasToken = (tokens: string[]) =>
 			segments.some((segment) => tokens.includes(segment));
 
-		if (hasToken(experimentTokens)) {
-			hints.add("experiments");
-			continue;
+		if (hasToken(docTokens) || normalized.endsWith(".md")) return "doc";
+		if (hasToken(marketingTokens)) return "marketing";
+		if (hasToken(managementTokens)) return "management";
+		if (hasToken(adminTokens)) return "admin";
+		if (hasToken(analyticsTokens)) return "analytics";
+		if (hasToken(infraTokens)) return "infra";
+		if (hasToken(platformTokens) || normalized.startsWith("packages/")) {
+			return "platform";
 		}
-		if (hasToken(docTokens) || normalized.endsWith(".md")) {
-			hints.add("docs");
-			continue;
-		}
-		if (hasToken(marketingTokens)) {
-			hints.add("marketing_surface");
-			continue;
-		}
-		if (hasToken(infraTokens)) {
-			hints.add("infra");
-			continue;
-		}
-		if (normalized.includes("/apps/") || hasToken(productTokens)) {
-			hints.add("product_core");
+		if (normalized.startsWith("apps/") || hasToken(productTokens)) {
+			return "product_front";
 		}
 	}
 
-	if (!hints.size) return ["unknown"];
-	return Array.from(hints);
+	return "product_front";
+}
+
+function normalizeSurfaceBuckets(
+	buckets: Array<{
+		surface?: string;
+		pathPrefix?: string;
+	}>,
+): TimelineSurfaceMapping[] {
+	return buckets
+		.map((bucket) => {
+			const surface =
+				typeof bucket.surface === "string" &&
+				TIMELINE_SURFACES.has(bucket.surface as TimelineSurface)
+					? (bucket.surface as TimelineSurface)
+					: null;
+			const pathPrefix =
+				typeof bucket.pathPrefix === "string" ? bucket.pathPrefix.trim() : "";
+			if (!surface || !pathPrefix) return null;
+			return { surface, pathPrefix };
+		})
+		.filter(
+			(bucket): bucket is TimelineSurfaceMapping => bucket !== null,
+		);
+}
+
+function mapProviderToSurface(provider: string): TimelineSurface {
+	const normalized = provider.toLowerCase();
+	if (normalized === "github") return "platform";
+	if (normalized === "linear") return "management";
+	if (normalized === "notion") return "doc";
+	if (normalized === "slack" || normalized === "discord") return "management";
+	if (normalized === "amplitude" || normalized === "mixpanel") return "analytics";
+	return "management";
 }
 
 type RepoDomainHint = {
@@ -2683,74 +2668,7 @@ async function refreshSourceContextsForProduct(
 	ctx: ActionCtx,
 	productId: Id<"products">,
 ): Promise<{ refreshed: number }> {
-	const sourceContexts = await ctx.runQuery(
-		internal.agents.sourceContextData.listSourceContexts,
-		{ productId },
-	);
-	if (!sourceContexts.length) return { refreshed: 0 };
-
-	const repoMeta = await ctx.runQuery(
-		internal.agents.productContextData.getRepositoryMetadata,
-		{ productId },
-	);
-	const connectionId = repoMeta[0]?.connectionId;
-	if (!connectionId) return { refreshed: 0 };
-
-	let refreshed = 0;
-	const now = Date.now();
-
-	for (const source of sourceContexts) {
-		if (source.sourceType !== "repo") continue;
-		const structureSummary =
-			(source.structure as { summary?: unknown })?.summary ??
-			source.structure ??
-			null;
-		const surfaceBuckets = Array.isArray(
-			(structureSummary as { surfaceMap?: { buckets?: unknown } })?.surfaceMap
-				?.buckets,
-		)
-			? (structureSummary as { surfaceMap: { buckets: unknown[] } }).surfaceMap
-					.buckets
-			: [];
-		const updatedAt =
-			typeof (source.structure as { updatedAt?: number })?.updatedAt === "number"
-				? (source.structure as { updatedAt: number }).updatedAt
-				: null;
-		const isFresh = updatedAt ? now - updatedAt < 12 * 60 * 60 * 1000 : false;
-
-		if (isFresh && surfaceBuckets.length > 0) {
-			continue;
-		}
-
-		try {
-			const summary = await ctx.runAction(
-				internal.connectors.github.fetchRepoStructureSummary,
-				{
-					productId,
-					connectionId,
-					repoFullName: source.sourceId,
-				},
-			);
-			const derivedClassification = deriveClassificationFromStructure(summary);
-			const normalizedClassification = normalizeSourceClassification(
-				source.classification,
-			);
-			await ctx.runMutation(internal.agents.sourceContextData.upsertSourceContext, {
-				productId,
-				sourceType: source.sourceType,
-				sourceId: source.sourceId,
-				classification:
-					derivedClassification ?? normalizedClassification ?? "unknown",
-				notes: source.notes,
-				structure: { summary, updatedAt: now, source: "github_tree" },
-			});
-			refreshed += 1;
-		} catch {
-			continue;
-		}
-	}
-
-	return { refreshed };
+	return { refreshed: 0 };
 }
 
 function parseJsonSafely(text: string): any {
