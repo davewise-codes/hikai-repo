@@ -10,12 +10,22 @@ import { Id } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 
 const BATCH_SIZE = 200;
+const MAX_EVENTS_PER_CHUNK = 30;
 type RawEvent = {
 	_id: Id<"rawEvents">;
 	productId: Id<"products">;
 	sourceType: "commit" | "pull_request" | "release";
 	occurredAt: number;
 	payload: unknown;
+};
+
+type ChunkedBucket = {
+	bucketId: string;
+	bucketStartAt: number;
+	bucketEndAt: number;
+	chunkIndex: number;
+	totalChunks: number;
+	rawEvents: RawEvent[];
 };
 
 type InterpretResult = {
@@ -259,81 +269,120 @@ export const interpretPendingEvents = action({
 			const now = Date.now();
 			let processed = 0;
 			const totalBuckets = buckets.length;
-			for (const [index, bucket] of buckets.entries()) {
+			for (const [bucketIndex, bucket] of buckets.entries()) {
 				const bucketLabel = formatBucketLabel(bucket.bucketStartAt, bucket.bucketEndAt);
+				const chunks = chunkBucket(bucket, MAX_EVENTS_PER_CHUNK);
 				await recordStep(
-					`Interpreting bucket ${index + 1}/${totalBuckets} (${bucketLabel})`,
+					`Processing bucket ${bucketIndex + 1}/${totalBuckets} (${bucketLabel}) - ${chunks.length} chunk(s)`,
 					"info",
 				);
 
-				const interpretation: InterpretationOutput = await ctx.runAction(
-					api.agents.actions.interpretTimelineEvents,
-					{
-						productId,
-						rawEventIds: bucket.rawEvents.map(
-							(event: { _id: Id<"rawEvents"> }) => event._id,
-						),
-						limit: bucket.rawEvents.length,
-						debugUi,
-						bucket: {
-							bucketId: bucket.bucketId,
-							bucketStartAt: bucket.bucketStartAt,
-							bucketEndAt: bucket.bucketEndAt,
-						},
-					},
-				);
+				const allChunkEvents: InterpretationOutput["events"] = [];
+				let lastInterpretation: InterpretationOutput | null = null;
+				let previousEventsSummary: string | null = null;
 
-			const bucketImpact = computeBucketImpact(bucket.rawEvents);
-				await recordStep(
-					`Writing interpretation for bucket ${index + 1}/${totalBuckets}`,
-					"info",
-				);
-				await ctx.runMutation(internal.timeline.interpret.insertBucketSummary, {
-					productId,
-					bucket: {
-						bucketId: interpretation.bucket.bucketId,
-						bucketStartAt: interpretation.bucket.bucketStartAt,
-						bucketEndAt: interpretation.bucket.bucketEndAt,
-						cadence: interpretation.bucket.cadence,
-						title: interpretation.bucket.title,
-						narrative: interpretation.bucket.narrative,
-						domains: interpretation.bucket.domains,
-						eventCount: interpretation.events.length,
-					},
-					createdAt: now,
-				});
+				for (const [chunkIndex, chunk] of chunks.entries()) {
+					const isLastChunk = chunkIndex === chunks.length - 1;
+					await recordStep(
+						`Interpreting chunk ${chunkIndex + 1}/${chunks.length} of bucket ${bucketIndex + 1}`,
+						"info",
+					);
 
-				for (const event of interpretation.events) {
-					const normalizedType =
-						event.type === "other"
-							? "work"
-							: ["feature", "fix", "improvement", "work"].includes(event.type)
-								? event.type
-								: "work";
-					await ctx.runMutation(internal.timeline.interpret.insertInterpretedEvent, {
-					productId,
-					event: {
-						bucketId: interpretation.bucket.bucketId,
-						bucketStartAt: interpretation.bucket.bucketStartAt,
-						bucketEndAt: interpretation.bucket.bucketEndAt,
-						cadence: interpretation.bucket.cadence,
-						capabilitySlug: event.capabilitySlug ?? undefined,
-						domain: event.domain,
-						type: normalizedType,
-						title: event.title,
-						summary: event.summary,
-						visibility: event.visibility ?? "public",
-						relevance: event.relevance,
-						bucketImpact,
-						surface: event.surface,
-					},
-					rawEventIds: event.rawEventIds.map((rawEventId) => rawEventId as Id<"rawEvents">),
-					inferenceLogId: interpretation.inferenceLogId,
-					createdAt: now,
-				});
+					try {
+						const interpretation: InterpretationOutput = await ctx.runAction(
+							api.agents.actions.interpretTimelineEvents,
+							{
+								productId,
+								rawEventIds: chunk.rawEvents.map(
+									(event: { _id: Id<"rawEvents"> }) => event._id,
+								),
+								limit: chunk.rawEvents.length,
+								debugUi,
+								bucket: {
+									bucketId: chunk.bucketId,
+									bucketStartAt: chunk.bucketStartAt,
+									bucketEndAt: chunk.bucketEndAt,
+								},
+								chunkContext: {
+									chunkIndex: chunk.chunkIndex,
+									totalChunks: chunk.totalChunks,
+									isLastChunk,
+									previousEventsSummary: previousEventsSummary ?? undefined,
+								},
+							},
+						);
+
+						allChunkEvents.push(...interpretation.events);
+						lastInterpretation = interpretation;
+
+						if (!isLastChunk) {
+							previousEventsSummary = summarizeEventsForNextChunk(allChunkEvents);
+						}
+					} catch (error) {
+						await recordStep(
+							`Chunk ${chunkIndex + 1}/${chunks.length} failed: ${
+								error instanceof Error ? error.message : "unknown"
+							}`,
+							"warn",
+						);
+					}
 				}
 
-				processed += interpretation.events.length;
+				if (lastInterpretation && allChunkEvents.length > 0) {
+					const bucketImpact = computeBucketImpact(bucket.rawEvents);
+					await recordStep(
+						`Writing interpretation for bucket ${bucketIndex + 1}/${totalBuckets}`,
+						"info",
+					);
+					await ctx.runMutation(internal.timeline.interpret.insertBucketSummary, {
+						productId,
+						bucket: {
+							bucketId: lastInterpretation.bucket.bucketId,
+							bucketStartAt: lastInterpretation.bucket.bucketStartAt,
+							bucketEndAt: lastInterpretation.bucket.bucketEndAt,
+							cadence: lastInterpretation.bucket.cadence,
+							title: lastInterpretation.bucket.title,
+							narrative: lastInterpretation.bucket.narrative,
+							domains: lastInterpretation.bucket.domains,
+							eventCount: allChunkEvents.length,
+						},
+						createdAt: now,
+					});
+
+					for (const event of allChunkEvents) {
+						const normalizedType =
+							event.type === "other"
+								? "work"
+								: ["feature", "fix", "improvement", "work"].includes(event.type)
+									? event.type
+									: "work";
+						await ctx.runMutation(internal.timeline.interpret.insertInterpretedEvent, {
+							productId,
+							event: {
+								bucketId: lastInterpretation.bucket.bucketId,
+								bucketStartAt: lastInterpretation.bucket.bucketStartAt,
+								bucketEndAt: lastInterpretation.bucket.bucketEndAt,
+								cadence: lastInterpretation.bucket.cadence,
+								capabilitySlug: event.capabilitySlug ?? undefined,
+								domain: event.domain,
+								type: normalizedType,
+								title: event.title,
+								summary: event.summary,
+								visibility: event.visibility ?? "public",
+								relevance: event.relevance,
+								bucketImpact,
+								surface: event.surface,
+							},
+							rawEventIds: event.rawEventIds.map(
+								(rawEventId) => rawEventId as Id<"rawEvents">,
+							),
+							inferenceLogId: lastInterpretation.inferenceLogId,
+							createdAt: now,
+						});
+					}
+
+					processed += allChunkEvents.length;
+				}
 			}
 
 			await ctx.runMutation(internal.timeline.interpret.markRawEventsProcessed, {
@@ -472,6 +521,44 @@ export const insertInterpretedEvent = internalMutation({
 		});
 	},
 });
+
+function chunkBucket(
+	bucket: { bucketId: string; bucketStartAt: number; bucketEndAt: number; rawEvents: RawEvent[] },
+	maxEventsPerChunk: number,
+): ChunkedBucket[] {
+	const chunks: ChunkedBucket[] = [];
+	const totalChunks = Math.ceil(bucket.rawEvents.length / maxEventsPerChunk);
+	for (let i = 0; i < totalChunks; i += 1) {
+		const start = i * maxEventsPerChunk;
+		const end = Math.min(start + maxEventsPerChunk, bucket.rawEvents.length);
+		chunks.push({
+			bucketId: bucket.bucketId,
+			bucketStartAt: bucket.bucketStartAt,
+			bucketEndAt: bucket.bucketEndAt,
+			chunkIndex: i,
+			totalChunks,
+			rawEvents: bucket.rawEvents.slice(start, end),
+		});
+	}
+	return chunks;
+}
+
+function summarizeEventsForNextChunk(
+	events: InterpretationOutput["events"],
+): string {
+	if (events.length === 0) return "";
+	const byType = new Map<string, number>();
+	const domains = new Set<string>();
+	for (const event of events) {
+		byType.set(event.type, (byType.get(event.type) ?? 0) + 1);
+		if (event.domain) domains.add(event.domain);
+	}
+	const typeSummary = Array.from(byType.entries())
+		.map(([type, count]) => `${count} ${type}`)
+		.join(", ");
+	const domainList = Array.from(domains).slice(0, 5).join(", ");
+	return `Previous chunks: ${events.length} events (${typeSummary}). Domains touched: ${domainList}`;
+}
 
 type BucketedRawEvents = {
 	bucketId: string;

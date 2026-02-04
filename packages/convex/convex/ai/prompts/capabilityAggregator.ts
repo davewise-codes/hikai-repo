@@ -1,4 +1,4 @@
-export const CAPABILITY_AGGREGATOR_PROMPT_VERSION = "v1.0";
+export const CAPABILITY_AGGREGATOR_PROMPT_VERSION = "v1.1";
 
 type CapabilityAggregatorInput = {
 	domains: Array<{
@@ -15,6 +15,7 @@ type CapabilityAggregatorInput = {
 		entryPoints?: string[];
 	}>;
 	baseline?: Record<string, unknown> | null;
+	languagePreference?: string;
 };
 
 export const capabilityAggregatorPrompt = (
@@ -29,6 +30,8 @@ REGLAS:
 - El lenguaje debe alinearse con el baseline si está disponible, pero NO inventes capabilities si no hay evidencia.
 - Evita duplicados: si dos capabilities son casi iguales, fusiona en una.
 - Mantén descripciones cortas (<= 120 caracteres).
+- Usa "${input.languagePreference ?? "en"}" para name/description visibles al usuario.
+- Los slugs/ids siempre en ingles (kebab-case) para estabilidad.
 
 INPUT JSON:
 ${JSON.stringify(input, null, 2)}

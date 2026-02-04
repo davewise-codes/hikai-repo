@@ -16,12 +16,18 @@ export type ContextDetail = {
 	meta: {
 		filesRead: string[];
 		limitations: string[];
+		excluded?: Array<{
+			path: string;
+			reason: string;
+		}>;
+		coverageCheck?: "complete" | "partial";
 	};
 };
 
 export type ContextValidationResult = {
 	valid: boolean;
 	errors: string[];
+	warnings?: string[];
 	value?: ContextDetail;
 };
 
@@ -138,13 +144,39 @@ export function validateContextDetail(input: unknown): ContextValidationResult {
 			"meta.limitations",
 			errors,
 		);
+		const excluded = (meta as Record<string, unknown>).excluded;
+		if (!Array.isArray(excluded)) {
+			errors.push("meta.excluded must be an array");
+		} else {
+			excluded.forEach((entry, index) => {
+				if (!isRecord(entry)) {
+					errors.push(`meta.excluded[${index}] must be an object`);
+					return;
+				}
+				if (typeof entry.path !== "string" || !entry.path.trim()) {
+					errors.push(`meta.excluded[${index}].path must be a string`);
+				}
+				if (typeof entry.reason !== "string" || !entry.reason.trim()) {
+					errors.push(`meta.excluded[${index}].reason must be a string`);
+				}
+			});
+		}
+		const coverageCheck = (meta as Record<string, unknown>).coverageCheck;
+		if (coverageCheck !== "complete" && coverageCheck !== "partial") {
+			errors.push("meta.coverageCheck must be 'complete' or 'partial'");
+		}
 	}
 
 	if (errors.length > 0) {
 		return { valid: false, errors };
 	}
 
-	return { valid: true, errors: [], value: input as ContextDetail };
+	const warnings: string[] = [];
+	if ((meta as Record<string, unknown>).coverageCheck === "partial") {
+		warnings.push("meta.coverageCheck is partial");
+	}
+
+	return { valid: true, errors: [], warnings, value: input as ContextDetail };
 }
 
 function validateStringArray(

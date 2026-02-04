@@ -82,6 +82,7 @@ export const generateFeatureScoutFromContext = action({
 			internal.lib.access.assertProductAccessInternal,
 			{ productId },
 		);
+		const languagePreference = product.languagePreference ?? "en";
 
 		const { runId } = await ctx.runMutation(api.agents.agentRuns.createAgentRun, {
 			productId,
@@ -157,6 +158,7 @@ export const generateFeatureScoutFromContext = action({
 				productId,
 				runId,
 				repoDomains,
+				languagePreference,
 			});
 
 			if (result.status !== "completed" || !result.features) {
@@ -279,8 +281,9 @@ export async function runFeatureScoutAgent(params: {
 	productId: Id<"products">;
 	runId: Id<"agentRuns">;
 	repoDomains: RepoDomainInput[];
+	languagePreference: string;
 }): Promise<FeatureScoutResult> {
-	const { ctx, productId, runId, repoDomains } = params;
+	const { ctx, productId, runId, repoDomains, languagePreference } = params;
 	await ctx.runMutation(internal.agents.agentRuns.appendStep, {
 		productId,
 		runId,
@@ -297,6 +300,7 @@ export async function runFeatureScoutAgent(params: {
 				productId,
 				parentRunId: runId,
 				domain,
+				languagePreference,
 			}),
 	);
 
@@ -390,8 +394,9 @@ async function runFeatureDomainScoutAgent(params: {
 	productId: Id<"products">;
 	parentRunId: Id<"agentRuns">;
 	domain: RepoDomainInput;
+	languagePreference: string;
 }): Promise<DomainScoutResult> {
-	const { ctx, productId, parentRunId, domain } = params;
+	const { ctx, productId, parentRunId, domain, languagePreference } = params;
 	const { runId } = await ctx.runMutation(api.agents.agentRuns.createAgentRun, {
 		productId,
 		useCase: DOMAIN_USE_CASE,
@@ -440,7 +445,7 @@ async function runFeatureDomainScoutAgent(params: {
 		createGrepFileTool(ctx, productId),
 	];
 
-	const prompt = featureDomainScoutPrompt({ domain });
+	const prompt = featureDomainScoutPrompt({ domain, languagePreference });
 	const startedAt = Date.now();
 	let lastResult: AgentLoopResult | null = null;
 	let feedback: string | null = null;

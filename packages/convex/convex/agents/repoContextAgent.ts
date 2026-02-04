@@ -43,8 +43,9 @@ export async function runRepoContextAgent(params: {
 		pathPrefix: string;
 		surface: string;
 	}>;
+	languagePreference?: string;
 }): Promise<RepoContextResult> {
-	const { ctx, productId, runId, baseline, surfaceMapping } = params;
+	const { ctx, productId, runId, baseline, surfaceMapping, languagePreference } = params;
 	const aiConfig = getAgentAIConfig(AGENT_NAME);
 	const model = createToolPromptModel(createLLMAdapter(aiConfig), {
 		protocol: buildToolProtocol(productId),
@@ -57,7 +58,11 @@ export async function runRepoContextAgent(params: {
 	createSearchCodeTool(ctx, productId),
 ];
 
-	const prompt = buildRepoContextPrompt(baseline, surfaceMapping);
+	const prompt = buildRepoContextPrompt(
+		baseline,
+		surfaceMapping,
+		languagePreference ?? "en",
+	);
 	const startedAt = Date.now();
 	let lastResult: AgentLoopResult | null = null;
 	let feedback: string | null = null;
@@ -187,6 +192,31 @@ export async function runRepoContextAgent(params: {
 			);
 			continue;
 		}
+		const coverageValidation = validateSurfaceCoverage(
+			validation.value,
+			surfaceMapping,
+		);
+		if (!coverageValidation.valid) {
+			feedback = buildFeedback(coverageValidation.errors);
+			await recordValidationFailure(
+				ctx,
+				productId,
+				runId,
+				feedback,
+			);
+			continue;
+		}
+		if (validation.warnings?.length) {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId,
+				step: "Repo context validation warnings",
+				status: "warn",
+				metadata: {
+					warnings: validation.warnings.slice(0, 10),
+				},
+			});
+		}
 
 		return {
 			status: "completed",
@@ -222,6 +252,7 @@ type ProductBaseline = {
 function buildRepoContextPrompt(
 	baseline?: ProductBaseline,
 	surfaceMapping?: Array<{ sourceId?: string; pathPrefix: string; surface: string }>,
+	languagePreference: string = "en",
 ): string {
 	const mappingText =
 		surfaceMapping && surfaceMapping.length > 0
@@ -233,6 +264,11 @@ function buildRepoContextPrompt(
 		"## CONTEXTO PREVIO (surfaceMapping)",
 		"El surface_classifier ya clasificó el repo. Usa SOLO estos paths para explorar:",
 		mappingText,
+		"",
+		"## IDIOMA",
+		`- Usa "${languagePreference}" para TODOS los textos visibles: domain.name, domain.purpose, meta.reason.`,
+		"- Los slugs/ids siempre en ingles (kebab-case) para estabilidad.",
+		'  Ejemplo: slug="create-workspace", name="Crear espacio de trabajo" (si languagePreference=es)',
 		"",
 		"## COMO USAR surfaceMapping",
 		"- product_front y platform contienen features del producto.",
@@ -300,6 +336,15 @@ function buildRepoContextPrompt(
 		"- No derives capabilities desde marketing/docs.",
 		"- Si recibes aviso de tiempo, produce el JSON inmediatamente con lo que tengas.",
 		"",
+		"## AUTO-CHECK DE COBERTURA (OBLIGATORIO antes de output)",
+		"Verifica que tus pathPatterns cubren TODO el surfaceMapping recibido:",
+		"1) Lista los pathPrefix de surfaceMapping NO cubiertos por ningun domain.pathPattern.",
+		"2) Para cada path NO cubierto, decide:",
+		"   - Si contiene logica de producto (componentes, servicios, handlers) -> crea un domain o amplialo.",
+		"   - Si es solo utils/helpers/config sin logica de negocio -> ignoralo y documentalo en meta.excluded.",
+		"3) Si hay paths relevantes sin cubrir, NO produzcas output aun. Ajusta pathPatterns.",
+		"- meta.excluded debe existir SIEMPRE (usa [] si no excluyes nada).",
+		"",
 		"OUTPUT REQUERIDO (JSON):",
 		"{",
 		'  "domains": [',
@@ -312,7 +357,12 @@ function buildRepoContextPrompt(
 		"    }",
 		"  ],",
 		'  "structure": { "type": "monorepo", "frontend": "apps/webapp", "backend": "packages/convex" },',
-		'  "meta": { "filesRead": ["..."], "limitations": ["..."] }',
+		'  "meta": {',
+		'    "filesRead": ["..."],',
+		'    "limitations": ["..."],',
+		'    "excluded": [{ "path": "packages/ui", "reason": "Design system utilities, no business logic" }],',
+		'    "coverageCheck": "complete|partial"',
+		"  }",
 		"}",
 		"",
 		"NO uses todo_manager ni validate_json. Responde SOLO con el JSON.",
@@ -376,8 +426,66 @@ function validatePathPatternsAgainstSurfaces(
 	return { valid: errors.length === 0, errors };
 }
 
+function validateSurfaceCoverage(
+	contextDetail: ContextDetail,
+	surfaceMapping?: Array<{ pathPrefix: string; surface: string }>,
+): { valid: boolean; errors: string[] } {
+	const allowedPrefixes = (surfaceMapping ?? [])
+		.filter(
+			(entry) => entry.surface === "product_front" || entry.surface === "platform",
+		)
+		.map((entry) => normalizePath(entry.pathPrefix));
+	if (allowedPrefixes.length === 0) {
+		return {
+			valid: false,
+			errors: [
+				"surfaceMapping is missing or empty. Run Source Context before generating domains.",
+			],
+		};
+	}
+
+	const patternRoots = contextDetail.domains.flatMap((domain) =>
+		(domain.pathPatterns ?? []).map((pattern) => normalizePatternRoot(pattern)),
+	);
+	const excludedPaths = (contextDetail.meta.excluded ?? []).map((entry) =>
+		normalizePath(entry.path),
+	);
+
+	const uncovered: string[] = [];
+	for (const prefix of allowedPrefixes) {
+		const coveredByPattern = patternRoots.some((pattern) =>
+			matchesPrefix(pattern, prefix) || matchesPrefix(prefix, pattern),
+		);
+		const coveredByExcluded = excludedPaths.some((path) =>
+			matchesPrefix(path, prefix) || matchesPrefix(prefix, path),
+		);
+		if (!coveredByPattern && !coveredByExcluded) {
+			uncovered.push(prefix);
+		}
+	}
+
+	if (uncovered.length > 0) {
+		return {
+			valid: false,
+			errors: uncovered.map(
+				(prefix) =>
+					`surfaceMapping path not covered by any domain.pathPattern or meta.excluded: ${prefix}`,
+			),
+		};
+	}
+
+	return { valid: true, errors: [] };
+}
+
 function normalizePath(path: string): string {
 	return path.trim().replace(/^\.\/+/, "").replace(/^\/+/, "").replace(/\/+$/, "");
+}
+
+function normalizePatternRoot(pattern: string): string {
+	const normalized = normalizePath(pattern);
+	const wildcardIndex = normalized.search(/[\*\?]/);
+	if (wildcardIndex === -1) return normalized;
+	return normalized.slice(0, wildcardIndex).replace(/\/+$/, "");
 }
 
 function matchesPrefix(value: string, prefix: string): boolean {

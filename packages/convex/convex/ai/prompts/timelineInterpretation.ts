@@ -1,4 +1,4 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.1";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.2";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
@@ -73,6 +73,12 @@ Input JSON:
   "languagePreference": "en|es|...",
   "releaseCadence": "every_2_days | twice_weekly | weekly | biweekly | monthly | irregular | unknown",
   "bucket": { "bucketId": "...", "bucketStartAt": 0, "bucketEndAt": 0 },
+  "chunkContext": {
+    "chunkIndex": 0,
+    "totalChunks": 2,
+    "isLastChunk": false,
+    "previousEventsSummary": "Previous chunks: 30 events (15 feature, 10 fix, 5 improvement). Domains: Organizations, Products"
+  } | null,
   "baseline": { ... },
   "productContext": { ... },
   "capabilities": [
@@ -149,6 +155,9 @@ Rules:
 - Do not include raw commit messages or hashes in titles; summarize as product impact.
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
+- If chunkContext is provided and isLastChunk=false, do NOT generate bucket narrative (set narrative to null).
+- If chunkContext.isLastChunk=true, generate a narrative that covers ALL events (including previous chunks described in previousEventsSummary).
+- If chunkContext is null, treat as single-chunk bucket (generate narrative normally).
 - Mark items "internal" when they are below-the-glass development work that does not change the value proposition.
 - Keep bucket narrative public-safe; only mention public events in narrative.
 - If all events are internal, you may omit narrative or keep it minimal.

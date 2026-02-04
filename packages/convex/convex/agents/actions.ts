@@ -982,10 +982,18 @@ export const interpretTimelineEvents = action({
 				bucketEndAt: v.number(),
 			}),
 		),
+		chunkContext: v.optional(
+			v.object({
+				chunkIndex: v.number(),
+				totalChunks: v.number(),
+				isLastChunk: v.boolean(),
+				previousEventsSummary: v.optional(v.string()),
+			}),
+		),
 	},
 	handler: async (
 		ctx,
-		{ productId, rawEventIds, limit, threadId, debugUi, bucket },
+		{ productId, rawEventIds, limit, threadId, debugUi, bucket, chunkContext },
 	): Promise<{
 		threadId: string;
 		bucket: {
@@ -1118,6 +1126,7 @@ export const interpretTimelineEvents = action({
 			languagePreference,
 			releaseCadence,
 			bucket: bucket ?? undefined,
+			chunkContext: chunkContext ?? null,
 			baseline,
 			productContext: context,
 			capabilities: capabilities.map((capability) => ({

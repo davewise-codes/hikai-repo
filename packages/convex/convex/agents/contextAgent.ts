@@ -147,6 +147,7 @@ export const generateContextSnapshot = action({
 				icps: product.baseline?.icps ?? [],
 			},
 			surfaceMapping: allowedSurfaceMapping,
+			languagePreference: product.languagePreference ?? "en",
 		});
 		if (contextResult.metrics) {
 			metrics.totalLatencyMs += contextResult.metrics.latencyMs ?? 0;

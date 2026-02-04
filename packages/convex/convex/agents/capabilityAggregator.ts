@@ -82,6 +82,7 @@ export const generateCapabilitiesFromFeatures = action({
 				? ((snapshot?.contextDetail as any).domains as Array<Record<string, unknown>>)
 				: [];
 			const baseline = snapshot?.baseline ?? product.baseline ?? null;
+			const languagePreference = product.languagePreference ?? "en";
 
 			const features = await ctx.runQuery(
 				internal.products.features.listProductFeaturesInternal,
@@ -138,6 +139,7 @@ export const generateCapabilitiesFromFeatures = action({
 					entryPoints: feature.entryPoints ?? undefined,
 				})),
 				baseline,
+				languagePreference,
 			});
 			const model = createToolPromptModel(adapter, {
 				protocol: "Eres un agente autónomo. Responde SOLO con JSON válido.",

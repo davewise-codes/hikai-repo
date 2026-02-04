@@ -1,4 +1,4 @@
-export const FEATURE_DOMAIN_SCOUT_PROMPT_VERSION = "v1.1";
+export const FEATURE_DOMAIN_SCOUT_PROMPT_VERSION = "v1.2";
 
 export type FeatureDomainScoutPromptInput = {
 	domain: {
@@ -8,17 +8,24 @@ export type FeatureDomainScoutPromptInput = {
 		pathPatterns?: string[];
 		schemaEntities?: string[];
 	};
+	languagePreference?: string;
 };
 
 export const featureDomainScoutPrompt = (
 	input: FeatureDomainScoutPromptInput,
 ): string => {
 	const domainJson = JSON.stringify(input.domain ?? {}, null, 2);
+	const languagePreference = input.languagePreference ?? "en";
 	return `
 Eres un explorador de features de producto. Tu objetivo es identificar TODAS las features concretas implementadas en UN SOLO dominio, tanto UI como backend.
 
 ## DOMINIO A EXPLORAR
 ${domainJson}
+
+## IDIOMA
+- Usa "${languagePreference}" para name/description visibles al usuario.
+- Los slugs/ids siempre en ingles (kebab-case) para estabilidad.
+- Ejemplo: slug="create-workspace", name="Crear espacio de trabajo" (si languagePreference=es)
 
 ## DEFINICION DE FEATURE
 - Una feature es una funcionalidad concreta que aporta valor.
