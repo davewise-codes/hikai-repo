@@ -176,6 +176,18 @@ export {
   Rows3,
 } from "lucide-react";
 
+// Social media icons (brand)
+export {
+  FaXTwitter as XTwitter,
+  FaInstagram as Instagram,
+  FaLinkedinIn as LinkedIn,
+  FaWhatsapp as WhatsApp,
+  FaSlack as Slack,
+  FaFacebookF as Facebook,
+  FaTiktok as TikTok,
+  FaTwitch as Twitch,
+} from "react-icons/fa6";
+
 // Semantic aliases for better developer experience
 export { X as CloseIcon } from "lucide-react";
 export { Menu as HamburgerIcon } from "lucide-react";

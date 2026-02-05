@@ -104,6 +104,13 @@ const preset = {
 				serif: ["Playfair Display", "Georgia", "serif"],
 				mono: ["JetBrains Mono", "Consolas", "monospace"],
 			},
+			fontSize: {
+				"6xl": ["3.75rem", { lineHeight: "1" }],
+				"7xl": ["4.5rem", { lineHeight: "1" }],
+			},
+			fontWeight: {
+				black: "900",
+			},
 		},
 	},
 	plugins: [require("tailwindcss-animate")],

@@ -1,10 +1,12 @@
 import { NavigationBar } from "@/components/navigation-bar";
 import { HeroSection } from "@/components/sections/hero-section";
-import { HowItWorksSection } from "@/components/sections/how-it-works-section";
-import { BeforeAfterSection } from "@/components/sections/before-after-section";
-import { BenefitsSection } from "@/components/sections/benefits-section";
-import { FAQSection } from "@/components/sections/faq-section";
-import { CTASection } from "@/components/sections/cta-section";
+import { ProblemSection } from "@/components/sections/problem-section";
+import { ProductSection } from "@/components/sections/product-section";
+import { HowItWorksCondensedSection } from "@/components/sections/how-it-works-condensed-section";
+import { ImpactSection } from "@/components/sections/impact-section";
+import { WhySection } from "@/components/sections/why-section";
+import { RoadmapSection } from "@/components/sections/roadmap-section";
+import { FinalCtaSection } from "@/components/sections/final-cta-section";
 import { Footer } from "@/components/footer";
 import { HeroShell } from "@/components/hero-shell";
 
@@ -18,29 +20,26 @@ export default function HomePage() {
 				</section>
 			</HeroShell>
 			<main className="flex-1">
-				{/* How It Works Section */}
+				<section id="problem">
+					<ProblemSection />
+				</section>
+				<section id="product">
+					<ProductSection />
+				</section>
 				<section id="how">
-					<HowItWorksSection />
+					<HowItWorksCondensedSection />
 				</section>
-
-				{/* Before vs After Section */}
-				<section id="before-after">
-					<BeforeAfterSection />
+				<section id="impact">
+					<ImpactSection />
 				</section>
-
-				{/* Benefits Section */}
-				<section id="benefits">
-					<BenefitsSection />
+				<section id="why">
+					<WhySection />
 				</section>
-
-				{/* FAQ Section */}
-				<section id="faq">
-					<FAQSection />
+				<section id="roadmap">
+					<RoadmapSection />
 				</section>
-
-				{/* Final CTA Section */}
 				<section id="cta">
-					<CTASection />
+					<FinalCtaSection />
 				</section>
 			</main>
 			<Footer />

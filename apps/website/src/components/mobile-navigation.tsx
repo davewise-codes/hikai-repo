@@ -12,21 +12,18 @@ import {
 } from "@hikai/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { ThemeSwitcher } from "./theme-switcher";
-import { ColorThemeSwitcher } from "./color-theme-switcher";
-import { LanguageSwitcher } from "./language-switcher";
 import { WaitlistButton } from "./waitlist-button";
 
 export function MobileNavigation() {
 	const t = useTranslations("Nav");
-	const tHome = useTranslations("HomePage");
 
 	const navItems = [
-		{ href: "#hero", label: t("hero") },
+		{ href: "#problem", label: t("problem") },
+		{ href: "#product", label: t("product") },
 		{ href: "#how", label: t("how") },
-		{ href: "#before-after", label: t("beforeAfter") },
-		{ href: "#benefits", label: t("benefits") },
-		{ href: "#faq", label: t("faq") }
+		{ href: "#impact", label: t("impact") },
+		{ href: "#why", label: t("why") },
+		{ href: "#roadmap", label: t("roadmap") }
 	];
 
 	return (
@@ -58,21 +55,9 @@ export function MobileNavigation() {
 
 					<Separator />
 
-					{/* Theme and Language Controls */}
-					<div className="flex items-center justify-between px-3">
-						<span className="text-sm font-medium">Settings</span>
-						<div className="flex items-center gap-2">
-							<ThemeSwitcher />
-							<ColorThemeSwitcher />
-							<LanguageSwitcher />
-						</div>
-					</div>
-
-					<Separator />
-
 					{/* CTA Button */}
 					<WaitlistButton size="lg" className="w-full">
-						{tHome("hero.cta")}
+						{t("cta")}
 					</WaitlistButton>
 				</div>
 			</SheetContent>
