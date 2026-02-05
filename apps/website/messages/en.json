@@ -1,209 +1,175 @@
 {
-	"Nav": {
-		"hero": "Home",
-		"how": "How it works",
-		"beforeAfter": "Before vs After",
-		"benefits": "Benefits",
-		"faq": "FAQ",
-		"cta": "Join us"
-	},
-	"HomePage": {
-		"hero": {
-			"badge": "Market visibility for products",
-			"title": "Make your product <em>stand out</em>.",
-			"highlighted": "A communication suite for modern digital products.",
-			"subtitle": "Building is only half the journey.\nHikai helps product-lead teams turn progress into consistent market presence.",
-			"cta": "Join the waitlist"
-		},
-		"how": {
-			"badge": "How it works",
-			"title": "Turn progress into",
-			"highlighted": "visibility",
-			"subtitle": "Hikai captures what's happening and delivers it to your audience in four clear steps.",
-			"stepLabel": "Step",
-			"step1": {
-				"tabLabel": "Define & Connect",
-				"headline": "Let Hikai understand your product",
-				"body": "Connect your product sources — GitHub, Linear, Notion, and more — and define a clear baseline for what your product is. All in minutes.\nFrom this context, Hikai automatically builds a deep, business-oriented understanding of your product: what’s being built, why it matters, and how everything fits together.\n\nThis product-centric foundation is set once and improves over time as your product evolves.",
-				"bullets": [
-					"Setup in minutes",
-					"Product-first, not tool-first",
-					"One baseline that evolves over time"
-				],
-				"feature": {
-					"title": "Product context & taxonomy",
-					"description": "Define what your product is and generate a structured, evolving taxonomy automatically.",
-					"links": [
-						"Tell Hikai about your product",
-						"Connect your product sources",
-						"Let Hikai build your product taxonomy"
-					]
-				}
-			},
-			"step2": {
-				"tabLabel": "Product timeline",
-				"headline": "Your product, over time",
-				"body": "Hikai automatically tracks every product event across your stack — features, fixes, improvements, and changes — on the cadence you choose.\nEach event is interpreted, grouped, and placed into a living, shareable product timeline that reflects real progress over time.\n\nNo manual reporting. No status updates.\nJust a continuously updated view of what’s happening in your product, translated into a timeline your audience can actually understand.",
-				"bullets": [
-					"Fully automated by default",
-					"Consistent over time",
-					"Audience-aware interpretation"
-				],
-				"feature": {
-					"title": "Automated product timeline",
-					"description": "A living timeline that interprets product changes and adapts language to each audience.",
-					"links": [
-						"Track product changes automatically",
-						"View the interpreted product timeline",
-						"See audience-specific interpretations"
-					]
-				}
-			},
-			"step3": {
-				"tabLabel": "Editorial content",
-				"headline": "The effortless way to communicate your product",
-				"body": "From your product timeline, Hikai generates content proposals that follow a consistent editorial line.\nEach update is automatically adapted for your market, users, and stakeholders — without starting from a blank page.\n\nInstead of isolated efforts, you get a systematic, repeatable way to communicate what your product is doing and why it matters.",
-				"bullets": [
-					"Editorial continuity built-in",
-					"Marketing, customers, and stakeholders",
-					"Zero starting friction"
-				],
-				"feature": {
-					"title": "Editorial content proposals",
-					"description": "Generate consistent, audience-specific content proposals from your product timeline.",
-					"links": [
-						"Explore content proposals",
-						"Switch between audiences",
-						"Follow your editorial line"
-					]
-				}
-			},
-			"step4": {
-				"tabLabel": "Make it yours",
-				"headline": "Human control. Keep your voice.",
-				"body": "Review, refine, and publish using purpose-oriented editing and publishing tools.\nHikai handles the heavy lifting, but you stay in control of tone, emphasis, and narrative.\n\nThe result feels human — because it is.\nYour judgment defines the story your product tells to the world.",
-				"bullets": [
-					"Your judgment, final word",
-					"Narrative over automation",
-					"Never sounds like AI"
-				],
-				"feature": {
-					"title": "Purpose-oriented editing & publishing",
-					"description": "Edit and publish with tools designed to preserve intent, voice, and clarity.",
-					"links": [
-						"Edit with intent",
-						"Shape the narrative",
-						"Publish with confidence"
-					]
-				}
-			}
-		},
-		"beforeAfter": {
-			"badge": "Visibility shift",
-			"title": "Marketing on <highlight>autopilot</highlight>. Let your product progress speak for itself.",
-			"subtitle": "Your product was growing quietly in the dark. Hikai automatically turns that progress into a steady narrative your audience can actually follow.",
-			"stateA": {
-				"label": "When communication depends on constant effort",
-				"headline": "Progress goes unnoticed",
-				"body": [
-					"Your product is moving forward, but that progress goes unseen.",
-					"Marketing feels like work you don’t have time for.",
-					"Updates stay locked in commits, tickets, or docs nobody reads.",
-					"Weeks go by without contact with your audience."
-				]
-			},
-			"stateB": {
-				"label": "When progress runs on its own",
-				"headline": "Your product stays present",
-				"body": [
-					"Content spreads naturally across channels.",
-					"Updates keep flowing, even when you’re focused elsewhere.",
-					"The market reacts."
-				]
-			}
-		},
-		"benefits": {
-			"badge": "Why Hikai",
-			"title": "More than time savings, true",
-			"highlighted": "momentum",
-			"subtitle": "Hikai reduces the grind, keeps you consistent, and helps your product shine without losing your voice.",
-			"externalTitle": "Be known",
-			"externalCards": [
-				"Gain visibility",
-				"Stay consistent"
-			],
-			"internalTitle": "Be efficient",
-			"internalCards": [
-				"Save time",
-				"Enable creativity",
-				"Keep your voice",
-				"Work as a team"
-			],
-			"items": [
-				{
-					"title": "Save time",
-					"description": "Progress turns into shareable content without manual effort."
-				},
-				{
-					"title": "Gain visibility",
-					"description": "Your product reaches the market automatically — even if you’re not actively creating in public."
-				},
-				{
-					"title": "Stay consistent",
-					"description": "No more silent weeks. Consistent presence is how the market starts to recognize you."
-				},
-				{
-					"title": "Enable creativity",
-					"description": "Skip the blank page. Focus on shaping ideas, not starting from scratch."
-				},
-				{
-					"title": "Keep your voice",
-					"description": "Automation handles the flow. You decide the final message."
-				},
-				{
-					"title": "Work as a team",
-					"description": "Everyone works from the same product context, without friction."
-				}
-			]
-		},
-		"faq": {
-			"badge": "Questions",
-			"title": "Everything you need to",
-			"highlighted": "know",
-			"subtitle": "From security to use cases, here's what founders and teams ask most.",
-			"items": [
-				{
-					"question": "Is Hikai replacing my marketing team?",
-					"answer": "Not at all. Marketing teams actually get more out of Hikai: less time chasing product updates, more time focusing on strategy and creativity."
-				},
-				{
-					"question": "When is the Beta launching?",
-					"answer": "We're opening early access soon. Join the waitlist to be among the first founders to try it out."
-				},
-				{
-					"question": "What kind of content does Hikai create?",
-					"answer": "From product updates to blog posts, user docs and social media. Everything comes directly from what's happening in your product."
-				},
-				{
-					"question": "Which teams can benefit from Hikai?",
-					"answer": "Any team that needs to generate product-related content: marketing, customer success, even product and engineering. Hikai reduces the coordination overhead and makes updates effortless."
-				},
-				{
-					"question": "I'm a solo founder — is Hikai for me?",
-					"answer": "Exactly. You are product, marketing, and customer success all at once. Hikai helps you cover those roles without the extra effort."
-				},
-				{
-					"question": "Is my product data safe with Hikai?",
-					"answer": "Yes. Hikai only works with summaries of what's happening — never raw code or sensitive data. And you always have the final word before anything goes public."
-				}
-			]
-		},
-		"finalCta": {
-			"badge": "Join us",
-			"title": "Be among the first to",
-			"highlighted": "discover",
-			"subtitle": "Get early access to Hikai Beta and be among the first products to ditch the heavy lifting.",
-			"cta": "Join the waitlist"
-		}
-	}
+  "Nav": {
+    "problem": "The Problem",
+    "product": "The Product",
+    "how": "How",
+    "impact": "Impact",
+    "why": "Why Hikai",
+    "roadmap": "Roadmap",
+    "cta": "Sign up"
+  },
+  "HomePage": {
+    "hero": {
+      "badge": "Your product story, told automatically",
+      "title": "Your development, narrated for the world.",
+      "tagline": "From commits to presence.",
+      "subtitle": "Hikai captures what's happening in your codebase and translates it into a public timeline your audience can actually follow — automatically, continuously, without the grind.",
+      "cta": "Publish your timeline — free"
+    },
+    "problem": {
+      "badge": "The problem",
+      "title": "The bottleneck nobody talks about.",
+      "body": [
+        "Your product is evolving every day. Features ship. Bugs get fixed. The roadmap moves forward.",
+        "But outside of engineering, nobody knows.",
+        "Someone could write updates — maybe they do, for a while. But keeping it up week after week? That’s where it breaks. The person with context gets tired. The task becomes a chore. The updates stop. Adoption drops. Teams drift apart. Your product becomes invisible."
+      ],
+      "insight": "The problem isn’t writing — it’s context and consistency. No one outside your code has the first. No one inside has the bandwidth for the second."
+    },
+    "product": {
+      "badge": "A timeline you can actually use",
+      "title": "Not just updates.",
+      "subtitle": "A navigable history of your product.",
+      "body": "Your timeline isn't a wall of text — it's a structured, browsable record of everything that's happened in your product.",
+      "features": [
+        {
+          "title": "Automatic cataloging",
+          "description": "Hikai organizes every change into a structured taxonomy. No manual tagging."
+        },
+        {
+          "title": "Navigate freely",
+          "description": "Your audience can explore your product's full history, not just the latest update."
+        },
+        {
+          "title": "Filter changes",
+          "description": "By date, type (feature, fix, improvement), or product area. Show only what’s relevant for your audience."
+        },
+        {
+          "title": "Browse by structure",
+          "description": "Every change belongs somewhere: features, capabilities, product domains. Navigate your product the way it’s built."
+        },
+        {
+          "title": "Shareable anywhere",
+          "description": "A public URL your team, investors, or users can follow."
+        }
+      ],
+      "closing": "A living logbook of your product. Always current. Always organized. Always shareable."
+    },
+    "how": {
+      "badge": "How it works",
+      "title": "Automatic.",
+      "subtitle": "Because you have better things to do.",
+      "body": "Hikai learns your product. When something meaningful changes, it writes — in your voice, for your audience. Automatically.",
+      "benefits": [
+        {
+          "title": "Up to date. Always",
+          "description": "Your timeline refreshes automatically. No reminders. No \"I should really update that.\""
+        },
+        {
+          "title": "Persistent memory",
+          "description": "Every change adds to your product's history. Context compounds. Nothing gets lost."
+        },
+        {
+          "title": "An asset that grows",
+          "description": "A narrative your audience can browse. Compounded while you sleep."
+        }
+      ],
+      "closing": "Don’t shift the bottleneck — remove it.",
+      "stepsBadge": "Four steps. Once. That’s it",
+      "steps": [
+        {
+          "title": "Connect your repository",
+          "description": "Link your GitHub repo. Hikai starts learning your product immediately."
+        },
+        {
+          "title": "Hikai builds context",
+          "description": "Structure, domains, patterns — Hikai understands what your product is, not just what changed."
+        },
+        {
+          "title": "Changes become narrative",
+          "description": "Every meaningful update becomes narrative — automatically translated into business language."
+        },
+        {
+          "title": "Your timeline goes live",
+          "description": "A public page that updates itself. Share it, embed it, let the market follow along."
+        }
+      ]
+    },
+    "impact": {
+      "badge": "Impact",
+      "title": "From invisible to present.",
+      "subtitle": "What changes when your product speaks for itself.",
+      "stateA": {
+        "label": "The usual way",
+        "headline": "Progress fades into silence.",
+        "bullets": [
+          "You ship weekly. The world sees monthly — if at all.",
+          "Updates pile up as \"tasks for later.\" Later never comes.",
+          "Marketing depends on your energy. And energy runs out."
+        ]
+      },
+      "stateB": {
+        "label": "WITH HIKAI",
+        "headline": "Presence without the grind.",
+        "quote": "“I stopped explaining what we’ve been building. Now they just follow.”",
+        "bullets": [
+          "Your audience follows along — without you chasing them.",
+          "“What have you shipped lately?” becomes a link, not a conversation.",
+          "Progress compounds. Visibility grows. You stay top of mind."
+        ],
+        "punch": "Connect once. Stay visible — forever."
+      }
+    },
+    "why": {
+      "badge": "Your product companion — always ready",
+      "title": "Not another AI that <italic>\"sounds human\"</italic>.",
+      "body": [
+        "Everyone promises AI that writes like a person. Few deliver.",
+        "Here's the truth: the problem isn't the AI — it's the input. When you ask a copywriter (or an LLM) to write about your product, they're guessing. They don't know your architecture, your users, your roadmap.",
+        "Hikai is different. It lives inside your product context. It knows what AuthService does. It understands why that refactor matters. It sees the connection between last week’s fix and next month’s feature.",
+        "That’s why Hikai doesn’t sound like AI. It sounds like someone who actually knows your product — because it does."
+      ],
+      "closing": "Context is everything. And Hikai has yours.",
+      "icpBadge": "Serving to",
+      "icps": [
+        {
+          "title": "Founders building in public",
+          "description": "Your commits are already telling a story. Hikai makes it readable. Share one link. Let people follow along."
+        },
+        {
+          "title": "Product teams shipping fast",
+          "description": "Stop translating. Start shipping. Let your work speak for itself."
+        },
+        {
+          "title": "Anyone tired of \"we should update the changelog\"",
+          "description": "You know that task that never gets done? It’s done now."
+        }
+      ]
+    },
+    "roadmap": {
+      "badge": "Roadmap",
+      "title": "What's coming next.",
+      "subtitle": "We are continuously evolving Hikai. Check upcoming features and improvements.",
+      "items": [
+        {
+          "title": "Export as text",
+          "description": "Copy your timeline for newsletters, docs, or anywhere else."
+        },
+        {
+          "title": "Slack integration",
+          "description": "Updates delivered where your team already works."
+        },
+        {
+          "title": "Custom cadence",
+          "description": "Control how often your timeline refreshes."
+        }
+      ]
+    },
+    "finalCta": {
+      "titlePrimary": "Your product is already moving —",
+      "titleSecondary": "let the world follow.",
+      "subtitle": "Connect your repo and publish your timeline in minutes. Free.",
+      "cta": "Get started"
+    }
+  }
 }

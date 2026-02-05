@@ -4,11 +4,9 @@ import { createContext, ReactNode, useEffect, useState } from "react";
 import {
 	ColorThemeId,
 	Theme,
-	defaultColorTheme,
 	defaultTheme,
 	getColorThemeClass,
 	getColorThemeIds,
-	isValidColorThemeId,
 } from "@hikai/ui";
 
 export interface ThemeContextValue {
@@ -34,22 +32,17 @@ export function ThemeProvider({
 	storageKey = "theme",
 	enableSystem = true,
 }: ThemeProviderProps) {
-	const [theme, setThemeState] = useState<Theme>(initialTheme);
-	const [actualTheme, setActualTheme] = useState<"light" | "dark">("light");
+	const lockedTheme: Theme = "dark";
+	const lockedColorTheme: ColorThemeId = "amber-minimal";
+	const [theme, setThemeState] = useState<Theme>(initialTheme ?? lockedTheme);
+	const [actualTheme, setActualTheme] = useState<"light" | "dark">("dark");
 	const [colorTheme, setColorThemeState] =
-		useState<ColorThemeId>(defaultColorTheme);
+		useState<ColorThemeId>(lockedColorTheme);
 
 	useEffect(() => {
-		const storedTheme = localStorage.getItem(storageKey) as Theme;
-		if (storedTheme) {
-			setThemeState(storedTheme);
-		}
-
-		const storedColorTheme = localStorage.getItem("hikai-color-theme");
-		if (storedColorTheme && isValidColorThemeId(storedColorTheme)) {
-			setColorThemeState(storedColorTheme);
-		}
-	}, [storageKey]);
+		setThemeState(lockedTheme);
+		setColorThemeState(lockedColorTheme);
+	}, []);
 
 	useEffect(() => {
 		const root = window.document.documentElement;

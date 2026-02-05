@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 import { FontProvider } from "@/providers/font-provider";
 import { ThemeProvider } from "@/providers/client-theme-provider";
-import { defaultColorTheme } from "@hikai/ui";
 import { WaitlistPopupProvider } from "@/components/waitlist-popup-provider";
 import "../globals.css";
 
@@ -39,13 +38,13 @@ export default async function LocaleLayout({
 		<html
 			lang={locale}
 			suppressHydrationWarning
-			className={`theme-${defaultColorTheme}`}
+			className="theme-amber-minimal dark"
 		>
 			<body>
 				<ThemeProvider
-					defaultTheme="system"
+					defaultTheme="dark"
 					storageKey="hikai-theme"
-					enableSystem
+					enableSystem={false}
 				>
 					<FontProvider>
 						<WaitlistPopupProvider>

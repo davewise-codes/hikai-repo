@@ -10,35 +10,22 @@ export function HeroSection() {
 		<section className="py-16 md:py-24 lg:py-28">
 			<div className="container max-w-6xl mx-auto px-6 sm:px-8">
 				<div className="mx-auto w-full max-w-6xl text-white">
-					<Badge variant="secondary" className="mb-6 bg-white/10 text-white border-white/20">
+					<Badge variant="secondary" className="mb-6 bg-primary text-primary-foreground border border-primary/40 text-xs tracking-wide">
 						{t("badge")}
 					</Badge>
-					<h1 className="sm:max-w-[85%] font-sans font-black text-4xl md:text-5xl lg:text-6xl mb-6 leading-tight">
-						<span className="block md:whitespace-nowrap">
-							{t.rich("title", {
-								em: (chunks) => (
-									<span className="font-serif italic text-white">
-										{chunks}
-									</span>
-								),
-							})}
-						</span>
-						<span className="mt-2 block text-lg md:text-2xl lg:text-3xl font-semibold text-white/90">
-							{t("highlighted")}
-						</span>
+					<h1 className="font-sans font-black text-4xl md:text-6xl lg:text-7xl leading-tight">
+						{t("title")}
 					</h1>
-					<div className="h-px w-full bg-white/35 mb-6" />
+					<p className="mt-4 text-2xl md:text-3xl font-serif italic text-white/90">
+						{t("tagline")}
+					</p>
+					<div className="h-px w-full bg-white/35 my-6" />
 					<div className="grid grid-cols-1 sm:grid-cols-[0.3fr_0.7fr] gap-6">
-						<div className="sm:col-start-2 flex flex-col items-end gap-6">
-							<div className="text-base md:text-lg text-white/80 text-right leading-snug space-y-1 max-w-none">
-								{t("subtitle")
-									.split("\n")
-									.filter(Boolean)
-									.map((line) => (
-										<p key={line}>{line}</p>
-									))}
-							</div>
-							<WaitlistButton className="w-auto">
+						<div className="sm:col-start-2 flex flex-col items-start sm:items-end gap-6">
+							<p className="text-base md:text-lg text-white/80 text-left sm:text-right leading-snug max-w-xl">
+								{t("subtitle")}
+							</p>
+							<WaitlistButton className="w-full sm:w-auto">
 								{t("cta")}
 							</WaitlistButton>
 						</div>
