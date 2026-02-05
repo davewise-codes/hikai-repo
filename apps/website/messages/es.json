@@ -2,11 +2,11 @@
   "Nav": {
     "problem": "El problema",
     "product": "El producto",
+    "how": "Cómo",
     "impact": "Impacto",
     "why": "Por qué Hikai",
     "roadmap": "Roadmap",
-    "cta": "Regístrate",
-    "how": "Cómo"
+    "cta": "Regístrate"
   },
   "HomePage": {
     "hero": {
@@ -75,6 +75,7 @@
         }
       ],
       "closing": "No muevas el cuello de botella — elimínalo.",
+      "stepsBadge": "Cuatro pasos. Una vez. Y listo",
       "steps": [
         {
           "title": "Conecta tu repositorio",
@@ -92,8 +93,7 @@
           "title": "Tu timeline se publica",
           "description": "Una página pública que se actualiza sola. Compártela y deja que el mercado te siga."
         }
-      ],
-      "stepsBadge": "Cuatro pasos. Una vez. Y listo"
+      ]
     },
     "impact": {
       "badge": "Impacto",
@@ -129,6 +129,8 @@
         "Hikai es diferente. Vive dentro del contexto de tu producto. Sabe qué hace AuthService. Entiende por qué ese refactor importa. Ve la conexión entre el fix de la semana pasada y la feature del próximo mes.",
         "Por eso Hikai no suena a IA. Suena como alguien que realmente conoce tu producto — porque lo conoce."
       ],
+      "closing": "El contexto lo es todo. Y Hikai tiene el tuyo.",
+      "icpBadge": "Para",
       "icps": [
         {
           "title": "Fundadores que construyen en público",
@@ -142,13 +144,12 @@
           "title": "Quienes están cansados de \"hay que actualizar el changelog\"",
           "description": "Esa tarea que nunca se hace. Ya está hecha."
         }
-      ],
-      "closing": "El contexto lo es todo. Y Hikai tiene el tuyo.",
-      "icpBadge": "Para"
+      ]
     },
     "roadmap": {
       "badge": "Roadmap",
       "title": "Lo que viene después.",
+      "subtitle": "Evolucionamos Hikai constantemente. Revisa próximas funcionalidades y mejoras.",
       "items": [
         {
           "title": "Exportar como texto",
@@ -162,8 +163,7 @@
           "title": "Cadencia personalizada",
           "description": "Controla cada cuánto se actualiza tu timeline."
         }
-      ],
-      "subtitle": "Evolucionamos Hikai constantemente. Revisa próximas funcionalidades y mejoras."
+      ]
     },
     "finalCta": {
       "titlePrimary": "Tu producto ya está avanzando —",

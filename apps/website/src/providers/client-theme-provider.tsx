@@ -4,11 +4,9 @@ import { createContext, ReactNode, useEffect, useState } from "react";
 import {
 	ColorThemeId,
 	Theme,
-	defaultColorTheme,
 	defaultTheme,
 	getColorThemeClass,
 	getColorThemeIds,
-	isValidColorThemeId,
 } from "@hikai/ui";
 
 export interface ThemeContextValue {

@@ -2,11 +2,11 @@
   "Nav": {
     "problem": "The Problem",
     "product": "The Product",
+    "how": "How",
     "impact": "Impact",
     "why": "Why Hikai",
     "roadmap": "Roadmap",
-    "cta": "Sign up",
-    "how": "How"
+    "cta": "Sign up"
   },
   "HomePage": {
     "hero": {
@@ -42,11 +42,11 @@
         },
         {
           "title": "Filter changes",
-          "description": "By date, type (feature, fix, improvement), or product area. Show only what's relevant for your audience."
+          "description": "By date, type (feature, fix, improvement), or product area. Show only what’s relevant for your audience."
         },
         {
           "title": "Browse by structure",
-          "description": "Every change belongs somewhere: features, capabilities, product domains. Navigate your product the way it's built."
+          "description": "Every change belongs somewhere: features, capabilities, product domains. Navigate your product the way it’s built."
         },
         {
           "title": "Shareable anywhere",
@@ -74,7 +74,8 @@
           "description": "A narrative your audience can browse. Compounded while you sleep."
         }
       ],
-      "closing": "Don't shift the bottleneck — remove it.",
+      "closing": "Don’t shift the bottleneck — remove it.",
+      "stepsBadge": "Four steps. Once. That’s it",
       "steps": [
         {
           "title": "Connect your repository",
@@ -92,8 +93,7 @@
           "title": "Your timeline goes live",
           "description": "A public page that updates itself. Share it, embed it, let the market follow along."
         }
-      ],
-      "stepsBadge": "Four steps. Once. That's it"
+      ]
     },
     "impact": {
       "badge": "Impact",
@@ -126,9 +126,11 @@
       "body": [
         "Everyone promises AI that writes like a person. Few deliver.",
         "Here's the truth: the problem isn't the AI — it's the input. When you ask a copywriter (or an LLM) to write about your product, they're guessing. They don't know your architecture, your users, your roadmap.",
-        "Hikai is different. It lives inside your product context. It knows what AuthService does. It understands why that refactor matters. It sees the connection between last week's fix and next month's feature.",
-        "That's why Hikai doesn't sound like AI. It sounds like someone who actually knows your product — because it does."
+        "Hikai is different. It lives inside your product context. It knows what AuthService does. It understands why that refactor matters. It sees the connection between last week’s fix and next month’s feature.",
+        "That’s why Hikai doesn’t sound like AI. It sounds like someone who actually knows your product — because it does."
       ],
+      "closing": "Context is everything. And Hikai has yours.",
+      "icpBadge": "Serving to",
       "icps": [
         {
           "title": "Founders building in public",
@@ -140,15 +142,14 @@
         },
         {
           "title": "Anyone tired of \"we should update the changelog\"",
-          "description": "You know that task that never gets done? It's done now."
+          "description": "You know that task that never gets done? It’s done now."
         }
-      ],
-      "closing": "Context is everything. And Hikai has yours.",
-      "icpBadge": "Serving to"
+      ]
     },
     "roadmap": {
       "badge": "Roadmap",
       "title": "What's coming next.",
+      "subtitle": "We are continuously evolving Hikai. Check upcoming features and improvements.",
       "items": [
         {
           "title": "Export as text",
@@ -162,8 +163,7 @@
           "title": "Custom cadence",
           "description": "Control how often your timeline refreshes."
         }
-      ],
-      "subtitle": "We are continuously evolving Hikai. Check upcoming features and improvements."
+      ]
     },
     "finalCta": {
       "titlePrimary": "Your product is already moving —",
