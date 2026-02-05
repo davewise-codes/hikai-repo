@@ -1,8 +1,8 @@
 import { Badge } from "@hikai/ui";
 import { useTranslations } from "next-intl";
-import { CalendarSync, Layers, Sprout } from "lucide-react";
+import { FaCalendarCheck, FaLayerGroup, FaSeedling } from "react-icons/fa6";
 
-const benefitIcons = [CalendarSync, Layers, Sprout];
+const benefitIcons = [FaCalendarCheck, FaLayerGroup, FaSeedling];
 
 export function HowItWorksCondensedSection() {
 	const t = useTranslations("HomePage.how");
@@ -28,7 +28,7 @@ export function HowItWorksCondensedSection() {
 					</div>
 					<div className="grid h-full grid-rows-3 gap-4">
 						{benefits.map((benefit, index) => {
-							const Icon = benefitIcons[index] ?? Sprout;
+							const Icon = benefitIcons[index] ?? FaSeedling;
 							return (
 								<div key={benefit.title} className="rounded-xl border border-border bg-muted/10 p-5">
 									<div className="grid grid-cols-[auto_1fr] gap-4 items-start">
