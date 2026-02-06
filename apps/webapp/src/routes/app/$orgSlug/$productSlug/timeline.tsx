@@ -8,6 +8,7 @@ import {
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
 import {
 	Button,
 	Badge,
@@ -98,6 +99,10 @@ function TimelinePage() {
 	const productId = product?._id;
 	const [refreshKey, setRefreshKey] = useState(0);
 	const { timeline, buckets, isLoading } = useTimeline({ productId, refreshKey });
+	const contextSnapshot = useQuery(
+		api.products.products.getCurrentProductContextSnapshot,
+		productId ? { productId } : "skip",
+	);
 	const capabilities = useQuery(
 		api.products.capabilities.listProductCapabilities,
 		productId ? { productId } : "skip",
@@ -219,18 +224,46 @@ function TimelinePage() {
 			}))
 			.filter((group) => group.events.length > 0);
 	}, [buckets, filteredEvents]);
-	const domainColorMap = useMemo(() => {
-		const domains = new Set<string>();
+	const productDomains = useMemo(() => {
+		const rawDomains = Array.isArray((contextSnapshot as any)?.contextDetail?.domains)
+			? (((contextSnapshot as any).contextDetail as { domains?: unknown }).domains as Array<
+					Record<string, unknown>
+				>)
+			: [];
+		const names = rawDomains
+			.map((domain) =>
+				typeof domain?.name === "string" ? domain.name.trim() : "",
+			)
+			.filter((name) => name.length > 0);
+		const seen = new Set<string>();
+		const ordered: string[] = [];
+		names.forEach((name) => {
+			if (seen.has(name)) return;
+			seen.add(name);
+			ordered.push(name);
+		});
+		return ordered;
+	}, [contextSnapshot]);
+	const domainList = useMemo(() => {
+		const seen = new Set(productDomains);
+		const ordered = [...productDomains];
 		bucketGroups.forEach((group) => {
 			(group.summary.domains ?? []).forEach((domain) => {
-				if (domain) domains.add(domain);
+				if (!domain || seen.has(domain)) return;
+				seen.add(domain);
+				ordered.push(domain);
 			});
 			group.events.forEach((event) => {
-				if (event.domain) domains.add(event.domain);
+				if (!event.domain || seen.has(event.domain)) return;
+				seen.add(event.domain);
+				ordered.push(event.domain);
 			});
 		});
-		return createDomainColorMap(Array.from(domains));
-	}, [bucketGroups]);
+		return ordered;
+	}, [bucketGroups, productDomains]);
+	const domainColorMap = useMemo(() => {
+		return createDomainColorMap(domainList);
+	}, [domainList]);
 
 	useEffect(() => {
 		if (!bucketGroups.length) {
@@ -379,11 +412,19 @@ function TimelinePage() {
 		try {
 			const result = await regenerateTimeline({ productId });
 			setRefreshKey((prev) => prev + 1);
-			toast.success(
-				t("regenerate.success", {
-					interpreted: result.processed,
-				}),
-			);
+			if (result.queued) {
+				toast.success(
+					t("regenerate.queued", {
+						batches: result.totalBatches ?? 0,
+					}),
+				);
+			} else {
+				toast.success(
+					t("regenerate.success", {
+						interpreted: result.processed,
+					}),
+				);
+			}
 		} catch (errorSync) {
 			toast.error(
 				errorSync instanceof Error
@@ -468,6 +509,110 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 				: [...prev.capabilities, value],
 		}));
 	}, []);
+
+	const eventListVariants = useMemo(
+		() => ({
+			hidden: { opacity: 0 },
+			show: {
+				opacity: 1,
+				transition: { staggerChildren: 0.05, delayChildren: 0.05 },
+			},
+		}),
+		[],
+	);
+	const eventItemVariants = useMemo(
+		() => ({
+			hidden: { opacity: 0, y: 6 },
+			show: { opacity: 1, y: 0, transition: { duration: 0.2 } },
+		}),
+		[],
+	);
+	const renderEventBody = useCallback(
+		(event: TimelineListEvent) => {
+			const capabilityLabel =
+				(event.capabilitySlug
+					? capabilityBySlug.get(event.capabilitySlug)
+					: null) ?? t("events.unclassified");
+			const domainLabel = event.domain ?? t("events.unassigned");
+			const typeIcon =
+				event.type === "feature" ? (
+					<Sparkles className="h-3.5 w-3.5" />
+				) : event.type === "fix" ? (
+					<ShieldCheck className="h-3.5 w-3.5" />
+				) : event.type === "improvement" ? (
+					<TrendingUp className="h-3.5 w-3.5" />
+				) : (
+					<Cog className="h-3.5 w-3.5" />
+				);
+
+			return (
+				<div className="flex items-start justify-between gap-3">
+					<div className="flex flex-1">
+						<div className="grid w-full grid-cols-[16px_16px_minmax(0,1fr)] items-start gap-x-2 gap-y-2">
+							<p className="col-span-3 text-fontSize-xs text-muted-foreground">
+								{capabilityLabel}
+							</p>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										{(() => {
+											const color =
+												domainColorMap[domainLabel] ??
+												getDomainBadgeClass(domainLabel);
+											return (
+												<span
+													className="mt-1 h-2.5 w-2.5 rounded-full border border-border/60"
+													style={{
+														borderColor: color.border,
+														backgroundColor: color.dot,
+													}}
+												/>
+											);
+										})()}
+									</TooltipTrigger>
+									<TooltipContent side="right">
+										{domainLabel}
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+							<TooltipProvider>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<span className="mt-0.5 inline-flex items-center">
+											{typeIcon}
+										</span>
+									</TooltipTrigger>
+									<TooltipContent side="right">
+										{event.type === "feature"
+											? t("filters.features")
+											: event.type === "fix"
+												? t("filters.fixes")
+												: event.type === "improvement"
+													? t("filters.improvements")
+													: t("filters.work")}
+									</TooltipContent>
+								</Tooltip>
+							</TooltipProvider>
+							<p className="line-clamp-1 text-fontSize-sm font-medium">
+								{event.title}
+							</p>
+							{event.summary ? (
+								<p className="col-span-3 text-fontSize-sm text-muted-foreground mt-1.5">
+									{event.summary}
+								</p>
+							) : null}
+						</div>
+					</div>
+					<span className="text-fontSize-xs text-muted-foreground">
+						{event.visibility === "internal"
+							? t("detail.internal")
+							: t("events.public")}
+					</span>
+				</div>
+			);
+		},
+		[capabilityBySlug, domainColorMap, t],
+	);
 
 	const handleFromChange = useCallback((value: string) => {
 		setDatePreset("all");
@@ -804,10 +949,12 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 						<div className="px-0">
 							<TimelineList
 								buckets={bucketGroups}
+								productDomains={domainList}
 								domainColorMap={domainColorMap}
 								isLoading={isTimelineLoading}
 								selectedBucketId={selectedBucketId}
 								onSelectBucket={(id) => setSelectedBucketId(id)}
+								onToggleDomain={handleDomainToggle}
 								emptyAction={
 									showConnectCta ? (
 										<Button asChild size="sm" variant="secondary">
@@ -1187,18 +1334,25 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 													<div className="pointer-events-none absolute inset-0 rounded-lg border border-primary/40 bg-primary/5" />
 												) : null}
 												<div className="space-y-3">
-													<div
-														className={cn(
-															"relative z-10 flex items-start justify-between gap-3 rounded-md px-2 py-2",
-														)}
-													>
-														<div className="flex-1 min-w-0">
-															<p className="truncate text-fontSize-xs font-semibold uppercase tracking-wide">
-																{group.summary.title}
-															</p>
-															<p className="text-fontSize-xs text-muted-foreground">
-																{dateLabel}
-															</p>
+												<div
+													className={cn(
+														"relative z-10 flex items-start justify-between gap-3 rounded-md px-2 py-2",
+													)}
+												>
+													<div className="flex-1 min-w-0">
+														<p
+															className={cn(
+																"truncate tracking-tight",
+																isSelected
+																	? "text-lg font-bold text-foreground"
+																	: "text-fontSize-xs font-medium text-muted-foreground",
+															)}
+														>
+															{group.summary.title}
+														</p>
+														<p className="text-fontSize-xs text-muted-foreground">
+															{dateLabel}
+														</p>
 														</div>
 														<div className="whitespace-nowrap text-fontSize-xs text-muted-foreground">
 															{t("events.count", {
@@ -1208,94 +1362,43 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 													</div>
 												</div>
 												<div className="relative z-10 space-y-3">
-												{group.events.map((event) => {
-													const capabilityLabel =
-														(event.capabilitySlug
-															? capabilityBySlug.get(event.capabilitySlug)
-															: null) ?? t("events.unclassified");
-													const domainLabel =
-														event.domain ?? t("events.unassigned");
-													const typeIcon =
-														event.type === "feature" ? (
-															<Sparkles className="h-3.5 w-3.5" />
-														) : event.type === "fix" ? (
-															<ShieldCheck className="h-3.5 w-3.5" />
-														) : event.type === "improvement" ? (
-															<TrendingUp className="h-3.5 w-3.5" />
-														) : (
-															<Cog className="h-3.5 w-3.5" />
-														);
-													return (
-														<div
-															key={event._id}
-															className="rounded-md border border-border/60 bg-card px-3 py-2"
-														>
-															<div className="flex items-start justify-between gap-3">
-																<div className="flex flex-1">
-																	<div className="grid w-full grid-cols-[16px_16px_minmax(0,1fr)] items-start gap-x-2 gap-y-2">
-																		<p className="col-span-3 text-fontSize-xs text-muted-foreground">
-																			{capabilityLabel}
-																		</p>
-																		<TooltipProvider>
-																			<Tooltip>
-																				<TooltipTrigger asChild>
-																					{(() => {
-																						const color =
-																							domainColorMap[domainLabel] ??
-																							getDomainBadgeClass(domainLabel);
-																						return (
-																							<span
-																								className="mt-1 h-2.5 w-2.5 rounded-full border border-border/60"
-																								style={{
-																									borderColor: color.border,
-																									backgroundColor: color.dot,
-																								}}
-																							/>
-																						);
-																					})()}
-																				</TooltipTrigger>
-																				<TooltipContent side="right">
-																					{domainLabel}
-																				</TooltipContent>
-																			</Tooltip>
-																		</TooltipProvider>
-																		<TooltipProvider>
-																			<Tooltip>
-																				<TooltipTrigger asChild>
-																					<span className="mt-0.5 inline-flex items-center">
-																						{typeIcon}
-																					</span>
-																				</TooltipTrigger>
-																				<TooltipContent side="right">
-																					{event.type === "feature"
-																						? t("filters.features")
-																						: event.type === "fix"
-																							? t("filters.fixes")
-																							: event.type === "improvement"
-																								? t("filters.improvements")
-																								: t("filters.work")}
-																				</TooltipContent>
-																			</Tooltip>
-																		</TooltipProvider>
-																		<p className="line-clamp-1 text-fontSize-sm font-medium">
-																			{event.title}
-																		</p>
-																		{event.summary ? (
-																			<p className="col-span-3 text-fontSize-sm text-muted-foreground mt-1.5">
-																				{event.summary}
-																			</p>
-																		) : null}
+													{isSelected ? (
+														<AnimatePresence mode="wait" initial={false}>
+															<motion.div
+																key={`${group.summary.bucketId}-events`}
+																variants={eventListVariants}
+																initial="hidden"
+																animate="show"
+																exit="hidden"
+																className="space-y-3"
+															>
+																{group.events.map((event) => {
+																	return (
+																		<motion.div
+																			key={event._id}
+																			variants={eventItemVariants}
+																			className="rounded-md border border-border/60 bg-card px-3 py-2"
+																		>
+																			{renderEventBody(event)}
+																		</motion.div>
+																	);
+																})}
+															</motion.div>
+														</AnimatePresence>
+													) : (
+														<div className="space-y-3">
+															{group.events.map((event) => {
+																return (
+																	<div
+																		key={event._id}
+																		className="rounded-md border border-border/60 bg-card px-3 py-2"
+																	>
+																		{renderEventBody(event)}
 																	</div>
-																</div>
-																<span className="text-fontSize-xs text-muted-foreground">
-																	{event.visibility === "internal"
-																		? t("detail.internal")
-																		: t("events.public")}
-																</span>
-															</div>
+																);
+															})}
 														</div>
-													);
-												})}
+													)}
 												</div>
 											</div>
 											{isLast ? null : (

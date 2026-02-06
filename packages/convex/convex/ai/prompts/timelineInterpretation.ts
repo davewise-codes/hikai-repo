@@ -1,4 +1,4 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.2";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.3";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
@@ -66,6 +66,10 @@ Principles:
 - Group related raw events into a single narrative when they describe one coherent product increment.
 - Align the narrative with product baseline + product context taxonomy (productDomains, audienceSegments, strategicPillars) and the featureMap.
 - Use releaseCadence to decide buckets and assign each rawEvent to one bucket.
+- Write bucket title and narrative to fit a hero timeline card:
+  - Title: past-tense action + object, sentence case, ends with a period, max ~6-8 words.
+  - Narrative: one line expanding the benefit with a concrete outcome, max ~16-20 words.
+  - Avoid repeating the same phrasing between title and narrative.
 - Output ONLY valid JSON, no markdown, no commentary.
 
 Input JSON:
@@ -153,6 +157,7 @@ Rules:
 - Use the provided languagePreference for all text.
 - Each rawEventId must appear in exactly one event.
 - Do not include raw commit messages or hashes in titles; summarize as product impact.
+- For bucket.title and bucket.narrative, follow the hero formatting rules above; the narrative should add new information beyond the title.
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
 - If chunkContext is provided and isLastChunk=false, do NOT generate bucket narrative (set narrative to null).

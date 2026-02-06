@@ -10,7 +10,8 @@ import { Id } from "../_generated/dataModel";
 import { api, internal } from "../_generated/api";
 
 const BATCH_SIZE = 200;
-const MAX_EVENTS_PER_CHUNK = 30;
+const BUCKETS_PER_BATCH = 3;
+const MAX_EVENTS_PER_CHUNK = 50;
 type RawEvent = {
 	_id: Id<"rawEvents">;
 	productId: Id<"products">;
@@ -33,6 +34,9 @@ type InterpretResult = {
 	processed: number;
 	errors: number;
 	productId: Id<"products">;
+	queued?: boolean;
+	remainingBatches?: number;
+	totalBatches?: number;
 };
 
 type InterpretationOutput = {
@@ -157,12 +161,13 @@ export const interpretPendingEvents = action({
 		productId: v.id("products"),
 		rawEventIds: v.optional(v.array(v.id("rawEvents"))),
 		agentRunId: v.optional(v.id("agentRuns")),
+		bucketCursor: v.optional(v.number()),
 	},
 	handler: async (
 		ctx: ActionCtx,
-		{ productId, rawEventIds, agentRunId }
+		{ productId, rawEventIds, agentRunId, bucketCursor }
 	): Promise<InterpretResult & { agentRunId: Id<"agentRuns"> | null }> => {
-		await ctx.runQuery(internal.lib.access.assertProductAccessInternal, {
+		await ctx.runQuery(internal.lib.access.assertProductAccessSystem, {
 			productId,
 		});
 
@@ -182,7 +187,7 @@ export const interpretPendingEvents = action({
 
 		const recordStep = async (step: string, status: "info" | "success" | "warn" | "error") => {
 			if (!runId) return;
-			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+			await ctx.runMutation(internal.agents.agentRuns.appendStepSystem, {
 				productId,
 				runId,
 				step,
@@ -195,7 +200,7 @@ export const interpretPendingEvents = action({
 			errorMessage?: string
 		) => {
 			if (!runId) return;
-			await ctx.runMutation(internal.agents.agentRuns.finishRun, {
+			await ctx.runMutation(internal.agents.agentRuns.finishRunSystem, {
 				productId,
 				runId,
 				status,
@@ -205,6 +210,7 @@ export const interpretPendingEvents = action({
 
 		try {
 			await recordStep("Loading raw events", "info");
+			const cursor = Math.max(0, bucketCursor ?? 0);
 			const targetRawEvents = rawEventIds?.length
 				? await ctx.runQuery(internal.timeline.interpret.getRawEventsByIds, {
 						productId,
@@ -217,7 +223,13 @@ export const interpretPendingEvents = action({
 			if (!targetRawEvents.length) {
 				await recordStep("No raw events to interpret", "warn");
 				await finishRun("success");
-				return { attempted: 0, processed: 0, errors: 0, productId, agentRunId: runId };
+				return {
+					attempted: 0,
+					processed: 0,
+					errors: 0,
+					productId,
+					agentRunId: runId,
+				};
 			}
 
 			const product = await ctx.runQuery(
@@ -234,46 +246,78 @@ export const interpretPendingEvents = action({
 				snapshot?.releaseCadence ?? product.releaseCadence ?? "unknown";
 			const debugUi = snapshot?.context?.aiDebug === true;
 			const normalizedCadence = normalizeCadence(releaseCadence);
+			const snapshotId = snapshot?._id;
+			let contextDetail: Record<string, unknown> | null =
+				(snapshot?.contextDetail as Record<string, unknown> | null) ?? null;
 
 			const buckets = bucketizeRawEvents(targetRawEvents, normalizedCadence);
-			await recordStep(`Bucketing raw events into ${buckets.length} buckets`, "info");
-
-			await recordStep("Classifying sources", "info");
-			await ctx.runAction(api.agents.actions.classifySourceContext, { productId });
-			const sourceContexts = await ctx.runQuery(
-				internal.agents.sourceContextData.listSourceContexts,
-				{ productId },
+			const totalBuckets = buckets.length;
+			const totalBatches = Math.max(
+				1,
+				Math.ceil(totalBuckets / BUCKETS_PER_BATCH),
 			);
-			if (sourceContexts.length) {
-				const summary = sourceContexts
-					.slice(0, 5)
-					.map((item) => `${item.sourceId} → ${item.sourceCategory ?? "repo"}`)
-					.join(" · ");
-				const suffix =
-					sourceContexts.length > 5
-						? ` +${sourceContexts.length - 5} more`
-						: "";
-				await recordStep(`Source contexts: ${summary}${suffix}`, "info");
+			const batchIndex = Math.floor(cursor / BUCKETS_PER_BATCH) + 1;
+			const batchBuckets = buckets.slice(
+				cursor,
+				cursor + BUCKETS_PER_BATCH,
+			);
+
+			if (!batchBuckets.length) {
+				await recordStep("No buckets left to process", "warn");
+				await finishRun("success");
+				return {
+					attempted: targetRawEvents.length,
+					processed: 0,
+					errors: 0,
+					productId,
+					agentRunId: runId,
+				};
 			}
 
-			await recordStep("Refreshing feature map", "info");
-			try {
-				await ctx.runAction(api.agents.actions.refreshFeatureMap, {
-					productId,
-					debugUi,
-				});
-			} catch {
-				await recordStep("Feature map refresh failed", "warn");
+			if (cursor === 0) {
+				await recordStep(
+					`Bucketing raw events into ${totalBuckets} buckets`,
+					"info",
+				);
+			} else {
+				await recordStep(
+					`Resuming bucket processing (batch ${batchIndex}/${totalBatches})`,
+					"info",
+				);
+			}
+
+			if (cursor === 0) {
+				const sourceContexts = await ctx.runQuery(
+					internal.agents.sourceContextData.listSourceContexts,
+					{ productId },
+				);
+				if (!sourceContexts.length) {
+					await recordStep("Classifying sources (first run)", "info");
+					await ctx.runAction(api.agents.actions.classifySourceContext, {
+						productId,
+					});
+				} else {
+					await recordStep(
+						`Using ${sourceContexts.length} existing source contexts`,
+						"info",
+					);
+				}
 			}
 
 			const now = Date.now();
 			let processed = 0;
-			const totalBuckets = buckets.length;
-			for (const [bucketIndex, bucket] of buckets.entries()) {
+			let errors = 0;
+			await recordStep(
+				`Processing batch ${batchIndex}/${totalBatches} (${batchBuckets.length} buckets)`,
+				"info",
+			);
+			const discoveredDomains: Array<{ name?: string; purpose?: string }> = [];
+
+			for (const [bucketIndex, bucket] of batchBuckets.entries()) {
 				const bucketLabel = formatBucketLabel(bucket.bucketStartAt, bucket.bucketEndAt);
 				const chunks = chunkBucket(bucket, MAX_EVENTS_PER_CHUNK);
 				await recordStep(
-					`Processing bucket ${bucketIndex + 1}/${totalBuckets} (${bucketLabel}) - ${chunks.length} chunk(s)`,
+					`Processing bucket ${cursor + bucketIndex + 1}/${totalBuckets} (${bucketLabel}) - ${chunks.length} chunk(s)`,
 					"info",
 				);
 
@@ -298,6 +342,7 @@ export const interpretPendingEvents = action({
 								),
 								limit: chunk.rawEvents.length,
 								debugUi,
+								system: true,
 								bucket: {
 									bucketId: chunk.bucketId,
 									bucketStartAt: chunk.bucketStartAt,
@@ -310,28 +355,32 @@ export const interpretPendingEvents = action({
 									previousEventsSummary: previousEventsSummary ?? undefined,
 								},
 							},
-						);
+							);
 
-						allChunkEvents.push(...interpretation.events);
-						lastInterpretation = interpretation;
+							allChunkEvents.push(...interpretation.events);
+							lastInterpretation = interpretation;
+							if (interpretation.newDomains?.length) {
+								discoveredDomains.push(...interpretation.newDomains);
+							}
 
-						if (!isLastChunk) {
-							previousEventsSummary = summarizeEventsForNextChunk(allChunkEvents);
-						}
-					} catch (error) {
+							if (!isLastChunk) {
+								previousEventsSummary = summarizeEventsForNextChunk(allChunkEvents);
+							}
+						} catch (error) {
 						await recordStep(
 							`Chunk ${chunkIndex + 1}/${chunks.length} failed: ${
 								error instanceof Error ? error.message : "unknown"
 							}`,
 							"warn",
 						);
+						errors += 1;
 					}
 				}
 
 				if (lastInterpretation && allChunkEvents.length > 0) {
 					const bucketImpact = computeBucketImpact(bucket.rawEvents);
 					await recordStep(
-						`Writing interpretation for bucket ${bucketIndex + 1}/${totalBuckets}`,
+						`Writing interpretation for bucket ${cursor + bucketIndex + 1}/${totalBuckets}`,
 						"info",
 					);
 					await ctx.runMutation(internal.timeline.interpret.insertBucketSummary, {
@@ -385,14 +434,109 @@ export const interpretPendingEvents = action({
 				}
 			}
 
-			await ctx.runMutation(internal.timeline.interpret.markRawEventsProcessed, {
-				rawEventIds: targetRawEvents.map(
-					(event: { _id: Id<"rawEvents"> }) => event._id,
-				),
-			});
+			if (snapshotId && discoveredDomains.length) {
+				const normalizedDomains = discoveredDomains
+					.map((domain) => ({
+						name:
+							typeof domain.name === "string" ? domain.name.trim() : "",
+						purpose:
+							typeof domain.purpose === "string" ? domain.purpose.trim() : undefined,
+					}))
+					.filter((domain) => domain.name.length > 0);
+
+				if (normalizedDomains.length) {
+					const existingDomains = Array.isArray(
+						(contextDetail as { domains?: unknown })?.domains,
+					)
+						? (((contextDetail as { domains?: unknown })?.domains ??
+								[]) as Array<Record<string, unknown>>)
+						: [];
+					const seen = new Set(
+						existingDomains
+							.map((domain) =>
+								typeof domain?.name === "string"
+									? domain.name.trim().toLowerCase()
+									: "",
+							)
+							.filter((name) => name.length > 0),
+					);
+					const nextDomains = [...existingDomains];
+					normalizedDomains.forEach((domain) => {
+						const key = domain.name.toLowerCase();
+						if (seen.has(key)) return;
+						seen.add(key);
+						nextDomains.push({
+							name: domain.name,
+							purpose: domain.purpose,
+							pathPatterns: [],
+							schemaEntities: [],
+							capabilities: [],
+						});
+					});
+
+					if (nextDomains.length > existingDomains.length) {
+						const nextContextDetail = {
+							...(contextDetail ?? {}),
+							domains: nextDomains,
+						};
+						await ctx.runMutation(
+							internal.agents.productContextData.updateContextSnapshot,
+							{
+								snapshotId,
+								contextDetail: nextContextDetail,
+							},
+						);
+						contextDetail = nextContextDetail;
+						await recordStep(
+							`Discovered ${nextDomains.length - existingDomains.length} new domains`,
+							"info",
+						);
+					}
+				}
+			}
+
+			const batchRawEventIds = batchBuckets.flatMap((bucket) =>
+				bucket.rawEvents.map((event) => event._id),
+			);
+			if (batchRawEventIds.length) {
+				await ctx.runMutation(internal.timeline.interpret.markRawEventsProcessed, {
+					rawEventIds: batchRawEventIds,
+				});
+			}
+
+			const nextCursor = cursor + BUCKETS_PER_BATCH;
+			if (nextCursor < totalBuckets) {
+				await recordStep(
+					`Queued batch ${batchIndex + 1}/${totalBatches}`,
+					"info",
+				);
+				await ctx.scheduler.runAfter(
+					0,
+					api.timeline.interpret.interpretPendingEvents,
+					{
+						productId,
+						rawEventIds: targetRawEvents.map(
+							(event: { _id: Id<"rawEvents"> }) => event._id,
+						),
+						agentRunId: runId ?? undefined,
+						bucketCursor: nextCursor,
+					},
+				);
+
+				return {
+					attempted: targetRawEvents.length,
+					processed,
+					errors,
+					productId,
+					agentRunId: runId,
+					queued: true,
+					remainingBatches: totalBatches - (batchIndex + 1),
+					totalBatches,
+				};
+			}
 
 			await recordStep(
-				`Created ${processed} interpreted events from ${targetRawEvents.length} raw events`,
+				`Created ${processed} interpreted events in final batch`,
 				"success",
 			);
 			await finishRun("success");
@@ -400,9 +544,12 @@ export const interpretPendingEvents = action({
 			return {
 				attempted: targetRawEvents.length,
 				processed,
-				errors: 0,
+				errors,
 				productId,
 				agentRunId: runId,
+				queued: false,
+				remainingBatches: 0,
+				totalBatches,
 			};
 		} catch (error) {
 			await recordStep(

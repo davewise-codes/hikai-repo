@@ -62,6 +62,7 @@
     "confirm": "Regenerar",
     "cancel": "Cancelar",
     "success": "Timeline regenerado: {{interpreted}} narrativas creadas",
+    "queued": "Regeneración en cola ({{batches}} lotes). Mira el progreso abajo.",
     "error": "No se pudo regenerar el timeline",
     "tooltip": "Elimina narrativas y reconstruye el timeline con todos los raw events."
   },

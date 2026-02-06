@@ -62,6 +62,7 @@
     "confirm": "Regenerate",
     "cancel": "Cancel",
     "success": "Regenerated timeline: {{interpreted}} narratives created",
+    "queued": "Regeneration queued ({{batches}} batches). Tracking progress below.",
     "error": "Could not regenerate timeline",
     "tooltip": "Delete narratives and rebuild the timeline from all raw events."
   },

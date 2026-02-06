@@ -975,6 +975,7 @@ export const interpretTimelineEvents = action({
 		limit: v.optional(v.number()),
 		threadId: v.optional(v.string()),
 		debugUi: v.optional(v.boolean()),
+		system: v.optional(v.boolean()),
 		bucket: v.optional(
 			v.object({
 				bucketId: v.string(),
@@ -993,7 +994,16 @@ export const interpretTimelineEvents = action({
 	},
 	handler: async (
 		ctx,
-		{ productId, rawEventIds, limit, threadId, debugUi, bucket, chunkContext },
+		{
+			productId,
+			rawEventIds,
+			limit,
+			threadId,
+			debugUi,
+			system,
+			bucket,
+			chunkContext,
+		},
 	): Promise<{
 		threadId: string;
 		bucket: {
@@ -1028,10 +1038,16 @@ export const interpretTimelineEvents = action({
 		inferenceLogId?: Id<"aiInferenceLogs">;
 		}> => {
 		const aiConfig = getAgentAIConfig(TIMELINE_INTERPRETER_AGENT_NAME);
-		const { organizationId, userId, product } = await ctx.runQuery(
-			internal.lib.access.assertProductAccessInternal,
-			{ productId },
-		);
+		const useSystem = system === true;
+		const access = useSystem
+			? await ctx.runQuery(internal.lib.access.assertProductAccessSystem, {
+					productId,
+				})
+			: await ctx.runQuery(internal.lib.access.assertProductAccessInternal, {
+					productId,
+				});
+		const { organizationId, product } = access;
+		const userId = "userId" in access ? access.userId : undefined;
 
 		const rawSummaries = rawEventIds?.length
 			? await ctx.runQuery(
@@ -1251,7 +1267,7 @@ export const interpretTimelineEvents = action({
 				TIMELINE_INTERPRETER_AGENT_NAME,
 			);
 			let inferenceLogId: Id<"aiInferenceLogs"> | undefined;
-			if (telemetryConfig.persistInferenceLogs) {
+			if (telemetryConfig.persistInferenceLogs && userId) {
 				const usage = getUsageTotals(result);
 				const bucketIds = normalizedBucket?.bucketId
 					? [normalizedBucket.bucketId]
@@ -1260,29 +1276,29 @@ export const interpretTimelineEvents = action({
 				inferenceLogId = await ctx.runMutation(
 					internal.ai.telemetry.recordInferenceLog,
 					{
-					organizationId,
-					productId,
-					userId,
-					useCase: TIMELINE_INTERPRETER_USE_CASE,
-					agentName: TIMELINE_INTERPRETER_AGENT_NAME,
-					promptVersion: TIMELINE_INTERPRETER_PROMPT_VERSION,
-					prompt: debugUi ? promptPayload : undefined,
-					response: debugUi ? result.text : undefined,
-					provider: aiConfig.provider,
-					model: aiConfig.model,
-					tokensIn: usage.tokensIn,
-					tokensOut: usage.tokensOut,
-					totalTokens: usage.totalTokens,
-					latencyMs: Date.now() - start,
-					contextVersion:
-						typeof (context as { version?: number }).version === "number"
-							? (context as { version: number }).version
-							: undefined,
-					metadata: {
-						rawEventIds: rawEvents.map((event) => event.rawEventId),
-						bucketIds,
-						baselineSnapshotHash: hashString(JSON.stringify(snapshotPayload)),
-					},
+						organizationId,
+						productId,
+						userId,
+						useCase: TIMELINE_INTERPRETER_USE_CASE,
+						agentName: TIMELINE_INTERPRETER_AGENT_NAME,
+						promptVersion: TIMELINE_INTERPRETER_PROMPT_VERSION,
+						prompt: debugUi ? promptPayload : undefined,
+						response: debugUi ? result.text : undefined,
+						provider: aiConfig.provider,
+						model: aiConfig.model,
+						tokensIn: usage.tokensIn,
+						tokensOut: usage.tokensOut,
+						totalTokens: usage.totalTokens,
+						latencyMs: Date.now() - start,
+						contextVersion:
+							typeof (context as { version?: number }).version === "number"
+								? (context as { version: number }).version
+								: undefined,
+						metadata: {
+							rawEventIds: rawEvents.map((event) => event.rawEventId),
+							bucketIds,
+							baselineSnapshotHash: hashString(JSON.stringify(snapshotPayload)),
+						},
 					},
 				);
 			}
@@ -1296,22 +1312,24 @@ export const interpretTimelineEvents = action({
 				inferenceLogId,
 			};
 		} catch (error) {
-			await ctx.runMutation(internal.ai.telemetry.recordError, {
-				organizationId,
-				productId,
-				userId,
-				useCase: TIMELINE_INTERPRETER_USE_CASE,
-				agentName: TIMELINE_INTERPRETER_AGENT_NAME,
-				threadId: tid,
-				provider: aiConfig.provider,
-				model: aiConfig.model,
-				errorMessage:
-					error instanceof Error
-						? error.message
-						: "Unknown error invoking timeline interpreter agent",
-				prompt: debugUi ? promptPayload : undefined,
-				metadata: { source: "timeline-interpretation" },
-			});
+			if (userId) {
+				await ctx.runMutation(internal.ai.telemetry.recordError, {
+					organizationId,
+					productId,
+					userId,
+					useCase: TIMELINE_INTERPRETER_USE_CASE,
+					agentName: TIMELINE_INTERPRETER_AGENT_NAME,
+					threadId: tid,
+					provider: aiConfig.provider,
+					model: aiConfig.model,
+					errorMessage:
+						error instanceof Error
+							? error.message
+							: "Unknown error invoking timeline interpreter agent",
+					prompt: debugUi ? promptPayload : undefined,
+					metadata: { source: "timeline-interpretation" },
+				});
+			}
 
 			throw error;
 		}

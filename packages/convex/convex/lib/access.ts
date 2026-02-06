@@ -229,3 +229,25 @@ export const assertProductAccessInternal = internalQuery({
     };
   },
 });
+
+// Internal-only: used by background jobs where no user session is available.
+export const assertProductAccessSystem = internalQuery({
+  args: {
+    productId: v.id("products"),
+  },
+  handler: async (ctx, { productId }) => {
+    const product = await ctx.db.get(productId);
+    if (!product) {
+      throw new Error("Producto no encontrado");
+    }
+    const organization = await ctx.db.get(product.organizationId);
+    if (!organization) {
+      throw new Error("Organización no encontrada");
+    }
+    return {
+      organizationId: organization._id,
+      productId,
+      product,
+    };
+  },
+});
