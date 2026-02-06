@@ -209,7 +209,7 @@ export const interpretPendingEvents = action({
 		};
 
 		try {
-			await recordStep("Loading raw events", "info");
+			await recordStep("Loading raw events...", "info");
 			const cursor = Math.max(0, bucketCursor ?? 0);
 			const targetRawEvents = rawEventIds?.length
 				? await ctx.runQuery(internal.timeline.interpret.getRawEventsByIds, {
@@ -221,7 +221,7 @@ export const interpretPendingEvents = action({
 					});
 
 			if (!targetRawEvents.length) {
-				await recordStep("No raw events to interpret", "warn");
+				await recordStep("No raw events to interpret...", "warn");
 				await finishRun("success");
 				return {
 					attempted: 0,
@@ -263,7 +263,7 @@ export const interpretPendingEvents = action({
 			);
 
 			if (!batchBuckets.length) {
-				await recordStep("No buckets left to process", "warn");
+				await recordStep("No buckets left to process...", "warn");
 				await finishRun("success");
 				return {
 					attempted: targetRawEvents.length,
@@ -276,12 +276,12 @@ export const interpretPendingEvents = action({
 
 			if (cursor === 0) {
 				await recordStep(
-					`Bucketing raw events into ${totalBuckets} buckets`,
+					`Bucketing raw events into ${totalBuckets} buckets...`,
 					"info",
 				);
 			} else {
 				await recordStep(
-					`Resuming bucket processing (batch ${batchIndex}/${totalBatches})`,
+					`Resuming bucket processing (batch ${batchIndex}/${totalBatches})...`,
 					"info",
 				);
 			}
@@ -292,13 +292,13 @@ export const interpretPendingEvents = action({
 					{ productId },
 				);
 				if (!sourceContexts.length) {
-					await recordStep("Classifying sources (first run)", "info");
+					await recordStep("Classifying sources (first run)...", "info");
 					await ctx.runAction(api.agents.actions.classifySourceContext, {
 						productId,
 					});
 				} else {
 					await recordStep(
-						`Using ${sourceContexts.length} existing source contexts`,
+						`Using ${sourceContexts.length} existing source contexts...`,
 						"info",
 					);
 				}
@@ -308,7 +308,7 @@ export const interpretPendingEvents = action({
 			let processed = 0;
 			let errors = 0;
 			await recordStep(
-				`Processing batch ${batchIndex}/${totalBatches} (${batchBuckets.length} buckets)`,
+				`Processing batch ${batchIndex}/${totalBatches} (${batchBuckets.length} buckets)...`,
 				"info",
 			);
 			const discoveredDomains: Array<{ name?: string; purpose?: string }> = [];
@@ -316,8 +316,11 @@ export const interpretPendingEvents = action({
 			for (const [bucketIndex, bucket] of batchBuckets.entries()) {
 				const bucketLabel = formatBucketLabel(bucket.bucketStartAt, bucket.bucketEndAt);
 				const chunks = chunkBucket(bucket, MAX_EVENTS_PER_CHUNK);
+				const bucketPosition = cursor + bucketIndex + 1;
+				const chunkLabel =
+					chunks.length > 1 ? ` (chunk 1/${chunks.length})` : "";
 				await recordStep(
-					`Processing bucket ${cursor + bucketIndex + 1}/${totalBuckets} (${bucketLabel}) - ${chunks.length} chunk(s)`,
+					`Processing bucket ${bucketPosition}/${totalBuckets} (${bucketLabel})${chunkLabel}...`,
 					"info",
 				);
 
@@ -327,8 +330,12 @@ export const interpretPendingEvents = action({
 
 				for (const [chunkIndex, chunk] of chunks.entries()) {
 					const isLastChunk = chunkIndex === chunks.length - 1;
+					const chunkSuffix =
+						chunks.length > 1
+							? ` (chunk ${chunkIndex + 1}/${chunks.length})`
+							: "";
 					await recordStep(
-						`Interpreting chunk ${chunkIndex + 1}/${chunks.length} of bucket ${bucketIndex + 1}`,
+						`Interpreting bucket ${cursor + bucketIndex + 1}/${totalBuckets}${chunkSuffix}...`,
 						"info",
 					);
 
@@ -380,7 +387,7 @@ export const interpretPendingEvents = action({
 				if (lastInterpretation && allChunkEvents.length > 0) {
 					const bucketImpact = computeBucketImpact(bucket.rawEvents);
 					await recordStep(
-						`Writing interpretation for bucket ${cursor + bucketIndex + 1}/${totalBuckets}`,
+						`Writing interpretation for bucket ${cursor + bucketIndex + 1}/${totalBuckets}...`,
 						"info",
 					);
 					await ctx.runMutation(internal.timeline.interpret.insertBucketSummary, {
@@ -488,7 +495,7 @@ export const interpretPendingEvents = action({
 						);
 						contextDetail = nextContextDetail;
 						await recordStep(
-							`Discovered ${nextDomains.length - existingDomains.length} new domains`,
+							`Discovered ${nextDomains.length - existingDomains.length} new domains...`,
 							"info",
 						);
 					}
@@ -507,7 +514,7 @@ export const interpretPendingEvents = action({
 			const nextCursor = cursor + BUCKETS_PER_BATCH;
 			if (nextCursor < totalBuckets) {
 				await recordStep(
-					`Queued batch ${batchIndex + 1}/${totalBatches}`,
+					`Queued batch ${batchIndex + 1}/${totalBatches}...`,
 					"info",
 				);
 				await ctx.scheduler.runAfter(
@@ -536,7 +543,7 @@ export const interpretPendingEvents = action({
 			}
 
 			await recordStep(
-				`Created ${processed} interpreted events in final batch`,
+				`Created ${processed} interpreted events in final batch...`,
 				"success",
 			);
 			await finishRun("success");
