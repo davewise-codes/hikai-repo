@@ -275,47 +275,200 @@ El agente debe generar narrativas optimizadas para el formato hero:
 
 ## Fase 2: Canvas Visual de Dominios
 
-**Objetivo**: El timeline deja de ser una lista y se convierte en un mapa visual.
+**Objetivo**: Añadir una vista estructural del producto que responde al tiempo, permitiendo explorar tanto temporalmente (timeline) como funcionalmente (canvas).
 
-### 2.1 Bubble Pack Layout (MVP)
+---
 
-**Propuesta**: Los dominios se representan como círculos orgánicos:
-- Tamaño = energía acumulada (eventos ponderados)
-- Posición = force-directed layout (estable)
-- Color = ya existente por dominio
-- Intensidad = actividad en bucket actual
+### 2.1 Layout: Timeline + Canvas lado a lado
 
 ```
-        ┌─────────────────────────────────┐
-        │      ○○○                        │
-        │    ○○Auth○○    ○○Planning○○     │
-        │      ○○○        ○○○○           │
-        │           ○○○○○○○              │
-        │         ○○Content○○            │
-        │           ○○○○○○○              │
-        └─────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────┐
+│  Timeline                                     [Sync] [Regenerate] [History]   │
+├────────────────────────────────┬──────────────────────────────────────────────┤
+│                                │                                              │
+│  Aug 8 → Aug 11  ○             │                                              │
+│  [Bucket comprimido]           │         ┌───────────┐    ┌───────────┐       │
+│                                │         │           │    │           │       │
+│  Aug 4 → Aug 8   ●             │         │ Products  │    │ AI&Agents │       │
+│  ┌────────────────────────┐    │         │     ●     │    │     ●     │       │
+│  │ Initialized web app.   │    │         │           │    │           │       │
+│  │                        │    │         └───────────┘    └───────────┘       │
+│  │ Created minimal Vite   │    │                                              │
+│  │ frontend...            │    │    ┌─────────┐  ┌─────────┐  ┌─────────┐     │
+│  │                        │    │    │  Auth   │  │Connectors│  │Timeline │     │
+│  │ ⚙ 1 work  [Ver eventos]│    │    │    ○    │  │    ○    │  │    ○    │     │
+│  └────────────────────────┘    │    └─────────┘  └─────────┘  └─────────┘     │
+│                                │                                              │
+│  Jul 21 → Jul 25  ○            │              CANVAS                          │
+│  [Bucket comprimido]           │     (estado del producto en Aug 4-8)         │
+│                                │                                              │
+└────────────────────────────────┴──────────────────────────────────────────────┘
 ```
 
-**Cambios técnicos**:
-- [ ] Nuevo componente `DomainCanvas`
-- [ ] Calcular posiciones con d3-force o similar
-- [ ] Renderizar con SVG o Canvas
-- [ ] Animar cambios al moverse en el tiempo
-- [ ] Click en dominio = filtrar por ese dominio
+**Estructura**:
+- **Izquierda**: Timeline con hero bucket (Fase 0)
+- **Derecha**: Canvas de dominios (reemplaza panel de eventos)
+- El panel de eventos se abre desde el hero bucket con un botón
 
-### 2.2 Interacción Canvas ↔ Scrubber
+---
 
-Al mover el scrubber:
-- Los círculos cambian de tamaño/intensidad suavemente
-- Dominios sin actividad se atenúan
-- Dominios con mucha actividad "pulsan"
+### 2.2 Canvas: Representación de dominios
 
-### 2.3 Modo Capability "Rayos X"
+**Tamaño proporcional acumulado**:
+- Cada dominio tiene tamaño proporcional a su energía acumulada **hasta ese bucket**
+- La suma de todos los dominios = 100% del espacio (tamaño total estable)
+- Un dominio no decrece en valor absoluto, pero puede decrecer proporcionalmente
+- Ejemplo: Auth empieza grande (fundacional), pero se "comprime" relativamente a medida que otros crecen
 
-Cuando se selecciona una capability:
-- El canvas entra en modo "causal"
-- Solo se iluminan dominios que recibieron features de esa capability
-- Mientras scrubeas, ves cuándo esa capability empezó a dar fruto
+**Estados visuales**:
+- **Activo en bucket**: Iluminado/destacado (borde, brillo, o color intenso)
+- **Inactivo en bucket**: Normal, sin destacar
+- **Sin eventos históricos**: Muy atenuado o placeholder
+
+**Lo que comunica**:
+- Tamaño → Inversión histórica acumulada
+- Brillo → Actividad en el bucket actual
+- Proporción cambiante → Hacia dónde evoluciona el foco del producto
+
+---
+
+### 2.3 Interacción Canvas ↔ Timeline
+
+**Al cambiar de bucket**:
+1. Canvas recalcula proporciones (energía acumulada hasta nuevo bucket)
+2. Dominios cambian de tamaño suavemente (transición animada)
+3. Se actualizan los dominios iluminados (los que tienen actividad en ese bucket)
+
+**Efecto "time-lapse"**:
+- Moviéndose rápido entre buckets, el usuario ve dominios "crecer" o "comprimirse"
+- Comunica la evolución del producto sin leer texto
+
+---
+
+### 2.4 Events Card (desde Timeline)
+
+Se abre desde el hero bucket con botón "Ver eventos".
+
+**Contenido**:
+- Lista de eventos del bucket actual
+- Filtros (categoría, dominio, visibility)
+- Mismo contenido que el panel actual, pero en modal/sheet
+
+**Implementación**: Sheet lateral o modal.
+
+---
+
+### 2.5 Capabilities Card (desde Canvas)
+
+Se abre al hacer click en un dominio del canvas.
+
+**Contenido**:
+- Título del dominio
+- Lista de **todas** las capabilities del dominio
+- Capabilities con eventos hasta este bucket: normales
+- Capabilities sin eventos: atenuadas
+- Cada capability es expandible
+
+**Al expandir una capability**:
+- Lista de eventos históricos de esa capability hasta el bucket actual
+- Ordenados cronológicamente (más reciente arriba o abajo, a definir)
+
+```
+┌─────────────────────────────────────────────────┐
+│  Products                                   ✕   │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  ▼ Product Context Mapping          3 events   │
+│    ┌─────────────────────────────────────────┐  │
+│    │ ● Aug 4: Improved domain-map card       │  │
+│    │ ● Jul 28: Added context signals         │  │
+│    │ ● Jul 15: Initial context extraction    │  │
+│    └─────────────────────────────────────────┘  │
+│                                                 │
+│  ▶ Product Surface Detection        2 events   │
+│                                                 │
+│  ▶ Feature Classification           1 event    │
+│                                                 │
+│  ▶ Domain Inference                 (ninguno)  │  ← atenuado
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+### 2.6 Cambios Técnicos
+
+**Nuevos componentes**:
+- [ ] `DomainCanvas` — Renderiza dominios con tamaños proporcionales
+- [ ] `CapabilitiesCard` — Sheet/modal con capabilities del dominio
+- [ ] `EventsCard` — Sheet/modal con eventos del bucket (extraer del panel actual)
+
+**Cálculos necesarios**:
+- [ ] Energía acumulada por dominio hasta cada bucket
+- [ ] Proporción de cada dominio (dominio / total)
+- [ ] Eventos por capability hasta cada bucket
+
+**Layout**:
+- [ ] Reorganizar página: timeline izquierda, canvas derecha
+- [ ] Eliminar panel de eventos fijo, convertir en card on-demand
+
+**Animaciones**:
+- [ ] Transición de tamaño de dominios al cambiar bucket
+- [ ] Transición de iluminación (activo/inactivo)
+
+**Representación visual del canvas**:
+- [ ] Decidir: bubbles, treemap, voronoi, o custom layout
+- [ ] Implementar con SVG, Canvas, o librería (d3, visx, etc.)
+
+---
+
+### 2.7 Representación Visual: Voronoi
+
+**Decisión**: Voronoi weighted con posiciones fijas.
+
+```
+┌─────────────────────────────────────────────┐
+│                    ╱    ╲                   │
+│      Products    ╱        ╲    AI & Agents  │
+│        ●       ╱            ╲      ●        │
+│              ╱                ╲              │
+│            ╱                    ╲            │
+│──────────╱────────────────────────╲─────────│
+│         ╲        Auth        ╱              │
+│           ╲        ○       ╱    Timeline    │
+│             ╲            ╱        ○         │
+│               ╲        ╱                    │
+│                 ╲    ╱      Connectors      │
+│                   ╲╱           ○            │
+└─────────────────────────────────────────────┘
+```
+
+**Características**:
+- Cada dominio = una región del Voronoi
+- **Posición de semillas**: Fija por dominio (memoria espacial)
+- **Tamaño de región**: Proporcional a energía acumulada (weighted Voronoi)
+- **Bordes**: Rectos (Voronoi clásico, V1)
+- **Evolución futura**: Bordes curvos/orgánicos con Perlin noise (V2)
+
+**Estados visuales**:
+- Dominio activo en bucket: región iluminada (borde accent, fondo con tint)
+- Dominio inactivo: región normal
+- Dominio sin eventos históricos: región muy atenuada
+
+**Animación**:
+- Al cambiar bucket: regiones se expanden/contraen suavemente
+- Transición de pesos interpolada
+
+**Implementación**:
+- Librería: `d3-delaunay` + weighted Voronoi custom o `d3-voronoi-treemap`
+- Renderizado: SVG (más fácil para interactividad)
+- Click en región → abre Capabilities Card
+
+### 2.8 Decisiones pendientes
+
+- [ ] Ordenar eventos en capability: ¿más reciente arriba o abajo?
+- [ ] ¿Mostrar label del dominio dentro de la región o solo en hover?
+- [ ] ¿Mostrar count de eventos en cada región?
 
 ---
 
@@ -383,9 +536,12 @@ Al hacer click prolongado o zoom gesture en un dominio:
 | 1.1 | TimeScrubber component | Scrubber horizontal con drag y snap | P1 |
 | 1.2 | Layout con scrubber | Reorganizar layout para scrubber protagonista | P1 |
 | 1.3 | Filtros como modos | Atenuar en lugar de ocultar | P2 |
-| 2.1 | Bubble pack canvas | Dominios como círculos orgánicos | P2 |
-| 2.2 | Canvas ↔ Scrubber | Interacción entre canvas y tiempo | P2 |
-| 2.3 | Modo capability | Filtro "rayos X" por capability | P3 |
+| 2.1 | Layout timeline + canvas | Reorganizar: timeline izquierda, canvas derecha | P1 |
+| 2.2 | DomainCanvas component | Renderizar dominios con tamaño proporcional | P1 |
+| 2.3 | Interacción canvas ↔ bucket | Cambiar bucket actualiza canvas (tamaño, iluminación) | P1 |
+| 2.4 | EventsCard | Extraer panel de eventos a sheet/modal on-demand | P1 |
+| 2.5 | CapabilitiesCard | Sheet con capabilities del dominio + eventos expandibles | P1 |
+| 2.6 | Cálculo energía proporcional | Calcular tamaño de dominios por bucket | P1 |
 | 3.x | Zoom semántico | Drill-down en dominios | P3 |
 | 4.x | Mobile experience | Experiencia mobile adaptada | P3 |
 
@@ -423,3 +579,20 @@ _Esta sección se actualizará con decisiones tomadas durante la implementación
 - **Decisión**: Tamaño del hero NO varía por impacto (evitar caos visual)
 - **Referencia visual**: Estética landing Hikai (tipografía bold, jerarquía clara)
 - **Formato narrativa**: Título sentence case + descripción corta (actualizar agente)
+
+### 2026-02-06 - Iteración Fase 2: Canvas de Dominios
+- **Decisión**: Layout lado a lado (timeline izquierda, canvas derecha)
+- **Decisión**: Canvas reemplaza panel de eventos; eventos se abren como card on-demand
+- **Decisión**: Tamaño de dominios = proporción de energía acumulada hasta el bucket (∑ = 100%)
+- **Decisión**: Dominios no decrecen en absoluto, pero sí proporcionalmente vs otros
+- **Decisión**: Click en dominio abre Capabilities Card con todas las capabilities
+- **Decisión**: Capabilities sin eventos hasta ese bucket aparecen atenuadas
+- **Decisión**: Al expandir capability, se muestra histórico acumulado de eventos hasta el bucket
+- **Decisión**: Para ver estado actual del producto, ir al bucket más reciente
+- **Objetivo**: Página pública con punch visual que une exploración temporal y funcional
+
+### 2026-02-06 - Iteración Fase 2: Voronoi
+- **Decisión**: Representación visual = Voronoi weighted
+- **Decisión**: Posición de semillas = fija por dominio (memoria espacial)
+- **Decisión**: Bordes = rectos (V1), evolucionar a curvos/orgánicos (V2)
+- **Decisión**: Empezar con implementación básica e iterar

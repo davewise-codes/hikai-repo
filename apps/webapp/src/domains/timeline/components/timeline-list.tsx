@@ -142,16 +142,24 @@ export function TimelineList({
 		<div className="relative py-8 space-y-8">
 			<div className="pointer-events-none absolute left-[124px] top-0 h-full w-px bg-border" />
 			{buckets.map(({ summary, events }) => {
+				const productDomainSet = new Set(productDomains ?? []);
+				const allowAllDomains = productDomainSet.size === 0;
 				const formattedDate = `${formatShortDate(
 					summary.bucketStartAt,
 					i18n.language,
 				)} → ${formatShortDate(summary.bucketEndAt, i18n.language)}`;
 				const impactedDomainSet = new Set<string>();
 				(summary.domains ?? []).forEach((domain) => {
-					if (domain) impactedDomainSet.add(domain);
+					if (!domain) return;
+					if (allowAllDomains || productDomainSet.has(domain)) {
+						impactedDomainSet.add(domain);
+					}
 				});
 				events.forEach((event) => {
-					if (event.domain) impactedDomainSet.add(event.domain);
+					if (!event.domain) return;
+					if (allowAllDomains || productDomainSet.has(event.domain)) {
+						impactedDomainSet.add(event.domain);
+					}
 				});
 				const impactedDomains = Array.from(impactedDomainSet);
 				const impact = Math.max(1, events.length);

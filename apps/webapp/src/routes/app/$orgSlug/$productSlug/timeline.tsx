@@ -74,6 +74,7 @@ import {
 	TrendingUp,
 	Cog,
 	X,
+	DatabaseZap,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { api } from "@hikai/convex";
@@ -83,6 +84,7 @@ import { useConnections } from "@/domains/connectors/hooks";
 import {
 	useTimeline,
 	useTriggerSync,
+	useFullSync,
 } from "@/domains/timeline/hooks";
 import { TimelineFilterState, TimelineList, TimelineListEvent } from "@/domains/timeline";
 import { formatRelativeDate, formatShortDate } from "@/domains/shared/utils";
@@ -111,7 +113,9 @@ function TimelinePage() {
 	const { connections, isLoading: isConnectionsLoading } =
 		useConnections(productId);
 	const triggerSync = useTriggerSync();
+	const fullSync = useFullSync();
 	const [isSyncing, setIsSyncing] = useState(false);
+	const [isFullSyncing, setIsFullSyncing] = useState(false);
 	const [isRegenerating, setIsRegenerating] = useState(false);
 	const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
 	const [filters, setFilters] = useState<TimelineFilterState>({
@@ -230,11 +234,21 @@ function TimelinePage() {
 					Record<string, unknown>
 				>)
 			: [];
+		const nonBusinessDomains = new Set([
+			"Marketing",
+			"Documentation",
+			"Infrastructure",
+			"Management",
+			"Admin",
+			"Analytics",
+		]);
 		const names = rawDomains
 			.map((domain) =>
 				typeof domain?.name === "string" ? domain.name.trim() : "",
 			)
-			.filter((name) => name.length > 0);
+			.filter(
+				(name) => name.length > 0 && !nonBusinessDomains.has(name),
+			);
 		const seen = new Set<string>();
 		const ordered: string[] = [];
 		names.forEach((name) => {
@@ -404,6 +418,35 @@ function TimelinePage() {
 			setIsSyncing(false);
 		}
 	}, [activeConnection, productId, t, triggerSync]);
+
+	const handleFullSync = useCallback(async () => {
+		if (!productId) return;
+		if (!activeConnection) {
+			toast.error(t("sync.noConnection"));
+			return;
+		}
+		setIsFullSyncing(true);
+		try {
+			const result = await fullSync({
+				productId,
+				connectionId: activeConnection._id as Id<"connections">,
+			});
+			setRefreshKey((prev) => prev + 1);
+			toast.success(
+				t("fullSync.success", {
+					deleted: result.deletedRawEvents,
+					ingested: result.ingested,
+					interpreted: result.interpreted,
+				}),
+			);
+		} catch (errorSync) {
+			toast.error(
+				errorSync instanceof Error ? errorSync.message : t("fullSync.error"),
+			);
+		} finally {
+			setIsFullSyncing(false);
+		}
+	}, [activeConnection, fullSync, productId, t]);
 
 	const regenerateTimeline = useAction(api.timeline.events.regenerateTimeline);
 	const handleRegenerate = useCallback(async () => {
@@ -853,6 +896,54 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 										</AlertDialogFooter>
 									</AlertDialogContent>
 								</AlertDialog>
+								<AlertDialog>
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<AlertDialogTrigger asChild>
+												<Button
+													variant="outline"
+													size="ultra"
+													disabled={
+														!productId ||
+														isFullSyncing ||
+														isConnectionsLoading ||
+														!activeConnection
+													}
+												>
+													<DatabaseZap className="h-4 w-4" />
+													<span className="text-fontSize-sm">
+														{t("fullSync.label")}
+													</span>
+												</Button>
+											</AlertDialogTrigger>
+										</TooltipTrigger>
+										<TooltipContent side="bottom" sideOffset={8}>
+											{t("fullSync.tooltip")}
+										</TooltipContent>
+									</Tooltip>
+									<AlertDialogContent>
+										<AlertDialogHeader>
+											<AlertDialogTitle>
+												{t("fullSync.confirmTitle")}
+											</AlertDialogTitle>
+											<AlertDialogDescription>
+												{t("fullSync.confirmDescription")}
+											</AlertDialogDescription>
+										</AlertDialogHeader>
+										<AlertDialogFooter>
+											<AlertDialogCancel disabled={isFullSyncing}>
+												{t("fullSync.cancel")}
+											</AlertDialogCancel>
+											<AlertDialogAction
+												onClick={handleFullSync}
+												disabled={isFullSyncing}
+												className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+											>
+												{t("fullSync.confirm")}
+											</AlertDialogAction>
+										</AlertDialogFooter>
+									</AlertDialogContent>
+								</AlertDialog>
 								<Sheet>
 								<SheetTrigger asChild>
 										<Button variant="outline" size="ultra" className="mr-0.5">
@@ -948,10 +1039,10 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 					>
 						<div className="px-0">
 							<TimelineList
-								buckets={bucketGroups}
-								productDomains={domainList}
+								buckets={isFullSyncing ? [] : bucketGroups}
+								productDomains={productDomains}
 								domainColorMap={domainColorMap}
-								isLoading={isTimelineLoading}
+								isLoading={isTimelineLoading || isFullSyncing}
 								selectedBucketId={selectedBucketId}
 								onSelectBucket={(id) => setSelectedBucketId(id)}
 								onToggleDomain={handleDomainToggle}
@@ -1304,7 +1395,17 @@ const handleCategoryToggle = useCallback((value: "features" | "fixes" | "improve
 						ref={eventsScrollRef}
 						className="flex-1 overflow-y-auto px-5 py-5"
 					>
-						{bucketGroups.length ? (
+						{isFullSyncing ? (
+							<div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+								<div className="h-6 w-6 animate-spin rounded-full border-2 border-muted border-t-primary" />
+								<p className="text-fontSize-sm font-medium">
+									{t("fullSync.clearing")}
+								</p>
+								<p className="text-fontSize-sm text-muted-foreground">
+									{t("fullSync.clearingDescription")}
+								</p>
+							</div>
+						) : bucketGroups.length ? (
 							<div className="space-y-6">
 								{bucketGroups.map((group, index) => {
 									const dateLabel = `${formatShortDate(

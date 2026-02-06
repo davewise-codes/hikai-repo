@@ -1121,6 +1121,7 @@ export const interpretTimelineEvents = action({
 				event.filePaths ?? [],
 				event.summary,
 				repoDomains,
+				event.surface,
 			);
 			return {
 				...event,
@@ -1222,6 +1223,9 @@ export const interpretTimelineEvents = action({
 			const allowedDomains = new Set(
 				repoDomains.map((domain) => domain.name.toLowerCase()),
 			);
+			Object.values(SURFACE_TO_DOMAIN).forEach((name) => {
+				allowedDomains.add(name.toLowerCase());
+			});
 			const existingCapabilities = new Set(
 				capabilities.map((capability) => capability.slug),
 			);
@@ -2313,6 +2317,23 @@ const SURFACE_PRIORITY: TimelineSurface[] = [
 	"analytics",
 ];
 
+const PRODUCT_SURFACES = new Set<TimelineSurface>([
+	"product_front",
+	"platform",
+]);
+
+const SURFACE_TO_DOMAIN: Record<
+	Exclude<TimelineSurface, "product_front" | "platform">,
+	string
+> = {
+	marketing: "Marketing",
+	infra: "Infrastructure",
+	doc: "Documentation",
+	management: "Management",
+	admin: "Admin",
+	analytics: "Analytics",
+};
+
 function normalizePath(value: string): string {
 	return value.replace(/^\.\/+/, "").replace(/\\/g, "/").toLowerCase();
 }
@@ -2506,7 +2527,15 @@ function deriveDomainHint(
 	filePaths: string[],
 	summary: string,
 	domains: RepoDomainHint[],
-): { name: string; matchedBy: "path" | "entity" | "none" } | undefined {
+	surface?: TimelineSurface,
+): { name: string; matchedBy: "path" | "entity" | "surface" | "none" } | undefined {
+	if (surface && !PRODUCT_SURFACES.has(surface)) {
+		const surfaceDomain =
+			SURFACE_TO_DOMAIN[surface as keyof typeof SURFACE_TO_DOMAIN];
+		if (surfaceDomain) {
+			return { name: surfaceDomain, matchedBy: "surface" };
+		}
+	}
 	if (!domains.length) return undefined;
 
 	const pathMatches: Array<{ domain: RepoDomainHint; score: number }> = [];

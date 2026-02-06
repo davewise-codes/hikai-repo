@@ -126,6 +126,7 @@ export {
   HelpCircle,
   Lightbulb,
   Zap,
+  DatabaseZap,
 } from "lucide-react";
 
 // Time & Calendar

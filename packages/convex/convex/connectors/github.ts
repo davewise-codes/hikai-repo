@@ -209,6 +209,9 @@ export const githubAppCallback = httpAction(async (ctx, request) => {
 
 const BATCH_INSERT_SIZE = 50;
 const LOOKBACK_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 días para refrescar duplicados y evitar gaps
+const MAX_COMMITS_PER_SYNC = 500;
+const MAX_PRS_PER_SYNC = 200;
+const MAX_RELEASES_PER_SYNC = 100;
 
 type GithubRepo = {
 	owner: string;
@@ -623,6 +626,35 @@ export const syncGithubConnection = action({
 		connectionId: v.id("connections"),
 	},
 	handler: syncGithubConnectionHandler,
+});
+
+export const clearRawEventsAndResetSync = internalMutation({
+	args: {
+		productId: v.id("products"),
+		connectionId: v.id("connections"),
+	},
+	handler: async (ctx, { productId, connectionId }) => {
+		// Delete all rawEvents for this connection
+		const rawEvents = await ctx.db
+			.query("rawEvents")
+			.withIndex("by_connection_time", (q) => q.eq("connectionId", connectionId))
+			.collect();
+
+		for (const event of rawEvents) {
+			await ctx.db.delete(event._id);
+		}
+
+		// Reset lastSyncAt on the connection
+		const connection = await ctx.db.get(connectionId);
+		if (connection && connection.productId === productId) {
+			await ctx.db.patch(connectionId, {
+				lastSyncAt: undefined,
+				updatedAt: Date.now(),
+			});
+		}
+
+		return { deletedRawEvents: rawEvents.length };
+	},
 });
 
 async function ensureValidInstallationToken(
@@ -1151,20 +1183,11 @@ async function fetchRepoCommits(
 	since: number
 ): Promise<NormalizedGithubEvent[]> {
 	const sinceIso = new Date(since).toISOString();
-	const response = await fetch(
-		`https://api.github.com/repos/${repo.fullName}/commits?since=${encodeURIComponent(
-			sinceIso
-		)}&per_page=50`,
-		{
-			headers: githubHeaders(token),
-		}
-	);
+	const initialUrl = `https://api.github.com/repos/${repo.fullName}/commits?since=${encodeURIComponent(
+		sinceIso
+	)}&per_page=100`;
 
-	if (!response.ok) {
-		throw new Error(`Failed to fetch commits for ${repo.fullName}`);
-	}
-
-	const commits = (await response.json()) as Array<{
+	const commits = await fetchPaginated<{
 		sha: string;
 		html_url?: string;
 		commit: {
@@ -1173,9 +1196,9 @@ async function fetchRepoCommits(
 			committer?: { date?: string };
 		};
 		author?: { login?: string };
-	}>;
+	}>(initialUrl, token, MAX_COMMITS_PER_SYNC);
 
-	const maxFileLookups = 20;
+	const maxFileLookups = 100;
 	const events: NormalizedGithubEvent[] = [];
 
 	for (const [index, commit] of commits.entries()) {
@@ -1217,18 +1240,9 @@ async function fetchRepoPullRequests(
 	repo: GithubRepo,
 	since: number
 ): Promise<NormalizedGithubEvent[]> {
-	const response = await fetch(
-		`https://api.github.com/repos/${repo.fullName}/pulls?state=all&sort=updated&direction=desc&per_page=50`,
-		{
-			headers: githubHeaders(token),
-		}
-	);
+	const initialUrl = `https://api.github.com/repos/${repo.fullName}/pulls?state=all&sort=updated&direction=desc&per_page=100`;
 
-	if (!response.ok) {
-		throw new Error(`Failed to fetch pull requests for ${repo.fullName}`);
-	}
-
-	const pullRequests = (await response.json()) as Array<{
+	const pullRequests = await fetchPaginated<{
 		id: number;
 		number: number;
 		html_url?: string;
@@ -1240,18 +1254,19 @@ async function fetchRepoPullRequests(
 		created_at?: string;
 		updated_at?: string;
 		state?: string;
-	}>;
-	const maxFileLookups = 20;
+	}>(initialUrl, token, MAX_PRS_PER_SYNC);
+
+	const maxFileLookups = 100;
+
+	const filtered = pullRequests.filter((pr) => {
+		const reference =
+			pr.merged_at ?? pr.closed_at ?? pr.created_at ?? pr.updated_at ?? null;
+		if (!reference) return true;
+		return Date.parse(reference) >= since;
+	});
 
 	return Promise.all(
-		pullRequests
-		.filter((pr) => {
-			const reference =
-				pr.merged_at ?? pr.closed_at ?? pr.created_at ?? pr.updated_at ?? null;
-			if (!reference) return true;
-			return Date.parse(reference) >= since;
-		})
-		.map(async (pr, index) => {
+		filtered.map(async (pr, index) => {
 			const occurredAtRaw =
 				pr.merged_at ?? pr.closed_at ?? pr.created_at ?? pr.updated_at ?? "";
 			const occurredAt = Date.parse(occurredAtRaw);
@@ -1289,18 +1304,9 @@ async function fetchRepoReleases(
 	repo: GithubRepo,
 	since: number
 ): Promise<NormalizedGithubEvent[]> {
-	const response = await fetch(
-		`https://api.github.com/repos/${repo.fullName}/releases?per_page=50`,
-		{
-			headers: githubHeaders(token),
-		}
-	);
+	const initialUrl = `https://api.github.com/repos/${repo.fullName}/releases?per_page=100`;
 
-	if (!response.ok) {
-		throw new Error(`Failed to fetch releases for ${repo.fullName}`);
-	}
-
-	const releases = (await response.json()) as Array<{
+	const releases = await fetchPaginated<{
 		id?: number;
 		tag_name?: string;
 		name?: string | null;
@@ -1309,7 +1315,7 @@ async function fetchRepoReleases(
 		published_at?: string | null;
 		created_at?: string | null;
 		draft?: boolean;
-	}>;
+	}>(initialUrl, token, MAX_RELEASES_PER_SYNC);
 
 	return releases
 		.filter((release) => !release.draft)
@@ -1341,19 +1347,18 @@ async function fetchCommitFiles(
 	repo: GithubRepo,
 	sha: string,
 ): Promise<string[] | undefined> {
+	const url = `https://api.github.com/repos/${repo.fullName}/commits/${sha}`;
+	const response = await fetchWithRetry(url, token);
+	if (!response) return undefined;
 	try {
-		const response = await fetch(
-			`https://api.github.com/repos/${repo.fullName}/commits/${sha}`,
-			{ headers: githubHeaders(token) },
-		);
-		if (!response.ok) return undefined;
 		const json = (await response.json()) as {
 			files?: Array<{ filename?: string }>;
 		};
 		const files =
 			json.files?.map((file) => file.filename).filter(Boolean) ?? [];
-		return files.slice(0, 20) as string[];
+		return files.slice(0, 100) as string[];
 	} catch (error) {
+		console.error(`Failed to parse commit files for ${sha}:`, error);
 		return undefined;
 	}
 }
@@ -1363,18 +1368,50 @@ async function fetchPullRequestFiles(
 	repo: GithubRepo,
 	number: number,
 ): Promise<string[] | undefined> {
+	const url = `https://api.github.com/repos/${repo.fullName}/pulls/${number}/files?per_page=100`;
+	const response = await fetchWithRetry(url, token);
+	if (!response) return undefined;
 	try {
-		const response = await fetch(
-			`https://api.github.com/repos/${repo.fullName}/pulls/${number}/files?per_page=100`,
-			{ headers: githubHeaders(token) },
-		);
-		if (!response.ok) return undefined;
 		const json = (await response.json()) as Array<{ filename?: string }>;
 		const files = json.map((file) => file.filename).filter(Boolean);
-		return files.slice(0, 20) as string[];
+		return files.slice(0, 100) as string[];
 	} catch (error) {
+		console.error(`Failed to parse PR files for #${number}:`, error);
 		return undefined;
 	}
+}
+
+async function fetchWithRetry(
+	url: string,
+	token: string,
+	maxRetries = 2,
+): Promise<Response | null> {
+	for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+		try {
+			const response = await fetch(url, { headers: githubHeaders(token) });
+			if (response.ok) {
+				return response;
+			}
+			if (response.status === 403 || response.status >= 500) {
+				const waitMs = 1000 * 2 ** attempt;
+				console.log(
+					`GitHub API ${response.status} for ${url}, retry ${
+						attempt + 1
+					}/${maxRetries} in ${waitMs}ms`,
+				);
+				await new Promise((resolve) => setTimeout(resolve, waitMs));
+				continue;
+			}
+			console.log(`GitHub API ${response.status} for ${url}, not retrying`);
+			return null;
+		} catch (error) {
+			console.error(`fetchWithRetry attempt ${attempt} failed:`, error);
+			if (attempt === maxRetries) return null;
+			const waitMs = 1000 * 2 ** attempt;
+			await new Promise((resolve) => setTimeout(resolve, waitMs));
+		}
+	}
+	return null;
 }
 
 function githubHeaders(token: string, isAppJwt = false) {
@@ -1383,4 +1420,37 @@ function githubHeaders(token: string, isAppJwt = false) {
 		Authorization: `${isAppJwt ? "Bearer" : "token"} ${token}`,
 		"User-Agent": "hikai-connectors",
 	};
+}
+
+function parseNextLink(linkHeader: string | null): string | null {
+	if (!linkHeader) return null;
+	const parts = linkHeader.split(",");
+	for (const part of parts) {
+		const match = part.match(/<([^>]+)>;\s*rel="next"/);
+		if (match) return match[1];
+	}
+	return null;
+}
+
+async function fetchPaginated<T>(
+	initialUrl: string,
+	token: string,
+	maxItems: number,
+): Promise<T[]> {
+	const results: T[] = [];
+	let url: string | null = initialUrl;
+
+	while (url && results.length < maxItems) {
+		const response = await fetchWithRetry(url, token);
+		if (!response) break;
+
+		const items = (await response.json()) as T[];
+		const remaining = maxItems - results.length;
+		results.push(...items.slice(0, remaining));
+
+		if (items.length === 0 || results.length >= maxItems) break;
+		url = parseNextLink(response.headers.get("Link"));
+	}
+
+	return results;
 }

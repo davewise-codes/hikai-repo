@@ -1,4 +1,4 @@
-export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.3";
+export const TIMELINE_INTERPRETER_PROMPT_VERSION = "v3.7";
 
 export type TimelineRawEventInput = {
 	rawEventId: string;
@@ -15,7 +15,7 @@ export type TimelineRawEventInput = {
 		| "management"
 		| "admin"
 		| "analytics";
-	domainHint?: { name: string; matchedBy: "path" | "entity" | "none" };
+	domainHint?: { name: string; matchedBy: "path" | "entity" | "surface" | "none" };
 };
 
 export type TimelineInterpretationOutput = {
@@ -109,7 +109,7 @@ Input JSON:
       "summary": "…",
       "filePaths": ["apps/app/..."],
       "surface": "product_front",
-      "domainHint": { "name": "...", "matchedBy": "path|entity|none" }
+      "domainHint": { "name": "Marketing", "matchedBy": "surface" }
     }
   ]
 }
@@ -157,12 +157,39 @@ Rules:
 - Use the provided languagePreference for all text.
 - Each rawEventId must appear in exactly one event.
 - Do not include raw commit messages or hashes in titles; summarize as product impact.
+- CRITICAL: Infrastructure/Setup Detection Override (when filePaths is missing or surface appears incorrect):
+  If the event summary/title contains ANY of these patterns, OVERRIDE surface and domain:
+  - Project scaffolding: "monorepo", "turborepo", "pnpm", "npm", "yarn workspace", "lerna", "bootstrap", "initial commit", "scaffolding", "project setup", "repo setup", "init"
+  - Package/config work: "package.json", "tsconfig", "eslint", "prettier", "tailwind config", "vite config", "next config", "webpack", "babel", "postcss"
+  - CI/CD: "github actions", "ci/cd", "pipeline", "workflow", ".github", "vercel", "deploy config", "dockerfile", "docker-compose"
+  - Dev tooling: "husky", "lint-staged", "commitlint", "renovate", "dependabot", "test setup", "jest config", "vitest"
+  - i18n/Fonts setup: "package i18n", "i18n setup", "i18n core", "i18n module", "locale loading", "font setup", "google fonts", "fonts config"
+  - UI library installation: "shadcn", "radix", "headless ui", "chakra", "material ui", "ant design", "instalación de"
+  - Dependency management: "update dependencies", "updated libraries", "upgrade packages", "bump version", "actualizar dependencias"
+  → For ALL these, set surface="infra" and domain="Infrastructure", regardless of input surface.
+  → These are ALWAYS type="work" and visibility="internal".
+- Documentation Detection Override:
+  If summary contains: "readme", "docs/", "documentation", "changelog", "contributing", "license"
+  → Set surface="doc" and domain="Documentation".
+- Marketing Detection Override:
+  If summary contains: "landing page", "marketing/", "website copy", "seo", "meta tags", "og:image"
+  → Set surface="marketing" and domain="Marketing".
+- Early Product Heuristic: If the product has no defined capabilities yet AND most events are setup-related, treat ambiguous events as infrastructure by default.
 - For bucket.title and bucket.narrative, follow the hero formatting rules above; the narrative should add new information beyond the title.
 - If releaseCadence is unknown or irregular, still bucket by time and set cadence accordingly.
 - If bucket is provided, output exactly one narrative and use the provided bucketId/bucketStartAt/bucketEndAt.
 - If chunkContext is provided and isLastChunk=false, do NOT generate bucket narrative (set narrative to null).
 - If chunkContext.isLastChunk=true, generate a narrative that covers ALL events (including previous chunks described in previousEventsSummary).
 - If chunkContext is null, treat as single-chunk bucket (generate narrative normally).
+- Surface-Domain Mapping Rule: For non-product surfaces, the domain MUST match the surface:
+  - surface="marketing" → domain="Marketing"
+  - surface="infra" → domain="Infrastructure"
+  - surface="doc" → domain="Documentation"
+  - surface="management" → domain="Management"
+  - surface="admin" → domain="Admin"
+  - surface="analytics" → domain="Analytics"
+  Only use business domains (Organizations, Products, etc.) for product_front and platform surfaces.
+- When domainHint.matchedBy="surface", you MUST use domainHint.name as the domain.
 - Mark items "internal" when they are below-the-glass development work that does not change the value proposition.
 - Keep bucket narrative public-safe; only mention public events in narrative.
 - If all events are internal, you may omit narrative or keep it minimal.

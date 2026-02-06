@@ -250,6 +250,130 @@ export const regenerateTimeline = action({
 	},
 });
 
+export const fullSyncTimeline = action({
+	args: {
+		productId: v.id("products"),
+		connectionId: v.id("connections"),
+	},
+	handler: async (
+		ctx,
+		{ productId, connectionId }
+	): Promise<{
+		deletedRawEvents: number;
+		deletedInterpretations: number;
+		ingested: number;
+		skipped: number;
+		interpreted: number;
+		agentRunId?: Id<"agentRuns"> | null;
+	}> => {
+		await ctx.runQuery(internal.connectors.github.assertProductAccessForGithub, {
+			productId,
+		});
+
+		let agentRunId: Id<"agentRuns"> | null = null;
+		try {
+			const created = await ctx.runMutation(api.agents.agentRuns.createAgentRun, {
+				productId,
+				useCase: "timeline_interpretation",
+				agentName: "Timeline Context Interpreter Agent",
+			});
+			agentRunId = created.runId;
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId: created.runId,
+				step: "Starting full sync: clearing all data",
+				status: "info",
+			});
+		} catch {
+			agentRunId = null;
+		}
+
+		// Step 1: Delete interpreted events and bucket summaries
+		const deleteResult = await ctx.runMutation(
+			internal.timeline.interpret.deleteInterpretedEventsByProduct,
+			{ productId }
+		);
+
+		if (agentRunId) {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId: agentRunId,
+				step: `Cleared ${deleteResult.deleted} interpretations and summaries`,
+				status: "info",
+			});
+		}
+
+		// Step 2: Delete raw events and reset lastSyncAt
+		const clearResult = await ctx.runMutation(
+			internal.connectors.github.clearRawEventsAndResetSync,
+			{ productId, connectionId }
+		);
+
+		if (agentRunId) {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId: agentRunId,
+				step: `Cleared ${clearResult.deletedRawEvents} raw events, reset sync state`,
+				status: "info",
+			});
+		}
+
+		// Step 3: Full sync from GitHub (since=0 because lastSyncAt is now undefined)
+		if (agentRunId) {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId: agentRunId,
+				step: "Fetching all events from GitHub",
+				status: "info",
+			});
+		}
+
+		const syncResult = await syncGithubConnectionHandler(ctx, { productId, connectionId });
+
+		if (agentRunId) {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId: agentRunId,
+				step: `Ingested ${syncResult.ingested} events (${syncResult.skipped} skipped)`,
+				status: "info",
+			});
+		}
+
+		// Step 4: Get all raw events and interpret them
+		const allRawEvents: Array<{ _id: Id<"rawEvents"> }> = await ctx.runQuery(
+			internal.timeline.interpret.getAllRawEventsForProduct,
+			{ productId }
+		);
+
+		if (agentRunId) {
+			await ctx.runMutation(internal.agents.agentRuns.appendStep, {
+				productId,
+				runId: agentRunId,
+				step: `Interpreting ${allRawEvents.length} events`,
+				status: "info",
+			});
+		}
+
+		const interpretResult: InterpretResult = await ctx.runAction(
+			api.timeline.interpret.interpretPendingEvents,
+			{
+				productId,
+				rawEventIds: allRawEvents.map((event) => event._id),
+				agentRunId: agentRunId ?? undefined,
+			}
+		);
+
+		return {
+			deletedRawEvents: clearResult.deletedRawEvents,
+			deletedInterpretations: deleteResult.deleted,
+			ingested: syncResult.ingested,
+			skipped: syncResult.skipped,
+			interpreted: interpretResult.processed,
+			agentRunId: interpretResult.agentRunId ?? agentRunId ?? null,
+		};
+	},
+});
+
 function buildSummary(payload: unknown, sourceType: string): string {
 	const safe = toSafeString;
 	const title = safe((payload as any)?.title ?? "");

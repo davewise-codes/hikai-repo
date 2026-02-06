@@ -66,6 +66,18 @@
     "error": "No se pudo regenerar el timeline",
     "tooltip": "Elimina narrativas y reconstruye el timeline con todos los raw events."
   },
+  "fullSync": {
+    "label": "Full sync",
+    "confirmTitle": "¿Full sync desde cero?",
+    "confirmDescription": "Esto eliminará TODOS los datos existentes (raw events, narrativas y resúmenes) y descargará todo de nuevo desde GitHub. Puede tardar un rato en repos con mucho histórico.",
+    "confirm": "Full sync",
+    "cancel": "Cancelar",
+    "success": "Full sync completado: eliminados {{deleted}} eventos, ingestados {{ingested}}, interpretados {{interpreted}}",
+    "error": "No se pudo completar el full sync",
+    "tooltip": "Elimina todos los datos y re-sincroniza todo desde la fuente. Útil cuando faltan eventos.",
+    "clearing": "Full sync en progreso",
+    "clearingDescription": "Eliminando datos existentes y descargando todos los eventos..."
+  },
   "progress": {
     "title": "Pasos del agente de timeline",
     "ready": "Listo",
