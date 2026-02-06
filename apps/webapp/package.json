@@ -16,6 +16,7 @@
     "@hikai/ui": "workspace:*",
     "@tanstack/react-router": "^1.131.31",
     "convex": "^1.26.1",
+    "framer-motion": "^12.33.0",
     "i18next": "^25.4.2",
     "i18next-browser-languagedetector": "^8.2.0",
     "react": "^19.1.1",

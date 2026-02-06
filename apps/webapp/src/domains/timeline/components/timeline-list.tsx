@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-	Badge,
 	Card,
 	CardContent,
 	Tooltip,
@@ -9,13 +9,12 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 	cn,
-	Sparkles,
-	ShieldCheck,
-	TrendingUp,
-	Cog,
 } from "@hikai/ui";
 import { Id } from "@hikai/convex/convex/_generated/dataModel";
 import { formatShortDate } from "@/domains/shared/utils";
+import { BucketHero } from "./bucket-hero";
+import { BucketCompact } from "./bucket-compact";
+import type { DomainColorMap } from "./domain-list";
 
 export type TimelineListEvent = {
 	_id: Id<"interpretedEvents">;
@@ -65,22 +64,23 @@ interface TimelineListProps {
 		summary: TimelineBucketSummary;
 		events: TimelineListEvent[];
 	}>;
-	domainColorMap?: Record<
-		string,
-		{ border: string; background: string; text: string; dot: string }
-	>;
+	productDomains?: string[];
+	domainColorMap?: DomainColorMap;
 	isLoading?: boolean;
 	selectedBucketId?: string | null;
 	onSelectBucket: (bucketId: string) => void;
+	onToggleDomain?: (domain: string) => void;
 	emptyAction?: ReactNode;
 }
 
 export function TimelineList({
 	buckets,
+	productDomains,
 	domainColorMap,
 	isLoading,
 	selectedBucketId,
 	onSelectBucket,
+	onToggleDomain,
 	emptyAction,
 }: TimelineListProps) {
 	const { i18n, t } = useTranslation("timeline");
@@ -142,16 +142,26 @@ export function TimelineList({
 		<div className="relative py-8 space-y-8">
 			<div className="pointer-events-none absolute left-[124px] top-0 h-full w-px bg-border" />
 			{buckets.map(({ summary, events }) => {
+				const productDomainSet = new Set(productDomains ?? []);
+				const allowAllDomains = productDomainSet.size === 0;
 				const formattedDate = `${formatShortDate(
 					summary.bucketStartAt,
 					i18n.language,
 				)} → ${formatShortDate(summary.bucketEndAt, i18n.language)}`;
-				const domainSet = new Set<string>();
-				(summary.domains ?? []).forEach((domain) => domain && domainSet.add(domain));
-				events.forEach((event) => {
-					if (event.domain) domainSet.add(event.domain);
+				const impactedDomainSet = new Set<string>();
+				(summary.domains ?? []).forEach((domain) => {
+					if (!domain) return;
+					if (allowAllDomains || productDomainSet.has(domain)) {
+						impactedDomainSet.add(domain);
+					}
 				});
-				const allDomains = Array.from(domainSet);
+				events.forEach((event) => {
+					if (!event.domain) return;
+					if (allowAllDomains || productDomainSet.has(event.domain)) {
+						impactedDomainSet.add(event.domain);
+					}
+				});
+				const impactedDomains = Array.from(impactedDomainSet);
 				const impact = Math.max(1, events.length);
 				const impactSize =
 					impact >= 4 ? "h-4 w-4" : impact >= 2 ? "h-3 w-3" : "h-2 w-2";
@@ -161,6 +171,22 @@ export function TimelineList({
 						: impact >= 3
 							? "bg-warning"
 							: "bg-primary/70";
+				const isActive = selectedBucketId === summary.bucketId;
+				const categoryCounts = {
+					feature: events.filter((event) => event.type === "feature").length,
+					improvement: events.filter((event) => event.type === "improvement")
+						.length,
+					fix: events.filter((event) => event.type === "fix").length,
+					work: events.filter(
+						(event) => event.type === "work" || event.type === "other",
+					).length,
+				};
+				const categoryPresence = {
+					feature: categoryCounts.feature > 0,
+					improvement: categoryCounts.improvement > 0,
+					fix: categoryCounts.fix > 0,
+					work: categoryCounts.work > 0,
+				};
 
 				return (
 					<div
@@ -196,63 +222,50 @@ export function TimelineList({
 							<Card
 								onClick={() => onSelectBucket(summary.bucketId)}
 								className={cn(
-									"cursor-pointer border transition-shadow duration-150 hover:shadow-sm",
-									selectedBucketId === summary.bucketId
+									"cursor-pointer border transition-all duration-300",
+									isActive
 										? "border-primary shadow-sm"
 										: "bg-muted/30",
 								)}
 							>
-								<CardContent className="space-y-3 p-4">
-									<div className="flex items-center justify-between gap-3">
-										<p className="min-w-0 flex-1 truncate text-fontSize-sm font-semibold leading-snug">
-											{summary.title}
-										</p>
-										<div className="flex items-center gap-2 text-muted-foreground">
-											{events.some((event) => event.type === "feature") ? (
-												<Sparkles className="h-3.5 w-3.5" />
-											) : null}
-											{events.some((event) => event.type === "fix") ? (
-												<ShieldCheck className="h-3.5 w-3.5" />
-											) : null}
-											{events.some((event) => event.type === "improvement") ? (
-												<TrendingUp className="h-3.5 w-3.5" />
-											) : null}
-											{events.some(
-												(event) =>
-													event.type === "work" || event.type === "other",
-											) ? (
-												<Cog className="h-3.5 w-3.5" />
-											) : null}
-										</div>
-									</div>
-									{summary.narrative ? (
-										<p className="text-fontSize-xs text-muted-foreground line-clamp-2">
-											{summary.narrative}
-										</p>
-									) : null}
-									{allDomains.length ? (
-										<div className="flex flex-wrap gap-1.5 pt-1">
-											{allDomains.map((domain) => (
-												<Badge
-													key={domain}
-													variant="outline"
-													className="text-fontSize-2xs"
-													style={(() => {
-														const color =
-															domainColorMap?.[domain] ??
-															getDomainBadgeClass(domain);
-														return {
-															borderColor: color.border,
-															backgroundColor: color.background,
-															color: color.text,
-														};
-													})()}
-												>
-													{domain}
-												</Badge>
-											))}
-										</div>
-									) : null}
+								<CardContent className={cn("p-4", isActive && "py-6")}>
+									<AnimatePresence mode="wait" initial={false}>
+										{isActive ? (
+											<motion.div
+												key={`${summary.bucketId}-hero`}
+												initial={{ opacity: 0, height: 0 }}
+												animate={{ opacity: 1, height: "auto" }}
+												exit={{ opacity: 0, height: 0 }}
+												transition={{ duration: 0.3 }}
+												className="overflow-hidden space-y-4"
+											>
+												<BucketHero
+													title={summary.title}
+													narrative={summary.narrative}
+													categoryCounts={categoryCounts}
+													productDomains={productDomains ?? impactedDomains}
+													impactedDomains={impactedDomainSet}
+													domainColorMap={domainColorMap}
+												/>
+											</motion.div>
+										) : (
+											<motion.div
+												key={`${summary.bucketId}-compact`}
+												initial={{ opacity: 0, height: 0 }}
+												animate={{ opacity: 1, height: "auto" }}
+												exit={{ opacity: 0, height: 0 }}
+												transition={{ duration: 0.25 }}
+												className="overflow-hidden space-y-3"
+											>
+												<BucketCompact
+													title={summary.title}
+													categories={categoryPresence}
+													impactedDomains={impactedDomains}
+													domainColorMap={domainColorMap}
+												/>
+											</motion.div>
+										)}
+									</AnimatePresence>
 								</CardContent>
 							</Card>
 						</div>
@@ -261,22 +274,4 @@ export function TimelineList({
 			})}
 		</div>
 	);
-}
-
-function getDomainBadgeClass(domain: string) {
-	let hash = 0;
-	for (let i = 0; i < domain.length; i += 1) {
-		hash = (hash * 31 + domain.charCodeAt(i)) % 2147483647;
-	}
-	const hue = Math.abs(hash) % 360;
-	return buildDomainColor(hue);
-}
-
-function buildDomainColor(hue: number) {
-	return {
-		border: `hsla(${hue}, 70%, 55%, 0.5)`,
-		background: `hsla(${hue}, 70%, 20%, 0.4)`,
-		text: `hsl(${hue}, 75%, 82%)`,
-		dot: `hsl(${hue}, 75%, 55%)`,
-	};
 }

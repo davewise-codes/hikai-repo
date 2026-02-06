@@ -47,6 +47,10 @@ export function useTriggerSync() {
 	return useAction(api.timeline.events.triggerManualSync);
 }
 
+export function useFullSync() {
+	return useAction(api.timeline.events.fullSyncTimeline);
+}
+
 export function useTimelineEventDetails(
 	productId: Id<"products"> | undefined,
 	eventId: Id<"interpretedEvents"> | undefined

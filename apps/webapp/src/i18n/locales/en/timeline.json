@@ -62,8 +62,21 @@
     "confirm": "Regenerate",
     "cancel": "Cancel",
     "success": "Regenerated timeline: {{interpreted}} narratives created",
+    "queued": "Regeneration queued ({{batches}} batches). Tracking progress below.",
     "error": "Could not regenerate timeline",
     "tooltip": "Delete narratives and rebuild the timeline from all raw events."
+  },
+  "fullSync": {
+    "label": "Full sync",
+    "confirmTitle": "Full sync from scratch?",
+    "confirmDescription": "This will delete ALL existing data (raw events, narratives, and summaries) and fetch everything again from GitHub. This may take a while for repos with long history.",
+    "confirm": "Full sync",
+    "cancel": "Cancel",
+    "success": "Full sync completed: deleted {{deleted}} events, ingested {{ingested}}, interpreted {{interpreted}}",
+    "error": "Could not complete full sync",
+    "tooltip": "Delete all data and re-sync everything from the source. Use when events are missing.",
+    "clearing": "Full sync in progress",
+    "clearingDescription": "Clearing existing data and fetching all events from source..."
   },
   "progress": {
     "title": "Timeline agent steps",

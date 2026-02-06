@@ -76,6 +76,38 @@ export const appendStep = internalMutation({
 	},
 });
 
+// Internal-only: allow background jobs without user auth to append steps.
+export const appendStepSystem = internalMutation({
+	args: {
+		productId: v.id("products"),
+		runId: v.id("agentRuns"),
+		step: v.string(),
+		status: stepStatus,
+		timestamp: v.optional(v.number()),
+		metadata: v.optional(v.any()),
+	},
+	handler: async (ctx, { productId, runId, step, status, timestamp, metadata }) => {
+		const run = await ctx.db.get(runId);
+		if (!run || run.productId !== productId) {
+			throw new Error("Agent run not found");
+		}
+		if (run.status !== "running") {
+			return;
+		}
+
+		const entry = {
+			step,
+			status,
+			timestamp: timestamp ?? Date.now(),
+			metadata,
+		};
+
+		await ctx.db.patch(runId, {
+			steps: [...run.steps, entry],
+		});
+	},
+});
+
 export const finishRun = internalMutation({
 	args: {
 		productId: v.id("products"),
@@ -87,6 +119,29 @@ export const finishRun = internalMutation({
 	handler: async (ctx, { productId, runId, status, errorMessage, finishedAt }) => {
 		await assertProductAccess(ctx, productId);
 
+		const run = await ctx.db.get(runId);
+		if (!run || run.productId !== productId) {
+			throw new Error("Agent run not found");
+		}
+
+		await ctx.db.patch(runId, {
+			status,
+			errorMessage,
+			finishedAt: finishedAt ?? Date.now(),
+		});
+	},
+});
+
+// Internal-only: allow background jobs without user auth to finish runs.
+export const finishRunSystem = internalMutation({
+	args: {
+		productId: v.id("products"),
+		runId: v.id("agentRuns"),
+		status: v.union(v.literal("success"), v.literal("error")),
+		errorMessage: v.optional(v.string()),
+		finishedAt: v.optional(v.number()),
+	},
+	handler: async (ctx, { productId, runId, status, errorMessage, finishedAt }) => {
 		const run = await ctx.db.get(runId);
 		if (!run || run.productId !== productId) {
 			throw new Error("Agent run not found");
