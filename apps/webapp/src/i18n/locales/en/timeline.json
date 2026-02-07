@@ -113,6 +113,7 @@
   },
   "events": {
     "title": "Events",
+    "view": "View events",
     "subtitle": "{{count}} events",
     "count": "{{count}} events",
     "unclassified": "Unclassified",
@@ -121,6 +122,10 @@
     "rawCount": "{{count}} raw events",
     "emptyTitle": "No events to show",
     "emptyDescription": "Adjust filters or regenerate the timeline."
+  },
+  "browser": {
+    "title": "Browse {{product}} capabilities",
+    "events": "events"
   },
   "list": {
     "rawStatus": {

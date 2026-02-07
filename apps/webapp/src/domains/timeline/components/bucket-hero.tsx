@@ -1,4 +1,4 @@
-import { Sparkles, TrendingUp, ShieldCheck, Cog, cn } from "@hikai/ui";
+import { Button, Sparkles, TrendingUp, ShieldCheck, Cog, cn } from "@hikai/ui";
 import { DomainList, type DomainColorMap } from "./domain-list";
 
 export type BucketCategoryCounts = {
@@ -16,6 +16,8 @@ interface BucketHeroProps {
 	impactedDomains: Set<string>;
 	domainColorMap?: DomainColorMap;
 	onToggleDomain?: (domain: string) => void;
+	actionLabel?: string;
+	onAction?: () => void;
 	className?: string;
 }
 
@@ -46,6 +48,8 @@ export function BucketHero({
 	impactedDomains,
 	domainColorMap,
 	onToggleDomain,
+	actionLabel,
+	onAction,
 	className,
 }: BucketHeroProps) {
 	const activeCategories = categoryMeta.filter(
@@ -71,40 +75,55 @@ export function BucketHero({
 						</p>
 					</div>
 				) : null}
-				{activeCategories.length ? (
-					<div className="flex flex-wrap items-center gap-3 text-fontSize-xs text-muted-foreground">
-						{activeCategories.map((meta, index) => {
-							const Icon = meta.icon;
-							const count = categoryCounts[meta.key];
-							const label =
-								meta.key === "feature"
-									? count === 1
-										? "feature"
-										: "features"
-									: meta.key === "fix"
+				{activeCategories.length || (actionLabel && onAction) ? (
+					<div className="flex w-full items-center gap-3 text-fontSize-xs text-muted-foreground">
+						<div className="flex flex-wrap items-center gap-3">
+							{activeCategories.map((meta, index) => {
+								const Icon = meta.icon;
+								const count = categoryCounts[meta.key];
+								const label =
+									meta.key === "feature"
 										? count === 1
-											? "fix"
-											: "fixes"
-										: meta.key === "improvement"
+											? "feature"
+											: "features"
+										: meta.key === "fix"
 											? count === 1
-												? "improvement"
-												: "improvements"
-											: count === 1
-												? "work item"
-												: "work items";
-							return (
-								<div
-									key={meta.key}
-									className="flex items-center gap-1"
-								>
-									<Icon className="h-3.5 w-3.5" />
-									<span>{`${count} ${label}`}</span>
-									{index < activeCategories.length - 1 ? (
-										<span className="text-muted-foreground">·</span>
-									) : null}
-								</div>
-							);
-						})}
+												? "fix"
+												: "fixes"
+											: meta.key === "improvement"
+												? count === 1
+													? "improvement"
+													: "improvements"
+												: count === 1
+													? "work item"
+													: "work items";
+								return (
+									<div
+										key={meta.key}
+										className="flex items-center gap-1"
+									>
+										<Icon className="h-3.5 w-3.5" />
+										<span>{`${count} ${label}`}</span>
+										{index < activeCategories.length - 1 ? (
+											<span className="text-muted-foreground">·</span>
+										) : null}
+									</div>
+								);
+							})}
+						</div>
+						{actionLabel && onAction ? (
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={(event) => {
+									event.stopPropagation();
+									onAction();
+								}}
+								className="ml-auto"
+							>
+								{actionLabel}
+							</Button>
+						) : null}
 					</div>
 				) : null}
 			</div>
