@@ -70,6 +70,8 @@ interface TimelineListProps {
 	selectedBucketId?: string | null;
 	onSelectBucket: (bucketId: string) => void;
 	onToggleDomain?: (domain: string) => void;
+	onOpenEvents?: () => void;
+	eventsActionLabel?: string;
 	emptyAction?: ReactNode;
 }
 
@@ -81,6 +83,8 @@ export function TimelineList({
 	selectedBucketId,
 	onSelectBucket,
 	onToggleDomain,
+	onOpenEvents,
+	eventsActionLabel,
 	emptyAction,
 }: TimelineListProps) {
 	const { i18n, t } = useTranslation("timeline");
@@ -246,6 +250,8 @@ export function TimelineList({
 													productDomains={productDomains ?? impactedDomains}
 													impactedDomains={impactedDomainSet}
 													domainColorMap={domainColorMap}
+													actionLabel={eventsActionLabel}
+													onAction={onOpenEvents}
 												/>
 											</motion.div>
 										) : (

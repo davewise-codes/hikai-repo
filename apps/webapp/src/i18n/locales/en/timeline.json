@@ -113,6 +113,7 @@
   },
   "events": {
     "title": "Events",
+    "view": "View events",
     "subtitle": "{{count}} events",
     "count": "{{count}} events",
     "unclassified": "Unclassified",
@@ -120,7 +121,16 @@
     "public": "Public",
     "rawCount": "{{count}} raw events",
     "emptyTitle": "No events to show",
-    "emptyDescription": "Adjust filters or regenerate the timeline."
+    "emptyDescription": "Adjust filters or regenerate the timeline.",
+    "emptySection": "No {{label}} events yet.",
+    "tabs": {
+      "external": "Public",
+      "internal": "Internal"
+    }
+  },
+  "browser": {
+    "title": "Browse {{product}} capabilities",
+    "events": "events"
   },
   "list": {
     "rawStatus": {

@@ -113,6 +113,7 @@
   },
   "events": {
     "title": "Eventos",
+    "view": "Ver eventos",
     "subtitle": "{{count}} eventos",
     "count": "{{count}} eventos",
     "unclassified": "Sin clasificar",
@@ -120,7 +121,16 @@
     "public": "Público",
     "rawCount": "{{count}} eventos raw",
     "emptyTitle": "No hay eventos para mostrar",
-    "emptyDescription": "Ajusta los filtros o regenera el timeline."
+    "emptyDescription": "Ajusta los filtros o regenera el timeline.",
+    "emptySection": "Aún no hay eventos de {{label}}.",
+    "tabs": {
+      "external": "Público",
+      "internal": "Interno"
+    }
+  },
+  "browser": {
+    "title": "Explora las capabilities de {{product}}",
+    "events": "eventos"
   },
   "list": {
     "rawStatus": {
