@@ -121,7 +121,12 @@
     "public": "Public",
     "rawCount": "{{count}} raw events",
     "emptyTitle": "No events to show",
-    "emptyDescription": "Adjust filters or regenerate the timeline."
+    "emptyDescription": "Adjust filters or regenerate the timeline.",
+    "emptySection": "No {{label}} events yet.",
+    "tabs": {
+      "external": "Public",
+      "internal": "Internal"
+    }
   },
   "browser": {
     "title": "Browse {{product}} capabilities",

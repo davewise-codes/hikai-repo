@@ -59,24 +59,26 @@ export function BucketHero({
 	return (
 		<div
 			className={cn(
-				"grid items-start gap-8 md:grid-cols-[minmax(0,1fr)_auto]",
+				"grid items-stretch gap-8 md:grid-cols-[minmax(0,1fr)_auto]",
 				className,
 			)}
 		>
-			<div className="flex flex-col gap-4">
-				<p className="text-2xl font-black leading-tight tracking-tight md:text-3xl">
-					{title}
-				</p>
-				{narrative ? (
-					<div className="flex items-stretch gap-3">
-						<span className="w-0.5 rounded-full bg-primary/70 self-stretch" />
-						<p className="text-sm italic text-muted-foreground md:text-base">
-							{narrative}
-						</p>
-					</div>
-				) : null}
-				{activeCategories.length || (actionLabel && onAction) ? (
-					<div className="flex w-full items-center gap-3 text-fontSize-xs text-muted-foreground">
+			<div className="flex h-full flex-col justify-between gap-4">
+				<div className="flex flex-col gap-4">
+					<p className="text-2xl font-black leading-tight tracking-tight md:text-3xl">
+						{title}
+					</p>
+					{narrative ? (
+						<div className="flex items-stretch gap-3">
+							<span className="w-0.5 rounded-full bg-primary/70 self-stretch" />
+							<p className="text-sm italic text-muted-foreground md:text-base">
+								{narrative}
+							</p>
+						</div>
+					) : null}
+				</div>
+				{activeCategories.length ? (
+					<div className="flex w-full flex-col gap-3 text-fontSize-xs text-muted-foreground">
 						<div className="flex flex-wrap items-center gap-3">
 							{activeCategories.map((meta, index) => {
 								const Icon = meta.icon;
@@ -111,29 +113,32 @@ export function BucketHero({
 								);
 							})}
 						</div>
-						{actionLabel && onAction ? (
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={(event) => {
-									event.stopPropagation();
-									onAction();
-								}}
-								className="ml-auto"
-							>
-								{actionLabel}
-							</Button>
-						) : null}
 					</div>
 				) : null}
 			</div>
-			<DomainList
-				domains={productDomains}
-				activeDomains={impactedDomains}
-				domainColorMap={domainColorMap}
-				onToggleDomain={onToggleDomain}
-				className="items-end md:items-start"
-			/>
+			<div className="flex h-full flex-col items-end gap-3 md:items-start">
+				<DomainList
+					domains={productDomains}
+					activeDomains={impactedDomains}
+					domainColorMap={domainColorMap}
+					onToggleDomain={onToggleDomain}
+					className="items-end md:items-start"
+				/>
+				{actionLabel && onAction ? (
+					<div className="flex w-full items-center justify-end md:justify-start">
+						<Button
+							variant="ghost"
+							size="sm"
+							onClick={(event) => {
+								event.stopPropagation();
+								onAction();
+							}}
+						>
+							View changes
+						</Button>
+					</div>
+				) : null}
+			</div>
 		</div>
 	);
 }
